@@ -1,0 +1,146 @@
+<#@ template language="C#" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+using System;
+
+namespace Asv.IO
+{
+    public static partial class SpanBitHelper
+    {
+    <#
+       uint num = 1;
+       for (int i = 3; i <= 32; i++)
+       {
+            num = (num << 1) + 1;
+            var negInf = (num << 1) + 1;
+    #>
+         #region FixedPointS<#= i #>
+
+         public const int FixedPointS<#= i #>PositiveInf = <#= num #>;
+         public const int FixedPointS<#= i #>NegativeInf = <#= -num #>;
+         public const int FixedPointS<#= i #>Nan = <#= -num-1 #>;
+         public const int FixedPointS<#= i #>Max = <#= num-1 #>;
+         public const int FixedPointS<#= i #>Min = <#= -num+1 #>;
+
+         public static double GetFixedPointS<#= i #>Bit(ReadOnlySpan<byte> buffer, ref int bitIndex)
+         {
+            var value = GetBitS(buffer, ref bitIndex, <#= i #>);
+            return value switch
+            {
+                FixedPointS<#= i #>Nan => double.NaN,
+                FixedPointS<#= i #>PositiveInf => double.PositiveInfinity,
+                FixedPointS<#= i #>NegativeInf => double.NegativeInfinity,
+                _ => value
+            };
+         }
+         public static double GetFixedPointS<#= i #>Bit(ReadOnlySpan<byte> buffer, ref int bitIndex, double fraction)
+         {
+            var value = GetBitS(buffer, ref bitIndex, <#= i #>);
+            return value switch
+            {
+                FixedPointS<#= i #>Nan => double.NaN,
+                FixedPointS<#= i #>PositiveInf => double.PositiveInfinity,
+                FixedPointS<#= i #>NegativeInf => double.NegativeInfinity,
+                _ => value * fraction
+            };
+         }
+         public static double GetFixedPointS<#= i #>Bit(ReadOnlySpan<byte> buffer, ref int bitIndex, double fraction, double offset)
+         {
+            var value = GetBitS(buffer, ref bitIndex, <#= i #>);
+            return value switch
+            {
+                FixedPointS<#= i #>Nan => double.NaN,
+                FixedPointS<#= i #>PositiveInf => double.PositiveInfinity,
+                FixedPointS<#= i #>NegativeInf => double.NegativeInfinity,
+                _ => value * fraction + offset
+            };
+         }
+         public static double GetFixedPointS<#= i #>Bit(ReadOnlySpan<byte> buffer, ref int bitIndex, double fraction, double offset, double validateMax,double validateMin)
+         {
+            if (Math.Abs(validateMax - validateMin) <= fraction)
+                throw new ArgumentOutOfRangeException(nameof(validateMax));
+            if (validateMax > (FixedPointS<#= i #>Max * fraction + offset))
+                throw new ArgumentOutOfRangeException(nameof(validateMax));
+            if (validateMin < (FixedPointS<#= i #>Min * fraction + offset))
+                throw new ArgumentOutOfRangeException(nameof(validateMax));
+
+            var value = GetBitS(buffer, ref bitIndex, <#= i #>);
+            var convertedValue = value switch
+            {
+                FixedPointS<#= i #>Nan => double.NaN,
+                FixedPointS<#= i #>PositiveInf => double.PositiveInfinity,
+                FixedPointS<#= i #>NegativeInf => double.NegativeInfinity,
+                _ => value * fraction + offset
+            };
+            if (convertedValue > (validateMax + fraction))
+                throw new ArgumentOutOfRangeException(nameof(value));
+            if (convertedValue < (validateMin - fraction))
+                throw new ArgumentOutOfRangeException(nameof(value));
+            return convertedValue;
+         }
+
+        public static void SetFixedPointS<#= i #>Bit(Span<byte> buffer, ref int bitIndex, double value)
+        {
+            if (double.IsNaN(value))
+            {
+                SpanBitHelper.SetBitS(buffer, ref bitIndex, <#= i #>, FixedPointS<#= i #>Nan);
+                return;
+            }
+
+            if (double.IsNegativeInfinity(value))
+            {
+                SpanBitHelper.SetBitS(buffer, ref bitIndex, <#= i #>, FixedPointS<#= i #>NegativeInf);
+                return;
+            }
+            if (double.IsPositiveInfinity(value))
+            {
+                SpanBitHelper.SetBitS(buffer, ref bitIndex, <#= i #>, FixedPointS<#= i #>PositiveInf);
+                return;
+            }
+            var intValue = (int)Math.Round(value);
+            switch (intValue)
+            {
+                case > FixedPointS<#= i #>Max:
+                    SpanBitHelper.SetBitS(buffer, ref bitIndex, <#= i #>, FixedPointS<#= i #>PositiveInf);
+                    break;
+                case < FixedPointS<#= i #>Min:
+                    SpanBitHelper.SetBitS(buffer, ref bitIndex, <#= i #>, FixedPointS<#= i #>NegativeInf);
+                    break;
+                default:
+                    SpanBitHelper.SetBitS(buffer, ref bitIndex, <#= i #>, intValue );
+                    break;
+            }
+        }
+        public static void SetFixedPointS<#= i #>Bit(Span<byte> buffer, ref int bitIndex, double value,double fraction)
+        {
+            SetFixedPointS<#= i #>Bit(buffer, ref bitIndex, value / fraction);
+        }
+
+        public static void SetFixedPointS<#= i #>Bit(Span<byte> buffer, ref int bitIndex, double value,double fraction, double offset)
+        {
+            SetFixedPointS<#= i #>Bit(buffer, ref bitIndex, (value  - offset) / fraction);
+        }
+
+        public static void SetFixedPointS<#= i #>Bit(Span<byte> buffer, ref int bitIndex, double value,double fraction, double offset, double validateMax,double validateMin)
+        {
+            if (Math.Abs(validateMax - validateMin) <= fraction)
+                throw new ArgumentOutOfRangeException(nameof(validateMax));
+            if (validateMax > (FixedPointS<#= i #>Max * fraction + offset))
+                throw new ArgumentOutOfRangeException(nameof(validateMax));
+            if (validateMin < (FixedPointS<#= i #>Min * fraction + offset))
+                throw new ArgumentOutOfRangeException(nameof(validateMax));
+
+            if (value >= (validateMax + fraction))
+                throw new ArgumentOutOfRangeException(nameof(value));
+            if (value <= (validateMin - fraction))
+                throw new ArgumentOutOfRangeException(nameof(value));
+            SetFixedPointS<#= i #>Bit(buffer, ref bitIndex, (value - offset) / fraction );
+        }
+
+        #endregion
+
+    <# } #>
+    }
+}
