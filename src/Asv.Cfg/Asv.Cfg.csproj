@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
 	  <TargetFrameworks>net461;net5.0;net6.0;</TargetFrameworks>
@@ -11,10 +11,12 @@
 	  <RepositoryUrl>https://github.com/asvol/asv-common</RepositoryUrl>
 	  <PackageTags />
 	  <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-	  <Description>Provides common types and extensions for asv-based libraries</Description>
+	  <Description>Provides simple configuration interface</Description>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="NLog" Version="5.0.4" />
     <PackageReference Include="System.Reactive" Version="5.0.0" />
   </ItemGroup>
 
