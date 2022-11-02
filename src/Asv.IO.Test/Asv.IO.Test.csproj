@@ -1,15 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
-	  <TargetFrameworks>net461;net5.0;net6.0;</TargetFrameworks>
-
+    <TargetFrameworks>net461;net5.0;net6.0;</TargetFrameworks>
     <IsPackable>false</IsPackable>
+    <Version>1.2.2</Version>
   </PropertyGroup>
-
   <ItemGroup>
-	  <PackageReference Include="DeepEqual" Version="2.0.0" />
-	  <PackageReference Include="FluentAssertions" Version="6.6.0" />
-	  <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.9.4" />
+    <PackageReference Include="DeepEqual" Version="2.0.0" />
+    <PackageReference Include="FluentAssertions" Version="6.6.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.9.4" />
     <PackageReference Include="System.Memory" Version="4.5.4" />
     <PackageReference Include="xunit" Version="2.4.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3">
@@ -21,22 +19,18 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
   </ItemGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\Asv.IO\Asv.IO.csproj" />
   </ItemGroup>
-
   <ItemGroup>
     <None Update="Serializers\SpanBitHelperExtTest.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>SpanBitHelperExtTest.cs</LastGenOutput>
     </None>
   </ItemGroup>
-
   <ItemGroup>
     <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
   </ItemGroup>
-
   <ItemGroup>
     <Compile Update="Serializers\SpanBitHelperExtTest.cs">
       <DesignTime>True</DesignTime>
@@ -44,5 +38,4 @@
       <DependentUpon>SpanBitHelperExtTest.tt</DependentUpon>
     </Compile>
   </ItemGroup>
-
 </Project>

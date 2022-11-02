@@ -1,23 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
-	  <TargetFrameworks>net461;net5.0;net6.0;</TargetFrameworks>
-	  <Version>1.2.1</Version>
-	  <LangVersion>9.0</LangVersion>
-	  <Authors>https://github.com/asvol</Authors>
-	  <Company>https://github.com/asvol</Company>
-	  <Copyright>https://github.com/asvol</Copyright>
-	  <PackageProjectUrl>https://github.com/asvol/asv-common</PackageProjectUrl>
-	  <RepositoryUrl>https://github.com/asvol/asv-common</RepositoryUrl>
-	  <PackageTags />
-	  <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-	  <Description>Provides simple configuration interface</Description>
+    <TargetFrameworks>net461;net5.0;net6.0;</TargetFrameworks>
+    <Version>1.2.2</Version>
+    <LangVersion>9.0</LangVersion>
+    <Authors>https://github.com/asvol</Authors>
+    <Company>https://github.com/asvol</Company>
+    <Copyright>https://github.com/asvol</Copyright>
+    <PackageProjectUrl>https://github.com/asvol/asv-common</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/asvol/asv-common</RepositoryUrl>
+    <PackageTags />
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Description>Provides simple configuration interface</Description>
   </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="NLog" Version="5.0.4" />
     <PackageReference Include="System.Reactive" Version="5.0.0" />
   </ItemGroup>
-
 </Project>
