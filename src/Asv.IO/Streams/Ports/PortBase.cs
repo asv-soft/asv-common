@@ -128,7 +128,7 @@ namespace Asv.IO
                 Interlocked.Add(ref _rxBytes, data.Length);
                 _outputData.OnNext(data);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // ignored
             }

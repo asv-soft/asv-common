@@ -87,7 +87,7 @@ namespace Asv.IO
             {
                 await client.GetStream().WriteAsync(data, 0, count, cancel).ConfigureAwait(false);
             }
-            catch (Exception e)
+            catch (Exception)
             {
                // Debug.Assert(false);    
             }
@@ -126,7 +126,7 @@ namespace Asv.IO
                     // recvDataThread.Interrupt();
                     // recvConnectionThread.Interrupt();
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                     Debug.Assert(false);
                     // ignore
@@ -155,15 +155,15 @@ namespace Asv.IO
                         _rw.ExitWriteLock();
                         _addTcpClientSubject.OnNext(newClient);
                     }
-                    catch (ThreadAbortException e)
+                    catch (ThreadAbortException)
                     {
                         // ignore
                     }
-                    catch (SocketException e)
+                    catch (SocketException)
                     {
                         // ignore
                     }
-                    catch (Exception e)
+                    catch (Exception)
                     {
                         Debug.Assert(false);
                         // ignore
@@ -171,7 +171,7 @@ namespace Asv.IO
 
                 }
             }
-            catch (ThreadAbortException e)
+            catch (ThreadAbortException)
             {
                 // ignore
             }
@@ -209,7 +209,7 @@ namespace Asv.IO
                 if (ex.SocketErrorCode == SocketError.Interrupted) return;
                 InternalOnError(ex);
             }
-            catch (ThreadAbortException e)
+            catch (ThreadAbortException)
             {
                 // ignore
             }
@@ -235,7 +235,7 @@ namespace Asv.IO
             {
                 tcpClient.GetStream().Write(data, 0, data.Length);
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 // ignore
             }
@@ -251,7 +251,7 @@ namespace Asv.IO
             {
                 tcpClient.GetStream().Read(buff, 0, buff.Length);
             }
-            catch (ThreadAbortException e)
+            catch (ThreadAbortException)
             {
                 // ignore
             }

@@ -618,12 +618,12 @@ namespace Asv.Common
             byte[] bytes = Encoding.Unicode.GetBytes(s);
 
             //создаем объект для получения средст шифрования  
-            var csp = new MD5CryptoServiceProvider();
+            var csp = MD5.Create();
 
             //вычисляем хеш-представление в байтах  
             byte[] byteHash = csp.ComputeHash(bytes);
 
-            string hash = byteHash.Aggregate(String.Empty, (current, b) => current + String.Format("{0:x2}", b));
+            string hash = byteHash.Aggregate(String.Empty, (current, b) => current + $"{b:x2}");
 
             //формируем одну цельную строку из массива  
 
@@ -639,11 +639,11 @@ namespace Asv.Common
             // We use the MD5 hash generator as the result is a 128 bit byte array
             // which is a valid length for the TripleDES encoder we use below
 
-            var hashProvider = new MD5CryptoServiceProvider();
+            var hashProvider = MD5.Create();
             byte[] tdesKey = hashProvider.ComputeHash(utf8.GetBytes(password));
 
             // Step 2. Create a new TripleDESCryptoServiceProvider object
-            var tdesAlgorithm = new TripleDESCryptoServiceProvider();
+            var tdesAlgorithm = TripleDES.Create();
 
             // Step 3. Setup the encoder
             tdesAlgorithm.Key = tdesKey;
@@ -679,12 +679,14 @@ namespace Asv.Common
             // We use the MD5 hash generator as the result is a 128 bit byte array
             // which is a valid length for the TripleDES encoder we use below
 
-            var hashProvider = new MD5CryptoServiceProvider();
+            var hashProvider = MD5.Create();
             byte[] tdesKey = hashProvider.ComputeHash(utf8.GetBytes(password));
 
             // Step 2. Create a new TripleDESCryptoServiceProvider object
-            var tdesAlgorithm = new TripleDESCryptoServiceProvider
-                {Key = tdesKey, Mode = CipherMode.ECB, Padding = PaddingMode.PKCS7};
+            var tdesAlgorithm = TripleDES.Create();
+            tdesAlgorithm.Mode = CipherMode.ECB;
+            tdesAlgorithm.Padding = PaddingMode.PKCS7;
+            tdesAlgorithm.Key = tdesKey;
 
             // Step 3. Setup the decoder
 

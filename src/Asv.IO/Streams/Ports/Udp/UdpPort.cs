@@ -63,7 +63,7 @@ namespace Asv.IO
                 {
                     recvThread.Abort();
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                     // ignore
                 }

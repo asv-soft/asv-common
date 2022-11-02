@@ -48,7 +48,7 @@ namespace Asv.IO
                         _serial.Close();
 
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                     // ignore close errors
                 }

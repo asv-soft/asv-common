@@ -54,7 +54,7 @@ namespace Asv.IO
                     _tcp?.Dispose();
                     recvThread.Interrupt();
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                     Debug.Assert(false);
                     // ignore
@@ -97,7 +97,7 @@ namespace Asv.IO
                 if (ex.SocketErrorCode == SocketError.Interrupted) return;
                 InternalOnError(ex);
             }
-            catch (ThreadAbortException e)
+            catch (ThreadAbortException)
             {
                 Debug.Assert(false);
                 //ignore
@@ -122,7 +122,7 @@ namespace Asv.IO
                        $"Reconnect timeout   {_cfg.ReconnectTimeout} ms\n" +
                        $"Remote server       {_cfg.Host}:{_cfg.Port}";
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 return $"TCP\\IP Client      \n" +
                        $"Reconnect timeout   {_cfg.ReconnectTimeout} ms\n" +

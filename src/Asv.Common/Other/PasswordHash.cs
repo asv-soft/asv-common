@@ -56,7 +56,7 @@ namespace Asv.Common
         public static string CreateHash(string password)
         {
             // Generate a random salt
-            var csprng = new RNGCryptoServiceProvider();
+            var csprng = RandomNumberGenerator.Create();
             byte[] salt = new byte[SALT_BYTE_SIZE];
             csprng.GetBytes(salt);
 
