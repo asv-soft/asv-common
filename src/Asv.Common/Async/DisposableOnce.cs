@@ -7,7 +7,7 @@ namespace Asv.Common
     {
         private const int Disposed = 1;
         private const int NotDisposed = 0;
-        private volatile int _disposeFlag;
+        private int _disposeFlag;
 
         #region Disposing
 
