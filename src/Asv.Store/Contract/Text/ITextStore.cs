@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using LiteDB;
 
@@ -16,9 +16,9 @@ namespace Asv.Store
         [BsonId]
         public ObjectId Id { get; set; }
         public DateTime Date { get; set; }
+        public string Text { get; set; }
         public int IntTag { get; set; }
         public string StrTag { get; set; }
-        public string Text { get; set; }
     }
 
     public class TextMessageQuery
