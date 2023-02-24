@@ -1,4 +1,6 @@
 using System;
+using System.Reactive.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Asv.Common;
@@ -7,10 +9,37 @@ namespace Asv.IO
 {
     public interface ITextStream : IDisposable, IObservable<string>
     {
-        IRxValue<PortState> OnPortState { get; }
-
         IObservable<Exception> OnError { get; }
 
         Task Send(string value, CancellationToken cancel);
+    }
+
+
+    public static class TextStreamHelper
+    {
+        public static async Task<string> RequestText(this ITextStream strm,string request, int timeoutMs, CancellationToken cancel)
+        {
+            using var linkedCancel = CancellationTokenSource.CreateLinkedTokenSource(cancel);
+            linkedCancel.CancelAfter(timeoutMs);
+            var tcs = new TaskCompletionSource<string>();
+            using var c1 = linkedCancel.Token.Register(tcs.SetCanceled);
+            try
+            {
+                using var subscribe = strm.FirstAsync().Subscribe(tcs.SetResult);
+                try
+                {
+                    await strm.Send(request, linkedCancel.Token);
+                    return await tcs.Task.ConfigureAwait(false);
+                }
+                finally
+                {
+                    subscribe?.Dispose();
+                }
+            }
+            finally
+            {
+                c1.Dispose();
+            }
+        }
     }
 }

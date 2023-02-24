@@ -1,157 +1,109 @@
 using System;
+using System.Buffers;
 using System.Collections.Generic;
+using System.IO;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Asv.Common;
 
 namespace Asv.IO
 {
-    public class TelnetStream : ITextStream
+    public class TelnetStream : DisposableOnceWithCancel,ITextStream
     {
-        private enum State
-        {
-            Start,
-            Process
-        }
-
-        private readonly char[] _endBytes = {'\r', '\n'};
-        
-        private readonly CancellationTokenSource _cancel = new();
-        private readonly TelnetConfig _config;
-        private State _sync = State.Start;
+        private readonly byte[] _endBytes;
+        private readonly IDataStream _input;
+        private readonly Encoding _encoding;
         private int _readIndex = 0;
         private readonly Subject<string> _output = new();
-        private readonly Subject<Exception> _onErrorSubject = new();
+        private readonly Subject<Exception> _onErrorSubject;
         private readonly byte[] _buffer;
-        private readonly TcpClientPort _input;
-        private readonly RxValue<PortState> _onPortState = new();
-        
+        private readonly object _sync = new();
 
-        public TelnetStream(TelnetConfig config)
+
+        public TelnetStream(IDataStream strm, Encoding encoding, int bufferSize = 10*1024, string endChars = "\r\n")
         {
-            _config = config ?? new TelnetConfig();
-            _buffer = new byte[_config.MaxMessageSize];
-            _input = ConnectionStringConvert(_config.ConnectionString);
-            _input.State.Subscribe(_onPortState, _cancel.Token);
-            _onPortState.OnNext(_input.State.Value);
-            _input.SelectMany<byte[], byte>((Func<byte[], IEnumerable<byte>>)(_ => (IEnumerable<byte>)_)).Subscribe<byte>(new Action<byte>(OnData), _cancel.Token);
-            _cancel.Token.Register((Action)(() =>
-            {
-                _onPortState.OnNext(PortState.Disabled);
-                _onPortState.OnCompleted();
-                _onPortState.Dispose();
-                _output.Dispose();
-                _onErrorSubject.OnCompleted();
-                _onErrorSubject.Dispose();
-                _input?.Dispose();
-            }));
+            _input = strm ?? throw new ArgumentNullException(nameof(strm));
+            _encoding = encoding;
+            _buffer = new byte[bufferSize];
+            _input.Subscribe(OnData).DisposeItWith(Disposable);
+            _onErrorSubject = new Subject<Exception>().DisposeItWith(Disposable);
+            _endBytes = _encoding.GetBytes(endChars);
         }
 
-        private static TcpClientPort ConnectionStringConvert(string connString)
-        {
-            var p = (TcpClientPort)PortFactory.Create(connString);
-            p.Enable();
-            return p;
-        }
 
-        private void OnData(byte data)
+        private void OnData(byte[] dataArray)
         {
-            switch (_sync)
+            lock (_sync)
             {
-                case State.Start:
-                    _sync = (data != (byte)_endBytes[0] && data != (byte)_endBytes[1]) ? State.Process : State.Start;
-                    _readIndex = 0;
-                    if (_sync == State.Process)
+                foreach (var data in dataArray)
+                {
+                    if (_readIndex >= _buffer.Length)
                     {
-                        _buffer[_readIndex] = data;
-                        ++_readIndex;
+                        _onErrorSubject.OnNext(new InternalBufferOverflowException(string.Format("Receive buffer overflow. Max message size={0}", _buffer.Length)));
+                        _readIndex = 0;
                     }
-                    break;
-                case State.Process:
-                    if (data == (byte)_endBytes[0] || data == (byte)_endBytes[1])
+                    _buffer[_readIndex++] = data;
+                    if (_readIndex <= _endBytes.Length) continue;
+                    // trying to find message end
+                    var findEnd = true;
+                    var startIndex = _readIndex - _endBytes.Length;
+                    for (var i = 0; i < _endBytes.Length; i++)
                     {
-                        _sync = State.Start;
-                        try
+                        if (_buffer[startIndex+i] != _endBytes[i])
                         {
-                            _output.OnNext(_config.DefaultEncoding.GetString(_buffer, 0, _readIndex));
-                        }
-                        catch (Exception ex)
-                        {
-                            _onErrorSubject.OnNext(ex);
-                        }
+                            findEnd = false;
+                            break;
+                        };
                     }
-                    else
+                    if (!findEnd) continue;
+                    try
                     {
-                        _buffer[_readIndex] = data;
-                        ++_readIndex;
-                        if (_readIndex >= _config.MaxMessageSize)
-                        {
-                            _onErrorSubject.OnNext(new Exception(string.Format("Receive buffer overflow. Max message size={0}", (object)_config.MaxMessageSize)));
-                            _sync = State.Start;
-                        }
+                        _output.OnNext(_encoding.GetString(_buffer, 0, _readIndex - _endBytes.Length));
                     }
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
+                    catch (Exception ex)
+                    {
+                        _onErrorSubject.OnNext(ex);
+                    }
+                }
             }
         }
 
-        public void Dispose()
-        {
-            _cancel.Cancel(false);
-        }
+       
 
         public IDisposable Subscribe(IObserver<string> observer)
         {
             return _output.Subscribe(observer);
         }
 
-        public IRxValue<PortState> OnPortState => _onPortState;
-        public IObservable<Exception> OnError => (IObservable<Exception>)_onErrorSubject;
+        public IObservable<Exception> OnError => _onErrorSubject;
 
         public async Task Send(string value, CancellationToken cancel)
         {
-            
+            var dataSize = _encoding.GetByteCount(value) + _endBytes.Length;
+            var data = ArrayPool<byte>.Shared.Rent(dataSize);
             try
             {
-                using var  linkedCancel = CancellationTokenSource.CreateLinkedTokenSource(cancel, _cancel.Token);
-                var data = _config.DefaultEncoding.GetBytes(value + _endBytes[0] + _endBytes[1]);
-                await _input.Send(data, data.Length, linkedCancel.Token).ConfigureAwait(false);
+                using var linkedCancel = CancellationTokenSource.CreateLinkedTokenSource(cancel, DisposeCancel);
+                
+                var writed = _encoding.GetBytes(value,0,value.Length, data,0);
+                _endBytes.CopyTo(data, writed);
+                await _input.Send(data, dataSize, linkedCancel.Token).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
-                _onErrorSubject.OnNext(new Exception(string.Format("Error to send text stream data '{0}':{1}", (object)value, (object)ex.Message), ex));
+                _onErrorSubject.OnNext(new Exception(
+                    string.Format("Error to send text stream data '{0}':{1}", (object)value, (object)ex.Message), ex));
                 throw;
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(data);
             }
         }
 
-        public async Task<string> RequestText(string request, int timeoutMs, CancellationToken cancel)
-        {
-
-            using var linkedCancel = CancellationTokenSource.CreateLinkedTokenSource(cancel);
-                linkedCancel.CancelAfter(timeoutMs);
-                var tcs = new TaskCompletionSource<string>();
-                using var c1 = linkedCancel.Token.Register(tcs.SetCanceled);
-                try
-                {
-                    using var subscribe = this.FirstAsync().Subscribe(tcs.SetResult);
-                    try
-                    {
-                        var data = _config.DefaultEncoding.GetBytes(request + _endBytes[0] + _endBytes[1]);
-                        await _input.Send(data, data.Length, linkedCancel.Token).ConfigureAwait(false);
-                        return await tcs.Task.ConfigureAwait(false);
-                    }
-                    finally
-                    {
-                        subscribe?.Dispose();
-                    }
-                }
-                finally
-                {
-                    c1.Dispose();
-                }
-        }
+        
     }
 }
