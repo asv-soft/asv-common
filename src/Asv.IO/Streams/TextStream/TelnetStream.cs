@@ -59,7 +59,6 @@ namespace Asv.IO
                         };
                     }
                     if (!findEnd) continue;
-                    _readIndex = 0;
                     try
                     {
                         _output.OnNext(_encoding.GetString(_buffer, 0, _readIndex - _endBytes.Length));
@@ -67,6 +66,10 @@ namespace Asv.IO
                     catch (Exception ex)
                     {
                         _onErrorSubject.OnNext(ex);
+                    }
+                    finally
+                    {
+                        _readIndex = 0;
                     }
                     
                 }
