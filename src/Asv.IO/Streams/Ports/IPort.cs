@@ -22,8 +22,6 @@ namespace Asv.IO
 
     public interface IPort: IDataStream, IDisposable
     {
-        long RxBytes { get; }
-        long TxBytes { get; }
         PortType PortType { get; }
         TimeSpan ReconnectTimeout { get; set; }
         IRxValue<bool> IsEnabled { get; }

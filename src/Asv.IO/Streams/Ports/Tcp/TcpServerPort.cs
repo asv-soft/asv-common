@@ -195,6 +195,8 @@ namespace Asv.IO
                         {
                             foreach (var otherClients in clients)
                             {
+                                // send to all except the client from whom we received the data
+                                if (otherClients == tcpClient) continue;
                                 SendData(otherClients,data);
                             }
                             InternalOnData(data);

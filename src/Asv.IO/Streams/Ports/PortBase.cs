@@ -26,7 +26,6 @@ namespace Asv.IO
         public TimeSpan ReconnectTimeout { get; set; } = TimeSpan.FromSeconds(5);
         public IRxValue<bool> IsEnabled => _enableStream;
         public IRxValue<PortState> State => _portStateStream;
-        private int _isDisposed;
 
         protected PortBase()
         {
