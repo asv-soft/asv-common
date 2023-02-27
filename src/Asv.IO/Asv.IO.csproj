@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>net461;net5.0;net6.0;</TargetFrameworks>
-    <Version>1.4.4</Version>
+    <Version>1.4.5</Version>
     <LangVersion>9.0</LangVersion>
     <Authors>https://github.com/asvol</Authors>
     <Company>https://github.com/asvol</Company>
@@ -10,6 +10,7 @@
     <RepositoryUrl>https://github.com/asvol/asv-common</RepositoryUrl>
     <PackageTags />
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageIcon>asv-io-128.png</PackageIcon>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net6.0|AnyCPU'">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -29,6 +30,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net5.0|AnyCPU'">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
+  <ItemGroup>
+    <None Include="..\..\img\asv-io-128.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.Reactive" Version="5.0.0" />
     <PackageReference Include="System.Memory" Version="4.5.4" />
