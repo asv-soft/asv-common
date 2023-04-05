@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>net461;net5.0;net6.0;net7.0</TargetFrameworks>
-    <Version>1.4.5</Version>
+    <Version>1.4.6</Version>
     <LangVersion>9.0</LangVersion>
     <Authors>https://github.com/asvol</Authors>
     <Company>https://github.com/asvol</Company>
@@ -35,6 +35,7 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DocumentationFile>bin\Release\Asv.IO.xml</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
     <None Include="..\..\img\asv-io-128.png">
