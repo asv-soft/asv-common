@@ -2,7 +2,6 @@ using System;
 
 namespace Asv.Common
 {
-
     /// <summary>
     /// WGS 84 (EPSG:4326)
     /// https://en.wikipedia.org/wiki/World_Geodetic_System
@@ -18,7 +17,7 @@ namespace Asv.Common
 
         public static GeoPoint Zero => new(0.0, 0.0,0.0);
         public static GeoPoint ZeroWithAlt => new(0.0, 0.0, 0.0);
-
+        
         public GeoPoint(double latitude, double longitude, double altitude)
         {
             this.Latitude = latitude;
@@ -56,4 +55,5 @@ namespace Asv.Common
             return Longitude.GetHashCode() ^ Latitude.GetHashCode() ^ Altitude.GetHashCode();
         }
     }
+    
 }
