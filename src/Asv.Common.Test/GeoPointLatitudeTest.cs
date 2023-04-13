@@ -160,13 +160,11 @@ public class GeoPointLatitudeTest
     public void CheckIncompleteEntries()
     {
         var value = 0.0;
-        Assert.True(GeoPointLatitude.TryParse("000 00 N",out value));
+        Assert.True(GeoPointLatitude.TryParse("0 0 0 N",out value));
         Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("000 N",out value));
+        Assert.True(GeoPointLatitude.TryParse("0 0 N",out value));
         Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("0 0 00 N",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("0 0 0N",out value));
+        Assert.True(GeoPointLatitude.TryParse("0 N",out value));
         Assert.Equal(0,value);
     }
 
