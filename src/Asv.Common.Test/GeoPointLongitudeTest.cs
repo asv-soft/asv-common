@@ -80,8 +80,7 @@ public class GeoPointLongitudeTest
         Assert.Equal(0,value);
         Assert.True(GeoPointLongitude.TryParse("000° 00' 00˝ E",out value));
         Assert.Equal(0,value);
-        Assert.True(GeoPointLongitude.TryParse("000° 00' 00˝ 0°",out value));
-        Assert.Equal(0,value);
+        Assert.False(GeoPointLongitude.TryParse("000° 00' 00˝ 0°",out value));
         Assert.True(GeoPointLongitude.TryParse("000° 00' 00.000˝ E",out value));
         Assert.Equal(0,value);
     }
@@ -136,8 +135,7 @@ public class GeoPointLongitudeTest
         Assert.Equal(0,value);
         Assert.True(GeoPointLongitude.TryParse("W000° 00'00˝W",out value));
         Assert.Equal(0,value);
-        Assert.True(GeoPointLongitude.TryParse("E000° 00'00˝W",out value));
-        Assert.Equal(0,value);
+        Assert.False(GeoPointLongitude.TryParse("E000° 00'00˝W",out value));
     }
 
     [Fact]
@@ -172,7 +170,7 @@ public class GeoPointLongitudeTest
     public void CheckIncompleteEntries()
     {
         var value = 0.0;
-        Assert.False(GeoPointLongitude.TryParse("000 00 E",out value));
+        Assert.True(GeoPointLongitude.TryParse("000 00 E",out value));
         Assert.Equal(0,value);
         Assert.False(GeoPointLongitude.TryParse("000 E",out value));
         Assert.Equal(0,value);

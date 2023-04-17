@@ -17,7 +17,7 @@ namespace Asv.Common
         }
 
         private readonly Subject<TValue> _subject = new();
-        private TValue _value;
+        private TValue _value = default!;
 
         public TValue Value 
         {
@@ -38,7 +38,7 @@ namespace Asv.Common
         public void OnNext(TValue value)
         {
             _value = value;
-            if (_subject.HasObservers && !_subject.IsDisposed)
+            if (_subject is { HasObservers: true, IsDisposed: false })
             {
                 _subject.OnNext(value);
             }
@@ -46,7 +46,7 @@ namespace Asv.Common
         
         public void OnError(Exception error)
         {
-            if (_subject.HasObservers && !_subject.IsDisposed)
+            if (_subject is { HasObservers: true, IsDisposed: false })
             {
                 _subject.OnError(error);
             }
@@ -54,7 +54,7 @@ namespace Asv.Common
 
         public void OnCompleted()
         {
-            if (_subject.HasObservers && !_subject.IsDisposed)
+            if (_subject is { HasObservers: true, IsDisposed: false })
             {
                 _subject.OnCompleted();
             }

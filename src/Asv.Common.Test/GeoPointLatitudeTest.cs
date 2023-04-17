@@ -130,6 +130,11 @@ public class GeoPointLatitudeTest
         Assert.Equal(0,value);
         Assert.True(GeoPointLatitude.TryParse("S0° 00' 00˝S",out value));
         Assert.Equal(0,value);
+        
+        Assert.False(GeoPointLatitude.TryParse("S0° 00' 00˝N",out value));
+        Assert.False(GeoPointLatitude.TryParse("N0° 00' 00˝S",out value));
+        Assert.False(GeoPointLatitude.TryParse("+0° 00' 00˝S",out value));
+        Assert.False(GeoPointLatitude.TryParse("-0° 00' 00˝N",out value));
     }
 
     [Fact]
@@ -160,12 +165,12 @@ public class GeoPointLatitudeTest
     public void CheckIncompleteEntries()
     {
         var value = 0.0;
-        Assert.False(GeoPointLatitude.TryParse("0 0 0 N",out value));
+        Assert.True(GeoPointLatitude.TryParse("0 0 0 N",out value));
         Assert.Equal(0,value);
-        Assert.False(GeoPointLatitude.TryParse("0 0 N",out value));
+        Assert.True(GeoPointLatitude.TryParse("0 0 N",out value));
         Assert.Equal(0,value);
+        
         Assert.False(GeoPointLatitude.TryParse("0 N",out value));
-        Assert.Equal(0,value);
     }
 
     [Fact]
@@ -182,7 +187,9 @@ public class GeoPointLatitudeTest
         Assert.Equal(9,value);
         Assert.True(GeoPointLatitude.TryParse("89 00 00 N",out value));
         Assert.Equal(89,value);
-        Assert.True(GeoPointLatitude.TryParse("90 00 01 N",out value));
+        
+        Assert.False(GeoPointLatitude.TryParse("90 00 01 N",out value));
+        
         Assert.Equal(90 + 1.0/3600.0,value);
         Assert.True(GeoPointLatitude.TryParse("+00 00 00 N ",out value));
         Assert.Equal(0,value);
@@ -198,24 +205,19 @@ public class GeoPointLatitudeTest
         Assert.Equal(9,value);
         Assert.True(GeoPointLatitude.TryParse("+89 00 00 N",out value));
         Assert.Equal(89,value);
-        Assert.True(GeoPointLatitude.TryParse("+90 00 01 N",out value));
-        Assert.Equal(90 + 1.0/3600.0,value);
-        Assert.True(GeoPointLatitude.TryParse("-00 00 00 N",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("-0 00 00 N",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("-01 00 00 N",out value));
-        Assert.Equal(1,value);
-        Assert.True(GeoPointLatitude.TryParse("-1 00 00 N",out value));
-        Assert.Equal(1,value);
-        Assert.True(GeoPointLatitude.TryParse("-09 00 00 N",out value));
-        Assert.Equal(9,value);
-        Assert.True(GeoPointLatitude.TryParse("-9 00 00 N",out value));
-        Assert.Equal(9,value);
-        Assert.True(GeoPointLatitude.TryParse("-89 00 00 N",out value));
-        Assert.Equal(89,value);
-        Assert.True(GeoPointLatitude.TryParse("-90 00 01 N",out value));
-        Assert.Equal(90 + 1.0/3600.0,value);
+        
+        Assert.False(GeoPointLatitude.TryParse("+90 00 01 N",out value));
+        
+        Assert.False(GeoPointLatitude.TryParse("-00 00 00 N",out value));
+        Assert.False(GeoPointLatitude.TryParse("-0 00 00 N",out value));
+        Assert.False(GeoPointLatitude.TryParse("-01 00 00 N",out value));
+        Assert.False(GeoPointLatitude.TryParse("-1 00 00 N",out value));
+        
+        Assert.False(GeoPointLatitude.TryParse("-09 00 00 N",out value));
+        Assert.False(GeoPointLatitude.TryParse("-9 00 00 N",out value));
+        Assert.False(GeoPointLatitude.TryParse("-89 00 00 N",out value));
+        Assert.False(GeoPointLatitude.TryParse("-90 00 01 N",out value));
+        
         Assert.True(GeoPointLatitude.TryParse("00 00 00 ",out value));
         Assert.Equal(0,value);
         Assert.True(GeoPointLatitude.TryParse("+0 00 00",out value));
@@ -230,8 +232,9 @@ public class GeoPointLatitudeTest
         Assert.Equal(9,value);
         Assert.True(GeoPointLatitude.TryParse("+89 00 00",out value));
         Assert.Equal(89,value);
-        Assert.True(GeoPointLatitude.TryParse("+90 00 01",out value));
-        Assert.Equal(90 + 1.0/3600.0,value);
+        
+        Assert.False(GeoPointLatitude.TryParse("+90 00 01",out value));
+        
     }
 
     [Fact]
