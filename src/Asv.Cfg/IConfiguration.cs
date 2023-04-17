@@ -1,18 +1,32 @@
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
 namespace Asv.Cfg
 {
+    public static class ConfigurationHelper
+    {
+        private const string NameRegexString = @"^(?!\d)[\w$]+$";
+        private static readonly Regex KeyRegex = new(NameRegexString, RegexOptions.Compiled);
+        public static void ValidateKey(string key)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+                throw new ArgumentException("Value cannot be null or whitespace.", nameof(key));
+            if (KeyRegex.IsMatch(key) == false) 
+                throw new ArgumentException($"Invalid key '{key}': must be {NameRegexString}");
+        }
+    }
+    
     public interface IConfiguration:IDisposable
     {
-        IEnumerable<string> AvalableParts { get; }
+        IEnumerable<string> AvailableParts { get; }
         bool Exist<TPocoType>(string key);
         TPocoType Get<TPocoType>(string key, TPocoType defaultValue);
         void Set<TPocoType>(string key, TPocoType value);
         void Remove(string key);
     }
 
-    public static class ConfigurationExtentions
+    public static class ConfigurationExtensions
     {
         public static TPocoType Get<TPocoType>(this IConfiguration src,string key) where TPocoType : new()
         {

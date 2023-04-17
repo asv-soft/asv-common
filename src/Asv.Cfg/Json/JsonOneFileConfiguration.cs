@@ -98,7 +98,7 @@ namespace Asv.Cfg.Json
             }
         }
 
-        public IEnumerable<string> AvalableParts => GetParts();
+        public IEnumerable<string> AvailableParts => GetParts();
 
         private IEnumerable<string> GetParts()
         {
@@ -121,6 +121,7 @@ namespace Asv.Cfg.Json
 
         public TPocoType Get<TPocoType>(string key, TPocoType defaultValue)
         {
+            ConfigurationHelper.ValidateKey(key);
             try
             {
                 _rw.EnterUpgradeableReadLock();
@@ -144,6 +145,7 @@ namespace Asv.Cfg.Json
 
         public void Set<TPocoType>(string key, TPocoType value)
         {
+            ConfigurationHelper.ValidateKey(key);
             try
             {
                 _rw.EnterWriteLock();
@@ -168,6 +170,7 @@ namespace Asv.Cfg.Json
 
         public void Remove(string key)
         {
+            ConfigurationHelper.ValidateKey(key);
             try
             {
                 _rw.EnterWriteLock();

@@ -15,6 +15,7 @@ namespace Asv.Common
         public readonly double Latitude;
         public readonly double Altitude;
 
+        public static GeoPoint NaN => new(Double.NaN, Double.NaN, Double.NaN);
         public static GeoPoint Zero => new(0.0, 0.0,0.0);
         public static GeoPoint ZeroWithAlt => new(0.0, 0.0, 0.0);
         

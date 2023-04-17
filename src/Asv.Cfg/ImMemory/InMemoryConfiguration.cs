@@ -17,7 +17,7 @@ namespace Asv.Cfg.ImMemory
             _values.Clear();
         }
 
-        public IEnumerable<string> AvalableParts => GetParts();
+        public IEnumerable<string> AvailableParts => GetParts();
 
         private IEnumerable<string> GetParts()
         {
