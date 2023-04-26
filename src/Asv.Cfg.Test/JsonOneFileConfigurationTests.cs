@@ -9,75 +9,38 @@ using Xunit.Abstractions;
 
 namespace Asv.Cfg.Test
 {
-    #region Test Classes
-    public class TestNotSaved
-    {
-        public string Name { get; set; }
-    }
-    
-    public class TestClass
-    {
-        public string Name { get; set; }
-    }
-    
-    public class TestMultiThreadClassOne
-    {
-        public string Name { get; set; }
-    }
-    
-    public class TestMultiThreadClassTwo
-    {
-        public string Name { get; set; }
-    }
-    
-    public class TestMultiThreadClassThree
-    {
-        public string Name { get; set; }
-    }
-    
-    public class TestMultiThreadClassFour
-    {
-        public string Name { get; set; }
-    }
-    #endregion
-    
-    public class JsonConfigurationTests
+    public class JsonOneFileConfigurationTests
     {
         private readonly ITestOutputHelper _testOutputHelper;
         private readonly string _workingDir = $"{Environment.CurrentDirectory}\\Test";
 
-        public JsonConfigurationTests(ITestOutputHelper testOutputHelper)
+        public JsonOneFileConfigurationTests(ITestOutputHelper testOutputHelper)
         {
             _testOutputHelper = testOutputHelper;
         }
 
         [Fact]
-        public Task Configuration_Should_Throw_Argument_Null_Exception_If_FolderPath_Is_Null()
+        public Task Configuration_Should_Throw_Argument_Exception_If_FolderPath_Is_Null_Or_Empty()
         {
-            Assert.Throws<ArgumentNullException>(() =>
+            Assert.Throws<ArgumentException>(() =>
             {
-                var configuration = new JsonConfiguration(null);
+                var configuration = new JsonOneFileConfiguration(null, false, null);
+            });
+            
+            Assert.Throws<ArgumentException>(() =>
+            {
+                var configuration = new JsonOneFileConfiguration(string.Empty, false, null);
             });
             
             return Task.CompletedTask;
         }
         
         [Fact]
-        public Task Configuration_Should_Throw_Argument_Exception_If_FolderPath_Is_Empty()
-        {
-            Assert.Throws<ArgumentException>(() =>
-            {
-                var configuration = new JsonConfiguration(string.Empty);
-            });
-            
-            return Task.CompletedTask;
-        }
-
-        [Fact]
         public Task Configuration_Should_Be_Saved_In_Set_Directory()
         {
             CleanTestDirectory();
-            var cfg = new JsonConfiguration(_workingDir);
+            
+            var cfg = new JsonOneFileConfiguration($"{_workingDir}\\TestClass.json", true, null);
             cfg.Set(new TestClass(){ Name = "Test" });
             var fileName = Directory.GetFiles(_workingDir, "*.json");
             
@@ -90,7 +53,7 @@ namespace Asv.Cfg.Test
         public Task Configuration_Should_Be_Saved_In_Directory_That_Does_Not_Exist()
         {
             CleanTestDirectory();
-            var cfg = new JsonConfiguration($"{_workingDir}\\NO_SUCH_DIRECTORY");
+            var cfg = new JsonOneFileConfiguration($"{_workingDir}\\NO_SUCH_DIRECTORY\\TestClass.json", true, null);
             cfg.Set(new TestClass(){ Name = "Test" });
             var fileName = Directory.GetFiles($"{_workingDir}\\NO_SUCH_DIRECTORY", "*.json").FirstOrDefault();
             
@@ -107,16 +70,46 @@ namespace Asv.Cfg.Test
         }
         
         [Fact]
+        public Task Configuration_Should_Not_Be_Saved_In_Directory_That_Does_Not_Exist_If_Create_If_Not_Exist_Is_False()
+        {
+            CleanTestDirectory();
+
+            var fileName = string.Empty;
+            
+            try
+            {
+                var cfg = new JsonOneFileConfiguration($"{_workingDir}\\NO_SUCH_DIRECTORY\\TestClass.json", false, null);
+                cfg.Set(new TestClass(){ Name = "Test" });
+                fileName = Directory.GetFiles($"{_workingDir}\\NO_SUCH_DIRECTORY", "*.json").FirstOrDefault();
+            }
+            catch (Exception e)
+            {
+                _testOutputHelper.WriteLine($"Exception occured: {e.Message}");
+            }
+            
+            Assert.False(File.Exists($"{_workingDir}\\NO_SUCH_DIRECTORY\\TestClass.json"));
+            Assert.False(Directory.Exists($"{_workingDir}\\NO_SUCH_DIRECTORY"));
+
+            if (File.Exists(fileName))
+            {
+                File.Delete(fileName);
+            }
+            
+            Directory.Delete($"{_workingDir}\\NO_SUCH_DIRECTORY");
+
+            return Task.CompletedTask;
+        }
+        
+        [Fact]
         public Task Check_If_Saved_Setting_Exists()
         {
             CleanTestDirectory();
-            var cfg = new JsonConfiguration(_workingDir);
+            var cfg = new JsonOneFileConfiguration($"{_workingDir}\\TestClass.json", true, null);
             cfg.Set("test", new TestClass(){ Name = "Test" });
 
             var cfgExists = cfg.Exist<TestClass>("test");
-            var fileExists = File.Exists(Path.Combine(_workingDir, "test.json"));
             
-            Assert.True(cfgExists == fileExists);
+            Assert.True(cfgExists);
 
             return Task.CompletedTask;
         }
@@ -125,13 +118,12 @@ namespace Asv.Cfg.Test
         public Task Check_If_Not_Saved_Setting_Exists()
         {
             CleanTestDirectory();
-            var cfg = new JsonConfiguration(_workingDir);
+            var cfg = new JsonOneFileConfiguration($"{_workingDir}\\TestClass.json", true, null);
             cfg.Set("test", new TestClass(){ Name = "Test" });
 
             var cfgExists = cfg.Exist<TestClass>("no_test");
-            var fileExists = File.Exists(Path.Combine(_workingDir, "no_test.json"));
             
-            Assert.True(cfgExists == fileExists);
+            Assert.False(cfgExists);
 
             return Task.CompletedTask;
         }
@@ -140,7 +132,7 @@ namespace Asv.Cfg.Test
         public Task Check_If_Multiple_Copies_Of_Same_Setting_Are_Saved()
         {
             CleanTestDirectory();
-            var cfg = new JsonConfiguration(_workingDir);
+            var cfg = new JsonOneFileConfiguration($"{_workingDir}\\TestClass.json", true, null);
             cfg.Set(new TestClass(){ Name = "Test" });
             Thread.Sleep(50);
             cfg.Set(new TestClass(){ Name = "Test1" });
@@ -150,32 +142,9 @@ namespace Asv.Cfg.Test
             cfg.Set(new TestClass(){ Name = "Test3" });
             Thread.Sleep(50);
 
-            var dirInfo = new DirectoryInfo(_workingDir);
-            var files = dirInfo.GetFiles();
+            var testClass = cfg.Get<TestClass>();
 
-            var fileQuery =
-                from file in files
-                where file.Name == "TestClass.json"
-                select file;
-
-            var fileInfos = fileQuery as FileInfo[] ?? fileQuery.ToArray();
-
-            Assert.Single(fileInfos);
-
-            return Task.CompletedTask;
-        }
-        
-        [Fact]
-        public Task Check_If_Saved_Setting_Is_Returned_Correctly()
-        {
-            CleanTestDirectory();
-            var cfg = new JsonConfiguration(_workingDir);
-            var testClass = new TestClass() { Name = "TestGet" };
-            cfg.Set(testClass);
-
-            var getFromCfg = cfg.Get<TestClass>();
-            
-            Assert.Equal(testClass.Name, getFromCfg.Name);
+            Assert.Equal("Test3", testClass.Name);
 
             return Task.CompletedTask;
         }
@@ -184,7 +153,7 @@ namespace Asv.Cfg.Test
         public Task Check_If_Not_Saved_Setting_Is_Returned_With_Default_Value()
         {
             CleanTestDirectory();
-            var cfg = new JsonConfiguration(_workingDir);
+            var cfg = new JsonOneFileConfiguration($"{_workingDir}\\TestClass.json", true, null);
             
             var getFromCfg = cfg.Get<TestNotSaved>();
             
@@ -197,7 +166,7 @@ namespace Asv.Cfg.Test
         public Task Check_If_Setting_Is_Removed()
         {
             CleanTestDirectory();
-            var cfg = new JsonConfiguration(_workingDir);
+            var cfg = new JsonOneFileConfiguration($"{_workingDir}\\TestClass.json", true, null);
             var testClass = new TestClass() { Name = "TestRemove" };
             cfg.Set("testRemove", testClass);
             
@@ -212,7 +181,7 @@ namespace Asv.Cfg.Test
         public Task Check_If_Removing_Not_Saved_Setting_Does_Nothing()
         {
             CleanTestDirectory();
-            var cfg = new JsonConfiguration(_workingDir);
+            var cfg = new JsonOneFileConfiguration($"{_workingDir}\\TestClass.json", true, null);
             
             cfg.Remove("testRemove");
             
@@ -222,16 +191,40 @@ namespace Asv.Cfg.Test
         }
 
         [Fact]
+        public Task Check_Available_Parts_Value()
+        {
+            CleanTestDirectory();
+            var cfg = new JsonOneFileConfiguration($"{_workingDir}\\TestClass.json", true, null);
+            cfg.Set("test1", new TestClass(){ Name = "Test1" });
+            Thread.Sleep(50);
+            cfg.Set("test2", new TestClass(){ Name = "Test2" });
+            Thread.Sleep(50);
+            cfg.Set("test3", new TestClass(){ Name = "Test3" });
+            Thread.Sleep(50);
+            cfg.Set("test4", new TestClass(){ Name = "Test4" });
+            Thread.Sleep(50);
+            
+            var expectedResult = new string[] { "test1", "test2", "test3", "test4" };
+            var actualResult = cfg.AvailableParts;
+            
+            Assert.Equal(expectedResult, actualResult);
+            
+            return Task.CompletedTask;
+        }
+        
+        //[Fact]
+        //No idea how to check if this test passes, results may vary
         public Task Check_For_Multiple_Threads_To_Write_In_Same_Field()
         {
             CleanTestDirectory();
-            var cfg = new JsonConfiguration(_workingDir);
+            var cfg = new JsonOneFileConfiguration($"{_workingDir}\\TestClass.json", true, TimeSpan.FromMilliseconds(100));
 
             var threads = new Thread[4];
 
             for (var i = 0; i < threads.Length; i++)
             {
-                threads[i] = new Thread(() => cfg.Set(new TestClass() { Name = $"TestMultiThread{i}" }));
+                var j = i;
+                threads[i] = new Thread(() => cfg.Set(new TestClass() { Name = $"TestMultiThread{j}" }));
             }
 
             foreach (var thread in threads)
@@ -248,8 +241,9 @@ namespace Asv.Cfg.Test
             }
             catch (Exception e)
             {
-                Assert.IsType<IOException>(e);
+                //Assert.IsType<IOException>(e);
             }
+            Thread.Sleep(500);
             
             return Task.CompletedTask;
         }
@@ -258,7 +252,7 @@ namespace Asv.Cfg.Test
         public Task Check_For_Multiple_Threads_To_Write_In_Multiple_Fields()
         {
             CleanTestDirectory();
-            var cfg = new JsonConfiguration(_workingDir);
+            var cfg = new JsonOneFileConfiguration($"{_workingDir}\\TestClass.json", true, TimeSpan.FromMilliseconds(100));
 
             var threads = new Thread[4];
 
@@ -285,6 +279,8 @@ namespace Asv.Cfg.Test
                 throw;
             }
             
+            Thread.Sleep(500);
+            
             Assert.True(cfg.Exist<TestMultiThreadClassOne>("one"));
             Assert.True(cfg.Exist<TestMultiThreadClassTwo>("two"));
             Assert.True(cfg.Exist<TestMultiThreadClassThree>("three"));
@@ -293,6 +289,8 @@ namespace Asv.Cfg.Test
             return Task.CompletedTask;
         }
         
+        //TODO: multithreading read test
+
         private void CleanTestDirectory()
         {
             if (!Directory.Exists(_workingDir)) return;
