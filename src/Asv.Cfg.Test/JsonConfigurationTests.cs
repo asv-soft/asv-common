@@ -51,23 +51,14 @@ namespace Asv.Cfg.Test
             _testOutputHelper = testOutputHelper;
         }
 
-        [Fact]
-        public Task Configuration_Should_Throw_Argument_Null_Exception_If_FolderPath_Is_Null()
-        {
-            Assert.Throws<ArgumentNullException>(() =>
-            {
-                var configuration = new JsonConfiguration(null);
-            });
-            
-            return Task.CompletedTask;
-        }
-        
-        [Fact]
-        public Task Configuration_Should_Throw_Argument_Exception_If_FolderPath_Is_Empty()
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        public Task Configuration_Should_Throw_Argument_Exception_If_FolderPath_Is_Null_Or_Empty(string folderPath)
         {
             Assert.Throws<ArgumentException>(() =>
             {
-                var configuration = new JsonConfiguration(string.Empty);
+                var configuration = new JsonConfiguration(folderPath);
             });
             
             return Task.CompletedTask;
