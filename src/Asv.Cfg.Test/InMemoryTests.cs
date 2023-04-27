@@ -119,25 +119,17 @@ namespace Asv.Cfg.Test
 
             for (var i = 0; i < threads.Length; i++)
             {
-                threads[i] = new Thread(() => cfg.Set(new TestClass() { Name = $"TestMultiThread{i}" }));
+                var j = i;
+                threads[i] = new Thread(() => cfg.Set(new TestClass() { Name = $"TestMultiThread{j}" }));
+                threads[i].Start();
             }
-
-            foreach (var thread in threads)
+            
+            for (var i = 0; i < threads.Length; i++)
             {
-                thread.Start();
+                threads[i].Join();
             }
-
-            try
-            {
-                foreach (var thread in threads)
-                {
-                    thread.Join();
-                }
-            }
-            catch (Exception e)
-            {
-                Assert.IsType<IOException>(e);
-            }
+            
+            Assert.Equal("TestMultiThread3", cfg.Get<TestClass>().Name);
             
             return Task.CompletedTask;
         }
