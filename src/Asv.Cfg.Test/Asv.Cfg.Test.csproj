@@ -16,4 +16,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Asv.Cfg\Asv.Cfg.csproj" />
+  </ItemGroup>
 </Project>
