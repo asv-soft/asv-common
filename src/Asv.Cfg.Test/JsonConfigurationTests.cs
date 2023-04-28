@@ -44,7 +44,7 @@ namespace Asv.Cfg.Test
     public class JsonConfigurationTests
     {
         private readonly ITestOutputHelper _testOutputHelper;
-        private readonly string _workingDir = $"{Environment.CurrentDirectory}\\Test";
+        private readonly string _workingDir = $"{Path.GetTempPath()}\\{Path.GetFileNameWithoutExtension(Path.GetTempFileName())}\\Test";
 
         public JsonConfigurationTests(ITestOutputHelper testOutputHelper)
         {
@@ -54,18 +54,18 @@ namespace Asv.Cfg.Test
         [Theory]
         [InlineData(null)]
         [InlineData("")]
-        public Task Configuration_Should_Throw_Argument_Exception_If_FolderPath_Is_Null_Or_Empty(string folderPath)
+        public void Configuration_Should_Throw_Argument_Exception_If_FolderPath_Is_Null_Or_Empty(string folderPath)
         {
             Assert.Throws<ArgumentException>(() =>
             {
                 var configuration = new JsonConfiguration(folderPath);
             });
             
-            return Task.CompletedTask;
+            
         }
 
         [Fact]
-        public Task Configuration_Should_Be_Saved_In_Set_Directory()
+        public void Configuration_Should_Be_Saved_In_Set_Directory()
         {
             CleanTestDirectory();
             var cfg = new JsonConfiguration(_workingDir);
@@ -74,11 +74,11 @@ namespace Asv.Cfg.Test
             
             Assert.Equal($"{_workingDir}\\TestClass.json", fileName.FirstOrDefault());
 
-            return Task.CompletedTask;
+            
         }
         
         [Fact]
-        public Task Configuration_Should_Be_Saved_In_Directory_That_Does_Not_Exist()
+        public void Configuration_Should_Be_Saved_In_Directory_That_Does_Not_Exist()
         {
             CleanTestDirectory();
             var cfg = new JsonConfiguration($"{_workingDir}\\NO_SUCH_DIRECTORY");
@@ -94,11 +94,11 @@ namespace Asv.Cfg.Test
             
             Directory.Delete($"{_workingDir}\\NO_SUCH_DIRECTORY");
 
-            return Task.CompletedTask;
+            
         }
         
         [Fact]
-        public Task Check_If_Saved_Setting_Exists()
+        public void Check_If_Saved_Setting_Exists()
         {
             CleanTestDirectory();
             var cfg = new JsonConfiguration(_workingDir);
@@ -109,11 +109,11 @@ namespace Asv.Cfg.Test
             
             Assert.True(cfgExists == fileExists);
 
-            return Task.CompletedTask;
+            
         }
         
         [Fact]
-        public Task Check_If_Not_Saved_Setting_Exists()
+        public void Check_If_Not_Saved_Setting_Exists()
         {
             CleanTestDirectory();
             var cfg = new JsonConfiguration(_workingDir);
@@ -124,11 +124,11 @@ namespace Asv.Cfg.Test
             
             Assert.True(cfgExists == fileExists);
 
-            return Task.CompletedTask;
+            
         }
         
         [Fact]
-        public Task Check_If_Multiple_Copies_Of_Same_Setting_Are_Saved()
+        public void Check_If_Multiple_Copies_Of_Same_Setting_Are_Saved()
         {
             CleanTestDirectory();
             var cfg = new JsonConfiguration(_workingDir);
@@ -153,11 +153,11 @@ namespace Asv.Cfg.Test
 
             Assert.Single(fileInfos);
 
-            return Task.CompletedTask;
+            
         }
         
         [Fact]
-        public Task Check_If_Saved_Setting_Is_Returned_Correctly()
+        public void Check_If_Saved_Setting_Is_Returned_Correctly()
         {
             CleanTestDirectory();
             var cfg = new JsonConfiguration(_workingDir);
@@ -168,11 +168,11 @@ namespace Asv.Cfg.Test
             
             Assert.Equal(testClass.Name, getFromCfg.Name);
 
-            return Task.CompletedTask;
+            
         }
         
         [Fact]
-        public Task Check_If_Not_Saved_Setting_Is_Returned_With_Default_Value()
+        public void Check_If_Not_Saved_Setting_Is_Returned_With_Default_Value()
         {
             CleanTestDirectory();
             var cfg = new JsonConfiguration(_workingDir);
@@ -181,11 +181,11 @@ namespace Asv.Cfg.Test
             
             Assert.Null(getFromCfg.Name);
 
-            return Task.CompletedTask;
+            
         }
         
         [Fact]
-        public Task Check_If_Setting_Is_Removed()
+        public void Check_If_Setting_Is_Removed()
         {
             CleanTestDirectory();
             var cfg = new JsonConfiguration(_workingDir);
@@ -196,11 +196,11 @@ namespace Asv.Cfg.Test
             
             Assert.False(cfg.Exist<TestClass>("testRemove"));
 
-            return Task.CompletedTask;
+            
         }
         
         [Fact]
-        public Task Check_If_Removing_Not_Saved_Setting_Does_Nothing()
+        public void Check_If_Removing_Not_Saved_Setting_Does_Nothing()
         {
             CleanTestDirectory();
             var cfg = new JsonConfiguration(_workingDir);
@@ -209,39 +209,34 @@ namespace Asv.Cfg.Test
             
             Assert.False(cfg.Exist<TestClass>("testRemove"));
 
-            return Task.CompletedTask;
+            
         }
 
         // Test stops with unhandled exception: the process cannot access the file. Maybe Set method should check
         // if file is being used by another process?
-        // [Fact]
-        // public Task Check_For_Multiple_Threads_To_Write_In_Same_Field()
-        // {
-        //     CleanTestDirectory();
-        //     var cfg = new JsonConfiguration(_workingDir);
-        //
-        //     var threads = new Thread[4];
-        //
-        //     for (var i = 0; i < threads.Length; i++)
-        //     {
-        //         var j = i;
-        //         threads[i] = new Thread(() => cfg.Set(new TestClass() { Name = $"TestMultiThread{j}" }));
-        //         threads[i].Start();
-        //     }
-        //
-        //     Assert.Throws<IOException>(() =>
-        //     {
-        //         for (var i = 0; i < threads.Length; i++)
-        //         {
-        //             threads[i].Join();
-        //         }
-        //     });
-        //     
-        //     return Task.CompletedTask;
-        // }
+        [Fact]
+        public void Check_For_Multiple_Threads_To_Write_In_Same_Field()
+        {
+            CleanTestDirectory();
+            var cfg = new JsonConfiguration(_workingDir);
+        
+            var threads = new Thread[10];
+        
+            for (var i = 0; i < threads.Length; i++)
+            {
+                var j = i;
+                threads[i] = new Thread(() => cfg.Set(new TestClass() { Name = $"TestMultiThread{j}" }));
+                threads[i].Start();
+            }
+        
+            for (var i = 0; i < threads.Length; i++)
+            {
+                threads[i].Join();
+            }
+        }
         
         [Fact]
-        public Task Check_For_Multiple_Threads_To_Write_In_Multiple_Fields()
+        public void Check_For_Multiple_Threads_To_Write_In_Multiple_Fields()
         {
             CleanTestDirectory();
             var cfg = new JsonConfiguration(_workingDir);
@@ -276,7 +271,7 @@ namespace Asv.Cfg.Test
             Assert.True(cfg.Exist<TestMultiThreadClassThree>("three"));
             Assert.True(cfg.Exist<TestMultiThreadClassFour>("four"));
             
-            return Task.CompletedTask;
+            
         }
         
         private void CleanTestDirectory()

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Asv.Common;
 using Newtonsoft.Json;
 
 namespace Asv.Cfg.Json
@@ -10,6 +11,7 @@ namespace Asv.Cfg.Json
     {
         private readonly string _folderPath;
         private const string SearchPattern = "*.json";
+        private readonly LockByKeyExecutor<string> _lock = new();
 
         public JsonConfiguration(string folderPath)
         {
@@ -28,33 +30,44 @@ namespace Asv.Cfg.Json
         public bool Exist<TPocoType>(string key)
         {
             ConfigurationHelper.ValidateKey(key);
+            return _lock.Execute(key,()=>InternalExist(key));
+        }
+
+        private bool InternalExist(string key)
+        {
             return File.Exists(Path.Combine(_folderPath, key + ".json"));
         }
 
         public TPocoType Get<TPocoType>(string key, TPocoType defaultValue)
         {
             ConfigurationHelper.ValidateKey(key);
-            return Exist<TPocoType>(key) ? JsonConvert.DeserializeObject<TPocoType>(File.ReadAllText(Path.Combine(_folderPath, key + ".json"))) : defaultValue;
+            return _lock.Execute(key,()=>InternalExist(key) ? JsonConvert.DeserializeObject<TPocoType>(File.ReadAllText(Path.Combine(_folderPath, key + ".json"))) : defaultValue);
         }
 
         public void Set<TPocoType>(string key, TPocoType value)
         {
             ConfigurationHelper.ValidateKey(key);
-            File.WriteAllText(Path.Combine(_folderPath, key + ".json"),JsonConvert.SerializeObject(value, Formatting.Indented));
+            _lock.Execute(key,()=>
+                File.WriteAllText(Path.Combine(_folderPath, key + ".json"),
+                    JsonConvert.SerializeObject(value, Formatting.Indented)));
         }
 
         public void Remove(string key)
         {
             ConfigurationHelper.ValidateKey(key);
-            var path = Path.Combine(_folderPath, key + ".json");
-            if (File.Exists(path))
+            _lock.Execute(key, () =>
             {
-                File.Delete(path);
-            }
+                var path = Path.Combine(_folderPath, key + ".json");
+                if (File.Exists(path))
+                {
+                    File.Delete(path);
+                }
+            });
         }
 
         public void Dispose()
         {
+            
         }
     }
 }

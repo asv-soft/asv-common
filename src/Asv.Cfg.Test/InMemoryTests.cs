@@ -18,29 +18,29 @@ namespace Asv.Cfg.Test
         }
         
         [Fact]
-        public Task Check_If_Saved_Setting_Exists()
+        public void Check_If_Saved_Setting_Exists()
         {
             var cfg = new InMemoryConfiguration();
             cfg.Set("test", new TestClass(){ Name = "Test" });
 
             Assert.True(cfg.Exist<TestClass>("test"));
 
-            return Task.CompletedTask;
+           
         }
         
         [Fact]
-        public Task Check_If_Not_Saved_Setting_Exists()
+        public void Check_If_Not_Saved_Setting_Exists()
         {
             var cfg = new InMemoryConfiguration();
             cfg.Set("test", new TestClass(){ Name = "Test" });
 
             Assert.False(cfg.Exist<TestClass>("no_test"));
 
-            return Task.CompletedTask;
+           
         }
         
         [Fact]
-        public Task Check_If_Multiple_Copies_Of_Same_Setting_Are_Saved()
+        public void Check_If_Multiple_Copies_Of_Same_Setting_Are_Saved()
         {
             var cfg = new InMemoryConfiguration();
             cfg.Set(new TestClass(){ Name = "Test" });
@@ -55,11 +55,11 @@ namespace Asv.Cfg.Test
             var actualResult = cfg.Get<TestClass>();
             Assert.Equal("Test3", actualResult.Name);
 
-            return Task.CompletedTask;
+           
         }
 
         [Fact]
-        public Task Check_If_Saved_Setting_Is_Returned_Correctly()
+        public void Check_If_Saved_Setting_Is_Returned_Correctly()
         {
             var cfg = new InMemoryConfiguration();
             var testClass = new TestClass() { Name = "TestGet" };
@@ -69,11 +69,11 @@ namespace Asv.Cfg.Test
             
             Assert.Equal(testClass.Name, getFromCfg.Name);
 
-            return Task.CompletedTask;
+           
         }
         
         [Fact]
-        public Task Check_If_Not_Saved_Setting_Is_Returned_With_Default_Value()
+        public void Check_If_Not_Saved_Setting_Is_Returned_With_Default_Value()
         {
             var cfg = new InMemoryConfiguration();
             
@@ -81,11 +81,11 @@ namespace Asv.Cfg.Test
             
             Assert.Null(getFromCfg.Name);
 
-            return Task.CompletedTask;
+           
         }
         
         [Fact]
-        public Task Check_If_Setting_Is_Removed()
+        public void Check_If_Setting_Is_Removed()
         {
             var cfg = new InMemoryConfiguration();
             var testClass = new TestClass() { Name = "TestRemove" };
@@ -95,11 +95,11 @@ namespace Asv.Cfg.Test
             
             Assert.False(cfg.Exist<TestClass>("testRemove"));
 
-            return Task.CompletedTask;
+           
         }
         
         [Fact]
-        public Task Check_If_Removing_Not_Saved_Setting_Does_Nothing()
+        public void Check_If_Removing_Not_Saved_Setting_Does_Nothing()
         {
             var cfg = new InMemoryConfiguration();
             
@@ -107,11 +107,11 @@ namespace Asv.Cfg.Test
             
             Assert.False(cfg.Exist<TestClass>("testRemove"));
 
-            return Task.CompletedTask;
+           
         }
         
         [Fact]
-        public Task Check_For_Multiple_Threads_To_Write_In_Same_Field()
+        public void Check_For_Multiple_Threads_To_Write_In_Same_Field()
         {
             var cfg = new InMemoryConfiguration();
 
@@ -128,14 +128,16 @@ namespace Asv.Cfg.Test
             {
                 threads[i].Join();
             }
+            // The starting order of threads is chosen by the OS at its discretion and may not coincide with the code.
+            //Assert.Equal("TestMultiThread3", cfg.Get<TestClass>().Name);
             
-            Assert.Equal("TestMultiThread3", cfg.Get<TestClass>().Name);
+            // just check that all threads are finished without exception
             
-            return Task.CompletedTask;
+           
         }
         
         [Fact]
-        public Task Check_For_Multiple_Threads_To_Write_In_Multiple_Fields()
+        public void Check_For_Multiple_Threads_To_Write_In_Multiple_Fields()
         {
             var cfg = new InMemoryConfiguration();
 
@@ -169,7 +171,7 @@ namespace Asv.Cfg.Test
             Assert.True(cfg.Exist<TestMultiThreadClassThree>("three"));
             Assert.True(cfg.Exist<TestMultiThreadClassFour>("four"));
             
-            return Task.CompletedTask;
+           
         }
     }
 }
