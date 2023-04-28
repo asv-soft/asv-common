@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -97,5 +98,7 @@ namespace Asv.Cfg.ImMemory
                 _rw.ExitWriteLock();
             }
         }
+
+        public IObservable<Exception> OnError { get; }
     }
 }

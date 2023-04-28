@@ -15,6 +15,8 @@ namespace Asv.Cfg
             if (KeyRegex.IsMatch(key) == false) 
                 throw new ArgumentException($"Invalid key '{key}': must be {NameRegexString}");
         }
+        
+        public static IEqualityComparer<string> DefaultKeyComparer { get; } = StringComparer.InvariantCultureIgnoreCase;
     }
     
     public interface IConfiguration:IDisposable
