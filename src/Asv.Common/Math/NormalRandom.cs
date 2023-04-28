@@ -4,11 +4,11 @@ namespace Asv.Common
 {
     public class NormalRandom : Random
     {
-        // сохранённое предыдущее значение
+        
         double prevSample = double.NaN;
         protected override double Sample()
         {
-            // есть предыдущее значение? возвращаем его
+            
             if (!double.IsNaN(prevSample))
             {
                 double result = prevSample;
@@ -16,8 +16,8 @@ namespace Asv.Common
                 return result;
             }
 
-            // нет? вычисляем следующие два
-            // Marsaglia polar method из википедии
+            
+            // Marsaglia polar method
             double u, v, s;
             do
             {
