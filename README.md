@@ -1,4 +1,6 @@
 # asv-common
+[![Deploy Nuget for Windows](https://github.com/asv-soft/asv-common/actions/workflows/nuget_windows.yml/badge.svg)](https://github.com/asv-soft/asv-common/actions/workflows/nuget_windows.yml)
+
 Provides common types and extensions for asv-based libraries
 ## Async
 ### SingleThreadTaskScheduler
