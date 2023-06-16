@@ -53,6 +53,11 @@ jobs:
           cd src
           dotnet build -c Release --no-restore
 
+      - name: Running all tests
+        run:  |    
+          cd src
+          dotnet test --no-restore --verbosity normal
+  
       - name: Pack projects to Nuget 
         run: |
           cd src
