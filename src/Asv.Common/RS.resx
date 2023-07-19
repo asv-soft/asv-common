@@ -19,9 +19,12 @@
         <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
     </resheader>
     <data name="GeoPointLatitude_ErrorMessage" xml:space="preserve">
-        <value>Latitude must be a real number from -90.0 to 90.0 or DMS format (e.g. 12°34′56.78 N)</value>
+        <value>Latitude must be a real number from -90.0 to 90.0 or DMS format value (e.g. 12°34′56.78 N)</value>
     </data>
     <data name="GeoPointLongitude_GetErrorMessage" xml:space="preserve">
-        <value>Longitude must be a real number from -180.0 to 180.0 or DMS format (e.g. 12°34′56.78 N)</value>
+        <value>Longitude must be a real number from -180.0 to 180.0 or DMS format value (e.g. 12°34′56.78 N)</value>
+    </data>
+    <data name="Angle_ErrorMessage" xml:space="preserve">
+        <value>Angle must be a real number or DMS format value (e.g. 12°34′56.78)</value>
     </data>
 </root>
