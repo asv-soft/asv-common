@@ -12,9 +12,12 @@
         <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
     </resheader>
     <data name="GeoPointLatitude_ErrorMessage" xml:space="preserve">
-        <value>Широта должна быть дробным числом от -90.0 до 90.0 или в формате ГМС (например, 12°34′56.78 N).</value>
+        <value>Широта должна быть дробным числом от -90.0 до 90.0 или значением в формате ГМС (например, 12°34′56.78 N).</value>
     </data>
     <data name="GeoPointLongitude_GetErrorMessage" xml:space="preserve">
-        <value>Долгота должна быть дробным числом от -180.0 до 180.0 или в формате ГМС (например, 12°34′56.78 N).</value>
+        <value>Долгота должна быть дробным числом от -180.0 до 180.0 или значением в формате ГМС (например, 12°34′56.78 N).</value>
+    </data>
+    <data name="Angle_ErrorMessage" xml:space="preserve">
+        <value>Угол должен быть дробным числом или значением в формате ГМС (например, 12°34′56.78).</value>
     </data>
 </root>
