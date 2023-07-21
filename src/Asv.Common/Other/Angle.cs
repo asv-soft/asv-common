@@ -7,7 +7,7 @@ namespace Asv.Common
     public static class Angle
     {
         private static readonly Regex AngleRegex = new(
-            @"((?<sign>[\+\-])?(?<deg>\d*)[°˚º^~*\s\-_]+((?<min>[0-5]?\d|\d)?)['′\s\-_]+(((?<sec>[0-5]?\d|\d)([.]\d*)?)?)[""¨˝\s\-_]*)[\s]*$",
+            @"((?<sign>[\-,\+])?(?<deg>\d+)[°˚º^~*\s\-_]+(((?<min>[0-5]?\d|\d)?)?)[',′,\s,\-,_]*(((?<sec>[0-5]?\d|\d)([.]\d*)?)?)["",¨,˝,\s,\-,_]*)[\s]*$",
             RegexOptions.Compiled);
         
         public static bool IsValid(string value)
@@ -17,7 +17,7 @@ namespace Asv.Common
         
         public static string? GetErrorMessage(string value)
         {
-            return IsValid(value) == false ? RS.GeoPointLatitude_ErrorMessage : null;
+            return IsValid(value) == false ? RS.Angle_ErrorMessage : null;
         }
         
         public static bool TryParse(string value, out double angle)
@@ -36,7 +36,23 @@ namespace Asv.Common
             
             //Trying to parse value in angle as double
             if (match.Success == false)
-                return double.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out angle);
+            {
+                var signStr = "";
+                
+                if (value.Contains("+"))
+                {
+                    value = value.Replace("+", "");
+                }
+                
+                if (value.Contains("-"))
+                {
+                    signStr = "-";
+                    value = value.Replace("-", "");
+                }
+                
+                value = Regex.Replace(value, @"^0+(?=\d+$)", "");
+                return double.TryParse(signStr + value, NumberStyles.Any, CultureInfo.InvariantCulture, out angle);
+            }
             
             //Getting all matching groups
             var signGroup = match.Groups["sign"];
@@ -70,7 +86,8 @@ namespace Asv.Common
                 sign = signGroup.Value.Equals("-") ? -1 : 1;
             }
             
-            angle = sign * (deg + (double)min / 60 + sec / 3600);
+            angle = sign * (deg + (double)min / 60.0 + sec / 3600.0);
+            
             return !double.IsNaN(angle);
         }
         
