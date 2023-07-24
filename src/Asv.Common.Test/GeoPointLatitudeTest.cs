@@ -169,7 +169,6 @@ public class GeoPointLatitudeTest
         Assert.Equal(0,value);
         Assert.True(GeoPointLatitude.TryParse("0 0 N",out value));
         Assert.Equal(0,value);
-        
         Assert.False(GeoPointLatitude.TryParse("0 N",out value));
     }
 

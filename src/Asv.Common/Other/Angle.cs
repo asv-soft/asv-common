@@ -91,10 +91,19 @@ namespace Asv.Common
             return !double.IsNaN(angle);
         }
         
-        public static string PrintDms(double angle)
+        public static string PrintDms(double decimalDegrees)
         {
-            var minutes = (angle - (int)angle) * 60;
-            return $"{angle:F0}°{(int)minutes}′{(minutes - (int)minutes) * 60:F2}˝";  
+            int degrees = (int)decimalDegrees;
+            double remainingDegrees = decimalDegrees - degrees;
+            int minutes = (int)(remainingDegrees * 60);
+            double remainingMinutes = (remainingDegrees * 60) - minutes;
+            double seconds = Math.Round(remainingMinutes * 60);
+            while (seconds >= 60)
+            {
+                minutes++;
+                seconds -= 60;
+            }
+            return $"{degrees}°{minutes}′{seconds:F2}˝";  
         }
     }
 }

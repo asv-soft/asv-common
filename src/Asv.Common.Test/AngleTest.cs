@@ -93,6 +93,7 @@ public class AngleTest
         Assert.Equal(0,value);
         Assert.True(Angle.TryParse("2 40",out value));
         Assert.Equal(2 + 40.0 / 60.0,value);
+        Assert.Equal("2°40′0,00˝", Angle.PrintDms(value));
         Assert.True(Angle.TryParse("0",out value));
         Assert.Equal(0,value);
     }
