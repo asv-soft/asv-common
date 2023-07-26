@@ -19,6 +19,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Asv.Cfg.Test", "Asv.Cfg.Tes
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Asv.Store.Test", "Asv.Store.Test\Asv.Store.Test.csproj", "{27A7A16B-85D0-4FAE-B8E3-3B25240360DC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Asv.Templater", "Asv.Templater\Asv.Templater.csproj", "{EB936708-485C-4542-8212-A852CB80EF65}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -57,6 +59,10 @@ Global
 		{27A7A16B-85D0-4FAE-B8E3-3B25240360DC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{27A7A16B-85D0-4FAE-B8E3-3B25240360DC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{27A7A16B-85D0-4FAE-B8E3-3B25240360DC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EB936708-485C-4542-8212-A852CB80EF65}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EB936708-485C-4542-8212-A852CB80EF65}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EB936708-485C-4542-8212-A852CB80EF65}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EB936708-485C-4542-8212-A852CB80EF65}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
