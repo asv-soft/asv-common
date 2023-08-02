@@ -138,6 +138,31 @@ public class GeoPointLatitudeTest
     }
 
     [Fact]
+    public void CheckDmsWithShortValues()
+    {
+        var value = 0.0;
+        Assert.True(GeoPointLatitude.TryParse("2 40",out value));
+        Assert.Equal(2 + 40d/60d,value);
+        
+        Assert.Equal("2°40′0.00˝ N", GeoPointLatitude.PrintDms(value).Replace(",", "."));
+        
+        Assert.True(GeoPointLatitude.TryParse("15 59 45",out value));
+        Assert.Equal(15 + 59d/60d + 45d/3600d,value);
+        
+        Assert.Equal("15°59′45.00˝ N", GeoPointLatitude.PrintDms(value).Replace(",", "."));
+        
+        Assert.True(GeoPointLatitude.TryParse("0 1 0 S",out value));
+        Assert.Equal(-1d/60d,value);
+        
+        Assert.Equal("0°1′0.00˝ S", GeoPointLatitude.PrintDms(value).Replace(",", "."));
+        
+        Assert.True(GeoPointLatitude.TryParse("15 59 45 S",out value));
+        Assert.Equal(-15 + 59d/60d + 45d/3600d,value);
+        
+        Assert.Equal("15°59′45.00˝ S", GeoPointLatitude.PrintDms(value).Replace(",", "."));
+    }
+    
+    [Fact]
     public void CheckAllZeros()
     {
         var value = 0.0;
