@@ -12,7 +12,8 @@ namespace Asv.Common
        
         
         private static readonly Regex LongitudeRegex = new(
-            @"((?<s1>[\+\-EeWw])?(?<deg>[0-9]{0,2}\d|180)[°˚º^~*\s\-_]+((?<min>[0-5]?\d|\d)?)['′\s\-_]+(((?<sec>[0-5]?\d|\d)([.]\d*)?)?)[""¨˝\s\-_]*(?<s2>[\+\-EeWw])?)[\s]*$", RegexOptions.Compiled);
+            @"((?<s1>[\+,\-,E,e,W,w])?(?<deg>[0-9]{0,2}\d|180)[°,˚,º,^,~,*,\s,\-,_]+((?<min>[0-5]?\d|\d)?)[',′,\s,\-,_]*(((?<sec>[0-5]?\d|\d)([.]\d*)?)?)["",¨,˝,\s,\-,_]*(?<s2>[\+,\-,E,e,W,w])?)[\s]*$", 
+            RegexOptions.Compiled);
         
         public static bool IsValid(string value)
         {
@@ -44,6 +45,8 @@ namespace Asv.Common
             
 
             if (degGroup.Success == false) return false;
+            
+            if (degGroup.Success && minGroup.Success == false && secGroup.Success == false) return false;
             
             if (int.TryParse(degGroup.Value,NumberStyles.Integer, CultureInfo.InvariantCulture, out var deg) == false) return false;
             // if only seconds without minutes => error
@@ -78,13 +81,22 @@ namespace Asv.Common
             {
                 return false;
             }
-            latitude = sign1 * (deg + (double)min / 60 + sec / 3600);
+            latitude = (s1Group.Success ? sign1 : sign2) * (deg + (double)min / 60 + sec / 3600);
             return latitude is >= Min and <= Max;
         }
-        public static string PrintDms(double latitude)
+        public static string PrintDms(double longitude)
         {
-            var minutes = (latitude - (int)latitude) * 60;
-            return $"{latitude:F0}°{(int)minutes}′{(minutes - (int)minutes) * 60:F2}˝ {(latitude<0? "W" : "E")}";  
+            int degrees = (int)Math.Abs(longitude);
+            double remainingDegrees = Math.Abs(longitude) - degrees;
+            int minutes = (int)(remainingDegrees * 60);
+            double remainingMinutes = (remainingDegrees * 60) - minutes;
+            double seconds = Math.Round(remainingMinutes * 60);
+            while (seconds >= 60)
+            {
+                minutes++;
+                seconds -= 60;
+            }
+            return $"{degrees}°{minutes}′{seconds:F2}˝ {(longitude < 0 ? "W" : "E")}";  
         }
     }
 }

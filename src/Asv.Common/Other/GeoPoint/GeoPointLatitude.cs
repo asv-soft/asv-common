@@ -11,7 +11,8 @@ namespace Asv.Common
         private const string MinusChars = "-Ss";
         
         private static readonly Regex LatitudeRegex = new(
-            @"((?<s1>[\+\-NnSs])?(?<deg>[0-8]?\d|90)[°˚º^~*\s\-_]+((?<min>[0-5]?\d|\d)?)['′\s\-_]+(((?<sec>[0-5]?\d|\d)([.]\d*)?)?)[""¨˝\s\-_]*(?<s2>[\+\-NnSs])?)[\s]*$", RegexOptions.Compiled);
+            @"((?<s1>[\+,\-,N,n,S,s])?(?<deg>[0-8]?\d|90)[°,˚,º,^,~,*,\s,\-,_]+((?<min>[0-5]?\d|\d)?)[',′,\s,\-,_]*(((?<sec>[0-5]?\d|\d)([.]\d*)?)?)["",¨,˝,\s,\-,_]*(?<s2>[\+,\-,N,n,S,s])?)[\s]*$", 
+            RegexOptions.Compiled);
         public static bool IsValid(string value)
         {
             return TryParse(value, out _);
@@ -42,6 +43,8 @@ namespace Asv.Common
             
 
             if (degGroup.Success == false) return false;
+            
+            if (degGroup.Success && minGroup.Success == false && secGroup.Success == false) return false;
             
             if (int.TryParse(degGroup.Value,NumberStyles.Integer, CultureInfo.InvariantCulture, out var deg) == false) return false;
             // if only seconds without minutes => error
@@ -76,13 +79,24 @@ namespace Asv.Common
             {
                 return false;
             }
-            latitude = sign1 * (deg + (double)min / 60 + sec / 3600);
+            latitude = (s1Group.Success ? sign1 : sign2) * (deg + (double)min / 60 + sec / 3600);
             return latitude is >= Min and <= Max;
         }
+        
         public static string PrintDms(double latitude)
         {
-            var minutes = (latitude - (int)latitude) * 60;
-            return $"{latitude:F0}°{(int)minutes}′{(minutes - (int)minutes) * 60:F2}˝ {(latitude<0? "S" : "N")}";  
+            int degrees = (int)Math.Abs(latitude);
+            double remainingDegrees = Math.Abs(latitude) - degrees;
+            int minutes = (int)(remainingDegrees * 60);
+            double remainingMinutes = (remainingDegrees * 60) - minutes;
+            double seconds = Math.Round(remainingMinutes * 60);
+            while (seconds >= 60)
+            {
+                minutes++;
+                seconds -= 60;
+            }
+            return $"{degrees}°{minutes}′{seconds:F2}˝ {(latitude < 0 ? "S" : "N")}";  
         }
+        
     }
 }

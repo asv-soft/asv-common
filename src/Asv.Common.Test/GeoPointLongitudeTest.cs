@@ -173,11 +173,31 @@ public class GeoPointLongitudeTest
         Assert.True(GeoPointLongitude.TryParse("000 00 E",out value));
         Assert.Equal(0,value);
         Assert.False(GeoPointLongitude.TryParse("000 E",out value));
-        Assert.Equal(0,value);
+        Assert.Equal(double.NaN,value);
         Assert.True(GeoPointLongitude.TryParse("0 0 00 E",out value));
         Assert.Equal(0,value);
         Assert.True(GeoPointLongitude.TryParse("0 0 0E",out value));
         Assert.Equal(0,value);
+    }
+
+    [Fact]
+    public void CheckDmsWithShortValues()
+    {
+        var value = 0.0;
+        Assert.True(GeoPointLongitude.TryParse("2 40",out value));
+        Assert.Equal(2 + 40d/60d,value);
+        
+        Assert.Equal("2°40′0.00˝ E", GeoPointLongitude.PrintDms(value).Replace(",", "."));
+        
+        Assert.True(GeoPointLongitude.TryParse("15 59 45",out value));
+        Assert.Equal(15 + 59d/60d + 45d/3600d,value);
+        
+        Assert.Equal("15°59′45.00˝ E", GeoPointLongitude.PrintDms(value).Replace(",", "."));
+        
+        Assert.True(GeoPointLongitude.TryParse("0 1 0 W",out value));
+        Assert.Equal(-1d/60d,value);
+        
+        Assert.Equal("0°1′0.00˝ W", GeoPointLongitude.PrintDms(value).Replace(",", "."));
     }
 
     [Fact]

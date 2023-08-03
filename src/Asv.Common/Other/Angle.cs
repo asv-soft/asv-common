@@ -59,7 +59,7 @@ namespace Asv.Common
             var degGroup = match.Groups["deg"];
             var minGroup = match.Groups["min"];
             var secGroup = match.Groups["sec"];
-            
+
             if (degGroup.Success == false) return false;
             
             if (int.TryParse(degGroup.Value,NumberStyles.Integer, CultureInfo.InvariantCulture, out var deg) == false) return false;
@@ -93,8 +93,8 @@ namespace Asv.Common
         
         public static string PrintDms(double decimalDegrees)
         {
-            int degrees = (int)decimalDegrees;
-            double remainingDegrees = decimalDegrees - degrees;
+            int degrees = (int)Math.Abs(decimalDegrees);
+            double remainingDegrees = Math.Abs(decimalDegrees) - degrees;
             int minutes = (int)(remainingDegrees * 60);
             double remainingMinutes = (remainingDegrees * 60) - minutes;
             double seconds = Math.Round(remainingMinutes * 60);
@@ -103,7 +103,7 @@ namespace Asv.Common
                 minutes++;
                 seconds -= 60;
             }
-            return $"{degrees}°{minutes}′{seconds:F2}˝";  
+            return $"{Math.Sign(decimalDegrees) * degrees}°{minutes}′{seconds:F2}˝";  
         }
     }
 }
