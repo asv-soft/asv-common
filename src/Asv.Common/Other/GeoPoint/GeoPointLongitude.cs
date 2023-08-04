@@ -1,5 +1,6 @@
 using System;
 using System.Globalization;
+using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace Asv.Common
@@ -12,7 +13,7 @@ namespace Asv.Common
        
         
         private static readonly Regex LongitudeRegex = new(
-            @"((?<s1>[\+,\-,E,e,W,w])?(?<deg>[0-9]{0,2}\d|180)[°,˚,º,^,~,*,\s,\-,_]+((?<min>[0-5]?\d|\d)?)[',′,\s,\-,_]*(((?<sec>[0-5]?\d|\d)([.]\d*)?)?)["",¨,˝,\s,\-,_]*(?<s2>[\+,\-,E,e,W,w])?)[\s]*$", 
+            @"((?<s1>[\+,\-,E,e,W,w])?(?<deg>[0-9]{0,2}\d|180)[°,˚,º,^,~,*,\s,\-,_]+((?<min>[0-5]?\d|\d)?)[',′,\s,\-,_]*(?<sec>(([0-5]?\d|\d)([.]\d*)?))?["",¨,˝,\s,\-,_]*(?<s2>[\+,\-,E,e,W,w])?)[\s]*$", 
             RegexOptions.Compiled);
         
         public static bool IsValid(string value)
@@ -61,6 +62,11 @@ namespace Asv.Common
             if (secGroup.Success)
             {
                 if (double.TryParse(secGroup.Value,NumberStyles.Any, CultureInfo.InvariantCulture, out sec) == false) return false;
+                var valuableDigitsCount = secGroup.Value
+                    .Split('.')
+                    .Last()
+                    .Length;
+                sec = Math.Round(sec, valuableDigitsCount);
             }
 
             var sign1 = 1;
