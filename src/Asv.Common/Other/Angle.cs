@@ -97,8 +97,8 @@ namespace Asv.Common
             double remainingDegrees = Math.Abs(decimalDegrees) - degrees;
             int minutes = (int)(remainingDegrees * 60);
             double remainingMinutes = (remainingDegrees * 60) - minutes;
-            double seconds = Math.Round(remainingMinutes * 60);
-            while (seconds >= 60)
+            double seconds = Math.Round(remainingMinutes * 60, 2);
+            while (seconds >= 60d)
             {
                 minutes++;
                 seconds -= 60;

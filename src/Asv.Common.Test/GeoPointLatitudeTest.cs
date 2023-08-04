@@ -157,7 +157,7 @@ public class GeoPointLatitudeTest
         Assert.Equal("0°1′0.00˝ S", GeoPointLatitude.PrintDms(value).Replace(",", "."));
         
         Assert.True(GeoPointLatitude.TryParse("15 59 45 S",out value));
-        Assert.Equal(-15 + 59d/60d + 45d/3600d,value);
+        Assert.Equal(-15 + -59d/60d + -45d/3600d,value);
         
         Assert.Equal("15°59′45.00˝ S", GeoPointLatitude.PrintDms(value).Replace(",", "."));
     }
