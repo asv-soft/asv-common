@@ -1,5 +1,6 @@
 using System;
 using System.Buffers;
+using System.Diagnostics;
 using System.IO;
 
 namespace Asv.IO
@@ -68,6 +69,56 @@ namespace Asv.IO
                 ArrayPool<byte>.Shared.Return(array);
             }
         }
-
+        
+        /// <summary>
+        /// Copy data from src to dest
+        /// </summary>
+        /// <param name="src">Source</param>
+        /// <param name="dest">Destination</param>
+        /// <returns></returns>
+        public static void CopyTo<T>(this T src, T dest)
+            where T: ISizedSpanSerializable
+        {
+            var size = src.GetByteSize();
+            var array = ArrayPool<byte>.Shared.Rent(size);
+            try
+            {
+                var span = new Span<byte>(array, 0, size);
+                src.Serialize(ref span);
+                var readSpan = new ReadOnlySpan<byte>(array, 0, size);
+                dest.Deserialize(ref readSpan);
+                Debug.Assert(span.Length == readSpan.Length);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(array);
+            }
+        }
+        /// <summary>
+        /// Create new instance of T and copy data from src to new instance
+        /// </summary>
+        /// <param name="src"></param>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        public static T BinaryClone<T>(this T src)
+            where T: ISizedSpanSerializable, new()
+        {
+            var dest = new T();
+            var size = src.GetByteSize();
+            var array = ArrayPool<byte>.Shared.Rent(size);
+            try
+            {
+                var span = new Span<byte>(array, 0, size);
+                src.Serialize(ref span);
+                var readSpan = new ReadOnlySpan<byte>(array, 0, size);
+                dest.Deserialize(ref readSpan);
+                Debug.Assert(span.Length == readSpan.Length);
+                return dest;
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(array);
+            }
+        }
     }
 }
