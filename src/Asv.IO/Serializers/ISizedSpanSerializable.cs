@@ -17,6 +17,8 @@ namespace Asv.IO
 
     public static class SpanSerializableHelper
     {
+        
+        
         public static T Deserialize<T>(ref ReadOnlySpan<byte> data) where T : ISizedSpanSerializable, new()
         {
             var result = new T();
