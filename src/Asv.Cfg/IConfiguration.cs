@@ -17,6 +17,8 @@ namespace Asv.Cfg
         }
         
         public static IEqualityComparer<string> DefaultKeyComparer { get; } = StringComparer.InvariantCultureIgnoreCase;
+
+       
     }
     
     public interface IConfiguration:IDisposable

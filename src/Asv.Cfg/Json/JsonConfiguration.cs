@@ -11,7 +11,7 @@ namespace Asv.Cfg.Json
     {
         private readonly string _folderPath;
         private const string SearchPattern = "*.json";
-        private readonly LockByKeyExecutor<string> _lock = new();
+        private readonly LockByKeyExecutor<string> _lock = new(ConfigurationHelper.DefaultKeyComparer);
 
         public JsonConfiguration(string folderPath)
         {
