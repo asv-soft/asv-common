@@ -14,16 +14,16 @@ namespace Asv.Common
         private static readonly Regex LatitudeRegex = new(
             @"((?<s1>[\+,\-,N,n,S,s])?(?<deg>[0-8]?\d|90)[°,˚,º,^,~,*,\s,\-,_]+((?<min>[0-5]?\d|\d)?)[',′,\s,\-,_]*(?<sec>(([0-5]?\d|\d)([.]\d*)?))?["",¨,˝,\s,\-,_]*(?<s2>[\+,\-,N,n,S,s])?)[\s]*$", 
             RegexOptions.Compiled);
-        public static bool IsValid(string value)
+        public static bool IsValid(string? value)
         {
             return TryParse(value, out _);
         }
-        public static string? GetErrorMessage(string value)
+        public static string? GetErrorMessage(string? value)
         {
             return IsValid(value) == false ? RS.GeoPointLatitude_ErrorMessage : null;
         }
 
-        public static bool TryParse(string value, out double latitude)
+        public static bool TryParse(string? value, out double latitude)
         {
             latitude = Double.NaN;
             if (string.IsNullOrWhiteSpace(value)) return false;
