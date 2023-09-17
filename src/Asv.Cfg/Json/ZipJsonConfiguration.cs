@@ -49,6 +49,16 @@ namespace Asv.Cfg.Json
             }
         }
 
+        public bool Exist(string key)
+        {
+            ConfigurationHelper.ValidateKey(key);
+            var fileName = key+FileExt;
+            lock (_sync)
+            {
+                return _archive.Entries.Any(x => ConfigurationHelper.DefaultKeyComparer.Equals(x.Name, fileName));
+            }
+        }
+
         public TPocoType Get<TPocoType>(string key, TPocoType defaultValue)
         {
             ConfigurationHelper.ValidateKey(key);

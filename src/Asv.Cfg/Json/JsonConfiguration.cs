@@ -33,6 +33,12 @@ namespace Asv.Cfg.Json
             return _lock.Execute(key,()=>InternalExist(key));
         }
 
+        public bool Exist(string key)
+        {
+            ConfigurationHelper.ValidateKey(key);
+            return _lock.Execute(key,()=>InternalExist(key));
+        }
+
         private bool InternalExist(string key)
         {
             return File.Exists(Path.Combine(_folderPath, key + ".json"));

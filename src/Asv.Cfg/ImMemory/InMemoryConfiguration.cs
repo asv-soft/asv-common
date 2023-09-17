@@ -36,6 +36,13 @@ namespace Asv.Cfg.ImMemory
 
         public bool Exist<TPocoType>(string key)
         {
+            ConfigurationHelper.ValidateKey(key);
+            return _values.ContainsKey(key);
+        }
+
+        public bool Exist(string key)
+        {
+            ConfigurationHelper.ValidateKey(key);
             return _values.ContainsKey(key);
         }
 

@@ -24,7 +24,9 @@ namespace Asv.Cfg
     public interface IConfiguration:IDisposable
     {
         IEnumerable<string> AvailableParts { get; }
+        [Obsolete("Use Exist(string key) instead")]
         bool Exist<TPocoType>(string key);
+        bool Exist(string key);
         TPocoType Get<TPocoType>(string key, TPocoType defaultValue);
         void Set<TPocoType>(string key, TPocoType value);
         void Remove(string key);
