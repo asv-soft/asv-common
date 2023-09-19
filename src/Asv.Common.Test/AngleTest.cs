@@ -192,14 +192,14 @@ public class AngleTest
         Assert.True(Angle.TryParse("00 00 59",out value));
         Assert.Equal(59.0/3600.0,value);
         Assert.True(Angle.TryParse("-00 00 01.001",out value));
-        Assert.Equal(-1.0/3600.0,value);
+        Assert.Equal(-1.001/3600.0,value);
         Assert.True(Angle.TryParse("00 00 1.001",out value));
-        Assert.Equal(1.0/3600.0,value);
+        Assert.Equal(1.001/3600.0,value);
         Assert.True(Angle.TryParse("-00 00 09.001",out value));
-        Assert.Equal(-9.0/3600.0,value);
+        Assert.Equal(-9.001/3600.0,value);
         Assert.True(Angle.TryParse("00 00 9.001",out value));
-        Assert.Equal(9.0/3600.0,value);
+        Assert.Equal(9.001/3600.0,value);
         Assert.True(Angle.TryParse("-00 00 59.001",out value));
-        Assert.Equal(-59.0/3600.0,value);
+        Assert.Equal(-59.001/3600.0,value);
     }
 }

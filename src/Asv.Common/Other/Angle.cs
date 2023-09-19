@@ -7,7 +7,7 @@ namespace Asv.Common
     public static class Angle
     {
         private static readonly Regex AngleRegex = new(
-            @"((?<sign>[\-,\+])?(?<deg>\d+)[°˚º^~*\s\-_]+(((?<min>[0-5]?\d|\d)?)?)[',′,\s,\-,_]*(?<sec>(([0-5]?\d|\d)([.]\d*)?))?["",¨,˝,\s,\-,_]*)[\s]*$",
+            @"((?<sign>(\-|\+))?(?<deg>\d+)(°|˚|º|\^|~|\*|\s|\-|_)*(((?<min>[0-5]?\d|\d)?)?)('|′|\s|\-|_)*(?<sec>(([0-5]?\d|\d)([.]\d*)?))?(""|¨|˝|\s|\-|_)*)[\s]*$",
             RegexOptions.Compiled);
         
         public static bool IsValid(string value)
