@@ -53,9 +53,12 @@ namespace Asv.Cfg.Json
         public void Set<TPocoType>(string key, TPocoType value)
         {
             ConfigurationHelper.ValidateKey(key);
-            _lock.Execute(key,()=>
-                File.WriteAllText(Path.Combine(_folderPath, key + ".json"),
-                    JsonConvert.SerializeObject(value, Formatting.Indented)));
+            _lock.Execute(key, () =>
+            {
+                var filepath = Path.Combine(_folderPath, key + ".json");
+                File.Delete(filepath);
+                File.WriteAllText(filepath, JsonConvert.SerializeObject(value, Formatting.Indented));
+            });
         }
 
         public void Remove(string key)

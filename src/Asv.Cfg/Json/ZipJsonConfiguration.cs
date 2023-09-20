@@ -82,7 +82,8 @@ namespace Asv.Cfg.Json
             var fileName = key+FileExt;
             lock (_sync)
             {
-                var entry = _archive.GetEntry(fileName) ?? _archive.CreateEntry(fileName);
+                _archive.GetEntry(fileName)?.Delete();
+                var entry = _archive.CreateEntry(fileName);
                 using var wrt = new JsonTextWriter(new StreamWriter(entry.Open()));
                 var serializer = new JsonSerializer
                 {
