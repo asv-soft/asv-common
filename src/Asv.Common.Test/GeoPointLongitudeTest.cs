@@ -38,6 +38,19 @@ public class GeoPointLongitudeTest
         Assert.Equal(0,value);
         Assert.True(GeoPointLongitude.TryParse("0* 0' 0\"",out value));
         Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("0°0'0\"",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("0˚0'0\"",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("0º0'0\"",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("0^0'0\"",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("0~0'0\"",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("0*0'0\"",out value));
+        Assert.Equal(0,value);
+        Assert.False(GeoPointLongitude.TryParse("00'0\"",out value));
     }
 
     [Fact]
@@ -59,6 +72,8 @@ public class GeoPointLongitudeTest
         Assert.True(GeoPointLongitude.TryParse(@"000° 00′ 00 ",out value));
         Assert.Equal(0,value);
         Assert.True(GeoPointLongitude.TryParse(@"000° 00' 00 """,out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse(@"000° 0000 """,out value));
         Assert.Equal(0,value);
     }
 
@@ -83,6 +98,9 @@ public class GeoPointLongitudeTest
         Assert.False(GeoPointLongitude.TryParse("000° 00' 00˝ 0°",out value));
         Assert.True(GeoPointLongitude.TryParse("000° 00' 00.000˝ E",out value));
         Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("000° 00' 00",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("000° 00' 00 E",out value));
     }
 
     [Fact]
@@ -186,17 +204,12 @@ public class GeoPointLongitudeTest
         var value = 0.0;
         Assert.True(GeoPointLongitude.TryParse("2 40",out value));
         Assert.Equal(2 + 40d/60d,value);
-        
         Assert.Equal("2°40′0.00˝ E", GeoPointLongitude.PrintDms(value).Replace(",", "."));
-        
         Assert.True(GeoPointLongitude.TryParse("15 59 45",out value));
         Assert.Equal(15 + 59d/60d + 45d/3600d,value);
-        
         Assert.Equal("15°59′45.00˝ E", GeoPointLongitude.PrintDms(value).Replace(",", "."));
-        
         Assert.True(GeoPointLongitude.TryParse("0 1 0 W",out value));
         Assert.Equal(-1d/60d,value);
-        
         Assert.Equal("0°1′0.00˝ W", GeoPointLongitude.PrintDms(value).Replace(",", "."));
     }
 
@@ -395,14 +408,35 @@ public class GeoPointLongitudeTest
         Assert.True(GeoPointLongitude.TryParse("000 00 59 E",out value));
         Assert.Equal(59.0/3600.0,value);
         Assert.True(GeoPointLongitude.TryParse("000 00 01.001 E",out value));
-        Assert.Equal(1.0009999999999999/3600.0,value);
+        Assert.Equal(1.001/3600.0,value);
         Assert.True(GeoPointLongitude.TryParse("000 00 1.001 E",out value));
-        Assert.Equal(1.0009999999999999/3600.0,value);
+        Assert.Equal(1.001/3600.0,value);
         Assert.True(GeoPointLongitude.TryParse("000 00 09.001 E",out value));
-        Assert.Equal(9.0009999999999999/3600.0,value);
+        Assert.Equal(9.001/3600.0,value);
         Assert.True(GeoPointLongitude.TryParse("000 00 9.001 E",out value));
-        Assert.Equal(9.0009999999999999/3600.0,value);
+        Assert.Equal(9.001/3600.0,value);
         Assert.True(GeoPointLongitude.TryParse("000 00 59.001 E",out value));
-        Assert.Equal(59.0009999999999999/3600.0,value);
+        Assert.Equal(59.001/3600.0,value);
+        Assert.True(GeoPointLongitude.TryParse("0000001E",out value));
+        Assert.Equal(1.0/3600.0,value);
+        Assert.True(GeoPointLongitude.TryParse("000001E",out value));
+        Assert.Equal(1.0/3600.0,value);
+        Assert.True(GeoPointLongitude.TryParse("0000009E",out value));
+        Assert.Equal(9.0/3600.0,value);
+        Assert.True(GeoPointLongitude.TryParse("000009E",out value));
+        Assert.Equal(9.0/3600.0,value);
+        Assert.True(GeoPointLongitude.TryParse("0000059E",out value));
+        Assert.Equal(59.0/3600.0,value);
+        Assert.True(GeoPointLongitude.TryParse("0000001.001E",out value));
+        Assert.Equal(1.001/3600.0,value);
+        Assert.True(GeoPointLongitude.TryParse("000 00 1.001 E",out value));
+        Assert.Equal(1.001/3600.0,value);
+        Assert.True(GeoPointLongitude.TryParse("000 00 09.001 E",out value));
+        Assert.Equal(9.001/3600.0,value);
+        Assert.True(GeoPointLongitude.TryParse("000 00 9.001 E",out value));
+        Assert.Equal(9.001/3600.0,value);
+        Assert.True(GeoPointLongitude.TryParse("000 00 59.001 E",out value));
+        Assert.Equal(59.001/3600.0,value);
+        
     }
 }

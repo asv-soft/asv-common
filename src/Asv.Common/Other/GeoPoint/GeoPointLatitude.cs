@@ -12,7 +12,7 @@ namespace Asv.Common
         private const string MinusChars = "-Ss";
         
         private static readonly Regex LatitudeRegex = new(
-            @"((?<s1>[\+,\-,N,n,S,s])?(?<deg>[0-8]?\d|90)[°,˚,º,^,~,*,\s,\-,_]+((?<min>[0-5]?\d|\d)?)[',′,\s,\-,_]*(?<sec>(([0-5]?\d|\d)([.]\d*)?))?["",¨,˝,\s,\-,_]*(?<s2>[\+,\-,N,n,S,s])?)[\s]*$", 
+            @"((?<s1>(\+|\-|N|n|S|s))?(?<deg>[0-8]?\d|90)(°|˚|º|\^|~|\*|\s|\-|_)*((?<min>[0-5]?\d|\d)?)('|′|\s|\-|_)*(?<sec>(([0-5]?\d|\d)([.]\d*)?))?(""|¨|˝|\s|\-|_)*(?<s2>(\+|\-|N|n|S|s))?)[\s]*$", 
             RegexOptions.Compiled);
         public static bool IsValid(string? value)
         {

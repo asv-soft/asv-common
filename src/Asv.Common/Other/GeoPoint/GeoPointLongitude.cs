@@ -10,10 +10,9 @@ namespace Asv.Common
         private const double Min = -180;
         private const double Max = 180;
         private const string MinusChars = "-Ww";
-       
         
         private static readonly Regex LongitudeRegex = new(
-            @"((?<s1>[\+,\-,E,e,W,w])?(?<deg>[0-9]{0,2}\d|180)[°,˚,º,^,~,*,\s,\-,_]+((?<min>[0-5]?\d|\d)?)[',′,\s,\-,_]*(?<sec>(([0-5]?\d|\d)([.]\d*)?))?["",¨,˝,\s,\-,_]*(?<s2>[\+,\-,E,e,W,w])?)[\s]*$", 
+            @"((?<s1>(\+|\-|E|e|W|w))?(?<deg>[0-9]{0,2}\d|180)(°|˚|º|\^|~|\*|\s|\-|_)*((?<min>[0-5]?\d|\d)?)('|′|\s|\-|_)*(?<sec>(([0-5]?\d|\d)([.]\d*)?))?(""|¨|˝|\s|\-|_)*(?<s2>(\+|\-|E|e|W|w))?)[\s]*$", 
             RegexOptions.Compiled);
         
         public static bool IsValid(string? value)
