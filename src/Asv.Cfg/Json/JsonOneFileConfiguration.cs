@@ -95,7 +95,8 @@ namespace Asv.Cfg.Json
             {
                 try
                 {
-                    var content = JsonConvert.SerializeObject(_values, Formatting.Indented, new StringEnumConverter());
+                    var sortedDict = new SortedDictionary<string, JToken>(_values);
+                    var content = JsonConvert.SerializeObject(sortedDict, Formatting.Indented, new StringEnumConverter());
                     File.Delete(_fileName);
                     File.WriteAllText(_fileName, content);
                     Logger.Trace("Flush configuration to file");
