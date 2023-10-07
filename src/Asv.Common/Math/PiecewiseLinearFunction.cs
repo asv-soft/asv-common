@@ -74,8 +74,8 @@ namespace Asv.Common
 
                 var index = _values.Length / _values.Rank;
                 x2 = _values[index - 2,0];
-                x3 = _values[index - 2,0];
-                y2 = _values[index - 1,1];
+                x3 = _values[index - 1,0];
+                y2 = _values[index - 2,1];
                 y3 = _values[index - 1,1];
                 num = (value - x2) / (x3 - x2);
                 return y2 + (y3 - y2) * num;
