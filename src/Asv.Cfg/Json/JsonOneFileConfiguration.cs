@@ -17,6 +17,7 @@ namespace Asv.Cfg.Json
     public class JsonOneFileConfiguration : DisposableOnce, IConfiguration
     {
         private readonly string _fileName;
+        private readonly bool _sortKeysInFile;
         private readonly ConcurrentDictionary<string, JToken> _values;
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         private readonly Subject<Unit> _onNeedToSave = new();
@@ -26,9 +27,10 @@ namespace Asv.Cfg.Json
         private readonly Subject<Exception> _deferredErrors = new();
 
 
-        public JsonOneFileConfiguration(string fileName, bool createIfNotExist, TimeSpan? flushToFileDelayMs)
+        public JsonOneFileConfiguration(string fileName, bool createIfNotExist, TimeSpan? flushToFileDelayMs, bool sortKeysInFile = false)
         {
             _fileName = fileName;
+            _sortKeysInFile = sortKeysInFile;
 
             if (flushToFileDelayMs == null)
             {
@@ -95,8 +97,8 @@ namespace Asv.Cfg.Json
             {
                 try
                 {
-                    var sortedDict = new SortedDictionary<string, JToken>(_values);
-                    var content = JsonConvert.SerializeObject(sortedDict, Formatting.Indented, new StringEnumConverter());
+                    var content = _sortKeysInFile ? JsonConvert.SerializeObject(new SortedDictionary<string, JToken>(_values), Formatting.Indented, new StringEnumConverter()) : JsonConvert.SerializeObject(_values, Formatting.Indented, new StringEnumConverter());
+                    
                     File.Delete(_fileName);
                     File.WriteAllText(_fileName, content);
                     Logger.Trace("Flush configuration to file");
