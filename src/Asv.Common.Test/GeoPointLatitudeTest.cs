@@ -21,6 +21,18 @@ public class GeoPointLatitudeTest
         Assert.True(GeoPointLatitude.TryParse("+0 0 0 ",out value));
         Assert.Equal(0,value);
     }
+    
+    [Fact]
+    public void Check_double_values()
+    {
+        var value = 0.0;
+        Assert.True(GeoPointLatitude.TryParse("65.536",out value));
+        Assert.Equal(65.536,value);
+        Assert.True(GeoPointLatitude.TryParse("-65,536",out value));
+        Assert.Equal(-65.536,value);
+        
+        Assert.False(GeoPointLatitude.TryParse("90,536",out value));
+    }
 
     [Fact]
     public void CheckDegreeSymbols()

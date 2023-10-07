@@ -6,6 +6,9 @@ namespace Asv.Common
 {
     public static class Angle
     {
+        private static readonly Regex AngleInDegrees =
+            new(@"^(-?((0|[1-9][0-9]?|1[0-7][0-9]|180|360)(\.\d{1,6})?)|360(\.0{1,6})?)$", RegexOptions.Compiled);
+        
         private static readonly Regex AngleRegex = new(
             @"((?<sign>(\-|\+))?(?<deg>\d+)(°|˚|º|\^|~|\*|\s|\-|_)*(((?<min>[0-5]?\d|\d)?)?)('|′|\s|\-|_)*(?<sec>(([0-5]?\d|\d)([.]\d*)?))?(""|¨|˝|\s|\-|_)*)[\s]*$",
             RegexOptions.Compiled);
@@ -30,6 +33,14 @@ namespace Asv.Common
             
             //Replace coma by dot
             value = value.Replace(',', '.');
+
+            if (AngleInDegrees.IsMatch(value))
+            {
+                if (double.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out angle))
+                {
+                    return true;
+                }
+            }
             
             //Checking value on specified potential regex matches
             var match = AngleRegex.Match(value);

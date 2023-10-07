@@ -157,6 +157,21 @@ public class GeoPointLongitudeTest
     }
 
     [Fact]
+    public void Check_double_values()
+    {
+        var value = 0.0;
+        Assert.True(GeoPointLongitude.TryParse("65.536",out value));
+        Assert.Equal(65.536,value);
+        
+        Assert.True(GeoPointLongitude.TryParse("-65,536",out value));
+        Assert.Equal(-65.536,value);
+        
+        Assert.False(GeoPointLongitude.TryParse("180,536",out value));
+        
+    }
+
+    
+    [Fact]
     public void CheckAllZeros()
     {
         var value = 0.0;

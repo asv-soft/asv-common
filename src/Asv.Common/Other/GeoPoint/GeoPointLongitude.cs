@@ -10,6 +10,7 @@ namespace Asv.Common
         private const double Min = -180;
         private const double Max = 180;
         private const string MinusChars = "-Ww";
+        private static readonly Regex LongitudeDegreeRegex = new(@"^(-?[1]?[0-7]?[0-9](?:\.\d{1,6})?|180(?:\.0{1,6})?)$", RegexOptions.Compiled);
         
         private static readonly Regex LongitudeRegex = new(
             @"((?<s1>(\+|\-|E|e|W|w))?(?<deg>[0-9]{0,2}\d|180)(°|˚|º|\^|~|\*|\s|\-|_)*((?<min>[0-5]?\d|\d)?)('|′|\s|\-|_)*(?<sec>(([0-5]?\d|\d)([.]\d*)?))?(""|¨|˝|\s|\-|_)*(?<s2>(\+|\-|E|e|W|w))?)[\s]*$", 
@@ -29,6 +30,14 @@ namespace Asv.Common
             latitude = Double.NaN;
             if (string.IsNullOrWhiteSpace(value)) return false;
             value = value.Replace(',', '.');
+            if (LongitudeDegreeRegex.IsMatch(value))
+            {
+                if (double.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out latitude))
+                {
+                    return true;
+                }
+            }
+            
             var match = LongitudeRegex.Match(value);
             if (match.Success == false)
             {

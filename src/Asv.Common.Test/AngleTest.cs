@@ -6,6 +6,17 @@ namespace Asv.Common.Test;
 public class AngleTest
 {
     [Fact]
+    public void Check_double_values()
+    {
+        var value = 0.0;
+        Assert.True(Angle.TryParse("2.40",out value));
+        Assert.Equal(2.40,value);
+        
+        Assert.True(Angle.TryParse("-3.40",out value));
+        Assert.Equal(-3.40,value);
+    }
+
+    [Fact]
     public void CheckPlusAndMinus()
     {
         var value = 0.0;
