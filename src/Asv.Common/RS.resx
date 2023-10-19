@@ -27,4 +27,7 @@
     <data name="Angle_ErrorMessage" xml:space="preserve">
         <value>Angle must be a real number or DMS format value (e.g. 12°34′56.78)</value>
     </data>
+    <data name="AngleMs_ErrorMessage" xml:space="preserve">
+        <value>Angle must be a real number or MS format value (e.g. 34′56.78)</value>
+    </data>
 </root>

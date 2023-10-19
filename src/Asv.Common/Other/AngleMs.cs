@@ -20,7 +20,7 @@ namespace Asv.Common
         
         public static string? GetErrorMessage(string value)
         {
-            return IsValid(value) == false ? RS.Angle_ErrorMessage : null;
+            return IsValid(value) == false ? RS.AngleMs_ErrorMessage : null;
         }
         
         public static bool TryParse(string value, out double angle)

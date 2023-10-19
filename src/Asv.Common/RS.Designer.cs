@@ -69,6 +69,15 @@ namespace Asv.Common {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Angle must be a real number or MS format value (e.g. 34′56.78).
+        /// </summary>
+        internal static string AngleMs_ErrorMessage {
+            get {
+                return ResourceManager.GetString("AngleMs_ErrorMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Latitude must be a real number from -90.0 to 90.0 or DMS format value (e.g. 12°34′56.78 N).
         /// </summary>
         internal static string GeoPointLatitude_ErrorMessage {
