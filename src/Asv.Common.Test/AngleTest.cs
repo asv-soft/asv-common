@@ -110,7 +110,7 @@ public class AngleTest
     }
     
     [Fact]
-    public void CheckValidLatitudeDegValues()
+    public void CheckValidAngleDegValues()
     {
         var value = 0.0;
         Assert.True(Angle.TryParse("+045 0 0",out value));
@@ -162,7 +162,7 @@ public class AngleTest
     }
     
     [Fact]
-    public void CheckValidLatitudeMinuteValues()
+    public void CheckValidAngleMinuteValues()
     {
         var value = 0.0;
         Assert.True(Angle.TryParse("00 30 00",out value));
@@ -189,7 +189,7 @@ public class AngleTest
     }
     
     [Fact]
-    public void CheckValidLatitudeSecondValues()
+    public void CheckValidAngleSecondValues()
     {
         var value = 0.0;
         Assert.True(Angle.TryParse("00 00 01",out value));
