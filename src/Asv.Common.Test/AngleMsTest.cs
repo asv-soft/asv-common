@@ -67,29 +67,29 @@ public class AngleMsTest
         var value = 0.0;
         Assert.True(AngleMs.TryParse("30 00",out value));
         Assert.Equal(30.0/60.0,value);
-        Assert.Equal("30′0,00˝", AngleMs.PrintMs(value));
+        Assert.Equal("30′00,00˝", AngleMs.PrintMs(value));
         Assert.True(AngleMs.TryParse("1 00",out value));
         Assert.Equal(1.0/60.0,value);
-        Assert.Equal("1′0,00˝", AngleMs.PrintMs(value));
+        Assert.Equal("01′00,00˝", AngleMs.PrintMs(value));
         Assert.True(AngleMs.TryParse("09 00",out value));
         Assert.Equal(9.0/60.0,value);
-        Assert.Equal("9′0,00˝", AngleMs.PrintMs(value));
+        Assert.Equal("09′00,00˝", AngleMs.PrintMs(value));
         Assert.True(AngleMs.TryParse("9 00",out value));
         Assert.Equal(9.0/60.0,value);
-        Assert.Equal("9′0,00˝", AngleMs.PrintMs(value));
+        Assert.Equal("09′00,00˝", AngleMs.PrintMs(value));
         Assert.True(AngleMs.TryParse("59 00",out value));
         Assert.Equal(59.0/60.0,value);
-        Assert.Equal("59′0,00˝", AngleMs.PrintMs(value));
+        Assert.Equal("59′00,00˝", AngleMs.PrintMs(value));
         
         Assert.True(AngleMs.TryParse("120 30",out value));
         Assert.Equal(120.0/60.0 + 30.0/3600.0,value);
         Assert.Equal("120′30,00˝", AngleMs.PrintMs(value));
         Assert.True(AngleMs.TryParse("-92 1",out value));
         Assert.Equal(-92.0/60.0 - 1.0/3600.0,value);
-        Assert.Equal("92′1,00˝", AngleMs.PrintMs(value));
+        Assert.Equal("92′01,00˝", AngleMs.PrintMs(value));
         Assert.True(AngleMs.TryParse("10000 09.14",out value));
         Assert.Equal( 10000.0/60.0 + 9.14/3600.0,value);
-        Assert.Equal("10000′9,14˝", AngleMs.PrintMs(value));
+        Assert.Equal("10000′09,14˝", AngleMs.PrintMs(value));
     }
 
     [Fact]

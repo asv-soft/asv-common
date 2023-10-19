@@ -107,7 +107,7 @@ namespace Asv.Common
                 minutes++;
                 seconds -= 60;
             }
-            return $"{degrees}°{minutes}′{seconds:F2}˝ {(latitude < 0 ? "S" : "N")}";  
+            return $"{degrees:00}°{minutes:00}′{seconds:00.00}˝ {(latitude < 0 ? "S" : "N")}";  
         }
         
     }

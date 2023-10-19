@@ -219,26 +219,26 @@ public class GeoPointLongitudeTest
         var value = 0.0;
         Assert.True(GeoPointLongitude.TryParse("2 40",out value));
         Assert.Equal(2 + 40d/60d,value);
-        Assert.Equal("2°40′0.00˝ E", GeoPointLongitude.PrintDms(value).Replace(",", "."));
+        Assert.Equal("002°40′00.00˝ E", GeoPointLongitude.PrintDms(value).Replace(",", "."));
         Assert.True(GeoPointLongitude.TryParse("15 59 45",out value));
         Assert.Equal(15 + 59d/60d + 45d/3600d,value);
-        Assert.Equal("15°59′45.00˝ E", GeoPointLongitude.PrintDms(value).Replace(",", "."));
+        Assert.Equal("015°59′45.00˝ E", GeoPointLongitude.PrintDms(value).Replace(",", "."));
         Assert.True(GeoPointLongitude.TryParse("0 1 0 W",out value));
         Assert.Equal(-1d/60d,value);
-        Assert.Equal("0°1′0.00˝ W", GeoPointLongitude.PrintDms(value).Replace(",", "."));
+        Assert.Equal("000°01′00.00˝ W", GeoPointLongitude.PrintDms(value).Replace(",", "."));
     }
 
     [Fact]
     public void CheckValidLongitudeDegValues()
     {
         var value = 0.0;
-        Assert.True(GeoPointLongitude.TryParse("001 0 0 E",out value));
+        Assert.True(GeoPointLongitude.TryParse("001 00 00.00 E",out value));
         Assert.Equal(1,value);
-        Assert.True(GeoPointLongitude.TryParse("01 0 0 E",out value));
+        Assert.True(GeoPointLongitude.TryParse("01 00 00.00 E",out value));
         Assert.Equal(1,value);
-        Assert.True(GeoPointLongitude.TryParse("1 0 0 E",out value));
+        Assert.True(GeoPointLongitude.TryParse("1 00 00.00 E",out value));
         Assert.Equal(1,value);
-        Assert.True(GeoPointLongitude.TryParse("10 0 0 E",out value));
+        Assert.True(GeoPointLongitude.TryParse("10 00 00.00 E",out value));
         Assert.Equal(10,value);
         Assert.True(GeoPointLongitude.TryParse("99 0 0 E",out value));
         Assert.Equal(99,value);
