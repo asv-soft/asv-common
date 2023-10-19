@@ -109,7 +109,7 @@ namespace Asv.Common
                 minutes++;
                 seconds -= 60;
             }
-            return $"{Math.Sign(decimalDegrees) * minutes}′{seconds:F2}˝";  
+            return $"{Math.Sign(decimalDegrees) * minutes:00}′{seconds:00.00}˝";  
         }
     }
 }

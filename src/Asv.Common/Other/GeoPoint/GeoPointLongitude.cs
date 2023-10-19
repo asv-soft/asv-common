@@ -110,7 +110,7 @@ namespace Asv.Common
                 minutes++;
                 seconds -= 60;
             }
-            return $"{degrees}°{minutes}′{seconds:F2}˝ {(longitude < 0 ? "W" : "E")}";  
+            return $"{degrees:000}°{minutes:00}′{seconds:00.00}˝ {(longitude < 0 ? "W" : "E")}";  
         }
     }
 }

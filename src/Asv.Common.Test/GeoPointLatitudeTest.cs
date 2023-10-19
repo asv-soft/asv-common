@@ -180,19 +180,19 @@ public class GeoPointLatitudeTest
         var value = 0.0;
         Assert.True(GeoPointLatitude.TryParse("2 40",out value));
         Assert.Equal(2 + 40d/60d,value);
-        Assert.Equal("2°40′0.00˝ N", GeoPointLatitude.PrintDms(value).Replace(",", "."));
+        Assert.Equal("02°40′00.00˝ N", GeoPointLatitude.PrintDms(value).Replace(",", "."));
         Assert.True(GeoPointLatitude.TryParse("15 59 45",out value));
         Assert.Equal(15 + 59d/60d + 45d/3600d,value);
         Assert.Equal("15°59′45.00˝ N", GeoPointLatitude.PrintDms(value).Replace(",", "."));
         Assert.True(GeoPointLatitude.TryParse("0 1 0 S",out value));
         Assert.Equal(-1d/60d,value);
-        Assert.Equal("0°1′0.00˝ S", GeoPointLatitude.PrintDms(value).Replace(",", "."));
+        Assert.Equal("00°01′00.00˝ S", GeoPointLatitude.PrintDms(value).Replace(",", "."));
         Assert.True(GeoPointLatitude.TryParse("15 59 45,15 S",out value));
         Assert.Equal(-15 + -59d/60d + -45.15d/3600d,value);
         Assert.Equal("15°59′45.15˝ S", GeoPointLatitude.PrintDms(value).Replace(",", "."));
         Assert.True(GeoPointLatitude.TryParse("0 1 0.94 S",out value));
         Assert.Equal(-(1d/60d + 0.94/3600d),value);
-        Assert.Equal("0°1′0.94˝ S", GeoPointLatitude.PrintDms(value).Replace(",", "."));
+        Assert.Equal("00°01′00.94˝ S", GeoPointLatitude.PrintDms(value).Replace(",", "."));
     }
     
     [Fact]
