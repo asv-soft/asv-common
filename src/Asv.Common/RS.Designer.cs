@@ -69,6 +69,15 @@ namespace Asv.Common {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Angle must be a real number or DM format value (e.g. 34°56.78′).
+        /// </summary>
+        internal static string AngleDm_ErrorMessage {
+            get {
+                return ResourceManager.GetString("AngleDm_ErrorMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Angle must be a real number or MS format value (e.g. 34′56.78).
         /// </summary>
         internal static string AngleMs_ErrorMessage {
