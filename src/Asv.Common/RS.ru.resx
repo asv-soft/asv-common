@@ -23,4 +23,7 @@
     <data name="AngleMs_ErrorMessage" xml:space="preserve">
         <value>Угол должен быть дробным числом или значением в формате МС (например, 34′56.78).</value>
     </data>
+    <data name="AngleDm_ErrorMessage" xml:space="preserve">
+        <value>Угол должен быть дробным числом или значением в формате ГМ (например, 34°56.78′).</value>
+    </data>
 </root>
