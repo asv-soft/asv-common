@@ -160,14 +160,19 @@ public class GeoPointLongitudeTest
     public void Check_double_values()
     {
         var value = 0.0;
-        Assert.True(GeoPointLongitude.TryParse("65.536",out value));
-        Assert.Equal(65.536,value);
+        
+        // for (double i = -179.999999; i < 179.999999; i += 0.000001)
+        // {
+        //     Assert.True(GeoPointLongitude.TryParse(i.ToString("F6"),out value));
+        // }
+        
+        Assert.True(GeoPointLongitude.TryParse("85.536123",out value));
+        Assert.Equal(85.536123,value);
         
         Assert.True(GeoPointLongitude.TryParse("-65,536",out value));
         Assert.Equal(-65.536,value);
         
         Assert.False(GeoPointLongitude.TryParse("180,536",out value));
-        
     }
 
     
