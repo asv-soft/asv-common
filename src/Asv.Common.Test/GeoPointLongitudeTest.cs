@@ -459,4 +459,11 @@ public class GeoPointLongitudeTest
         Assert.Equal(59.001/3600.0,value);
         
     }
+
+    [Fact]
+    public void Check_longitude_from_aip()
+    {
+        Assert.True(GeoPointLongitude.TryParse("0612844.42E",out var longitude));
+        Assert.Equal(61.47900555555556,longitude);
+    }
 }
