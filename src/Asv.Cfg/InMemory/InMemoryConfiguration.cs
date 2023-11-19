@@ -5,7 +5,7 @@ using System.Threading;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Asv.Cfg.ImMemory
+namespace Asv.Cfg
 {
     public class InMemoryConfiguration:IConfiguration
     {
