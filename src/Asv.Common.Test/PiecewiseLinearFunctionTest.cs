@@ -1,3 +1,4 @@
+using System.Linq;
 using Xunit;
 
 namespace Asv.Common.Test;
@@ -125,6 +126,24 @@ public class PiecewiseLinearFunctionTest
 
         double result = function[3.0]; // Should return 3.0 since it's after the last point
         Assert.Equal(3.0, result, 3);
+    }
+    
+    [Fact]
+    public void TestValueEnumerator()
+    {
+        double[,] values = new double[,]
+        {
+            { 1.0, 1.0 },
+            { 2.0, 2.0 }
+        };
+        var function = new PiecewiseLinearFunction(values);
+
+        var result = function.ToArray();
+        Assert.Equal(2, result.Length);
+        Assert.Equal(1.0, result[0].Key, 3);
+        Assert.Equal(1.0, result[0].Value, 3);
+        Assert.Equal(2.0, result[1].Key, 3);
+        Assert.Equal(2.0, result[1].Value, 3);
     }
     
 }

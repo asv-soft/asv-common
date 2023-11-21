@@ -86,14 +86,15 @@ namespace Asv.Common
 
         public IEnumerator<KeyValuePair<double, double>> GetEnumerator()
         {
-            return (IEnumerator<KeyValuePair<double, double>>) _values.GetEnumerator();
+            for (var i = 0; i < _values.Length / _values.Rank; i++)
+            {
+                yield return new KeyValuePair<double, double>(_values[i, 0], _values[i, 1]);
+            }
         }
 
         IEnumerator IEnumerable.GetEnumerator()
         {
             return GetEnumerator();
         }
-
-        
     }
 }
