@@ -32,6 +32,7 @@ Provides base input and output (I/O) port abstractions (TCP client\server, seria
 ## How To Build Asv Common using Asv.Drones
 
 **1. Setup required dependencies for Asv.Drones:**
+
 Make sure next components installed: 
 - .NET SDK 7 - https://dotnet.microsoft.com/en-us/download/dotnet/7.0 ; 
 -  AvaloniaUI - https://docs.avaloniaui.net/docs/get-started/install ;
