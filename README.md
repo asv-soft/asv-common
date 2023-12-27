@@ -29,7 +29,7 @@ Provides methods for parsing, validating, and printing latitude and longitude va
 # asv-io
 Provides base input and output (I/O) port abstractions (TCP client\server, serial, udp) and binary serialization helpers
 
-## How To Build SDR using Asv.Drones
+## How To Build Asv Common using Asv.Drones
 
 **1. Setup required dependencies for Asv.Drones:**
 Make sure next components installed: 
