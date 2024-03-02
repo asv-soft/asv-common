@@ -166,7 +166,7 @@ namespace Asv.Common
                         index, _size));
                 }
 
-                int actualIndex = InternalIndex(index);
+                var actualIndex = InternalIndex(index);
                 return _buffer[actualIndex];
             }
             set
@@ -183,7 +183,7 @@ namespace Asv.Common
                         index, _size));
                 }
 
-                int actualIndex = InternalIndex(index);
+                var actualIndex = InternalIndex(index);
                 _buffer[actualIndex] = value;
             }
         }
@@ -281,10 +281,10 @@ namespace Asv.Common
         /// <returns>A new array with a copy of the buffer contents.</returns>
         public T[] ToArray()
         {
-            T[] newArray = new T[Size];
-            int newArrayOffset = 0;
+            var newArray = new T[Size];
+            var newArrayOffset = 0;
             var segments = ToArraySegments();
-            foreach (ArraySegment<T> segment in segments)
+            foreach (var segment in segments)
             {
                 Array.Copy(segment.Array, segment.Offset, newArray, newArrayOffset, segment.Count);
                 newArrayOffset += segment.Count;
@@ -321,7 +321,7 @@ namespace Asv.Common
             var segments = ToArraySegments();
             foreach (ArraySegment<T> segment in segments)
             {
-                for (int i = 0; i < segment.Count; i++)
+                for (var i = 0; i < segment.Count; i++)
                 {
                     yield return segment.Array[segment.Offset + i];
                 }

@@ -97,11 +97,11 @@ namespace Asv.Common
         
         public static string PrintDms(double latitude)
         {
-            int degrees = (int)Math.Abs(latitude);
-            double remainingDegrees = Math.Abs(latitude) - degrees;
-            int minutes = (int)(remainingDegrees * 60);
-            double remainingMinutes = (remainingDegrees * 60) - minutes;
-            double seconds = Math.Round(remainingMinutes * 60, 2);
+            var degrees = (int)Math.Abs(latitude);
+            var remainingDegrees = Math.Abs(latitude) - degrees;
+            var minutes = (int)(remainingDegrees * 60);
+            var remainingMinutes = (remainingDegrees * 60) - minutes;
+            var seconds = Math.Round(remainingMinutes * 60, 2);
             while (seconds >= 60d)
             {
                 minutes++;

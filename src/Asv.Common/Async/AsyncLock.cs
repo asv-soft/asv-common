@@ -102,7 +102,7 @@ namespace Asv.Common
 
             private bool InnerTryEnter(bool synchronous = false)
             {
-                bool result = false;
+                var result = false;
                 try
                 {
                     if (synchronous)

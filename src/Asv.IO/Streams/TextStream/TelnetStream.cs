@@ -56,7 +56,7 @@ namespace Asv.IO
                         {
                             findEnd = false;
                             break;
-                        };
+                        }
                     }
                     if (!findEnd) continue;
                     try

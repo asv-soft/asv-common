@@ -11,7 +11,7 @@ namespace Asv.Common
             
             if (!double.IsNaN(prevSample))
             {
-                double result = prevSample;
+                var result = prevSample;
                 prevSample = double.NaN;
                 return result;
             }
@@ -26,7 +26,7 @@ namespace Asv.Common
                 s = u * u + v * v;
             }
             while (u <= -1 || v <= -1 || s >= 1 || s == 0);
-            double r = Math.Sqrt(-2 * Math.Log(s) / s);
+            var r = Math.Sqrt(-2 * Math.Log(s) / s);
 
             prevSample = r * v;
             return r * u;
