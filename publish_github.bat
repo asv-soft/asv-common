@@ -1,8 +1,8 @@
 @echo off
 rem ====== projects ======
 
-set projects=set projects=Asv.Cfg Asv.Common Asv.IO Asv.Store
-set source=https://api.nuget.org/v3/index.json
+set projects=Asv.Cfg Asv.Common Asv.IO Asv.Store
+set source=https://nuget.pkg.github.com/asv-soft/index.json
 
 rem ====== projects ======
 

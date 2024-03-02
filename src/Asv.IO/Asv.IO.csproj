@@ -1,16 +1,23 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>net461;net5.0;net6.0;net7.0</TargetFrameworks>
-    <Version>1.6.0</Version>
-    <LangVersion>9.0</LangVersion>
-    <Authors>https://github.com/asvol</Authors>
-    <Company>https://github.com/asvol</Company>
-    <Copyright>https://github.com/asvol</Copyright>
-    <PackageProjectUrl>https://github.com/asvol/asv-common</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/asvol/asv-common</RepositoryUrl>
+    <AssemblyVersion>$(ProductVersion)</AssemblyVersion>
+    <FileVersion>$(ProductVersion)</FileVersion>
+    <Version>$(ProductVersion)</Version>
+    <PackageVersion>$(ProductVersion)</PackageVersion>
+    <ApiCompatGenerateSuppressionFile>true</ApiCompatGenerateSuppressionFile>
+    <PackageValidationBaselineVersion>$(ProductPrevVersion)</PackageValidationBaselineVersion>
+    
+    <Authors>https://github.com/asv-soft</Authors>
+    <Company>https://github.com/asv-soft</Company>
+    <Copyright>https://github.com/asv-soft</Copyright>
+    <PackageProjectUrl>https://github.com/asv-soft/asv-common</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/asv-soft/asv-common</RepositoryUrl>
     <PackageTags />
+    
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageIcon>asv-io-128.png</PackageIcon>
+    <LangVersion>9.0</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net6.0|AnyCPU'">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -48,6 +55,10 @@
     <PackageReference Include="System.Memory" Version="4.5.4" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="System.IO.Ports" Version="6.0.0" />
+    <PackageReference Include="Microsoft.DotNet.ApiCompat.Task" Version="$(ApiCompatVersion)" >
+      <!--using api compatibility purely as a development harness-->
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Asv.Common\Asv.Common.csproj" />
