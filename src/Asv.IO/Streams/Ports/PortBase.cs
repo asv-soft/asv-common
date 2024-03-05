@@ -29,12 +29,13 @@ namespace Asv.IO
 
         protected PortBase()
         {
-            _enableStream.Where(_ => _).Subscribe(_ => Task.Factory.StartNew(TryConnect)).DisposeItWith(Disposable);
+            _enableStream.Where(x => x).Subscribe(_ => Task.Factory.StartNew(TryConnect)).DisposeItWith(Disposable);
             _portErrorStream.DisposeItWith(Disposable);
             _portStateStream.DisposeItWith(Disposable);
             _enableStream.DisposeItWith(Disposable);
             Disposable.AddAction(() =>
             {
+                if (_outputData.IsDisposed) return;
                 _outputData.OnCompleted();
                 _outputData.Dispose();
             });
