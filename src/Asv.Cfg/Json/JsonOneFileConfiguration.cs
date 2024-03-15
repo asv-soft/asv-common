@@ -25,12 +25,19 @@ namespace Asv.Cfg.Json
         private readonly object _sync = new();
         private readonly bool _deferredFlush;
         private readonly Subject<Exception> _deferredErrors = new();
+        private readonly JsonSerializer _serializer;
 
 
         public JsonOneFileConfiguration(string fileName, bool createIfNotExist, TimeSpan? flushToFileDelayMs, bool sortKeysInFile = false)
         {
             _fileName = fileName;
             _sortKeysInFile = sortKeysInFile;
+            
+            _serializer = new JsonSerializer
+            {
+                Formatting = Formatting.Indented,
+            };
+            _serializer.Converters.Add(new StringEnumConverter());
 
             if (flushToFileDelayMs == null)
             {
@@ -97,11 +104,23 @@ namespace Asv.Cfg.Json
             {
                 try
                 {
-                    var content = _sortKeysInFile ? JsonConvert.SerializeObject(new SortedDictionary<string, JToken>(_values), Formatting.Indented, new StringEnumConverter()) : JsonConvert.SerializeObject(_values, Formatting.Indented, new StringEnumConverter());
-                    
-                    File.Delete(_fileName);
-                    File.WriteAllText(_fileName, content);
-                    Logger.Trace("Flush configuration to file");
+                    if (File.Exists(_fileName))
+                    {
+                        File.Delete(_fileName);
+                    }
+                    using (var file = File.CreateText(_fileName))
+                    {
+                        //serialize object directly into file stream
+                        if (_sortKeysInFile)
+                        {
+                            _serializer.Serialize(file, _values);    
+                        }
+                        else
+                        {
+                            _serializer.Serialize(file, new SortedDictionary<string, JToken>(_values)); 
+                        }
+                    }
+                    Logger.Trace($"Flush configuration to file [{_values.Count}] ");
                 }
                 catch (Exception e)
                 {

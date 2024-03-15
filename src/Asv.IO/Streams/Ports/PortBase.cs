@@ -29,16 +29,21 @@ namespace Asv.IO
 
         protected PortBase()
         {
-            _enableStream.Where(_ => _).Subscribe(_ => Task.Factory.StartNew(TryConnect)).DisposeItWith(Disposable);
+            Disposable.AddAction(Disable);
+            Disposable.AddAction(() =>
+            {
+                if (_outputData.IsDisposed == false)
+                {
+                    _outputData.OnCompleted();
+                }
+                _outputData.Dispose();
+            });
+            _enableStream.Where(x => x).Subscribe(_ => Task.Factory.StartNew(TryConnect)).DisposeItWith(Disposable);
             _portErrorStream.DisposeItWith(Disposable);
             _portStateStream.DisposeItWith(Disposable);
             _enableStream.DisposeItWith(Disposable);
-            Disposable.AddAction(() =>
-            {
-                _outputData.OnCompleted();
-                _outputData.Dispose();
-            });
-            Disposable.AddAction(Disable);
+            
+            
         }
 
         public abstract string PortLogName { get; }
@@ -48,6 +53,7 @@ namespace Asv.IO
         public async Task<bool> Send(byte[] data, int count, CancellationToken cancel)
         {
             if (!IsEnabled.Value) return false;
+            if (IsDisposed) return false;
             if (_portStateStream.Value != PortState.Connected) return false;
             try
             {
