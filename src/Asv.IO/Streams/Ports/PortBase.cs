@@ -53,7 +53,6 @@ namespace Asv.IO
         public async Task<bool> Send(byte[] data, int count, CancellationToken cancel)
         {
             if (!IsEnabled.Value) return false;
-            if (IsDisposed) return false;
             if (_portStateStream.Value != PortState.Connected) return false;
             try
             {

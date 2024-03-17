@@ -20,9 +20,9 @@ namespace Asv.Common
             string[] suf = { "B", "KB", "MB", "GB", "TB", "PB", "EB" }; //Longs run out around EB
             if (byteCount == 0)
                 return "0" + suf[0];
-            long bytes = Math.Abs(byteCount);
-            int place = Convert.ToInt32(Math.Floor(Math.Log(bytes, 1024)));
-            double num = Math.Round(bytes / Math.Pow(1024, place), 1);
+            var bytes = Math.Abs(byteCount);
+            var place = Convert.ToInt32(Math.Floor(Math.Log(bytes, 1024)));
+            var num = Math.Round(bytes / Math.Pow(1024, place), 1);
             return (Math.Sign(byteCount) * num).ToString() + suf[place];
         }
 
@@ -37,7 +37,7 @@ namespace Asv.Common
             if (delay > 0)
             {
                 var sb = new StringBuilder();
-                for (int i = 0; i < delay; i++)
+                for (var i = 0; i < delay; i++)
                 {
                     sb.Append(fillChar);
                 }
@@ -58,7 +58,7 @@ namespace Asv.Common
             if (delay > 0)
             {
                 var sb = new StringBuilder(src);
-                for (int i = 0; i < delay; i++)
+                for (var i = 0; i < delay; i++)
                 {
                     sb.Append(fillChar);
                 }
@@ -615,15 +615,15 @@ namespace Asv.Common
         public static Guid GetMd5Hash(this string s)
         {
             //переводим строку в байт-массим  
-            byte[] bytes = Encoding.Unicode.GetBytes(s);
+            var bytes = Encoding.Unicode.GetBytes(s);
 
             //создаем объект для получения средст шифрования  
             var csp = MD5.Create();
 
             //вычисляем хеш-представление в байтах  
-            byte[] byteHash = csp.ComputeHash(bytes);
+            var byteHash = csp.ComputeHash(bytes);
 
-            string hash = byteHash.Aggregate(String.Empty, (current, b) => current + $"{b:x2}");
+            var hash = byteHash.Aggregate(String.Empty, (current, b) => current + $"{b:x2}");
 
             //формируем одну цельную строку из массива  
 
@@ -640,7 +640,7 @@ namespace Asv.Common
             // which is a valid length for the TripleDES encoder we use below
 
             var hashProvider = MD5.Create();
-            byte[] tdesKey = hashProvider.ComputeHash(utf8.GetBytes(password));
+            var tdesKey = hashProvider.ComputeHash(utf8.GetBytes(password));
 
             // Step 2. Create a new TripleDESCryptoServiceProvider object
             var tdesAlgorithm = TripleDES.Create();
@@ -651,12 +651,12 @@ namespace Asv.Common
             tdesAlgorithm.Padding = PaddingMode.PKCS7;
 
             // Step 4. Convert the input string to a byte[]
-            byte[] dataToEncrypt = utf8.GetBytes(plainText);
+            var dataToEncrypt = utf8.GetBytes(plainText);
 
             // Step 5. Attempt to encrypt the string
             try
             {
-                ICryptoTransform encryptor = tdesAlgorithm.CreateEncryptor();
+                var encryptor = tdesAlgorithm.CreateEncryptor();
                 Results = encryptor.TransformFinalBlock(dataToEncrypt, 0, dataToEncrypt.Length);
             }
             finally
@@ -680,7 +680,7 @@ namespace Asv.Common
             // which is a valid length for the TripleDES encoder we use below
 
             var hashProvider = MD5.Create();
-            byte[] tdesKey = hashProvider.ComputeHash(utf8.GetBytes(password));
+            var tdesKey = hashProvider.ComputeHash(utf8.GetBytes(password));
 
             // Step 2. Create a new TripleDESCryptoServiceProvider object
             var tdesAlgorithm = TripleDES.Create();
@@ -691,7 +691,7 @@ namespace Asv.Common
             // Step 3. Setup the decoder
 
             // Step 4. Convert the input string to a byte[]
-            byte[] dataToDecrypt = Convert.FromBase64String(plainText);
+            var dataToDecrypt = Convert.FromBase64String(plainText);
 
             // Step 5. Attempt to decrypt the string
             try

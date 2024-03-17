@@ -102,14 +102,14 @@ namespace Asv.Common
             var major = Int32.Parse(match.Groups["major"].Value, CultureInfo.InvariantCulture);
 
             var minorMatch = match.Groups["minor"];
-            int minor = 0;
+            var minor = 0;
             if (minorMatch.Success)
                 minor = Int32.Parse(minorMatch.Value, CultureInfo.InvariantCulture);
             else if (strict)
                 throw new InvalidOperationException("Invalid version (no minor version given in strict mode)");
 
             var patchMatch = match.Groups["patch"];
-            int patch = 0;
+            var patch = 0;
             if (patchMatch.Success)
                 patch = Int32.Parse(patchMatch.Value, CultureInfo.InvariantCulture);
             else if (strict)
@@ -346,7 +346,7 @@ namespace Asv.Common
             var bComps = b.Split('.');
 
             var minLen = Math.Min(aComps.Length, bComps.Length);
-            for (int i = 0; i < minLen; i++)
+            for (var i = 0; i < minLen; i++)
             {
                 var ac = aComps[i];
                 var bc = bComps[i];
@@ -409,7 +409,7 @@ namespace Asv.Common
         {
             unchecked
             {
-                int result = Major.GetHashCode();
+                var result = Major.GetHashCode();
                 result = result * 31 + Minor.GetHashCode();
                 result = result * 31 + Patch.GetHashCode();
                 result = result * 31 + Prerelease.GetHashCode();

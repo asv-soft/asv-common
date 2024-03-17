@@ -96,9 +96,9 @@ namespace Asv.Common
         
         public static string PrintDm(double decimalDegrees)
         {
-            int degrees = (int)Math.Abs(decimalDegrees);
-            double remainingDegrees = Math.Abs(decimalDegrees) - degrees;
-            double minutes = Math.Round(remainingDegrees * 60, 2);
+            var degrees = (int)Math.Abs(decimalDegrees);
+            var remainingDegrees = Math.Abs(decimalDegrees) - degrees;
+            var minutes = Math.Round(remainingDegrees * 60, 2);
             while (minutes >= 60d)
             {
                 degrees++;

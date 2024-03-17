@@ -57,11 +57,11 @@ namespace Asv.Common
         {
             // Generate a random salt
             var csprng = RandomNumberGenerator.Create();
-            byte[] salt = new byte[SALT_BYTE_SIZE];
+            var salt = new byte[SALT_BYTE_SIZE];
             csprng.GetBytes(salt);
 
             // Hash the password and encode the parameters
-            byte[] hash = PBKDF2(password, salt, PBKDF2_ITERATIONS, HASH_BYTE_SIZE);
+            var hash = PBKDF2(password, salt, PBKDF2_ITERATIONS, HASH_BYTE_SIZE);
             return PBKDF2_ITERATIONS + ":" +
                 Convert.ToBase64String(salt) + ":" +
                 Convert.ToBase64String(hash);
@@ -78,11 +78,11 @@ namespace Asv.Common
             // Extract the parameters from the hash
             char[] delimiter = { ':' };
             string[] split = correctHash.Split(delimiter);
-            int iterations = int.Parse(split[ITERATION_INDEX]);
-            byte[] salt = Convert.FromBase64String(split[SALT_INDEX]);
-            byte[] hash = Convert.FromBase64String(split[PBKDF2_INDEX]);
+            var iterations = int.Parse(split[ITERATION_INDEX]);
+            var salt = Convert.FromBase64String(split[SALT_INDEX]);
+            var hash = Convert.FromBase64String(split[PBKDF2_INDEX]);
 
-            byte[] testHash = PBKDF2(password, salt, iterations, hash.Length);
+            var testHash = PBKDF2(password, salt, iterations, hash.Length);
             return SlowEquals(hash, testHash);
         }
 
@@ -97,7 +97,7 @@ namespace Asv.Common
         private static bool SlowEquals(byte[] a, byte[] b)
         {
             var diff = (uint)a.Length ^ (uint)b.Length;
-            for (int i = 0; i < a.Length && i < b.Length; i++)
+            for (var i = 0; i < a.Length && i < b.Length; i++)
                 diff |= (uint)(a[i] ^ b[i]);
             return diff == 0;
         }

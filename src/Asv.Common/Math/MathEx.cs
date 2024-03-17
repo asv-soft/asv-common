@@ -34,15 +34,15 @@ namespace Asv.Common
             double lower,
             double upper)
         {
-            for (int index1 = 0; index1 < x.Length; ++index1)
+            for (var index1 = 0; index1 < x.Length; ++index1)
             {
                 if (value < x[index1])
                 {
                     if (index1 == 0)
                         return lower;
-                    int index2 = index1 - 1;
-                    int index3 = index1;
-                    double num = (value - x[index2]) / (x[index3] - x[index2]);
+                    var index2 = index1 - 1;
+                    var index3 = index1;
+                    var num = (value - x[index2]) / (x[index3] - x[index2]);
                     return y[index2] + (y[index3] - y[index2]) * num;
                 }
             }

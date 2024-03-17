@@ -19,6 +19,17 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Asv.Cfg.Test", "Asv.Cfg.Tes
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Asv.Store.Test", "Asv.Store.Test\Asv.Store.Test.csproj", "{27A7A16B-85D0-4FAE-B8E3-3B25240360DC}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{3703EC40-F09D-4C29-8269-1D5FBCEA543C}"
+	ProjectSection(SolutionItems) = preProject
+		..\.gitignore = ..\.gitignore
+		..\build.bat = ..\build.bat
+		..\LICENSE = ..\LICENSE
+		..\publish_nuget.bat = ..\publish_nuget.bat
+		..\README.md = ..\README.md
+		..\publish_github.bat = ..\publish_github.bat
+		Directory.Build.props = Directory.Build.props
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

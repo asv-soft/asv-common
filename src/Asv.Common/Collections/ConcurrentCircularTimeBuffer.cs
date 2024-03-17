@@ -79,7 +79,7 @@ namespace Asv.Common
                         break;
                     }
                     lastElement = lastElement.Previous;
-                };
+                }
             }
             
             // remove items by max count

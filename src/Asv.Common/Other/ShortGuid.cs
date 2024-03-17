@@ -121,7 +121,7 @@ namespace Asv.Common
         /// <returns>A 22 character ShortGuid URL-safe Base64 string.</returns>
         public static string Encode(Guid guid)
         {
-            string encoded = Convert.ToBase64String(guid.ToByteArray());
+            var encoded = Convert.ToBase64String(guid.ToByteArray());
 
             encoded = encoded
                 .Replace("/", "_")
@@ -152,11 +152,11 @@ namespace Asv.Common
                 );
             }
 
-            string base64 = value
+            var base64 = value
                 .Replace("_", "/")
                 .Replace("-", "+") + "==";
 
-            byte[] blob = Convert.FromBase64String(base64);
+            var blob = Convert.FromBase64String(base64);
             var guid = new Guid(blob);
 
             var sanityCheck = Encode(guid);

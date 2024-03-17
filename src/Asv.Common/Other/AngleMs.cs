@@ -99,11 +99,11 @@ namespace Asv.Common
         
         public static string PrintMs(double decimalDegrees)
         {
-            int degrees = (int)Math.Abs(decimalDegrees);
-            double remainingDegrees = Math.Abs(decimalDegrees) - degrees;
-            int minutes = (int)(decimalDegrees * 60);
-            double remainingMinutes = (remainingDegrees * 60) - (int)(remainingDegrees * 60);
-            double seconds = Math.Round(remainingMinutes * 60, 2);
+            var degrees = (int)Math.Abs(decimalDegrees);
+            var remainingDegrees = Math.Abs(decimalDegrees) - degrees;
+            var minutes = (int)(decimalDegrees * 60);
+            var remainingMinutes = (remainingDegrees * 60) - (int)(remainingDegrees * 60);
+            var seconds = Math.Round(remainingMinutes * 60, 2);
             while (seconds >= 60d)
             {
                 minutes++;
