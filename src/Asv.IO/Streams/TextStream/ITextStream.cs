@@ -23,23 +23,9 @@ namespace Asv.IO
             linkedCancel.CancelAfter(timeoutMs);
             var tcs = new TaskCompletionSource<string>();
             using var c1 = linkedCancel.Token.Register(tcs.SetCanceled);
-            try
-            {
-                using var subscribe = strm.FirstAsync().Subscribe(tcs.SetResult);
-                try
-                {
-                    await strm.Send(request, linkedCancel.Token);
-                    return await tcs.Task.ConfigureAwait(false);
-                }
-                finally
-                {
-                    subscribe?.Dispose();
-                }
-            }
-            finally
-            {
-                c1.Dispose();
-            }
+            using var subscribe = strm.FirstAsync().Subscribe(tcs.SetResult);
+            await strm.Send(request, linkedCancel.Token);
+            return await tcs.Task.ConfigureAwait(false);
         }
     }
 }

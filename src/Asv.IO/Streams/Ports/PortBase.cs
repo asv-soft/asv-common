@@ -29,17 +29,21 @@ namespace Asv.IO
 
         protected PortBase()
         {
+            Disposable.AddAction(Disable);
+            Disposable.AddAction(() =>
+            {
+                if (_outputData.IsDisposed == false)
+                {
+                    _outputData.OnCompleted();
+                }
+                _outputData.Dispose();
+            });
             _enableStream.Where(x => x).Subscribe(_ => Task.Factory.StartNew(TryConnect)).DisposeItWith(Disposable);
             _portErrorStream.DisposeItWith(Disposable);
             _portStateStream.DisposeItWith(Disposable);
             _enableStream.DisposeItWith(Disposable);
-            Disposable.AddAction(() =>
-            {
-                if (_outputData.IsDisposed) return;
-                _outputData.OnCompleted();
-                _outputData.Dispose();
-            });
-            Disposable.AddAction(Disable);
+            
+            
         }
 
         public abstract string PortLogName { get; }

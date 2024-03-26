@@ -59,7 +59,6 @@ namespace Asv.IO.Test.Streams
 
             await strm1.Send("1234567890", CancellationToken.None);
 
-            
             await tcs.Task;
 
             Assert.Throws<InternalBufferOverflowException>(new Action(() => throw tcs.Task.Result));
