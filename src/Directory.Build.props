@@ -1,10 +1,10 @@
 <Project>
   <PropertyGroup>
-    <ProductVersion>1.13.2</ProductVersion>
-    <ProductPrevVersion>1.13.1</ProductPrevVersion>
+    <ProductVersion>2.0.0</ProductVersion>
+    <ProductPrevVersion>1.13.3</ProductPrevVersion>
     
-    <ReactiveVersion>5.0.0</ReactiveVersion>
-    <NewtonsoftJsonVersion>13.0.1</NewtonsoftJsonVersion>
+    <ReactiveVersion>6.0.0</ReactiveVersion>
+    <NewtonsoftJsonVersion>13.0.3</NewtonsoftJsonVersion>
     <NLogVersion>5.2.8</NLogVersion>
     <ApiCompatVersion>8.0.200</ApiCompatVersion>
   </PropertyGroup>
