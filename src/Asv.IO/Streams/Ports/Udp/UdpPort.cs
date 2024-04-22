@@ -80,7 +80,7 @@ namespace Asv.IO
                 while (true)
                 {
                     var bytes = _udp.Receive(ref anyEp);
-                    if (_lastRecvEndpoint == null || _udp.Client.Connected == false)
+                    if (_lastRecvEndpoint == null && _udp.Client.Connected == false)
                     {
                         _lastRecvEndpoint = anyEp;
                         _udp.Connect(_lastRecvEndpoint);

@@ -5,7 +5,7 @@
     <AssemblyVersion>$(ProductVersion)</AssemblyVersion>
     <FileVersion>$(ProductVersion)</FileVersion>
     <Version>$(ProductVersion)</Version>
-    <LangVersion>9.0</LangVersion>
+    <LangVersion>10</LangVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="DeepEqual" Version="2.0.0" />
