@@ -35,6 +35,11 @@ namespace Asv.IO
         public override PortType PortType => PortType.Udp;
 
         public override string PortLogName => _config.ToString();
+        protected override async Task InternalSend(ReadOnlyMemory<byte> data, CancellationToken cancel)
+        {
+            if (_udp?.Client == null || _udp.Client.Connected == false) return;
+            await _udp.SendAsync(data, cancel);
+        }
 
         protected override Task InternalSend(byte[] data, int count, CancellationToken cancel)
         {

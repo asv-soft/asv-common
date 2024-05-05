@@ -19,7 +19,9 @@ namespace Asv.IO
         private readonly Subject<byte[]> _outputData = new();
         private long _rxBytes;
         private long _txBytes;
+
         
+
         public long RxBytes => Interlocked.Read(ref _rxBytes);
         public long TxBytes => Interlocked.Read(ref _txBytes);
         public abstract PortType PortType { get; }
@@ -66,6 +68,25 @@ namespace Asv.IO
                 return false;
             }
         }
+        
+        public async Task<bool> Send(ReadOnlyMemory<byte> data, CancellationToken cancel)
+        {
+            if (!IsEnabled.Value) return false;
+            if (_portStateStream.Value != PortState.Connected) return false;
+            try
+            {
+                await InternalSend(data, cancel).ConfigureAwait(false);
+                Interlocked.Add(ref _txBytes, data.Length);
+                return true;
+            }
+            catch (Exception exception)
+            {
+                InternalOnError(exception);
+                return false;
+            }
+        }
+
+        protected abstract Task InternalSend(ReadOnlyMemory<byte> data, CancellationToken cancel);
 
         public IRxValue<Exception> Error => _portErrorStream;
 

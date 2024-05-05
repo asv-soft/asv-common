@@ -71,6 +71,15 @@ namespace Asv.IO
         public override PortType PortType { get; } = PortType.Tcp;
 
         public override string PortLogName => _cfg.ToString();
+        protected override Task InternalSend(ReadOnlyMemory<byte> data, CancellationToken cancel)
+        {
+            _rw.EnterReadLock();
+            var clients = _clients.ToArray();
+            _rw.ExitReadLock();
+            return Task.WhenAll(clients.Select(_ => SendAsync(_, data, cancel)));
+        }
+
+        
 
         protected override Task InternalSend(byte[] data, int count, CancellationToken cancel)
         {
@@ -92,7 +101,18 @@ namespace Asv.IO
                // Debug.Assert(false);    
             }
         }
-
+        private async Task SendAsync(TcpClient client, ReadOnlyMemory<byte> data, CancellationToken cancel)
+        {
+            if (_tcp == null || client == null || client.Connected == false) return;
+            try
+            {
+                await client.GetStream().WriteAsync(data, cancel).ConfigureAwait(false);
+            }
+            catch (Exception)
+            {
+                // Debug.Assert(false);    
+            }
+        }
         protected override void InternalStop()
         {
             _stop?.Cancel(false);

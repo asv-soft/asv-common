@@ -48,6 +48,26 @@ public class AesCryptoPort : PortBase
 
     public override PortType PortType => _port.PortType;
     public override string PortLogName => $"AES {_port.PortLogName}";
+    protected override async Task InternalSend(ReadOnlyMemory<byte> data, CancellationToken cancel)
+    {
+        var encryptedData = data;
+        try
+        {
+            _encryptMemStream.SetLength(0);
+            _encryptorStream = new CryptoStream(_encryptMemStream, _aes.CreateEncryptor(), CryptoStreamMode.Write); // TODO: why we create new stream every time ???
+            await _encryptorStream.WriteAsync(data, cancel);
+            await _encryptorStream.FlushFinalBlockAsync(cancel);
+            encryptedData = _encryptMemStream.ToArray(); // TODO: memory allocation
+        }
+        catch (Exception ex)
+        {
+            InternalOnError(ex);
+        }
+        finally
+        {
+            await _port.Send(encryptedData, cancel); // TODO: send original data when error ??? WTF
+        }
+    }
 
     protected override async Task InternalSend(byte[] data, int count, CancellationToken cancel)
     {
@@ -55,7 +75,7 @@ public class AesCryptoPort : PortBase
         try
         {
             _encryptMemStream.SetLength(0);
-            _encryptorStream = new CryptoStream(_encryptMemStream, _aes.CreateEncryptor(), CryptoStreamMode.Write);
+            _encryptorStream = new CryptoStream(_encryptMemStream, _aes.CreateEncryptor(), CryptoStreamMode.Write); // TODO: why we create new stream every time ???
             await _encryptorStream.WriteAsync(data.AsMemory(0, count), cancel);
             await _encryptorStream.FlushFinalBlockAsync(cancel);
             encryptedData = _encryptMemStream.ToArray();

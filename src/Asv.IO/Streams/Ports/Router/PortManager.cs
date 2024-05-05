@@ -233,6 +233,18 @@ namespace Asv.IO
             return res.Any();
         }
 
+        public async Task<bool> Send(ReadOnlyMemory<byte> data, CancellationToken cancel)
+        {
+            Interlocked.Add(ref _txBytes, data.Length);
+            PortWrapper[] ports;
+            lock (_sync)
+            {
+                ports = _ports.Where(_ => _.Port.IsEnabled.Value).ToArray();
+            }
+            var res = await Task.WhenAll(ports.Select(_ => _.Port.Send(data, cancel))).ConfigureAwait(false);
+            return res.Any();
+        }
+
         public long RxBytes => Interlocked.Read(ref _rxBytes);
         public long TxBytes => Interlocked.Read(ref _txBytes);
     }

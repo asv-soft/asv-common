@@ -22,6 +22,11 @@ namespace Asv.IO
         public override PortType PortType { get; } = PortType.Tcp;
 
         public override string PortLogName => _cfg.ToString();
+        protected override async Task InternalSend(ReadOnlyMemory<byte> data, CancellationToken cancel)
+        {
+            if (_tcp == null || _tcp.Connected == false) return;
+            await _tcp.GetStream().WriteAsync(data, cancel);
+        }
 
         protected override Task InternalSend(byte[] data, int count, CancellationToken cancel)
         {
@@ -75,14 +80,14 @@ namespace Asv.IO
                     {
                         if ((DateTime.Now - _lastData).TotalMilliseconds > _cfg.ReconnectTimeout)
                         {
-                            _tcp.GetStream().Write(Array.Empty<byte>(), 0, 0);
+                            await _tcp.GetStream().WriteAsync([], 0, 0, cancellationTokenSource.Token);
                         }
                     }
                     if (_tcp.Available != 0)
                     {
                         _lastData = DateTime.Now;
                         var buff = new byte[_tcp.Available];
-                        var readed = _tcp.GetStream().Read(buff, 0, buff.Length);
+                        var readed = await _tcp.GetStream().ReadAsync(buff, 0, buff.Length, cancellationTokenSource.Token);
                         Debug.Assert(readed == buff.Length);
                         if (readed != 0) InternalOnData(buff);
                     }

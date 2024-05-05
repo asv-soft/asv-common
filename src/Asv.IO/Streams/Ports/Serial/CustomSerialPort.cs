@@ -24,6 +24,15 @@ namespace Asv.IO
 
 
         public override string PortLogName => _config.ToString();
+        protected override async Task InternalSend(ReadOnlyMemory<byte> data, CancellationToken cancel)
+        {
+            if (_serial == null) return;
+            using (await _sync.LockAsync(cancel).ConfigureAwait(false))
+            {
+                if (_serial is not { IsOpen: true }) return;
+                await _serial.BaseStream.WriteAsync(data, cancel).ConfigureAwait(false);
+            }
+        }
 
         protected override async Task InternalSend(byte[] data, int count, CancellationToken cancel)
         {
