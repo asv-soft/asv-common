@@ -38,6 +38,7 @@ namespace Asv.IO
         {
             _tcp?.Close();
             _tcp?.Dispose();
+            _tcp = null;
             _stop?.Cancel(false);
             _stop?.Dispose();
             _stop = null;
@@ -116,6 +117,7 @@ namespace Asv.IO
         protected override void InternalDisposeOnce()
         {
             base.InternalDisposeOnce();
+            
             _tcp?.Dispose();
         }
 
