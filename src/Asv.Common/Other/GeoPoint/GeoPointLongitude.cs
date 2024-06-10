@@ -12,10 +12,16 @@ namespace Asv.Common
         private const string MinusChars = "-Ww";
         //private static readonly Regex LongitudeDegreeRegex = new(@"^(-?[1]?[0-7]?[0-9](?:\.\d{1,6})?|180(?:\.0{1,6})?)$", RegexOptions.Compiled);
         private static readonly Regex LongitudeDegreeRegex = new(@"^[\+-]?((1[0-7]\d|[1-9]?\d)(\.\d{1,})?|180)\D*[EWew]?$", RegexOptions.Compiled);
-        
-        private static readonly Regex LongitudeRegex = new(
-            @"((?<s1>(\+|\-|E|e|W|w))?(?<deg>[0-9]{0,2}\d|180)(°|˚|º|\^|~|\*|\s|\-|_)*((?<min>[0-5]?\d|\d)?)('|′|\s|\-|_)*(?<sec>(([0-5]?\d|\d)([.]\d*)?))?(""|¨|˝|\s|\-|_)*(?<s2>(\+|\-|E|e|W|w))?)[\s]*$", 
-            RegexOptions.Compiled);
+        //
+        private static readonly Regex LongitudeStrongRegex = new(
+            """^((?<s1>[WwEe+-]?\s*)?(?<deg>[0-9]{0,2}\d|180)\s*([:°˚º^~*°\.\s_-]+)\s*((?<min>[0-5]?\d|\d)(?:\.\d+)?|\d{1,2})\s*([′':;^~*\s_-]*)\s*(?<sec>([0-5]?\d|\d)(?:\.\d+)?\s*)?([""”˝¨^\s_-]*)\s*(?<s2>[WwEe+-]?\s*)?)\s*$""", 
+            RegexOptions.Compiled
+            );
+
+        private static readonly Regex LongitudeEasyRegex = new(
+            """^(?<s1>[WwEe+-]?\s*)?(?<deg>\d{1,3})\s*(?<min>\d{2})?\s*(?<sec>\d{2}(\.\d+)?)?\s*(?<s2>[WwEe+-])?$""",
+            RegexOptions.Compiled
+        );
         
         public static bool IsValid(string? value)
         {
@@ -38,8 +44,11 @@ namespace Asv.Common
                     return true;
                 }
             }
-            
-            var match = LongitudeRegex.Match(value);
+
+
+            var match = LongitudeStrongRegex.Match(value);
+            if (match.Success == false)
+                match = LongitudeEasyRegex.Match(value);
             if (match.Success == false)
             {
                 if (double.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out longitude) == false)
@@ -56,21 +65,21 @@ namespace Asv.Common
 
             if (degGroup.Success == false) return false;
             
-            if (degGroup.Success && minGroup.Success == false && secGroup.Success == false) return false;
+            if (degGroup.Success == false && minGroup.Success == false && secGroup.Success == false) return false;
             
             if (int.TryParse(degGroup.Value,NumberStyles.Integer, CultureInfo.InvariantCulture, out var deg) == false) return false;
             // if only seconds without minutes => error
             if (secGroup.Success && minGroup.Success == false) return false;
-            var min = 0;
+            var min = 0.0;
             var sec = 0.0;
             if (minGroup.Success)
             {
-                if (int.TryParse(minGroup.Value,NumberStyles.Any, CultureInfo.InvariantCulture, out min) == false) return false;
+                double.TryParse(minGroup.Value,NumberStyles.Any, CultureInfo.InvariantCulture, out min);
             }
             
             if (secGroup.Success)
             {
-                if (double.TryParse(secGroup.Value,NumberStyles.Any, CultureInfo.InvariantCulture, out sec) == false) return false;
+                double.TryParse(secGroup.Value, NumberStyles.Any, CultureInfo.InvariantCulture, out sec);
                 var valuableDigitsCount = secGroup.Value
                     .Split('.')
                     .Last()
@@ -82,21 +91,21 @@ namespace Asv.Common
             if (s1Group.Success)
             {
                 var s1 = s1Group.Value;
-                sign1 = MinusChars.Contains(s1) ? -1 : 1;
+                sign1 = MinusChars.Contains(s1) && s1 != "" ? -1 : 1;
             }
 
             var sign2 = 1;
             if (s2Group.Success)
             {
                 var s2 = s2Group.Value;
-                sign2 = MinusChars.Contains(s2) ? -1 : 1;
+                sign2 = MinusChars.Contains(s2) && s2 != "" ? -1 : 1;
             }
 
-            if (s1Group.Success && s2Group.Success && sign1 != sign2)
+            if (s1Group.Value != "" && s2Group.Value != "" && sign1 != sign2)
             {
                 return false;
             }
-            longitude = (s1Group.Success ? sign1 : sign2) * (deg + (double)min / 60 + sec / 3600);
+            longitude = sign1 * sign2 * (deg + min / 60 + sec / 3600);
             return longitude is >= Min and <= Max;
         }
         public static string PrintDms(double longitude)

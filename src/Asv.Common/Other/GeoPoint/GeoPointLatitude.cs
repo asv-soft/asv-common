@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -10,12 +11,12 @@ namespace Asv.Common
         private const double Min = -90;
         private const double Max = 90;
         private const string MinusChars = "-Ss";
-
+        
         private static readonly Regex LatitudeDegreeRegex = new(@"^(-?[1-8]?\d(?:\.\d{1,6})?|90(?:\.0{1,6})?)$", RegexOptions.Compiled);
         
         private static readonly Regex LatitudeRegex = new(
-            @"((?<s1>(\+|\-|N|n|S|s))?(?<deg>[0-8]?\d|90)(°|˚|º|\^|~|\*|\s|\-|_)*((?<min>[0-5]?\d|\d)?)('|′|\s|\-|_)*(?<sec>(([0-5]?\d|\d)([.]\d*)?))?(""|¨|˝|\s|\-|_)*(?<s2>(\+|\-|N|n|S|s))?)[\s]*$", 
-            RegexOptions.Compiled);
+            """^(?<s1>[NSns+-]?\s*)?(?<deg>\d{1,2})\s*([:°˚º^~*°\.\s_-]*)\s*(?<min>\d{1,2}(?:\.\d+)?|\d{1,2})\s*([′':;^\s_-]*)\s*(?<sec>\d{1,2}(?:\.\d+)?\s*)?(["”˝¨^\s_-]*)\s*(?<s2>[NSns+-]?\s*)?$""",
+        RegexOptions.Compiled);
         public static bool IsValid(string? value)
         {
             return TryParse(value, out _);
@@ -60,38 +61,38 @@ namespace Asv.Common
             if (int.TryParse(degGroup.Value,NumberStyles.Integer, CultureInfo.InvariantCulture, out var deg) == false) return false;
             // if only seconds without minutes => error
             if (secGroup.Success && minGroup.Success == false) return false;
-            var min = 0;
+            var min = 0.0;
             var sec = 0.0;
             if (minGroup.Success)
             {
-                if (int.TryParse(minGroup.Value,NumberStyles.Any, CultureInfo.InvariantCulture, out min) == false) return false;
+                if (double.TryParse(minGroup.Value,NumberStyles.Any, CultureInfo.InvariantCulture, out min) == false) return false;
             }
             
             if (secGroup.Success)
             {
-                if (double.TryParse(secGroup.Value,NumberStyles.Any, CultureInfo.InvariantCulture, out sec) == false) return false;
+                double.TryParse(secGroup.Value,NumberStyles.Any, CultureInfo.InvariantCulture, out sec);
             }
 
             var sign1 = 1;
             if (s1Group.Success)
             {
                 var s1 = s1Group.Value;
-                sign1 = MinusChars.Contains(s1) ? -1 : 1;
+                sign1 = MinusChars.Contains(s1) && s1 != "" ? -1 : 1;
             }
 
             var sign2 = 1;
             if (s2Group.Success)
             {
                 var s2 = s2Group.Value;
-                sign2 = MinusChars.Contains(s2) ? -1 : 1;
+                sign2 = MinusChars.Contains(s2) && s2 != "" ? -1 : 1;
             }
 
-            if (s1Group.Success && s2Group.Success && sign1 != sign2)
+            if (s1Group.Value != "" && s2Group.Value != "" && sign1 != sign2)
             {
                 return false;
             }
             
-            latitude = (s1Group.Success ? sign1 : sign2) * (deg + (double)min / 60 + sec / 3600);
+            latitude = sign1 * sign2 * (deg + min / 60 + sec / 3600);
             return latitude is >= Min and <= Max;
         }
         
