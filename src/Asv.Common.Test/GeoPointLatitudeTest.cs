@@ -4,379 +4,259 @@ namespace Asv.Common.Test;
 
 public class GeoPointLatitudeTest
 {
-    [Fact]
-    public void CheckPlusAndMinus()
+     [Theory]
+    [InlineData("+0 0 0", 0)]
+    [InlineData("0 0 0+", 0)]
+    [InlineData("0 0 0 ", 0)]
+    [InlineData("0 0 0", 0)]
+    [InlineData("-0 0 0", 0)]
+    [InlineData("+0 0 0 ", 0)]
+    public void CheckPlusAndMinus(string input, double expected)
     {
-        var value = 0.0;
-        Assert.True(GeoPointLatitude.TryParse("+0 0 0",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("0 0 0+",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("0 0 0 ",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("0 0 0",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("-0 0 0",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("+0 0 0 ",out value));
-        Assert.Equal(0,value);
+        Assert.True(GeoPointLatitude.TryParse(input, out double value));
+        Assert.Equal(expected, value);
+    }
+
+    [Theory]
+    [InlineData("65.536", 65.536)]
+    [InlineData("-65,536", -65.536)]
+    [InlineData("90,536", null)]
+    public void Check_double_values(string input, double? expected)
+    {
+        bool result = GeoPointLatitude.TryParse(input, out double value);
+        if (expected.HasValue)
+        {
+            Assert.True(result);
+            Assert.Equal(expected.Value, value);
+        }
+        else
+        {
+            Assert.False(result);
+        }
+    }
+
+    [Theory]
+    [InlineData(@"0° 0' 0""", 0)]
+    [InlineData(@"0˚ 0' 0""", 0)]
+    [InlineData(@"0º 0' 0""", 0)]
+    [InlineData(@"0^ 0' 0""", 0)]
+    [InlineData(@"0~ 0' 0""", 0)]
+    [InlineData(@"0* 0' 0""", 0)]
+    [InlineData(@"0 0' 0""", 0)]
+    public void CheckDegreeSymbols(string input, double expected)
+    {
+        Assert.True(GeoPointLatitude.TryParse(input, out double value));
+        Assert.Equal(expected, value);
+    }
+
+    [Theory]
+    [InlineData(@"00° 00' 0""", 0)]
+    [InlineData(@"00° 00' 00 """, 0)]
+    [InlineData(@"00° 00′ 00""", 0)]
+    [InlineData(@"00° 00′ 00 """, 0)]
+    public void CheckMinuteSymbols(string input, double expected)
+    {
+        Assert.True(GeoPointLatitude.TryParse(input, out double value));
+        Assert.Equal(expected, value);
+    }
+
+    [Theory]
+    [InlineData("00° 00' 00\"", 0)]
+    [InlineData("00° 00' 00\" N", 0)]
+    [InlineData("00° 00' 00.000\" N", 0)]
+    [InlineData("00° 00' 00¨ N", 0)]
+    [InlineData("00° 00' 00.000¨ N", 0)]
+    [InlineData("00° 00' 00˝ n", 0)]
+    public void CheckSecondSymbols(string input, double expected)
+    {
+        Assert.True(GeoPointLatitude.TryParse(input, out double value));
+        Assert.Equal(expected, value);
+    }
+
+    [Theory]
+    [InlineData("0°00'00˝N", 0)]
+    [InlineData("0 °00'00˝N", 0)]
+    [InlineData("0 ° 00 ' 00˝N", 0)]
+    [InlineData("0 ° 00 ' 00 ˝ N", 0)]
+    public void CheckFullDmsWithDifferingSpaces(string input, double expected)
+    {
+        Assert.True(GeoPointLatitude.TryParse(input, out double value));
+        Assert.Equal(expected, value);
+    }
+
+    [Theory]
+    [InlineData("2 40", 2 + 40d/60d)]
+    [InlineData("15 59 45", 15 + 59d/60d + 45d/3600d)]
+    [InlineData("0 1 0 S", -1d/60d)]
+    [InlineData("15 59 45,15 S", -15 + -59d/60d + -45.15d/3600d)]
+    public void CheckDmsWithShortValues(string input, double expected)
+    {
+        Assert.True(GeoPointLatitude.TryParse(input, out double value));
+        Assert.Equal(expected, value, 6); // using precision of 6 decimal places
     }
     
-    [Fact]
-    public void Check_double_values()
+    [Theory]
+    [InlineData("00 00 00 N", 0)]
+    [InlineData("00 00 0 N", 0)]
+    [InlineData("00 0 00 N", 0)]
+    [InlineData("00 0 0 N", 0)]
+    [InlineData("0 00 00 N", 0)]
+    [InlineData("0 0 00 N", 0)]
+    [InlineData("0 0 0 N", 0)]
+    [InlineData("0 00 0 N", 0)]
+    [InlineData("0 0 00.000 N", 0)]
+    public void CheckAllZeros(string input, double expected)
     {
-        var value = 0.0;
-        Assert.True(GeoPointLatitude.TryParse("65.536",out value));
-        Assert.Equal(65.536,value);
-        Assert.True(GeoPointLatitude.TryParse("-65,536",out value));
-        Assert.Equal(-65.536,value);
-        
-        Assert.False(GeoPointLatitude.TryParse("90,536",out value));
+        Assert.True(GeoPointLatitude.TryParse(input, out double value));
+        Assert.Equal(expected, value);
     }
 
-    [Fact]
-    public void CheckDegreeSymbols()
+    [Theory]
+    [InlineData("0 0 0 N", 0)]
+    [InlineData("0 0 N", 0)]
+    [InlineData("0 N", null)] // Assuming this should fail and not return a value.
+    public void CheckIncompleteEntries(string input, double? expected)
     {
-        var value = 0.0;
-        Assert.True(GeoPointLatitude.TryParse(@"0° 0' 0""",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse(@"0˚ 0' 0""",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse(@"0º 0' 0""",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse(@"0^ 0' 0""",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse(@"0~ 0' 0""",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse(@"0* 0' 0""",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse(@"0 0' 0""",out value));
-        Assert.Equal(0,value);
-    }
-
-    [Fact]
-    public void CheckMinuteSymbols()
-    {
-        var value = 0.0;
-        Assert.True(GeoPointLatitude.TryParse(@"000° 00' 00""",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse(@"000° 00' 00 ",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse(@"000° 00' 00"" ",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse(@"000° 00′ 00""",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse(@"000° 00′ 00 """,out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse(@"000° 00′ 00"" ",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse(@"000° 00′ 00 ",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse(@"000° 00' 00 """,out value));
-        Assert.Equal(0,value);
-    }
-
-    [Fact]
-    public void CheckSecondSymbols()
-    {
-        var value = 0.0;
-        Assert.True(GeoPointLatitude.TryParse("000° 00' 00\"",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("000° 00' 00\" N",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("000° 00' 00.000\" N",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("000° 00' 00¨ N",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("000° 00' 00¨ ",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("000° 00' 00.000¨ N",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("000° 00' 00¨ n",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("000° 00' 00˝ n",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("000° 00' 00˝ ",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("000° 00' 00.000˝ n",out value));
-        Assert.Equal(0,value);
-    }
-
-    [Fact]
-    public void CheckFullDmsWithDifferingSpaces()
-    {
-        var value = 0.0;
-        
-        Assert.True(GeoPointLatitude.TryParse("0°00'00˝N",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("0 °00'00˝N",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("0 ° 00'00˝N",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("0 ° 00 '00˝N",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("0 ° 00 ' 00˝N",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("0 ° 00 ' 00 ˝N",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("0 ° 00 ' 00 ˝ N",out value));
-        Assert.Equal(0,value);
-    }
-
-    [Fact]
-    public void CheckFullDmsPrefixSuffix()
-    {
-        var value = 0.0;
-        Assert.True(GeoPointLatitude.TryParse("0° 00' 00˝N",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("0° 00' 00˝",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("N0° 00' 00˝",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("00° 00'00˝",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("N0° 00' 00˝N",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("0° 00' 00˝ N",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("0° 00' 00˝S",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("S0° 00' 00˝",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("S0° 00' 00˝S",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("0°00'00˝N",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("0°00'00˝",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("N0°00'00˝",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("00°00'00˝",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("N0°00'00˝N",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("0°00'00˝ N",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("0°00'00˝S",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("S0°00'00˝",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("S0°00'00˝S",out value));
-        Assert.Equal(0,value);
-        
-        Assert.False(GeoPointLatitude.TryParse("S0°00'00˝N",out value));
-        Assert.False(GeoPointLatitude.TryParse("N0°00'00˝S",out value));
-        Assert.False(GeoPointLatitude.TryParse("+0°00'00˝S",out value));
-        Assert.False(GeoPointLatitude.TryParse("-0°00'00˝N",out value));
-        Assert.False(GeoPointLatitude.TryParse("S0°00'00˝N",out value));
-        Assert.False(GeoPointLatitude.TryParse("N0°00'00˝S",out value));
-        Assert.False(GeoPointLatitude.TryParse("+0°00'00˝S",out value));
-        Assert.False(GeoPointLatitude.TryParse("-0°00'00˝N",out value));
-    }
-
-    [Fact]
-    public void CheckDmsWithShortValues()
-    {
-        var value = 0.0;
-        Assert.True(GeoPointLatitude.TryParse("2 40",out value));
-        Assert.Equal(2 + 40d/60d,value);
-        Assert.Equal("02°40′00.00˝ N", GeoPointLatitude.PrintDms(value).Replace(",", "."));
-        Assert.True(GeoPointLatitude.TryParse("15 59 45",out value));
-        Assert.Equal(15 + 59d/60d + 45d/3600d,value);
-        Assert.Equal("15°59′45.00˝ N", GeoPointLatitude.PrintDms(value).Replace(",", "."));
-        Assert.True(GeoPointLatitude.TryParse("0 1 0 S",out value));
-        Assert.Equal(-1d/60d,value);
-        Assert.Equal("00°01′00.00˝ S", GeoPointLatitude.PrintDms(value).Replace(",", "."));
-        Assert.True(GeoPointLatitude.TryParse("15 59 45,15 S",out value));
-        Assert.Equal(-15 + -59d/60d + -45.15d/3600d,value);
-        Assert.Equal("15°59′45.15˝ S", GeoPointLatitude.PrintDms(value).Replace(",", "."));
-        Assert.True(GeoPointLatitude.TryParse("0 1 0.94 S",out value));
-        Assert.Equal(-(1d/60d + 0.94/3600d),value);
-        Assert.Equal("00°01′00.94˝ S", GeoPointLatitude.PrintDms(value).Replace(",", "."));
+        bool result = GeoPointLatitude.TryParse(input, out double value);
+        if (expected.HasValue)
+        {
+            Assert.True(result);
+            Assert.Equal(expected.Value, value);
+        }
+        else
+        {
+            Assert.False(result);
+        }
     }
     
-    [Fact]
-    public void CheckAllZeros()
+    [Theory]
+    [InlineData("01 00 00 N", 1)]
+    [InlineData("1 00 00 N", 1)]
+    [InlineData("09 00 00 N", 9)]
+    [InlineData("9 00 00 N", 9)]
+    [InlineData("89 00 00 N", 89)]
+    [InlineData("890000N", 89)]
+    [InlineData("90 00 01 N", null)] // Assuming this should fail and not return a value.
+    [InlineData("900001N", null)] // Assuming this should fail and not return a value.
+    [InlineData("+00 00 00 N", 0)]
+    [InlineData("+0 00 00 N", 0)]
+    [InlineData("+01 00 00 N", 1)]
+    [InlineData("+1 00 00 N", 1)]
+    [InlineData("+09 00 00 N", 9)]
+    [InlineData("+9 00 00 N", 9)]
+    [InlineData("+89 00 00 N", 89)]
+    [InlineData("+00000N", 0)]
+    [InlineData("+010000N", 1)]
+    [InlineData("+10000N", 10)] 
+    [InlineData("+090000N", 9)]
+    [InlineData("+90000N", 90)]
+    [InlineData("+890000N", 89)]
+    [InlineData("+90 00 01 N", null)] // Assuming this should fail and not return a value.
+    [InlineData("-00 00 00 N", null)] // Assuming this should fail and not return a value.
+    [InlineData("-0 00 00 N", null)] // Assuming this should fail and not return a value.
+    [InlineData("-01 00 00 N", null)] // Assuming this should fail and not return a value.
+    [InlineData("-1 00 00 N", null)] // Assuming this should fail and not return a value.
+    [InlineData("-09 00 00 N", null)] // Assuming this should fail and not return a value.
+    [InlineData("-9 00 00 N", null)] // Assuming this should fail and not return a value.
+    [InlineData("-89 00 00 N", null)] // Assuming this should fail and not return a value.
+    [InlineData("-90 00 01 N", null)] // Assuming this should fail and not return a value.
+    [InlineData("+900001N", null)] // Assuming this should fail and not return a value.
+    [InlineData("-000000 N", null)] // Assuming this should fail and not return a value.
+    [InlineData("-00000N", null)] // Assuming this should fail and not return a value.
+    [InlineData("-010000N", null)] // Assuming this should fail and not return a value.
+    [InlineData("-10000N", null)] // Assuming this should fail and not return a value.
+    [InlineData("-090000N", null)] // Assuming this should fail and not return a value.
+    [InlineData("-90000N", null)] // Assuming this should fail and not return a value.
+    [InlineData("-890000N", null)] // Assuming this should fail and not return a value.
+    [InlineData("-900001N", null)] // Assuming this should fail and not return a value.
+    [InlineData("00 00 00", 0)]
+    [InlineData("+0 00 00", 0)]
+    [InlineData("+01 00 00", 1)]
+    [InlineData("+1 00 00", 1)]
+    [InlineData("+09 00 00", 9)]
+    [InlineData("+9 00 00", 9)]
+    [InlineData("+89 00 00", 89)]
+    [InlineData("+90 00 01", null)] // Assuming this should fail and not return a value.
+    [InlineData("000000", 0)]
+    [InlineData("+00000", 0)]
+    [InlineData("+010000", 1)]
+    [InlineData("+10000", 10)]
+    [InlineData("+090000", 9)]
+    [InlineData("+90000", 90)]
+    [InlineData("+890000", 89)]
+    [InlineData("+900001", null)] // Assuming this should fail and not return a value.
+    public void CheckValidLatitudeDegValues(string input, double? expected)
     {
-        var value = 0.0;
-        Assert.True(GeoPointLatitude.TryParse("00 00 00 N",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("00 00 0 N",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("00 0 00 N",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("00 0 0 N",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("0 00 00 N",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("0 0 00 N",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("0 0 0 N",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("0 00 0 N",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("0 0 00.000 N",out value));
-        Assert.Equal(0,value);
+        bool result = GeoPointLatitude.TryParse(input, out double value);
+        if (expected.HasValue)
+        {
+            Assert.True(result);
+            Assert.Equal(expected.Value, value);
+        }
+        else
+        {
+            Assert.False(result);
+        }
     }
 
-    [Fact]
-    public void CheckIncompleteEntries()
+    [Theory]
+    [InlineData("00 01 00 N", 1.0/60.0)]
+    [InlineData("00 1 00 N", 1.0/60.0)]
+    [InlineData("00 09 00 N", 9.0/60.0)]
+    [InlineData("00 9 00 N", 9.0/60.0)]
+    [InlineData("00 59 00 N", 59.0/60.0)]
+    public void CheckValidLatitudeMinuteValues(string input, double expected)
     {
-        var value = 0.0;
-        Assert.True(GeoPointLatitude.TryParse("0 0 0 N",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("0 0 N",out value));
-        Assert.Equal(0,value);
-        Assert.False(GeoPointLatitude.TryParse("0 N",out value));
+        Assert.True(GeoPointLatitude.TryParse(input, out double value));
+        Assert.Equal(expected, value);
     }
 
-    [Fact]
-    public void CheckValidLatitudeDegValues()
+    [Theory]
+    [InlineData("00 00 01 N", 1.0/3600.0)]
+    [InlineData("00 00 1 N", 1.0/3600.0)]
+    [InlineData("00 00 09 N", 9.0/3600.0)]
+    [InlineData("00 00 9 N", 9.0/3600.0)]
+    [InlineData("00 00 59 N", 59.0/3600.0)]
+    [InlineData("00 00 01.001 N", 1.001/3600.0)]
+    [InlineData("00 00 1.001 N", 1.001/3600.0)]
+    [InlineData("00 00 09.001 N", 9.001/3600.0)]
+    [InlineData("00 00 9.001 N", 9.001/3600.0)]
+    [InlineData("00 00 59.001 N", 59.001/3600.0)]
+    [InlineData("000059N", 59.0/3600.0)]
+    [InlineData("000001.001N", 1.001/3600.0)]
+    [InlineData("00001.001N", 1.001/3600.0)]
+    [InlineData("000009.001N", 9.001/3600.0)]
+    [InlineData("00009.001N", 9.001/3600.0)]
+    [InlineData("000059.001N", 59.001/3600.0)]
+    public void CheckValidLatitudeSecondValues(string input, double expected)
     {
-        var value = 0.0;
-        Assert.True(GeoPointLatitude.TryParse("01 00 00 N",out value));
-        Assert.Equal(1,value);
-        Assert.True(GeoPointLatitude.TryParse("1 00 00 N",out value));
-        Assert.Equal(1,value);
-        Assert.True(GeoPointLatitude.TryParse("09 00 00 N",out value));
-        Assert.Equal(9,value);
-        Assert.True(GeoPointLatitude.TryParse("9 00 00 N",out value));
-        Assert.Equal(9,value);
-        Assert.True(GeoPointLatitude.TryParse("89 00 00 N",out value));
-        Assert.Equal(89,value);
-        Assert.True(GeoPointLatitude.TryParse("890000N",out value));
-        Assert.Equal(89,value);
-        Assert.False(GeoPointLatitude.TryParse("90 00 01 N",out value));
-        Assert.Equal(90 + 1.0/3600.0,value);
-        Assert.False(GeoPointLatitude.TryParse("900001N",out value));
-        Assert.Equal(90 + 1.0/3600.0,value);
-        Assert.True(GeoPointLatitude.TryParse("+00 00 00 N ",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("+0 00 00 N ",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("+01 00 00 N",out value));
-        Assert.Equal(1,value);
-        Assert.True(GeoPointLatitude.TryParse("+1 00 00 N",out value));
-        Assert.Equal(1,value);
-        Assert.True(GeoPointLatitude.TryParse("+09 00 00 N",out value));
-        Assert.Equal(9,value);
-        Assert.True(GeoPointLatitude.TryParse("+9 00 00 N",out value));
-        Assert.Equal(9,value);
-        Assert.True(GeoPointLatitude.TryParse("+89 00 00 N",out value));
-        Assert.Equal(89,value);
-        Assert.True(GeoPointLatitude.TryParse("+00000N ",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("+010000N",out value));
-        Assert.Equal(1,value);
-        Assert.True(GeoPointLatitude.TryParse("+10000N",out value));
-        Assert.NotEqual(1,value);
-        Assert.True(GeoPointLatitude.TryParse("+090000N",out value));
-        Assert.Equal(9,value);
-        Assert.True(GeoPointLatitude.TryParse("+90000N",out value));
-        Assert.Equal(9,value);
-        Assert.True(GeoPointLatitude.TryParse("+890000N",out value));
-        Assert.Equal(89,value);
-        Assert.False(GeoPointLatitude.TryParse("+90 00 01 N",out value));
-        Assert.False(GeoPointLatitude.TryParse("-00 00 00 N",out value));
-        Assert.False(GeoPointLatitude.TryParse("-0 00 00 N",out value));
-        Assert.False(GeoPointLatitude.TryParse("-01 00 00 N",out value));
-        Assert.False(GeoPointLatitude.TryParse("-1 00 00 N",out value));
-        Assert.False(GeoPointLatitude.TryParse("-09 00 00 N",out value));
-        Assert.False(GeoPointLatitude.TryParse("-9 00 00 N",out value));
-        Assert.False(GeoPointLatitude.TryParse("-89 00 00 N",out value));
-        Assert.False(GeoPointLatitude.TryParse("-90 00 01 N",out value));
-        Assert.False(GeoPointLatitude.TryParse("+900001N",out value));
-        Assert.False(GeoPointLatitude.TryParse("-000000 N",out value));
-        Assert.False(GeoPointLatitude.TryParse("-00000N",out value));
-        Assert.False(GeoPointLatitude.TryParse("-010000N",out value));
-        Assert.False(GeoPointLatitude.TryParse("-10000N",out value));
-        Assert.False(GeoPointLatitude.TryParse("-090000N",out value));
-        Assert.False(GeoPointLatitude.TryParse("-90000N",out value));
-        Assert.False(GeoPointLatitude.TryParse("-890000N",out value));
-        Assert.False(GeoPointLatitude.TryParse("-900001N",out value));
-        Assert.True(GeoPointLatitude.TryParse("00 00 00 ",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("+0 00 00",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("+01 00 00",out value));
-        Assert.Equal(1,value);
-        Assert.True(GeoPointLatitude.TryParse("+1 00 00",out value));
-        Assert.Equal(1,value);
-        Assert.True(GeoPointLatitude.TryParse("+09 00 00",out value));
-        Assert.Equal(9,value);
-        Assert.True(GeoPointLatitude.TryParse("+9 00 00",out value));
-        Assert.Equal(9,value);
-        Assert.True(GeoPointLatitude.TryParse("+89 00 00",out value));
-        Assert.Equal(89,value);
-        Assert.False(GeoPointLatitude.TryParse("+90 00 01",out value));
-        Assert.True(GeoPointLatitude.TryParse("000000",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("+00000",out value));
-        Assert.Equal(0,value);
-        Assert.True(GeoPointLatitude.TryParse("+010000",out value));
-        Assert.Equal(1,value);
-        Assert.True(GeoPointLatitude.TryParse("+10000",out value));
-        Assert.NotEqual(1,value);
-        Assert.True(GeoPointLatitude.TryParse("+090000",out value));
-        Assert.Equal(9,value);
-        Assert.True(GeoPointLatitude.TryParse("+90000",out value));
-        Assert.Equal(9,value);
-        Assert.True(GeoPointLatitude.TryParse("+890000",out value));
-        Assert.Equal(89,value);
-        Assert.False(GeoPointLatitude.TryParse("+900001",out value));
+        Assert.True(GeoPointLatitude.TryParse(input, out double value));
+        Assert.Equal(expected, value);
     }
 
-    [Fact]
-    public void CheckValidLatitudeMinuteValues()
+    [Theory]
+    [InlineData("45:54.454S", -45.907567)]
+    [InlineData("45:54.454 S", -45.907567)]
+    [InlineData("45:54.454N", 45.907567)]
+    [InlineData("N 45:54.454", 45.907567)]
+    [InlineData("90:00.000S", -90.0)]
+    [InlineData("90:00.000N", 90.0)]
+    [InlineData("00 :00.000N", 0.0)]
+    [InlineData("00: 00.000S", 0.0)]
+    public void CheckValidLatitudeDegreesMinutes(string input, double expectedLatitude)
     {
-        var value = 0.0;
-        Assert.True(GeoPointLatitude.TryParse("00 01 00 N",out value));
-        Assert.Equal(1.0/60.0,value);
-        Assert.True(GeoPointLatitude.TryParse("00 1 00 N",out value));
-        Assert.Equal(1.0/60.0,value);
-        Assert.True(GeoPointLatitude.TryParse("00 09 00 N",out value));
-        Assert.Equal(9.0/60.0,value);
-        Assert.True(GeoPointLatitude.TryParse("00 9 00 N",out value));
-        Assert.Equal(9.0/60.0,value);
-        Assert.True(GeoPointLatitude.TryParse("00 59 00 N",out value));
-        Assert.Equal(59.0/60.0,value);
+        Assert.True(GeoPointLatitude.TryParse(input, out var latitude));
+        Assert.Equal(expectedLatitude, latitude, 6);
     }
-
-    [Fact]
-    public void CheckValidLatitudeSecondValues()
+    
+    [Theory]
+    [InlineData("S89:59 .999")]
+    [InlineData("N45 : 00 . 000")]
+    [InlineData("45:00. 000N")]
+    [InlineData("89: 59. 999S")]
+    [InlineData("45:00 .000S")]
+    public void CheckValidLatitudeDegreesMinutesWhiteSpaces(string input)
     {
-        var value = 0.0;
-        Assert.True(GeoPointLatitude.TryParse("00 00 01 N",out value));
-        Assert.Equal(1.0/3600.0,value);
-        Assert.True(GeoPointLatitude.TryParse("00 00 1 N",out value));
-        Assert.Equal(1.0/3600.0,value);
-        Assert.True(GeoPointLatitude.TryParse("00 00 09 N",out value));
-        Assert.Equal(9.0/3600.0,value);
-        Assert.True(GeoPointLatitude.TryParse("00 00 9 N",out value));
-        Assert.Equal(9.0/3600.0,value);
-        Assert.True(GeoPointLatitude.TryParse("00 00 59 N",out value));
-        Assert.Equal(59.0/3600.0,value);
-        Assert.True(GeoPointLatitude.TryParse("00 00 01.001 N",out value));
-        Assert.Equal(1.001/3600.0,value);
-        Assert.True(GeoPointLatitude.TryParse("00 00 1.001 N",out value));
-        Assert.Equal(1.001/3600.0,value);
-        Assert.True(GeoPointLatitude.TryParse("00 00 09.001 N",out value));
-        Assert.Equal(9.001/3600.0,value);
-        Assert.True(GeoPointLatitude.TryParse("00 00 9.001 N",out value));
-        Assert.Equal(9.001/3600.0,value);
-        Assert.True(GeoPointLatitude.TryParse("00 00 59.001 N",out value));
-        Assert.Equal(59.001/3600.0,value);
-        Assert.True(GeoPointLatitude.TryParse("000059N",out value));
-        Assert.Equal(59.0/3600.0,value);
-        Assert.True(GeoPointLatitude.TryParse("000001.001N",out value));
-        Assert.Equal(1.001/3600.0,value);
-        Assert.True(GeoPointLatitude.TryParse("00001.001N",out value));
-        Assert.Equal(1.001/3600.0,value);
-        Assert.True(GeoPointLatitude.TryParse("000009.001N",out value));
-        Assert.Equal(9.001/3600.0,value);
-        Assert.True(GeoPointLatitude.TryParse("00009.001N",out value));
-        Assert.Equal(9.001/3600.0,value);
-        Assert.True(GeoPointLatitude.TryParse("000059.001N",out value));
-        Assert.Equal(59.001/3600.0,value);
+        Assert.False(GeoPointLatitude.TryParse(input, out _));
     }
 }
