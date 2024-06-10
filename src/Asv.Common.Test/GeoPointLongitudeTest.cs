@@ -4,340 +4,466 @@ namespace Asv.Common.Test;
 
 public class GeoPointLongitudeTest
 {
-    [Theory]
-    [InlineData("+0 0 0", 0)]
-    [InlineData("0 0 0+", 0)]
-    [InlineData("0 0 0 ", 0)]
-    [InlineData("0 0 0", 0)]
-    [InlineData("-0 0 0", 0)]
-    [InlineData("+0 0 0 ", 0)]
-    public void CheckPlusAndMinus(string input, double expected)
+    [Fact]
+    public void CheckPlusAndMinus()
     {
-        Assert.True(GeoPointLongitude.TryParse(input, out double value));
-        Assert.Equal(expected, value);
+        var value = 0.0;
+        Assert.True(GeoPointLongitude.TryParse("+0 0 0",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("0 0 0+",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("0 0 0 ",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("0 0 0",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("-0 0 0",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("+0 0 0 ",out value));
+        Assert.Equal(0,value);
     }
 
-    [Theory]
-    [InlineData("0° 0' 0\"", 0)]
-    [InlineData("0˚ 0' 0\"", 0)]
-    [InlineData("0º 0' 0\"", 0)]
-    [InlineData("0^ 0' 0\"", 0)]
-    [InlineData("0~ 0' 0\"", 0)]
-    [InlineData("0* 0' 0\"", 0)]
-    [InlineData("0°0'0\"", 0)]
-    [InlineData("0˚0'0\"", 0)]
-    [InlineData("0º0'0\"", 0)]
-    [InlineData("0^0'0\"", 0)]
-    [InlineData("0~0'0\"", 0)]
-    [InlineData("0*0'0\"", 0)]
-    [InlineData("00'0\"", null)]
-    public void CheckDegreeSymbols(string input, double? expected)
+    [Fact]
+    public void CheckDegreeSymbols()
     {
-        bool result = GeoPointLongitude.TryParse(input, out double value);
-        if (expected.HasValue)
-        {
-            Assert.True(result);
-            Assert.Equal(expected.Value, value);
-        }
-        else
-        {
-            Assert.False(result);
-        }
+        var value = 0.0;
+        Assert.True(GeoPointLongitude.TryParse("0° 0' 0\"",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("0˚ 0' 0\"",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("0º 0' 0\"",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("0^ 0' 0\"",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("0~ 0' 0\"",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("0* 0' 0\"",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("0°0'0\"",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("0˚0'0\"",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("0º0'0\"",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("0^0'0\"",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("0~0'0\"",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("0*0'0\"",out value));
+        Assert.Equal(0,value);
+        Assert.False(GeoPointLongitude.TryParse("00'0\"",out value));
     }
 
-    [Theory]
-    [InlineData(@"000° 00' 00""", 0)]
-    [InlineData(@"000° 00' 00 ", 0)]
-    [InlineData(@"000° 00' 00"" ", 0)]
-    [InlineData(@"000° 00′ 00""", 0)]
-    [InlineData(@"000° 00′ 00 """, 0)]
-    [InlineData(@"000° 00′ 00"" ", 0)]
-    [InlineData(@"000° 00′ 00 ", 0)]
-    [InlineData(@"000° 00' 00 """, 0)]
-    [InlineData(@"000° 0000 """, 0)]
-    public void CheckMinuteSymbols(string input, double expected)
+    [Fact]
+    public void CheckMinuteSymbols()
     {
-        Assert.True(GeoPointLongitude.TryParse(input, out double value));
-        Assert.Equal(expected, value);
-    }
-    [Theory]
-    [InlineData("000° 00' 00\"", 0)]
-    [InlineData("000° 00' 00\" E", 0)]
-    [InlineData("000° 00' 00.000\" E", 0)]
-    [InlineData("000° 00' 00¨ E", 0)]
-    [InlineData("000° 00' 00¨", 0)]
-    [InlineData("000° 00' 00.000¨ E", 0)]
-    [InlineData("000° 00' 00˝ E", 0)]
-    [InlineData("000° 00' 00.000˝ E", 0)]
-    [InlineData("000° 00' 00", 0)]
-    [InlineData("000° 00' 00 E", 0)]
-    [InlineData("000° 00' 00˝ 0°", null)]
-    public void CheckSecondSymbols(string input, double? expected)
-    {
-        bool result = GeoPointLongitude.TryParse(input, out double value);
-        if (expected.HasValue)
-        {
-            Assert.True(result);
-            Assert.Equal(expected.Value, value);
-        }
-        else
-        {
-            Assert.False(result);
-        }
+        var value = 0.0;
+        Assert.True(GeoPointLongitude.TryParse(@"000° 00' 00""",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse(@"000° 00' 00 ",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse(@"000° 00' 00"" ",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse(@"000° 00′ 00""",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse(@"000° 00′ 00 """,out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse(@"000° 00′ 00"" ",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse(@"000° 00′ 00 ",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse(@"000° 00' 00 """,out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse(@"000° 0000 """,out value));
+        Assert.Equal(0,value);
     }
 
-    [Theory]
-    [InlineData("000°00'00˝E", 0)]
-    [InlineData("000 °00'00˝E", 0)]
-    [InlineData("000 ° 00'00˝E", 0)]
-    [InlineData("000  °00 '00˝E", 0)]
-    [InlineData("000 ° 00 ' 00˝E", 0)]
-    [InlineData("000 ° 00 '00 ˝ E", 0)]
-    [InlineData("000 ° 00 ' 00 ˝ E", 0)]
-    [InlineData("000 ° 00 ' 00 ˝ E", 0)]
-    public void CheckFullDmsWithDifferingSpaces(string input, double expected)
+    [Fact]
+    public void CheckSecondSymbols()
     {
-        Assert.True(GeoPointLongitude.TryParse(input, out double value));
-        Assert.Equal(expected, value);
+        var value = 0.0;
+        Assert.True(GeoPointLongitude.TryParse("000° 00' 00\"",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("000° 00' 00\" E",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("000° 00' 00.000\" E",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("000° 00' 00¨ E",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("000° 00' 00¨",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("000° 00' 00.000¨ E",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("000° 00' 00˝ E",out value));
+        Assert.Equal(0,value);
+        Assert.False(GeoPointLongitude.TryParse("000° 00' 00˝ 0°",out value));
+        Assert.True(GeoPointLongitude.TryParse("000° 00' 00.000˝ E",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("000° 00' 00",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("000° 00' 00 E",out value));
     }
 
-    [Theory]
-    [InlineData("000° 00'00˝E", 0)]
-    [InlineData("000° 00'00˝", 0)]
-    [InlineData("E000° 00'00˝", 0)]
-    [InlineData("0° 00' 00˝ E", 0)]
-    [InlineData("E000° 00'00˝E", 0)]
-    [InlineData("000° 00'00˝W", 0)]
-    [InlineData("W000° 00'00˝", 0)]
-    [InlineData("W000° 00'00˝W", 0)]
-    [InlineData("E000° 00'00˝W", null)]
-    public void CheckFullDmsPrefixSuffix(string input, double? expected)
+    [Fact]
+    public void CheckFullDmsWithDifferingSpaces()
     {
-        bool result = GeoPointLongitude.TryParse(input, out double value);
-        if (expected.HasValue)
-        {
-            Assert.True(result);
-            Assert.Equal(expected.Value, value);
-        }
-        else
-        {
-            Assert.False(result);
-        }
+        var value = 0.0;
+        Assert.True(GeoPointLongitude.TryParse("000°00'00˝E",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("000 °00'00˝E",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("000 ° 00'00˝E",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("000  °00 '00˝E",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("000 ° 00 ' 00˝E",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("000 ° 00 '00 ˝ E",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("000 ° 00 ' 00 ˝ E",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("000 ° 00 ' 00 ˝ E",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("000 ° 00 ' 00 ˝ E",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("000 ° 00 ' 00 ˝ E",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("000 ° 00 ' 00 ˝ E",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("000 ° 00 ' 00 ˝ E",out value));
+        Assert.Equal(0,value);
     }
 
-    [Theory]
-    [InlineData("85.536123", 85.536123)]
-    [InlineData("-65,536", -65.536)]
-    [InlineData("180,536", null)]
-    public void Check_double_values(string input, double? expected)
+    [Fact]
+    public void CheckFullDmsPrefixSuffix()
     {
-        bool result = GeoPointLongitude.TryParse(input, out double value);
-        if (expected.HasValue)
-        {
-            Assert.True(result);
-            Assert.Equal(expected.Value, value);
-        }
-        else
-        {
-            Assert.False(result);
-        }
+        var value = 0.0;
+        Assert.True(GeoPointLongitude.TryParse("000° 00'00˝E",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("000° 00'00˝",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("E000° 00'00˝",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("0° 00' 00˝ E",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("E000° 00'00˝E",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("000° 00'00˝W",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("W000° 00'00˝",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("W000° 00'00˝W",out value));
+        Assert.Equal(0,value);
+        Assert.False(GeoPointLongitude.TryParse("E000° 00'00˝W",out value));
     }
 
-    [Theory]
-    [InlineData("000 00 00 E", 0)]
-    [InlineData("00 00 00 E", 0)]
-    [InlineData("000 00 0 E", 0)]
-    [InlineData("000 0 00 E", 0)]
-    [InlineData("000 0 0 E", 0)]
-    [InlineData("00 00 0 E", 0)]
-    [InlineData("00 0 0 E", 0)]
-    [InlineData("0 00 00 E", 0)]
-    [InlineData("0 0 00 E", 0)]
-    [InlineData("0 0 0 E", 0)]
-    [InlineData("0 0 0.000 E", 0)]
-    public void CheckAllZeros(string input, double expected)
+    [Fact]
+    public void Check_double_values()
     {
-        Assert.True(GeoPointLongitude.TryParse(input, out double value));
-        Assert.Equal(expected, value);
+        var value = 0.0;
+        
+        // for (double i = -179.999999; i < 179.999999; i += 0.000001)
+        // {
+        //     Assert.True(GeoPointLongitude.TryParse(i.ToString("F6"),out value));
+        // }
+        
+        Assert.True(GeoPointLongitude.TryParse("85.536123",out value));
+        Assert.Equal(85.536123,value);
+        
+        Assert.True(GeoPointLongitude.TryParse("-65,536",out value));
+        Assert.Equal(-65.536,value);
+        
+        Assert.False(GeoPointLongitude.TryParse("180,536",out value));
     }
 
-    [Theory]
-    [InlineData("000 00 E", 0)]
-    [InlineData("0 0 00 E", 0)]
-    [InlineData("0 0 0E", 0)]
-    [InlineData("000 E", 0)]
-    public void CheckIncompleteEntries(string input, double? expected)
+    
+    [Fact]
+    public void CheckAllZeros()
     {
-        bool result = GeoPointLongitude.TryParse(input, out double value);
-        if (expected.HasValue)
-        {
-            Assert.True(result);
-            Assert.Equal(expected.Value, value);
-        }
-        else
-        {
-            Assert.False(result);
-            Assert.Equal(double.NaN, value);
-        }
+        var value = 0.0;
+        Assert.True(GeoPointLongitude.TryParse("000 00 00 E",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("00 00 00 E",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("000 00 0 E",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("000 0 00 E",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("000 0 0 E",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("00 00 0 E",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("00 0 0 E",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("0 00 00 E",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("0 0 00 E",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("0 0 0 E",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("0 0 0.000 E",out value));
+        Assert.Equal(0,value);
     }
 
-    [Theory]
-    [InlineData("2 40", 2 + 40d/60d)]
-    [InlineData("15 59 45", 15 + 59d/60d + 45d/3600d)]
-    [InlineData("0 1 0 W", -1d/60d)]
-    public void CheckDmsWithShortValues(string input, double expected)
+    [Fact]
+    public void CheckIncompleteEntries()
     {
-        Assert.True(GeoPointLongitude.TryParse(input, out double value));
-        Assert.Equal(expected, value, 6); // using precision of 6 decimal places
-    }
-    [Theory]
-    [InlineData("001 00 00.00 E", 1)]
-    [InlineData("01 00 00.00 E", 1)]
-    [InlineData("1 00 00.00 E", 1)]
-    [InlineData("10 00 00.00 E", 10)]
-    [InlineData("99 0 0 E", 99)]
-    [InlineData("100 0 0 E", 100)]
-    [InlineData("179 0 0 E", 179)]
-    [InlineData("79 0 0 E", 79)]
-    [InlineData("180 0 0 E", 180)]
-    [InlineData("001° 0 0 E", 1)]
-    [InlineData("01° 0 0 E", 1)]
-    [InlineData("1° 0 0 E", 1)]
-    [InlineData("10° 0 0 E", 10)]
-    [InlineData("99° 0 0 E", 99)]
-    [InlineData("100° 0 0 E", 100)]
-    [InlineData("179° 0 0 E", 179)]
-    [InlineData("79° 0 0 E", 79)]
-    [InlineData("180° 0 0 E", 180)]
-    [InlineData("001˚ 0 0 E", 1)]
-    [InlineData("01˚ 0 0 E", 1)]
-    [InlineData("1˚ 0 0 E", 1)]
-    [InlineData("10˚ 0 0 E", 10)]
-    [InlineData("99˚ 0 0 E", 99)]
-    [InlineData("100˚ 0 0 E", 100)]
-    [InlineData("179˚ 0 0 E", 179)]
-    [InlineData("79˚ 0 0 E", 79)]
-    [InlineData("180˚ 0 0 E", 180)]
-    [InlineData("001º 0 0 E", 1)]
-    [InlineData("01º 0 0 E", 1)]
-    [InlineData("1º 0 0 E", 1)]
-    [InlineData("10º 0 0 E", 10)]
-    [InlineData("99º 0 0 E", 99)]
-    [InlineData("100º 0 0 E", 100)]
-    [InlineData("179º 0 0 E", 179)]
-    [InlineData("79º 0 0 E", 79)]
-    [InlineData("180º 0 0 E", 180)]
-    [InlineData("001^ 0 0 E", 1)]
-    [InlineData("01^ 0 0 E", 1)]
-    [InlineData("1^ 0 0 E", 1)]
-    [InlineData("10^ 0 0 E", 10)]
-    [InlineData("99^ 0 0 E", 99)]
-    [InlineData("100^ 0 0 E", 100)]
-    [InlineData("179^ 0 0 E", 179)]
-    [InlineData("79^ 0 0 E", 79)]
-    [InlineData("180^ 0 0 E", 180)]
-    [InlineData("001~ 0 0 E", 1)]
-    [InlineData("01~ 0 0 E", 1)]
-    [InlineData("1~ 0 0 E", 1)]
-    [InlineData("10~ 0 0 E", 10)]
-    [InlineData("99~ 0 0 E", 99)]
-    [InlineData("100~ 0 0 E", 100)]
-    [InlineData("179~ 0 0 E", 179)]
-    [InlineData("79~ 0 0 E", 79)]
-    [InlineData("180~ 0 0 E", 180)]
-    [InlineData("001* 0 0 E", 1)]
-    [InlineData("01* 0 0 E", 1)]
-    [InlineData("1* 0 0 E", 1)]
-    [InlineData("10* 0 0 E", 10)]
-    [InlineData("99* 0 0 E", 99)]
-    [InlineData("100* 0 0 E", 100)]
-    [InlineData("179* 0 0 E", 179)]
-    [InlineData("79* 0 0 E", 79)]
-    [InlineData("180* 0 0 E", 180)]
-    public void CheckValidLongitudeDegValues(string input, double expected)
-    {
-        Assert.True(GeoPointLongitude.TryParse(input, out double value));
-        Assert.Equal(expected, value);
+        var value = 0.0;
+        Assert.True(GeoPointLongitude.TryParse("000 00 E",out value));
+        Assert.Equal(0,value);
+        Assert.False(GeoPointLongitude.TryParse("000 E",out value));
+        Assert.Equal(double.NaN,value);
+        Assert.True(GeoPointLongitude.TryParse("0 0 00 E",out value));
+        Assert.Equal(0,value);
+        Assert.True(GeoPointLongitude.TryParse("0 0 0E",out value));
+        Assert.Equal(0,value);
     }
 
-    [Theory]
-    [InlineData("000 01 0 E", 1.0/60.0)]
-    [InlineData("000 1 0 E", 1.0/60.0)]
-    [InlineData("000 9 0 E", 9.0/60.0)]
-    [InlineData("000 09 0 E", 9.0/60.0)]
-    [InlineData("000 10 0 E", 10.0/60.0)]
-    [InlineData("000 59 0 E", 59.0/60.0)]
-    [InlineData("000 5 0 E", 5.0/60.0)]
-    [InlineData("000 01' 0 E", 1.0/60.0)]
-    [InlineData("000 1' 0 E", 1.0/60.0)]
-    [InlineData("000 9' 0 E", 9.0/60.0)]
-    [InlineData("000 09' 0 E", 9.0/60.0)]
-    [InlineData("000 10' 0 E", 10.0/60.0)]
-    [InlineData("000 59' 0 E", 59.0/60.0)]
-    [InlineData("000 5' 0 E", 5.0/60.0)]
-    [InlineData("000 01′ 0 E", 1.0/60.0)]
-    [InlineData("000 1′ 0 E", 1.0/60.0)]
-    [InlineData("000 9′ 0 E", 9.0/60.0)]
-    [InlineData("000 09′ 0 E", 9.0/60.0)]
-    [InlineData("000 10′ 0 E", 10.0/60.0)]
-    [InlineData("000 59′ 0 E", 59.0/60.0)]
-    [InlineData("000 5′ 0 E", 5.0/60.0)]
-    public void CheckValidLongitudeMinuteValues(string input, double expected)
+    [Fact]
+    public void CheckDmsWithShortValues()
     {
-        Assert.True(GeoPointLongitude.TryParse(input, out double value));
-        Assert.Equal(expected, value);
+        var value = 0.0;
+        Assert.True(GeoPointLongitude.TryParse("2 40",out value));
+        Assert.Equal(2 + 40d/60d,value);
+        Assert.Equal("002°40′00.00˝ E", GeoPointLongitude.PrintDms(value).Replace(",", "."));
+        Assert.True(GeoPointLongitude.TryParse("15 59 45",out value));
+        Assert.Equal(15 + 59d/60d + 45d/3600d,value);
+        Assert.Equal("015°59′45.00˝ E", GeoPointLongitude.PrintDms(value).Replace(",", "."));
+        Assert.True(GeoPointLongitude.TryParse("0 1 0 W",out value));
+        Assert.Equal(-1d/60d,value);
+        Assert.Equal("000°01′00.00˝ W", GeoPointLongitude.PrintDms(value).Replace(",", "."));
     }
 
-    [Theory]
-    [InlineData("000 00 01 E", 1.0/3600.0)]
-    [InlineData("000 00 1 E", 1.0/3600.0)]
-    [InlineData("000 00 09 E", 9.0/3600.0)]
-    [InlineData("000 00 9 E", 9.0/3600.0)]
-    [InlineData("000 00 59 E", 59.0/3600.0)]
-    [InlineData("000 00 01.001 E", 1.001/3600.0)]
-    [InlineData("000 00 1.001 E", 1.001/3600.0)]
-    [InlineData("000 00 09.001 E", 9.001/3600.0)]
-    [InlineData("000 00 9.001 E", 9.001/3600.0)]
-    [InlineData("000 00 59.001 E", 59.001/3600.0)]
-    [InlineData("0000001E", 1.0/3600.0)]
-    [InlineData("000001E", 1.0/3600.0)]
-    [InlineData("0000009E", 9.0/3600.0)]
-    [InlineData("000009E", 9.0/3600.0)]
-    [InlineData("0000059E", 59.0/3600.0)]
-    [InlineData("0000001.001E", 1.001/3600.0)]
-    public void CheckValidLongitudeSecondValues(string input, double expected)
+    [Fact]
+    public void CheckValidLongitudeDegValues()
     {
-        Assert.True(GeoPointLongitude.TryParse(input, out double value));
-        Assert.Equal(expected, value);
+        var value = 0.0;
+        Assert.True(GeoPointLongitude.TryParse("001 00 00.00 E",out value));
+        Assert.Equal(1,value);
+        Assert.True(GeoPointLongitude.TryParse("01 00 00.00 E",out value));
+        Assert.Equal(1,value);
+        Assert.True(GeoPointLongitude.TryParse("1 00 00.00 E",out value));
+        Assert.Equal(1,value);
+        Assert.True(GeoPointLongitude.TryParse("10 00 00.00 E",out value));
+        Assert.Equal(10,value);
+        Assert.True(GeoPointLongitude.TryParse("99 0 0 E",out value));
+        Assert.Equal(99,value);
+        Assert.True(GeoPointLongitude.TryParse("100 0 0 E",out value));
+        Assert.Equal(100,value);
+        Assert.True(GeoPointLongitude.TryParse("179 0 0 E",out value));
+        Assert.Equal(179,value);
+        Assert.True(GeoPointLongitude.TryParse("79 0 0 E",out value));
+        Assert.Equal(79,value);
+        Assert.True(GeoPointLongitude.TryParse("180 0 0 E",out value));
+        Assert.Equal(180,value);
+        Assert.True(GeoPointLongitude.TryParse("001° 0 0 E",out value));
+        Assert.Equal(1,value);
+        Assert.True(GeoPointLongitude.TryParse("01° 0 0 E",out value));
+        Assert.Equal(1,value);
+        Assert.True(GeoPointLongitude.TryParse("1° 0 0 E",out value));
+        Assert.Equal(1,value);
+        Assert.True(GeoPointLongitude.TryParse("10° 0 0 E",out value));
+        Assert.Equal(10,value);
+        Assert.True(GeoPointLongitude.TryParse("99° 0 0 E",out value));
+        Assert.Equal(99,value);
+        Assert.True(GeoPointLongitude.TryParse("100° 0 0 E",out value));
+        Assert.Equal(100,value);
+        Assert.True(GeoPointLongitude.TryParse("179° 0 0 E",out value));
+        Assert.Equal(179,value);
+        Assert.True(GeoPointLongitude.TryParse("79° 0 0 E",out value));
+        Assert.Equal(79,value);
+        Assert.True(GeoPointLongitude.TryParse("180° 0 0 E",out value));
+        Assert.Equal(180,value);
+        Assert.True(GeoPointLongitude.TryParse("001˚ 0 0 E",out value));
+        Assert.Equal(1,value);
+        Assert.True(GeoPointLongitude.TryParse("01˚ 0 0 E",out value));
+        Assert.Equal(1,value);
+        Assert.True(GeoPointLongitude.TryParse("1˚ 0 0 E",out value));
+        Assert.Equal(1,value);
+        Assert.True(GeoPointLongitude.TryParse("10˚ 0 0 E",out value));
+        Assert.Equal(10,value);
+        Assert.True(GeoPointLongitude.TryParse("99˚ 0 0 E",out value));
+        Assert.Equal(99,value);
+        Assert.True(GeoPointLongitude.TryParse("100˚ 0 0 E",out value));
+        Assert.Equal(100,value);
+        Assert.True(GeoPointLongitude.TryParse("179˚ 0 0 E",out value));
+        Assert.Equal(179,value);
+        Assert.True(GeoPointLongitude.TryParse("79˚ 0 0 E",out value));
+        Assert.Equal(79,value);
+        Assert.True(GeoPointLongitude.TryParse("180˚ 0 0 E",out value));
+        Assert.Equal(180,value);
+        Assert.True(GeoPointLongitude.TryParse("001º 0 0 E",out value));
+        Assert.Equal(1,value);
+        Assert.True(GeoPointLongitude.TryParse("01º 0 0 E",out value));
+        Assert.Equal(1,value);
+        Assert.True(GeoPointLongitude.TryParse("1º 0 0 E",out value));
+        Assert.Equal(1,value);
+        Assert.True(GeoPointLongitude.TryParse("10º 0 0 E",out value));
+        Assert.Equal(10,value);
+        Assert.True(GeoPointLongitude.TryParse("99º 0 0 E",out value));
+        Assert.Equal(99,value);
+        Assert.True(GeoPointLongitude.TryParse("100º 0 0 E",out value));
+        Assert.Equal(100,value);
+        Assert.True(GeoPointLongitude.TryParse("179º 0 0 E",out value));
+        Assert.Equal(179,value);
+        Assert.True(GeoPointLongitude.TryParse("79º 0 0 E",out value));
+        Assert.Equal(79,value);
+        Assert.True(GeoPointLongitude.TryParse("180º 0 0 E",out value));
+        Assert.Equal(180,value);
+        Assert.True(GeoPointLongitude.TryParse("001^ 0 0 E",out value));
+        Assert.Equal(1,value);
+        Assert.True(GeoPointLongitude.TryParse("01^ 0 0 E",out value));
+        Assert.Equal(1,value);
+        Assert.True(GeoPointLongitude.TryParse("1^ 0 0 E",out value));
+        Assert.Equal(1,value);
+        Assert.True(GeoPointLongitude.TryParse("10^ 0 0 E",out value));
+        Assert.Equal(10,value);
+        Assert.True(GeoPointLongitude.TryParse("99^ 0 0 E",out value));
+        Assert.Equal(99,value);
+        Assert.True(GeoPointLongitude.TryParse("100^ 0 0 E",out value));
+        Assert.Equal(100,value);
+        Assert.True(GeoPointLongitude.TryParse("179^ 0 0 E",out value));
+        Assert.Equal(179,value);
+        Assert.True(GeoPointLongitude.TryParse("79^ 0 0 E",out value));
+        Assert.Equal(79,value);
+        Assert.True(GeoPointLongitude.TryParse("180^ 0 0 E",out value));
+        Assert.Equal(180,value);
+        Assert.True(GeoPointLongitude.TryParse("001~ 0 0 E",out value));
+        Assert.Equal(1,value);
+        Assert.True(GeoPointLongitude.TryParse("01~ 0 0 E",out value));
+        Assert.Equal(1,value);
+        Assert.True(GeoPointLongitude.TryParse("1~ 0 0 E",out value));
+        Assert.Equal(1,value);
+        Assert.True(GeoPointLongitude.TryParse("10~ 0 0 E",out value));
+        Assert.Equal(10,value);
+        Assert.True(GeoPointLongitude.TryParse("99~ 0 0 E",out value));
+        Assert.Equal(99,value);
+        Assert.True(GeoPointLongitude.TryParse("100~ 0 0 E",out value));
+        Assert.Equal(100,value);
+        Assert.True(GeoPointLongitude.TryParse("179~ 0 0 E",out value));
+        Assert.Equal(179,value);
+        Assert.True(GeoPointLongitude.TryParse("79~ 0 0 E",out value));
+        Assert.Equal(79,value);
+        Assert.True(GeoPointLongitude.TryParse("180~ 0 0 E",out value));
+        Assert.Equal(180,value);
+        Assert.True(GeoPointLongitude.TryParse("001* 0 0 E",out value));
+        Assert.Equal(1,value);
+        Assert.True(GeoPointLongitude.TryParse("01* 0 0 E",out value));
+        Assert.Equal(1,value);
+        Assert.True(GeoPointLongitude.TryParse("1* 0 0 E",out value));
+        Assert.Equal(1,value);
+        Assert.True(GeoPointLongitude.TryParse("10* 0 0 E",out value));
+        Assert.Equal(10,value);
+        Assert.True(GeoPointLongitude.TryParse("99* 0 0 E",out value));
+        Assert.Equal(99,value);
+        Assert.True(GeoPointLongitude.TryParse("100* 0 0 E",out value));
+        Assert.Equal(100,value);
+        Assert.True(GeoPointLongitude.TryParse("179* 0 0 E",out value));
+        Assert.Equal(179,value);
+        Assert.True(GeoPointLongitude.TryParse("79* 0 0 E",out value));
+        Assert.Equal(79,value);
+        Assert.True(GeoPointLongitude.TryParse("180* 0 0 E",out value));
+        Assert.Equal(180,value);
     }
 
-    [Theory]
-    [InlineData("0612844.42E", 61.47900555555556)]
-    public void Check_longitude_from_aip(string input, double expected)
+    [Fact]
+    public void CheckValidLongitudeMinuteValues()
     {
-        Assert.True(GeoPointLongitude.TryParse(input, out double value));
-        Assert.Equal(expected, value);
+        var value = 0.0;
+        Assert.True(GeoPointLongitude.TryParse("000 01 0 E",out value));
+        Assert.Equal(1.0/60.0,value);
+        Assert.True(GeoPointLongitude.TryParse("000 1 0 E",out value));
+        Assert.Equal(1.0/60.0,value);
+        Assert.True(GeoPointLongitude.TryParse("000 9 0 E",out value));
+        Assert.Equal(9.0/60.0,value);
+        Assert.True(GeoPointLongitude.TryParse("000 09 0 E",out value));
+        Assert.Equal(9.0/60.0,value);
+        Assert.True(GeoPointLongitude.TryParse("000 10 0 E",out value));
+        Assert.Equal(10.0/60.0,value);
+        Assert.True(GeoPointLongitude.TryParse("000 59 0 E",out value));
+        Assert.Equal(59.0/60.0,value);
+        Assert.True(GeoPointLongitude.TryParse("000 5 0 E",out value));
+        Assert.Equal(5.0/60.0,value);
+        Assert.True(GeoPointLongitude.TryParse("000 01' 0 E",out value));
+        Assert.Equal(1.0/60.0,value);
+        Assert.True(GeoPointLongitude.TryParse("000 1' 0 E",out value));
+        Assert.Equal(1.0/60.0,value);
+        Assert.True(GeoPointLongitude.TryParse("000 9' 0 E",out value));
+        Assert.Equal(9.0/60.0,value);
+        Assert.True(GeoPointLongitude.TryParse("000 09' 0 E",out value));
+        Assert.Equal(9.0/60.0,value);
+        Assert.True(GeoPointLongitude.TryParse("000 10' 0 E",out value));
+        Assert.Equal(10.0/60.0,value);
+        Assert.True(GeoPointLongitude.TryParse("000 59' 0 E",out value));
+        Assert.Equal(59.0/60.0,value);
+        Assert.True(GeoPointLongitude.TryParse("000 5' 0 E",out value));
+        Assert.Equal(5.0/60.0,value);
+        Assert.True(GeoPointLongitude.TryParse("000 01′ 0 E",out value));
+        Assert.Equal(1.0/60.0,value);
+        Assert.True(GeoPointLongitude.TryParse("000 1′ 0 E",out value));
+        Assert.Equal(1.0/60.0,value);
+        Assert.True(GeoPointLongitude.TryParse("000 9′ 0 E",out value));
+        Assert.Equal(9.0/60.0,value);
+        Assert.True(GeoPointLongitude.TryParse("000 09′ 0 E",out value));
+        Assert.Equal(9.0/60.0,value);
+        Assert.True(GeoPointLongitude.TryParse("000 10′ 0 E",out value));
+        Assert.Equal(10.0/60.0,value);
+        Assert.True(GeoPointLongitude.TryParse("000 59′ 0 E",out value));
+        Assert.Equal(59.0/60.0,value);
+        Assert.True(GeoPointLongitude.TryParse("000 5′ 0 E",out value));
+        Assert.Equal(5.0/60.0,value);
     }
     
-    [Theory]
-    [InlineData("068:25.0365W", -68.416667)]
-    [InlineData("E068:25.0365", 68.416667)]
-    [InlineData("68:25.0365W", -68.416667)]
-    [InlineData("68:2.365W", -68.033333)]
-    [InlineData("90:0.0W", -90.0)]
-    [InlineData("90:00.000e", 90.0)]
-    public void CheckValidLongitudeDegreesMinutes(string input, double expectedLatitude)
+    [Fact]
+    public void CheckValidLongitudeSecondValues()
     {
-        Assert.True(GeoPointLongitude.TryParse(input, out var value));
-        Assert.Equal(expectedLatitude, value, 6);
+        var value = 0.0;
+        Assert.True(GeoPointLongitude.TryParse("000 00 01 E",out value));
+        Assert.Equal(1.0/3600.0,value);
+        Assert.True(GeoPointLongitude.TryParse("000 00 1 E",out value));
+        Assert.Equal(1.0/3600.0,value);
+        Assert.True(GeoPointLongitude.TryParse("000 00 09 E",out value));
+        Assert.Equal(9.0/3600.0,value);
+        Assert.True(GeoPointLongitude.TryParse("000 00 9 E",out value));
+        Assert.Equal(9.0/3600.0,value);
+        Assert.True(GeoPointLongitude.TryParse("000 00 59 E",out value));
+        Assert.Equal(59.0/3600.0,value);
+        Assert.True(GeoPointLongitude.TryParse("000 00 01.001 E",out value));
+        Assert.Equal(1.001/3600.0,value);
+        Assert.True(GeoPointLongitude.TryParse("000 00 1.001 E",out value));
+        Assert.Equal(1.001/3600.0,value);
+        Assert.True(GeoPointLongitude.TryParse("000 00 09.001 E",out value));
+        Assert.Equal(9.001/3600.0,value);
+        Assert.True(GeoPointLongitude.TryParse("000 00 9.001 E",out value));
+        Assert.Equal(9.001/3600.0,value);
+        Assert.True(GeoPointLongitude.TryParse("000 00 59.001 E",out value));
+        Assert.Equal(59.001/3600.0,value);
+        Assert.True(GeoPointLongitude.TryParse("0000001E",out value));
+        Assert.Equal(1.0/3600.0,value);
+        Assert.True(GeoPointLongitude.TryParse("000001E",out value));
+        Assert.Equal(1.0/3600.0,value);
+        Assert.True(GeoPointLongitude.TryParse("0000009E",out value));
+        Assert.Equal(9.0/3600.0,value);
+        Assert.True(GeoPointLongitude.TryParse("000009E",out value));
+        Assert.Equal(9.0/3600.0,value);
+        Assert.True(GeoPointLongitude.TryParse("0000059E",out value));
+        Assert.Equal(59.0/3600.0,value);
+        Assert.True(GeoPointLongitude.TryParse("0000001.001E",out value));
+        Assert.Equal(1.001/3600.0,value);
+        Assert.True(GeoPointLongitude.TryParse("000 00 1.001 E",out value));
+        Assert.Equal(1.001/3600.0,value);
+        Assert.True(GeoPointLongitude.TryParse("000 00 09.001 E",out value));
+        Assert.Equal(9.001/3600.0,value);
+        Assert.True(GeoPointLongitude.TryParse("000 00 9.001 E",out value));
+        Assert.Equal(9.001/3600.0,value);
+        Assert.True(GeoPointLongitude.TryParse("000 00 59.001 E",out value));
+        Assert.Equal(59.001/3600.0,value);
+        
     }
-    
-    [Theory]
-    [InlineData("068:25. 0365W")]
-    [InlineData("068:25 .0365W")]
-    [InlineData("068:25 . 0365W")]
-    public void CheckValidLongitudeDegreesMinutesWhiteSpaces(string input)
+
+    [Fact]
+    public void Check_longitude_from_aip()
     {
-        Assert.False(GeoPointLongitude.TryParse(input, out _));
+        Assert.True(GeoPointLongitude.TryParse("0612844.42E",out var longitude));
+        Assert.Equal(61.47900555555556,longitude);
     }
 }
