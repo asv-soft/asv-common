@@ -94,7 +94,6 @@ public class GeoPointLongitudeTest
     [InlineData("000 ° 00 ' 00˝E", 0)]
     [InlineData("000 ° 00 '00 ˝ E", 0)]
     [InlineData("000 ° 00 ' 00 ˝ E", 0)]
-    [InlineData("000 ° 00 ' 00 ˝ E", 0)]
     public void CheckFullDmsWithDifferingSpaces(string input, double expected)
     {
         Assert.True(GeoPointLongitude.TryParse(input, out double value));
