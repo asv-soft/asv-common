@@ -18,6 +18,7 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageIcon>asv-io-128.png</PackageIcon>
     <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net6.0|AnyCPU'">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -51,6 +52,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="System.IO.Pipelines" Version="8.0.0" />
     <PackageReference Include="System.Reactive" Version="$(ReactiveVersion)" />
     <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
     <PackageReference Include="System.Memory" Version="4.5.5" />
@@ -59,6 +61,7 @@
       <!--using api compatibility purely as a development harness-->
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="ZLogger" Version="2.5.3" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Asv.Common\Asv.Common.csproj" />

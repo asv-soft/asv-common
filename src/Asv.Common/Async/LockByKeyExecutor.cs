@@ -14,7 +14,7 @@ namespace Asv.Common
 
         public LockByKeyExecutor(IEqualityComparer<TKey> comparer)
         {
-            if (comparer == null) throw new ArgumentNullException(nameof(comparer));
+            ArgumentNullException.ThrowIfNull(comparer);
             _lockDictionary = new ConcurrentDictionary<TKey, object>(comparer);
         }
         public LockByKeyExecutor()
@@ -30,8 +30,8 @@ namespace Asv.Common
         public void Execute(TKey lockString, Action action)
         {
             if (lockString == null) throw new ArgumentNullException(nameof(lockString));
-            if (action == null) throw new ArgumentNullException(nameof(action));
-            
+            ArgumentNullException.ThrowIfNull(action);
+
             var thisThreadSyncObject = new object();
             lock (thisThreadSyncObject)
             {
@@ -61,8 +61,8 @@ namespace Asv.Common
         public TResult Execute<TResult>(TKey lockString, Func<TResult> action)
         {
             if (lockString == null) throw new ArgumentNullException(nameof(lockString));
-            if (action == null) throw new ArgumentNullException(nameof(action));
-            
+            ArgumentNullException.ThrowIfNull(action);
+
             var thisThreadSyncObject = new object();
             lock (thisThreadSyncObject)
             {

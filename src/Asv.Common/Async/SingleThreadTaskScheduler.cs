@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Threading;
@@ -13,10 +14,11 @@ namespace Asv.Common
         private const int Disposed = 1;
         private const int NotDisposed = 0;
         private int _disposeFlag;
-        private BlockingCollection<Task> _tasks;
+        private BlockingCollection<Task>? _tasks;
         private readonly Thread _workThread;
 
-        public SingleThreadTaskScheduler([Localizable(false)] string threadName, int boundedCapacity = 256, ThreadPriority priority = ThreadPriority.Normal, ApartmentState apartmentState = ApartmentState.MTA)
+        public SingleThreadTaskScheduler([Localizable(false)] string threadName, int boundedCapacity = 256, 
+            ThreadPriority priority = ThreadPriority.Normal, ApartmentState apartmentState = ApartmentState.MTA)
         {
             _tasks = new BlockingCollection<Task>(boundedCapacity);
             _workThread = new Thread(() =>
@@ -57,7 +59,8 @@ namespace Asv.Common
 
         protected override IEnumerable<Task> GetScheduledTasks()
         {
-            return _tasks.ToArray();
+            if (_tasks == null) return ArraySegment<Task>.Empty;
+            return _tasks.ToImmutableArray();
         }
 
         protected override bool TryExecuteTaskInline(Task task, bool taskWasPreviouslyQueued)
@@ -89,7 +92,7 @@ namespace Asv.Common
 
         public void ThrowIfDisposed()
         {
-            if (IsDisposed) throw new ObjectDisposedException(GetType().Name);
+            ObjectDisposedException.ThrowIf(IsDisposed,typeof(SingleThreadTaskScheduler));
         }
 
         #endregion
@@ -116,7 +119,7 @@ namespace Asv.Common
 
         #region Exceptions
 
-        public event EventHandler<Exception> OnTaskUnhandledException;
+        public event EventHandler<Exception>? OnTaskUnhandledException;
 
         private void RiseUnhandledTaskException(Exception e)
         {
@@ -127,7 +130,7 @@ namespace Asv.Common
 
         public override string ToString()
         {
-            return "SingleThreadTask";
+            return nameof(SingleThreadTaskScheduler);
         }
     }
 }

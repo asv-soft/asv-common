@@ -1,7 +1,9 @@
 using System;
+using System.Buffers;
 
 namespace Asv.IO
 {
+    
     public interface ISpanSerializable
     {
         void Deserialize(ref ReadOnlySpan<byte> buffer);

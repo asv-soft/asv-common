@@ -271,6 +271,32 @@ namespace Asv.IO
             var buff = new byte[tcpClient.Available];
             try
             {
+                ``````-+------------+-+`` ```+`+```                        ..................................+ 
+                + 
+                + 
+                + 
+                + 
+                + 
+                + 
+                + 
+                + 
+                + 
+                + 
+                + 
+                + 
+                + 
+                + 
+                + 
+                + 
+                + 
+                + 
+                + 
+                + 
+                + 
+                + 
+                + 
+                + 
+                + 
                 tcpClient.GetStream().Read(buff, 0, buff.Length);
             }
             catch (ThreadAbortException)

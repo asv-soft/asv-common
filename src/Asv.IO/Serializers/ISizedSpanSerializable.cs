@@ -8,6 +8,14 @@ namespace Asv.IO
     public interface ISizedSpanSerializable: ISpanSerializable
     {
         int GetByteSize();
+        public void Serialize(IBufferWriter<byte> buffer, out int written)
+        {
+            var span = buffer.GetSpan(GetByteSize());
+            var originSize = span.Length;
+            Serialize(ref span);
+            written = originSize - span.Length;
+            buffer.Advance(written);
+        }
     }
 
 
@@ -17,8 +25,7 @@ namespace Asv.IO
 
     public static class SpanSerializableHelper
     {
-        
-        
+       
         public static T Deserialize<T>(ref ReadOnlySpan<byte> data) where T : ISizedSpanSerializable, new()
         {
             var result = new T();
@@ -35,6 +42,7 @@ namespace Asv.IO
             return value.GetByteSize();
         }
 
+        
         
 
         public static void WriteToStream(this ISpanSerializable item, Stream file, int itemMaxSize)
