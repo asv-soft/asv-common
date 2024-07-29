@@ -91,34 +91,37 @@ public class AesTest
     [Fact]
     public async Task AesTcpServerDataTest()
     {
-        var client = TcpTest.CreateTcpClient(port:1002);
-        var server = TcpTest.CreateTcpServer(port:1002);
+        var client = TcpTest.CreateTcpClient(port: 1002);
+        var server = TcpTest.CreateTcpServer(port: 1002);
         var aesServer = CreateAesCryptoPort(server);
         aesServer.Enable();
         client.Enable();
 
-        for (int i = 0; i < 10; i++)
+        for (var i = 0; i < 10; i++)
         {
             if (client.State.Value == PortState.Connected && aesServer.State.Value == PortState.Connected) break;
-            Thread.Sleep(1000);
+            await Task.Delay(1000);
         }
 
         var originData = new byte[Random.Shared.Next(32, 1024)];
-        var recievedData = Array.Empty<byte>();
+        var receivedData = Array.Empty<byte>();
+        var tcs = new TaskCompletionSource<bool>();
 
         Random.Shared.NextBytes(originData);
 
         using var disp = aesServer.Subscribe(data =>
         {
-            recievedData = data;
+            receivedData = data;
+            tcs.SetResult(true);
         });
 
-        Assert.True(await client.Send(originData, originData.Length, default));
 
-        Thread.Sleep(3000);
+        await client.Send(originData, originData.Length, default);
         
-        Assert.Equal(originData, recievedData);
-        
+        await Task.WhenAny(tcs.Task, Task.Delay(3000));
+
+        Assert.Equal(originData, receivedData);
+    
         aesServer.Disable();
         client.Disable();
     }
@@ -207,7 +210,7 @@ public class AesTest
         aesServer.Enable();
         client.Enable();
 
-        for (int i = 0; i < 10; i++)
+        for (var i = 0; i < 10; i++)
         {
             if (client.State.Value == PortState.Connected && aesServer.State.Value == PortState.Connected) break;
             Thread.Sleep(1000);
