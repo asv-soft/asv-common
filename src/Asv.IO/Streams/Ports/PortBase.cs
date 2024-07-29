@@ -7,7 +7,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Asv.Common;
 
-
 namespace Asv.IO
 {
     public abstract class PortBase : DisposableOnceWithCancel, IPort
@@ -19,8 +18,6 @@ namespace Asv.IO
         private readonly Subject<byte[]> _outputData = new();
         private long _rxBytes;
         private long _txBytes;
-
-        
 
         public long RxBytes => Interlocked.Read(ref _rxBytes);
         public long TxBytes => Interlocked.Read(ref _txBytes);
@@ -112,10 +109,6 @@ namespace Asv.IO
             {
                 Debug.Assert(true,ex.Message);
             }
-            finally
-            {
-                // ignore
-            }
         }
 
         private void TryConnect()
@@ -157,10 +150,6 @@ namespace Asv.IO
             {
                 // ignored
             }
-            finally
-            {
-                // ignore
-            }
         }
 
         protected void InternalOnError(Exception exception)
@@ -170,13 +159,10 @@ namespace Asv.IO
             Observable.Timer(ReconnectTimeout).Subscribe(_ => TryConnect(),DisposeCancel);
             Stop();
         }
-
-
+        
         public IDisposable Subscribe(IObserver<byte[]> observer)
         {
             return _outputData.Subscribe(observer);
         }
-
-       
     }
 }
