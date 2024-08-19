@@ -115,7 +115,7 @@ namespace Asv.Cfg.Test
             var cfg = new JsonOneFileConfiguration($"{_workingDir}\\TestClass.json", true, null);
             cfg.Set("test", new TestClass(){ Name = "Test" });
 
-            var cfgExists = cfg.Exist<TestClass>("test");
+            var cfgExists = cfg.Exist("test");
             
             Assert.True(cfgExists);
 
@@ -129,7 +129,7 @@ namespace Asv.Cfg.Test
             var cfg = new JsonOneFileConfiguration($"{_workingDir}\\TestClass.json", true, null);
             cfg.Set("test", new TestClass(){ Name = "Test" });
 
-            var cfgExists = cfg.Exist<TestClass>("no_test");
+            var cfgExists = cfg.Exist("no_test");
             
             Assert.False(cfgExists);
 
@@ -180,7 +180,7 @@ namespace Asv.Cfg.Test
             
             cfg.Remove("testRemove");
             
-            Assert.False(cfg.Exist<TestClass>("testRemove"));
+            Assert.False(cfg.Exist("testRemove"));
 
             CleanTestDirectory();
         }
@@ -193,7 +193,7 @@ namespace Asv.Cfg.Test
             
             cfg.Remove("testRemove");
             
-            Assert.False(cfg.Exist<TestClass>("testRemove"));
+            Assert.False(cfg.Exist("testRemove"));
 
             CleanTestDirectory();
         }
@@ -289,10 +289,10 @@ namespace Asv.Cfg.Test
             
             Thread.Sleep(500);
             
-            Assert.True(cfg.Exist<TestMultiThreadClassOne>("one"));
-            Assert.True(cfg.Exist<TestMultiThreadClassTwo>("two"));
-            Assert.True(cfg.Exist<TestMultiThreadClassThree>("three"));
-            Assert.True(cfg.Exist<TestMultiThreadClassFour>("four"));
+            Assert.True(cfg.Exist("one"));
+            Assert.True(cfg.Exist("two"));
+            Assert.True(cfg.Exist("three"));
+            Assert.True(cfg.Exist("four"));
             
             CleanTestDirectory();
         }

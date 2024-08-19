@@ -6,10 +6,13 @@ using System.Reactive;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using Asv.Common;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+using ZLogger;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
-using NLog;
+using ZLogger;
 
 namespace Asv.Cfg.Json
 {
@@ -19,19 +22,20 @@ namespace Asv.Cfg.Json
         private readonly string _fileName;
         private readonly bool _sortKeysInFile;
         private readonly ConcurrentDictionary<string, JToken> _values;
-        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         private readonly Subject<Unit> _onNeedToSave = new();
         private readonly IDisposable _saveSubscribe;
         private readonly object _sync = new();
         private readonly bool _deferredFlush;
         private readonly Subject<Exception> _deferredErrors = new();
         private readonly JsonSerializer _serializer;
+        private readonly ILogger<JsonOneFileConfiguration> _logger;
 
 
-        public JsonOneFileConfiguration(string fileName, bool createIfNotExist, TimeSpan? flushToFileDelayMs, bool sortKeysInFile = false)
+        public JsonOneFileConfiguration(string fileName, bool createIfNotExist, TimeSpan? flushToFileDelayMs, bool sortKeysInFile = false, ILogger<JsonOneFileConfiguration>? logger = null)
         {
             _fileName = fileName;
             _sortKeysInFile = sortKeysInFile;
+            _logger = logger ?? NullLogger<JsonOneFileConfiguration>.Instance; 
             
             _serializer = new JsonSerializer
             {
@@ -41,13 +45,13 @@ namespace Asv.Cfg.Json
 
             if (flushToFileDelayMs == null)
             {
-                Logger.Debug($"{fileName} create:{createIfNotExist} flush: No, write immediately ");
+                _logger.ZLogDebug($"{fileName} create:{createIfNotExist} flush: No, write immediately");
                 _deferredFlush = false;
             }
             else
             {
                 _deferredFlush = true;
-                Logger.Debug($"{fileName} create:{createIfNotExist} flush: every {flushToFileDelayMs.Value.TotalSeconds:F2} seconds");
+                _logger.ZLogDebug($"{fileName} create:{createIfNotExist} flush: every {flushToFileDelayMs.Value.TotalSeconds:F2} seconds");
             }
 
             if (string.IsNullOrEmpty(fileName))
@@ -62,7 +66,7 @@ namespace Asv.Cfg.Json
 
             if (Directory.Exists(dir) == false && createIfNotExist)
             {
-                Logger.Warn($"Directory with config file not exist. Try to create it: {dir}");
+                _logger.ZLogWarning($"Directory with config file not exist. Try to create it: {dir}");
                 Directory.CreateDirectory(dir);
             }
             
@@ -71,13 +75,13 @@ namespace Asv.Cfg.Json
             {
                 if (createIfNotExist)
                 {
-                    Logger.Warn($"Config file not exist. Try to create {fileName}");
+                    _logger.ZLogWarning($"Config file not exist. Try to create {fileName}");
                     _values = new ConcurrentDictionary<string, JToken>(ConfigurationHelper.DefaultKeyComparer);
                     InternalSaveChanges(Unit.Default);
                 }
                 else
                 {
-                    Logger.Warn($"Config file not exist.");
+                    _logger.ZLogWarning($"Config file not exist.");
                     throw new Exception($"Configuration file not exist {fileName}");
                 }
             }
@@ -91,7 +95,7 @@ namespace Asv.Cfg.Json
                 }
                 catch (Exception e)
                 {
-                    Logger.Error(e,$"Error to load JSON configuration from file. File content: {text}");
+                    _logger.ZLogError(e,$"Error to load JSON configuration from file. File content: {text}");
                     throw;
                 }
             }
@@ -120,23 +124,17 @@ namespace Asv.Cfg.Json
                             _serializer.Serialize(file, new SortedDictionary<string, JToken>(_values)); 
                         }
                     }
-                    Logger.Trace($"Flush configuration to file [{_values.Count}] ");
+                    _logger.ZLogTrace($"Flush configuration to file [{_values.Count}] ");
                 }
                 catch (Exception e)
                 {
-                    Logger.Error(e,$"Error to serialize configutation and save it to file ({_fileName}):{e.Message}");
+                    _logger.ZLogError(e,$"Error to serialize configuration and save it to file ({_fileName}):{e.Message}");
                     if (_deferredFlush == false) throw;
                 }
             }
         }
 
         public IEnumerable<string> AvailableParts => _values.Keys;
-
-        public bool Exist<TPocoType>(string key)
-        {
-            ConfigurationHelper.ValidateKey(key);
-            return _values.ContainsKey(key);
-        }
 
         public bool Exist(string key)
         {
