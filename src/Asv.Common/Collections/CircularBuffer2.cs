@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace Asv.Common
 {
@@ -19,7 +20,7 @@ namespace Asv.Common
     public class CircularBuffer2<T> : IEnumerable<T>
     {
         private readonly T[] _buffer;
-
+        private readonly int _bufferLength;
         /// <summary>
         /// The _start. Index of the first element in buffer.
         /// </summary>
@@ -35,16 +36,26 @@ namespace Asv.Common
         /// </summary>
         private int _size;
 
+        
         /// <summary>
         /// Initializes a new instance of the <see cref="CircularBuffer{T}"/> class.
-        /// 
+        /// Use buffer as the backing array for the buffer.
+        /// Useful for ArrayPools.
         /// </summary>
-        /// <param name='capacity'>
-        /// Buffer capacity. Must be positive.
-        /// </param>
-        public CircularBuffer2(int capacity)
-            : this(capacity, new T[] { })
+        /// <param name="buffer"></param>
+        /// <param name="length"></param>
+        public CircularBuffer2(T[] buffer, int length)
         {
+            ArgumentNullException.ThrowIfNull(buffer);
+            _buffer = buffer; 
+            _bufferLength = length;
+            _start = 0;
+            _end = 0;
+        }
+        
+        public CircularBuffer2(int capacity):this(new T[capacity],capacity)
+        {
+            
         }
 
         /// <summary>
@@ -59,30 +70,15 @@ namespace Asv.Common
         /// Suggestion: use Skip(x).Take(y).ToArray() to build this argument from
         /// any enumerable.
         /// </param>
-        public CircularBuffer2(int capacity, T[] items)
+        public CircularBuffer2(int capacity, T[] items):this(capacity)
         {
-            if (capacity < 1)
-            {
-                throw new ArgumentException(
-                    "Circular buffer cannot have negative or zero capacity.", nameof(capacity));
-            }
-
-            if (items == null)
-            {
-                throw new ArgumentNullException(nameof(items));
-            }
-
             if (items.Length > capacity)
             {
                 throw new ArgumentException(
                     "Too many items to fit circular buffer", nameof(items));
             }
-
-            _buffer = new T[capacity];
-
             Array.Copy(items, _buffer, items.Length);
             _size = items.Length;
-
             _start = 0;
             _end = _size == capacity ? 0 : _size;
         }
@@ -91,10 +87,7 @@ namespace Asv.Common
         /// Maximum capacity of the buffer. Elements pushed into the buffer after
         /// maximum capacity is reached (IsFull = true), will remove an element.
         /// </summary>
-        public int Capacity
-        {
-            get { return _buffer.Length; }
-        }
+        public int Capacity => _bufferLength;
 
         /// <summary>
         /// Boolean indicating if Circular is at full capacity.
@@ -102,26 +95,17 @@ namespace Asv.Common
         /// cause elements to be removed from the other end
         /// of the buffer.
         /// </summary>
-        public bool IsFull
-        {
-            get { return Size == Capacity; }
-        }
+        public bool IsFull => Size == Capacity;
 
         /// <summary>
         /// True if has no elements.
         /// </summary>
-        public bool IsEmpty
-        {
-            get { return Size == 0; }
-        }
+        public bool IsEmpty => Size == 0;
 
         /// <summary>
         /// Current buffer size (the number of elements that the buffer has).
         /// </summary>
-        public int Size
-        {
-            get { return _size; }
-        }
+        public int Size => _size;
 
         /// <summary>
         /// Element at the front of the buffer - this[0].
@@ -156,14 +140,12 @@ namespace Asv.Common
             {
                 if (IsEmpty)
                 {
-                    throw new IndexOutOfRangeException(string.Format("Cannot access index {0}. Buffer is empty",
-                        index));
+                    throw new IndexOutOfRangeException($"Cannot access index {index}. Buffer is empty");
                 }
 
                 if (index >= _size)
                 {
-                    throw new IndexOutOfRangeException(string.Format("Cannot access index {0}. Buffer size is {1}",
-                        index, _size));
+                    throw new IndexOutOfRangeException($"Cannot access index {index}. Buffer size is {_size}");
                 }
 
                 var actualIndex = InternalIndex(index);
@@ -173,14 +155,12 @@ namespace Asv.Common
             {
                 if (IsEmpty)
                 {
-                    throw new IndexOutOfRangeException(string.Format("Cannot access index {0}. Buffer is empty",
-                        index));
+                    throw new IndexOutOfRangeException($"Cannot access index {index}. Buffer is empty");
                 }
 
                 if (index >= _size)
                 {
-                    throw new IndexOutOfRangeException(string.Format("Cannot access index {0}. Buffer size is {1}",
-                        index, _size));
+                    throw new IndexOutOfRangeException($"Cannot access index {index}. Buffer size is {_size}");
                 }
 
                 var actualIndex = InternalIndex(index);
@@ -244,7 +224,7 @@ namespace Asv.Common
         {
             ThrowIfEmpty("Cannot take elements from an empty buffer.");
             Decrement(ref _end);
-            _buffer[_end] = default(T);
+            _buffer[_end] = default!;
             --_size;
         }
 
@@ -255,7 +235,7 @@ namespace Asv.Common
         public void PopFront()
         {
             ThrowIfEmpty("Cannot take elements from an empty buffer.");
-            _buffer[_start] = default(T);
+            _buffer[_start] = default!;
             Increment(ref _start);
             --_size;
         }
@@ -270,7 +250,7 @@ namespace Asv.Common
             _start = 0;
             _end = 0;
             _size = 0;
-            Array.Clear(_buffer, 0, _buffer.Length);
+            Array.Clear(_buffer, 0, _bufferLength);
         }
 
         /// <summary>
@@ -286,6 +266,7 @@ namespace Asv.Common
             var segments = ToArraySegments();
             foreach (var segment in segments)
             {
+                Debug.Assert(segment.Array != null, "segment.Array != null");
                 Array.Copy(segment.Array, segment.Offset, newArray, newArrayOffset, segment.Count);
                 newArrayOffset += segment.Count;
             }
@@ -293,6 +274,49 @@ namespace Asv.Common
             return newArray;
         }
 
+        public void CopyTo(Span<T> buffer)
+        { 
+            if (IsEmpty)
+            {
+                return;
+            }
+            Span<T> span;
+            if (_start < _end)
+            {
+                var count = _end - _start;
+                if (buffer.Length < count)
+                {
+                    span = new Span<T>(_buffer, _start, buffer.Length);
+                    span.CopyTo(buffer);
+                    return;
+                }
+                span = new Span<T>(_buffer, _start,count);
+                span.CopyTo(buffer);
+            }
+            else
+            {
+                var count = _bufferLength - _start;
+                if (buffer.Length < count)
+                {
+                    span = new Span<T>(_buffer, _start, buffer.Length);
+                    span.CopyTo(buffer);
+                    return;
+                }
+                span = new Span<T>(_buffer, _start, count);
+                span.CopyTo(buffer);
+                buffer = buffer[count..];
+                count = _end;
+                if (buffer.Length < count)
+                {
+                    span = new Span<T>(_buffer, 0, buffer.Length);
+                    span.CopyTo(buffer);
+                    return;
+                }
+                span = new Span<T>(_buffer, 0, _end);
+                span.CopyTo(buffer);
+            }
+        }
+        
         /// <summary>
         /// Get the contents of the buffer as 2 ArraySegments.
         /// Respects the logical contents of the buffer, where
@@ -319,7 +343,7 @@ namespace Asv.Common
         public IEnumerator<T> GetEnumerator()
         {
             var segments = ToArraySegments();
-            foreach (ArraySegment<T> segment in segments)
+            foreach (var segment in segments)
             {
                 for (var i = 0; i < segment.Count; i++)
                 {
@@ -403,32 +427,20 @@ namespace Asv.Common
         {
             if (IsEmpty)
             {
-                return new ArraySegment<T>(new T[0]);
+                return new ArraySegment<T>([]);
             }
-            else if (_start < _end)
-            {
-                return new ArraySegment<T>(_buffer, _start, _end - _start);
-            }
-            else
-            {
-                return new ArraySegment<T>(_buffer, _start, _buffer.Length - _start);
-            }
+
+            return _start < _end ? new ArraySegment<T>(_buffer, _start, _end - _start) : new ArraySegment<T>(_buffer, _start, _bufferLength - _start);
         }
 
         private ArraySegment<T> ArrayTwo()
         {
             if (IsEmpty)
             {
-                return new ArraySegment<T>(new T[0]);
+                return new ArraySegment<T>([]);
             }
-            else if (_start < _end)
-            {
-                return new ArraySegment<T>(_buffer, _end, 0);
-            }
-            else
-            {
-                return new ArraySegment<T>(_buffer, 0, _end);
-            }
+
+            return _start < _end ? new ArraySegment<T>(_buffer, _end, 0) : new ArraySegment<T>(_buffer, 0, _end);
         }
 
         #endregion
