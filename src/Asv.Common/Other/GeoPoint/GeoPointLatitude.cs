@@ -6,17 +6,19 @@ using System.Text.RegularExpressions;
 
 namespace Asv.Common
 {
-    public static class GeoPointLatitude
+    public static partial class GeoPointLatitude
     {
         private const double Min = -90;
         private const double Max = 90;
         private const string MinusChars = "-Ss";
         
-        private static readonly Regex LatitudeDegreeRegex = new(@"^(-?[1-8]?\d(?:\.\d{1,6})?|90(?:\.0{1,6})?)$", RegexOptions.Compiled);
+        [GeneratedRegex(@"^(-?[1-8]?\d(?:\.\d{1,6})?|90(?:\.0{1,6})?)$", RegexOptions.Compiled)]
+        private static partial Regex GetLatitudeDegreeRegex();
+        private static readonly Regex LatitudeDegreeRegex = GetLatitudeDegreeRegex();
         
-        private static readonly Regex LatitudeRegex = new(
-            """^(?<s1>[NSns+-]?\s*)?(?<deg>\d{1,2})\s*([:°˚º^~*°\.\s_-]*)\s*(?<min>\d{1,2}(?:\.\d+)?|\d{1,2})\s*([′':;^\s_-]*)\s*(?<sec>\d{1,2}(?:\.\d+)?\s*)?(["”˝¨^\s_-]*)\s*(?<s2>[NSns+-]?\s*)?$""",
-        RegexOptions.Compiled);
+        [GeneratedRegex("""^(?<s1>[NSns+-]?\s*)?(?<deg>\d{1,2})\s*([:°˚º^~*°\.\s_-]*)\s*(?<min>\d{1,2}(?:\.\d+)?|\d{1,2})\s*([′':;^\s_-]*)\s*(?<sec>\d{1,2}(?:\.\d+)?\s*)?(["”˝¨^\s_-]*)\s*(?<s2>[NSns+-]?\s*)?$""", RegexOptions.Compiled)]
+        private static partial Regex GetLatitudeRegex();
+        private static readonly Regex LatitudeRegex = GetLatitudeRegex();
         public static bool IsValid(string? value)
         {
             return TryParse(value, out _);
@@ -110,6 +112,7 @@ namespace Asv.Common
             }
             return $"{degrees:00}°{minutes:00}′{seconds:00.00}˝ {(latitude < 0 ? "S" : "N")}";  
         }
+
         
     }
 }

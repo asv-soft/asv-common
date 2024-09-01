@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Reactive;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using System.Text;
 using Asv.Common;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -12,6 +14,7 @@ using ZLogger;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
 using ZLogger;
 
 namespace Asv.Cfg.Json
@@ -28,20 +31,16 @@ namespace Asv.Cfg.Json
         private readonly bool _deferredFlush;
         private readonly Subject<Exception> _deferredErrors = new();
         private readonly JsonSerializer _serializer;
-        private readonly ILogger<JsonOneFileConfiguration> _logger;
+        private readonly ILogger _logger;
 
 
-        public JsonOneFileConfiguration(string fileName, bool createIfNotExist, TimeSpan? flushToFileDelayMs, bool sortKeysInFile = false, ILogger<JsonOneFileConfiguration>? logger = null)
+        public JsonOneFileConfiguration(string fileName, bool createIfNotExist, TimeSpan? flushToFileDelayMs, bool sortKeysInFile = false, ILogger? logger = null)
         {
-            _fileName = fileName;
+            _fileName = Path.GetFullPath(fileName);
             _sortKeysInFile = sortKeysInFile;
             _logger = logger ?? NullLogger<JsonOneFileConfiguration>.Instance; 
             
-            _serializer = new JsonSerializer
-            {
-                Formatting = Formatting.Indented,
-            };
-            _serializer.Converters.Add(new StringEnumConverter());
+            _serializer = JsonHelper.CreateDefaultJsonSerializer();
 
             if (flushToFileDelayMs == null)
             {
@@ -54,22 +53,24 @@ namespace Asv.Cfg.Json
                 _logger.ZLogDebug($"{fileName} create:{createIfNotExist} flush: every {flushToFileDelayMs.Value.TotalSeconds:F2} seconds");
             }
 
-            if (string.IsNullOrEmpty(fileName))
-                throw new ArgumentException("Config file name cannot be null or empty.", nameof(fileName));
+            ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
+                
 
             var dir = Path.GetDirectoryName(Path.GetFullPath(fileName));
-            if (string.IsNullOrWhiteSpace(dir)) throw new InvalidOperationException("Directory path is null");
+            ArgumentException.ThrowIfNullOrWhiteSpace(dir);
 
             _saveSubscribe = flushToFileDelayMs == null
                 ? _onNeedToSave.Subscribe(InternalSaveChanges)
                 : _onNeedToSave.Throttle(flushToFileDelayMs.Value).Subscribe(InternalSaveChanges);
 
-            if (Directory.Exists(dir) == false && createIfNotExist)
+            if (Directory.Exists(dir) == false)
             {
+                if (!createIfNotExist)
+                    throw new DirectoryNotFoundException($"Directory with config file not exist: {dir}");
+                
                 _logger.ZLogWarning($"Directory with config file not exist. Try to create it: {dir}");
                 Directory.CreateDirectory(dir);
             }
-            
             
             if (File.Exists(fileName) == false)
             {
@@ -100,7 +101,8 @@ namespace Asv.Cfg.Json
                 }
             }
         }
-
+        
+        public string FileName => _fileName;
         public IObservable<Exception> OnDeferredError => _deferredErrors;
         private void InternalSaveChanges(Unit unit)
         {
@@ -117,11 +119,11 @@ namespace Asv.Cfg.Json
                         //serialize object directly into file stream
                         if (_sortKeysInFile)
                         {
-                            _serializer.Serialize(file, _values);    
+                            _serializer.Serialize(file, new SortedDictionary<string, JToken>(_values));
                         }
                         else
                         {
-                            _serializer.Serialize(file, new SortedDictionary<string, JToken>(_values)); 
+                            _serializer.Serialize(file, _values);     
                         }
                     }
                     _logger.ZLogTrace($"Flush configuration to file [{_values.Count}] ");
@@ -142,24 +144,35 @@ namespace Asv.Cfg.Json
             return _values.ContainsKey(key);
         }
 
-        public TPocoType Get<TPocoType>(string key, TPocoType defaultValue)
+        public TPocoType Get<TPocoType>(string key, Lazy<TPocoType> defaultValue)
         {
             ConfigurationHelper.ValidateKey(key);
             if (_values.TryGetValue(key, out var value))
             {
-                var a = value.ToObject<TPocoType>();
-                return a;
+                return value.ToObject<TPocoType>() ?? throw new InvalidOperationException();
             }
 
-            Set(key,defaultValue);
-            return defaultValue;
+            var inst = defaultValue.Value;
+            Set(key,inst);
+            return inst;
         }
 
+       
         public void Set<TPocoType>(string key, TPocoType value)
         {
             ConfigurationHelper.ValidateKey(key);
-            var jValue = JsonConvert.DeserializeObject<JToken>(JsonConvert.SerializeObject(value));
-            _values.AddOrUpdate(key,jValue, (s, token) => jValue);
+
+            using var stream = new MemoryStream();
+            using var writer = new StreamWriter(stream);
+            using var jsonTextWriter = new JsonTextWriter(writer);
+            jsonTextWriter.Formatting = _serializer.Formatting;
+            _serializer.Serialize(jsonTextWriter, value, typeof(TPocoType));
+            writer.Flush();          
+            stream.Position = 0;
+            using var jsonReader = new JsonTextReader(new StreamReader(stream));
+            var jValue = _serializer.Deserialize<JToken>(jsonReader) ?? throw new InvalidOperationException();
+            _logger.ZLogTrace($"Set configuration key [{key}]");
+            _values.AddOrUpdate(key,jValue , (_, _) => jValue);
             _onNeedToSave.OnNext(Unit.Default);
         }
 
@@ -168,6 +181,7 @@ namespace Asv.Cfg.Json
             ConfigurationHelper.ValidateKey(key);
             if (_values.TryRemove(key, out _))
             {
+                _logger.ZLogTrace($"Remove configuration key [{key}]");
                 _onNeedToSave.OnNext(Unit.Default);
             }
         }
@@ -176,6 +190,7 @@ namespace Asv.Cfg.Json
         {
             _saveSubscribe.Dispose();
             _onNeedToSave?.Dispose();
+            _logger.ZLogTrace($"Dispose {nameof(JsonOneFileConfiguration)}");
             if (_deferredFlush)
             {
                 InternalSaveChanges(Unit.Default);    

@@ -4,14 +4,23 @@ using System.Text.RegularExpressions;
 
 namespace Asv.Common
 {
-    public static class Angle
+    /// <summary>
+    /// Provides utility methods for working with angles.
+    /// </summary>
+    public static partial class Angle
     {
-        private static readonly Regex AngleInDegrees =
-            new(@"^(-?((0|[1-9][0-9]?|1[0-7][0-9]|180|360)(\.\d{1,6})?)|360(\.0{1,6})?)$", RegexOptions.Compiled);
+        [GeneratedRegex(@"^(-?((0|[1-9][0-9]?|1[0-7][0-9]|180|360)(\.\d{1,6})?)|360(\.0{1,6})?)$", RegexOptions.Compiled)]
+        private static partial Regex GetAngleInDegrees();
         
-        private static readonly Regex AngleRegex = new(
-            @"((?<sign>(\-|\+))?(?<deg>\d+)(°|˚|º|\^|~|\*|\s|\-|_)*(((?<min>[0-5]?\d|\d)?)?)('|′|\s|\-|_)*(?<sec>(([0-5]?\d|\d)([.]\d*)?))?(""|¨|˝|\s|\-|_)*)[\s]*$",
-            RegexOptions.Compiled);
+        private static readonly Regex AngleInDegrees =
+            GetAngleInDegrees();
+        [GeneratedRegex(@"((?<sign>(\-|\+))?(?<deg>\d+)(°|˚|º|\^|~|\*|\s|\-|_)*(((?<min>[0-5]?\d|\d)?)?)('|′|\s|\-|_)*(?<sec>(([0-5]?\d|\d)([.]\d*)?))?(""|¨|˝|\s|\-|_)*)[\s]*$", RegexOptions.Compiled)]
+        private static partial Regex GetAngleRegex();
+        private static readonly Regex AngleRegex = GetAngleRegex();
+        
+        [GeneratedRegex(@"^0+(?=\d+$)")]
+        private static partial Regex GetCutOffZeroRegex();
+        private static readonly Regex CutOffZeroRegex = GetCutOffZeroRegex();
         
         public static bool IsValid(string value)
         {
@@ -48,21 +57,22 @@ namespace Asv.Common
             //Trying to parse value in angle as double
             if (match.Success == false)
             {
-                var signStr = "";
+                var sign1 = 1.0;
+                value = value.Replace("+", string.Empty);
                 
-                if (value.Contains("+"))
+                if (value.Contains('-'))
                 {
-                    value = value.Replace("+", "");
+                    sign1 = -1.0;
+                    value = value.Replace("-", string.Empty);
                 }
                 
-                if (value.Contains("-"))
+                value = CutOffZeroRegex.Replace(value, string.Empty);
+                var result = double.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out angle);
+                if (result)
                 {
-                    signStr = "-";
-                    value = value.Replace("-", "");
+                    angle *= sign1;
                 }
-                
-                value = Regex.Replace(value, @"^0+(?=\d+$)", "");
-                return double.TryParse(signStr + value, NumberStyles.Any, CultureInfo.InvariantCulture, out angle);
+                return result;
             }
             
             //Getting all matching groups
@@ -116,5 +126,7 @@ namespace Asv.Common
             }
             return $"{Math.Sign(decimalDegrees) * degrees:00}°{minutes:00}′{seconds:00.00}˝";  
         }
+
+       
     }
 }

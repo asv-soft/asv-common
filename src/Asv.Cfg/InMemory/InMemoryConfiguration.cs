@@ -1,19 +1,26 @@
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using ZLogger;
 
 namespace Asv.Cfg
 {
-    public class InMemoryConfiguration:IConfiguration
+    public class InMemoryConfiguration(ILogger? logger = null) : IConfiguration
     {
         private readonly Dictionary<string, JToken> _values = new();
         private readonly ReaderWriterLockSlim _rw = new(LockRecursionPolicy.SupportsRecursion);
+        private readonly ILogger _logger = logger ?? NullLogger.Instance;
 
         public void Dispose()
         {
-            _rw?.Dispose();
+            _logger.ZLogTrace($"Dispose {nameof(InMemoryConfiguration)}");
+            _rw.Dispose();
             _values.Clear();
         }
 
@@ -45,21 +52,19 @@ namespace Asv.Cfg
             return _values.ContainsKey(key);
         }
 
-        public TPocoType Get<TPocoType>(string key, TPocoType defaultValue)
+        public TPocoType Get<TPocoType>(string key, Lazy<TPocoType> defaultValue)
         {
             try
             {
                 _rw.EnterUpgradeableReadLock();
-                JToken value;
-                if (_values.TryGetValue(key, out value))
+                if (_values.TryGetValue(key, out var value))
                 {
-                    var a = value.ToObject<TPocoType>();
-                    return a;
+                    return value.ToObject<TPocoType>() ?? defaultValue.Value;
                 }
                 else
                 {
-                    Set(key, defaultValue);
-                    return defaultValue;
+                    Set(key, defaultValue.Value);
+                    return defaultValue.Value;
                 }
             }
             finally
@@ -74,14 +79,9 @@ namespace Asv.Cfg
             {
                 _rw.EnterWriteLock();
                 var jValue = JsonConvert.DeserializeObject<JToken>(JsonConvert.SerializeObject(value));
-                if (_values.ContainsKey(key))
-                {
-                    _values[key] = jValue;
-                }
-                else
-                {
-                    _values.Add(key, jValue);
-                }
+                Debug.Assert(jValue != null, nameof(jValue) + " != null");
+                _logger.ZLogTrace($"Set configuration key [{key}]");
+                _values[key] = jValue;
             }
             finally
             {
@@ -94,10 +94,8 @@ namespace Asv.Cfg
             try
             {
                 _rw.EnterWriteLock();
-                if (_values.ContainsKey(key))
-                {
-                    _values.Remove(key);
-                }
+                _values.Remove(key);
+                _logger.ZLogTrace($"Remove configuration key [{key}]");
             }
             finally
             {

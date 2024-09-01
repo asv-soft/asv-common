@@ -1,47 +1,40 @@
 using System;
 using System.IO;
 using Asv.Common;
+using Newtonsoft.Json;
 
 namespace Asv.Cfg.Json
 {
-    public class ZipJsonFileInfo:IEquatable<ZipJsonFileInfo>
+    [method: JsonConstructor]
+    public readonly struct ZipJsonFileInfo(string fileVersion, string fileType) : IEquatable<ZipJsonFileInfo>
     {
-        public static ZipJsonFileInfo Empty { get; } = new();
-        public string FileVersion { get; set; } = string.Empty;
-        public string FileType { get; set; } = String.Empty;
-
+        public static ZipJsonFileInfo Empty { get; } = new(string.Empty, string.Empty);
+        public string FileVersion { get; } = fileVersion;
+        public string FileType { get; } = fileType;
 
         public bool Equals(ZipJsonFileInfo other)
         {
-            if (ReferenceEquals(null, other)) return false;
-            if (ReferenceEquals(this, other)) return true;
             return FileVersion == other.FileVersion && FileType == other.FileType;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            if (ReferenceEquals(null, obj)) return false;
-            if (ReferenceEquals(this, obj)) return true;
-            if (obj.GetType() != this.GetType()) return false;
-            return Equals((ZipJsonFileInfo)obj);
+            return obj is ZipJsonFileInfo other && Equals(other);
         }
 
         public override int GetHashCode()
         {
-            unchecked
-            {
-                return ((FileVersion != null ? FileVersion.GetHashCode() : 0) * 397) ^ (FileType != null ? FileType.GetHashCode() : 0);
-            }
+            return HashCode.Combine(FileVersion, FileType);
         }
 
         public static bool operator ==(ZipJsonFileInfo left, ZipJsonFileInfo right)
         {
-            return Equals(left, right);
+            return left.Equals(right);
         }
 
         public static bool operator !=(ZipJsonFileInfo left, ZipJsonFileInfo right)
         {
-            return !Equals(left, right);
+            return !left.Equals(right);
         }
     }
 
@@ -56,17 +49,13 @@ namespace Asv.Cfg.Json
         private const string InfoKey = "FileInfo";
         protected ZipJsonVersionedFile(Stream zipStream,SemVersion lastVersion, string fileType, bool createIfNotExist):base(zipStream)
         {
-            var info = Get(InfoKey, ZipJsonFileInfo.Empty);
+            var info = Get(InfoKey, new Lazy<ZipJsonFileInfo>(ZipJsonFileInfo.Empty));
             string type;
             if (info.Equals(ZipJsonFileInfo.Empty))
             {
                 if (createIfNotExist)
                 {
-                    Set(InfoKey, new ZipJsonFileInfo()
-                    {
-                        FileVersion = lastVersion.ToString(),
-                        FileType = fileType,
-                    });
+                    Set(InfoKey, new ZipJsonFileInfo(fileVersion: lastVersion.ToString(), fileType: fileType));
                     _version = lastVersion;
                     type = fileType;
                 }

@@ -3,8 +3,14 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Asv.Common;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Serialization;
+using ZLogger;
 
 namespace Asv.Cfg.Json
 {
@@ -12,16 +18,21 @@ namespace Asv.Cfg.Json
     {
         private readonly ZipArchive _archive;
         private readonly object _sync = new();
-        private const string FileExt = ".json";
+        private readonly JsonSerializer _serializer;
+        private readonly ILogger _logger;
+        private const string FixedFileExt = ".json";
 
-        public ZipJsonConfiguration(Stream zipStream,bool leaveOpen = false)
+        public ZipJsonConfiguration(Stream zipStream,bool leaveOpen = false, ILogger? logger = null)
         {
             if (zipStream == null) throw new ArgumentNullException(nameof(zipStream));
+            _logger = logger ?? NullLogger.Instance;
             _archive = new ZipArchive(zipStream, ZipArchiveMode.Update, leaveOpen);
+            _serializer = JsonHelper.CreateDefaultJsonSerializer();
         }
         
         protected override void InternalDisposeOnce()
         {
+            _logger.ZLogTrace($"Dispose ZipJsonConfiguration");
             lock (_sync)
             {
                 _archive.Dispose();
@@ -34,71 +45,77 @@ namespace Asv.Cfg.Json
             {
                 lock (_sync)
                 {
-                    return _archive.Entries.Where(_ => Path.GetExtension(_.Name) == FileExt)
-                        .Select(x => x.Name).ToArray();
+                    return _archive.Entries.Where(_ => Path.GetExtension(_.Name) == FixedFileExt)
+                        .Select(x => Path.GetFileNameWithoutExtension(x.Name)).ToArray();
                 }
             }
         }
-        public bool Exist<TPocoType>(string key)
-        {
-            ConfigurationHelper.ValidateKey(key);
-            var fileName = key+FileExt;
-            lock (_sync)
-            {
-                return _archive.Entries.Any(x => ConfigurationHelper.DefaultKeyComparer.Equals(x.Name, fileName));
-            }
-        }
+        
 
         public bool Exist(string key)
         {
             ConfigurationHelper.ValidateKey(key);
-            var fileName = key+FileExt;
+            var fileName = GetFilePath(key);
             lock (_sync)
             {
                 return _archive.Entries.Any(x => ConfigurationHelper.DefaultKeyComparer.Equals(x.Name, fileName));
             }
         }
 
-        public TPocoType Get<TPocoType>(string key, TPocoType defaultValue)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private string GetFilePath(string key)
+        {
+            return $"{key}{FixedFileExt}";
+        }
+
+        public TPocoType Get<TPocoType>(string key, Lazy<TPocoType> defaultValue)
         {
             ConfigurationHelper.ValidateKey(key);
-            var fileName = key+FileExt;
+            var fileName = GetFilePath(key);
             lock (_sync)
             {
                 var entry = _archive.Entries.FirstOrDefault(x => ConfigurationHelper.DefaultKeyComparer.Equals(x.Name, fileName));
                 if (entry == default)
                 {
-                    return defaultValue;
+                    _logger.ZLogTrace($"Configuration key [{key}] not found. Create new with default value");
+                    var inst = defaultValue.Value;
+                    var stream2 = _archive.CreateEntry(fileName);
+                    using var file = stream2.Open();
+                    using var writer = new StreamWriter(file);
+                    using var wrt = new JsonTextWriter(writer);
+                    _serializer.Serialize(wrt, inst);
+                    return inst;
                 }
-                var serializer = new JsonSerializer();
-                using var rdr = new JsonTextReader(new StreamReader(entry.Open()));
-                return serializer.Deserialize<TPocoType>(rdr);
+                using var stream = entry.Open();
+                using var streamReader = new StreamReader(stream);
+                using var rdr = new JsonTextReader(streamReader);
+                return _serializer.Deserialize<TPocoType>(rdr) ?? throw new InvalidOperationException();
             }
         }
 
         public void Set<TPocoType>(string key, TPocoType value)
         {
             ConfigurationHelper.ValidateKey(key);
-            var fileName = key+FileExt;
+            var fileName = GetFilePath(key);
             lock (_sync)
             {
+                _logger.ZLogTrace($"Set configuration key [{key}]");
                 _archive.GetEntry(fileName)?.Delete();
                 var entry = _archive.CreateEntry(fileName);
-                using var wrt = new JsonTextWriter(new StreamWriter(entry.Open()));
-                var serializer = new JsonSerializer
-                {
-                    Formatting = Formatting.Indented
-                };
-                serializer.Serialize(wrt, value);
+                using var file = entry.Open();
+                using var writer = new StreamWriter(file);
+                using var wrt = new JsonTextWriter(writer);
+                _serializer.Serialize(wrt, value);
             }
         }
-
+        
         public void Remove(string key)
         {
             ConfigurationHelper.ValidateKey(key);
-            var fileName = key+FileExt;
+            var fileName = GetFilePath(key);
             lock (_sync)
             {
+                _logger.ZLogTrace($"Remove configuration key [{key}]");
                 var entry = _archive.GetEntry(fileName);
                 entry?.Delete();
             }

@@ -5,23 +5,20 @@ using System.Text.RegularExpressions;
 
 namespace Asv.Common
 {
-    public static class GeoPointLongitude
+    public static partial class GeoPointLongitude
     {
         private const double Min = -180;
         private const double Max = 180;
         private const string MinusChars = "-Ww";
-        //private static readonly Regex LongitudeDegreeRegex = new(@"^(-?[1]?[0-7]?[0-9](?:\.\d{1,6})?|180(?:\.0{1,6})?)$", RegexOptions.Compiled);
-        private static readonly Regex LongitudeDegreeRegex = new(@"^[\+-]?((1[0-7]\d|[1-9]?\d)(\.\d{1,})?|180)\D*[EWew]?$", RegexOptions.Compiled);
-        //
-        private static readonly Regex LongitudeStrongRegex = new(
-            """^((?<s1>[WwEe+-]?\s*)?(?<deg>[0-9]{0,2}\d|180)\s*([:°˚º^~*°\.\s_-]+)\s*((?<min>[0-5]?\d|\d)(?:\.\d+)?|\d{1,2})\s*([′':;^~*\s_-]*)\s*(?<sec>([0-5]?\d|\d)(?:\.\d+)?\s*)?([""”˝¨^\s_-]*)\s*(?<s2>[WwEe+-]?\s*)?)\s*$""", 
-            RegexOptions.Compiled
-            );
-
-        private static readonly Regex LongitudeEasyRegex = new(
-            """^(?<s1>[WwEe+-]?\s*)?(?<deg>\d{1,3})\s*(?<min>\d{2})?\s*(?<sec>\d{2}(\.\d+)?)?\s*(?<s2>[WwEe+-])?$""",
-            RegexOptions.Compiled
-        );
+        [GeneratedRegex(@"^[\+-]?((1[0-7]\d|[1-9]?\d)(\.\d{1,})?|180)\D*[EWew]?$", RegexOptions.Compiled)]
+        private static partial Regex GetLongitudeDegreeRegex();
+        private static readonly Regex LongitudeDegreeRegex = GetLongitudeDegreeRegex();
+        [GeneratedRegex("""^((?<s1>[WwEe+-]?\s*)?(?<deg>[0-9]{0,2}\d|180)\s*([:°˚º^~*°\.\s_-]+)\s*((?<min>[0-5]?\d|\d)(?:\.\d+)?|\d{1,2})\s*([′':;^~*\s_-]*)\s*(?<sec>([0-5]?\d|\d)(?:\.\d+)?\s*)?([""”˝¨^\s_-]*)\s*(?<s2>[WwEe+-]?\s*)?)\s*$""", RegexOptions.Compiled)]
+        private static partial Regex GetLongitudeStrongRegex();
+        private static readonly Regex LongitudeStrongRegex = GetLongitudeStrongRegex();
+        [GeneratedRegex("""^(?<s1>[WwEe+-]?\s*)?(?<deg>\d{1,3})\s*(?<min>\d{2})?\s*(?<sec>\d{2}(\.\d+)?)?\s*(?<s2>[WwEe+-])?$""", RegexOptions.Compiled)]
+        private static partial Regex GetLongitudeEasyRegex();
+        private static readonly Regex LongitudeEasyRegex = GetLongitudeEasyRegex();
         
         public static bool IsValid(string? value)
         {
@@ -122,5 +119,7 @@ namespace Asv.Common
             }
             return $"{degrees:000}°{minutes:00}′{seconds:00.00}˝ {(longitude < 0 ? "W" : "E")}";  
         }
+
+       
     }
 }
