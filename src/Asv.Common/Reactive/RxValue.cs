@@ -4,6 +4,39 @@ using System.Reactive.Subjects;
 
 namespace Asv.Common
 {
+
+    public class RxValueBehaviour<T>(T initValue) : IRxEditableValue<T>, IDisposable
+    {
+        private readonly BehaviorSubject<T> _subject = new(initValue);
+
+        public IDisposable Subscribe(IObserver<T> observer)
+        {
+            return _subject.Subscribe(observer);
+        }
+
+        public T Value => _subject.Value;
+        public void OnCompleted()
+        {
+            _subject.OnCompleted();
+        }
+
+        public void OnError(Exception error)
+        {
+            _subject.OnError(error);
+        }
+
+        public void OnNext(T value)
+        {
+            _subject.OnNext(value);
+        }
+
+        public void Dispose()
+        {
+            _subject.OnCompleted();
+            _subject.Dispose();
+        }
+    }
+    
     public class RxValue<TValue> : DisposableOnce, IRxEditableValue<TValue>
     {
         public RxValue()

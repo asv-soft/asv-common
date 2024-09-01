@@ -1,32 +1,54 @@
 using System;
+using System.Runtime.CompilerServices;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Asv.Common
 {
-    public abstract class DisposableOnce : IDisposable
+    public abstract class DisposableOnce : IDisposable 
     {
-        private const int Disposed = 1;
-        private const int NotDisposed = 0;
-        private int _disposeFlag;
+        private bool _disposed;
+        private readonly object _disposingSync = new();
 
         #region Disposing
 
-        protected bool IsDisposed => Thread.VolatileRead(ref _disposeFlag) > 0;
+        // ReSharper disable once InconsistentlySynchronizedField
+        protected bool IsDisposed => _disposed;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected void ThrowIfDisposed()
         {
-            if (IsDisposed) throw new ObjectDisposedException(GetType().Name);
+            lock (_disposingSync)
+            {
+                throw new ObjectDisposedException(this?.GetType().FullName); 
+            }
         }
 
         public void Dispose()
         {
-            if (Interlocked.CompareExchange(ref _disposeFlag, Disposed, NotDisposed) != NotDisposed) return;
+            if(_disposed) return;
+            lock(_disposingSync)
+            {
+                if(_disposed) return;
+                _disposed = true;
+            }
+            /* We didn't use the following pattern:
+            protected virtual void Dispose(bool disposing)
+            {
+                if(disposing)
+                {
+                    // dispose managed resources
+                }
+                // dispose unmanaged resources
+            }*/
+            // in real-world scenarios, we almost never encounter unmanaged resources, and in this case, half of the pattern is effectively redundant.
             InternalDisposeOnce();
             GC.SuppressFinalize(this);
         }
-
+        
         protected abstract void InternalDisposeOnce();
-
+        
         #endregion
+
     }
 }
