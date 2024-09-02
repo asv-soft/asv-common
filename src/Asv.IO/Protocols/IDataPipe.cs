@@ -37,7 +37,7 @@ public interface IPipePort
 {
     IRxValue<bool> IsEnabled { get; }
     IRxValue<PortState> State { get; }
-    IDuplexPipe
+    
 }
 
 public class PipeSerialPort : IPipePort
