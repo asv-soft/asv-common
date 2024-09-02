@@ -5,7 +5,7 @@ using System.Reactive.Subjects;
 namespace Asv.Common
 {
 
-    public class RxValueBehaviour<T>(T initValue) : IRxEditableValue<T>, IDisposable
+    public class RxValueBehaviour<T>(T initValue) :DisposableOnce, IRxEditableValue<T>, IDisposable
     {
         private readonly BehaviorSubject<T> _subject = new(initValue);
 
@@ -30,7 +30,7 @@ namespace Asv.Common
             _subject.OnNext(value);
         }
 
-        public void Dispose()
+        protected override void InternalDisposeOnce()
         {
             _subject.OnCompleted();
             _subject.Dispose();

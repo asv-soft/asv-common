@@ -1,6 +1,5 @@
 using System;
 using System.Reactive;
-using System.Reactive.Linq;
 using System.Reactive.Subjects;
 
 namespace Asv.Common
@@ -25,7 +24,7 @@ namespace Asv.Common
         IObservable<Unit> OnLost { get; }
     }
 
-    public class LinkIndicatorBase:RxValue<LinkState>, ILinkIndicatorEx
+    public class LinkIndicatorBase:RxValueBehaviour<LinkState>, ILinkIndicatorEx
     {
         private readonly int _downgradeErrors;
         private int _connErrors;
@@ -44,6 +43,7 @@ namespace Asv.Common
             OnLost = new AnonymousObservable<Unit>(x =>
             {
                 var result = _onLost.Subscribe(x);
+                // we need to raise event immediately after subscription if current state is Disconnected
                 if (_lastState == LinkState.Disconnected) 
                     x.OnNext(Unit.Default);
                 return result;
@@ -51,12 +51,13 @@ namespace Asv.Common
             OnFound = new AnonymousObservable<Unit>(x =>
             {
                 var result = _onFound.Subscribe(x);
+                // we need to raise event immediately after subscription if current state is Connected
                 if (_lastState == LinkState.Connected) 
                     x.OnNext(Unit.Default);
                 return result;
             });
         }
-        protected void InternalUpgrade()
+        protected virtual void InternalUpgrade()
         {
             lock (_sync)
             {
@@ -97,6 +98,7 @@ namespace Asv.Common
             PushNewValue(LinkState.Disconnected);
         }
 
+        
         protected override void InternalDisposeOnce()
         {
             base.InternalDisposeOnce();
@@ -121,58 +123,4 @@ namespace Asv.Common
             InternalDowngrade();
         }
     }
-    
-    public class TimeBasedLinkIndicator : LinkIndicatorBase
-    {
-        private readonly TimeSpan _timeout;
-        private readonly IDisposable _timer;
-        private DateTime _lastTime;
-
-        public TimeBasedLinkIndicator(TimeSpan timeout,int downgradeErrors = 3) : base(downgradeErrors)
-        {
-            _timeout = timeout;
-            _timer = Observable.Timer(_timeout, _timeout)
-                .Where(_ => DateTime.Now - _lastTime > _timeout)
-                .Subscribe(x => InternalDowngrade());
-        }
-
-        public void Upgrade()
-        {
-            InternalUpgrade();
-            _lastTime = DateTime.Now;
-        }
-
-        protected override void InternalDisposeOnce()
-        {
-            base.InternalDisposeOnce();
-            _timer.Dispose();
-        }
-    }
-    
-    public class TimeBasedObservableLinkIndicator<T> : LinkIndicatorBase,IObserver<T>
-    {
-        private readonly IDisposable _timer;
-        private DateTime _lastTime;
-
-        public TimeBasedObservableLinkIndicator(TimeSpan timeout,int downgradeErrors = 3) : base(downgradeErrors)
-        {
-            _timer = Observable.Timer(timeout, timeout)
-                .Where(_ => DateTime.Now - _lastTime > timeout)
-                .Subscribe(x => InternalDowngrade());
-        }
-
-        protected override void InternalDisposeOnce()
-        {
-            base.InternalDisposeOnce();
-            _timer.Dispose();
-        }
-
-        public void OnNext(T value)
-        {
-            InternalUpgrade();
-            _lastTime = DateTime.Now;
-        }
-    }
-    
-   
 }

@@ -12,13 +12,14 @@ namespace Asv.Common
         Connected,
     }
 
-    public class LinkIndicator:RxValue<LinkState>, ILinkIndicator
+    public class LinkIndicator:RxValueBehaviour<LinkState>, ILinkIndicator
     {
         private readonly int _downgradeErrors;
         private int _connErrors;
         private readonly object _sync = new();
 
-        public LinkIndicator(int downgradeErrors = 3)
+        public LinkIndicator(int downgradeErrors = 3) 
+            : base(LinkState.Disconnected)
         {
             _downgradeErrors = downgradeErrors;
         }
