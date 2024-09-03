@@ -17,7 +17,7 @@ public class AesTest
 
     #region TCP
     
-    [Fact]
+    [Fact(Skip="This test can be performed only on a local machine.")]
     public async Task AesTcpClientAndServerDataTest()
     {
         var client = TcpTest.CreateTcpClient(port:1000);
@@ -53,7 +53,7 @@ public class AesTest
         aesClient.Disable();
     }
 
-    [Fact]
+    [Fact(Skip="This test can be performed only on a local machine.")]
     public async Task AesTcpClientDataTest()
     {
         var client = TcpTest.CreateTcpClient(port:1001);
@@ -88,7 +88,7 @@ public class AesTest
         aesClient.Disable();
     }
 
-    [Fact]
+    [Fact(Skip="This test can be performed only on a local machine.")]
     public async Task AesTcpServerDataTest()
     {
         var client = TcpTest.CreateTcpClient(port: 1002);
@@ -130,7 +130,7 @@ public class AesTest
 
     #region UDP
 
-    [Fact]
+    [Fact(Skip="This test can be performed only on a local machine.")]
     public async Task AesUdpClientAndServerDataTest()
     {
         var client = UdpTest.CreateUdpPort(remotePort: 1003);
@@ -166,7 +166,7 @@ public class AesTest
         aesClient.Disable();
     }
     
-    [Fact]
+    [Fact(Skip="This test can be performed only on a local machine.")]
     public async Task AesUdpClientDataTest()
     {
         var client = UdpTest.CreateUdpPort(remotePort: 1004);
@@ -201,7 +201,7 @@ public class AesTest
         aesClient.Disable();
     }
 
-    [Fact]
+    [Fact(Skip="This test can be performed only on a local machine.")]
     public async Task AesUdpServerDataTest()
     {
         var client = UdpTest.CreateUdpPort(remotePort: 2007);
@@ -242,7 +242,7 @@ public class AesTest
     //Can be tested with Virtual Serial Port Driver, if there is no real device.
     //You should create 3 pairs of COM ports [1,2], [3,4], [5,6].
     
-    [Fact]
+    [Fact(Skip="This test can be performed only on a local machine.")]
     public async Task AesSerialClientAndServerDataTest()
     {
         var client = SerialTest.CreateSerialPort("COM1");
@@ -278,7 +278,7 @@ public class AesTest
         aesClient.Disable();
     }
     
-    [Fact]
+    [Fact(Skip="This test can be performed only on a local machine.")]
     public async Task AesSerialClientDataTest()
     {
         var serials = SerialPort.GetPortNames();
@@ -315,7 +315,7 @@ public class AesTest
         aesClient.Disable();
     }
 
-    [Fact]
+    [Fact(Skip="This test can be performed only on a local machine.")]
     public async Task AesSerialServerDataTest()
     {
         var client = SerialTest.CreateSerialPort("COM5");

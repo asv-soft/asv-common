@@ -1,6 +1,5 @@
 using System;
 using System.Reactive;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Time.Testing;
 using Xunit;
 

@@ -3,7 +3,6 @@ using System.IO;
 using System.Linq;
 using System.Reactive.Disposables;
 using System.Threading;
-using System.Threading.Tasks;
 using Asv.Cfg.Json;
 using Xunit;
 using Xunit.Abstractions;

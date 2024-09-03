@@ -16,7 +16,7 @@ public class SerialTest
         PortName = name
     });
     
-    [Fact]
+    [Fact(Skip="This test can be performed only on a local machine.")]
     public async Task SerialClientConnectionSuccessTest()
     {
         var client = CreateSerialPort("COM6");
@@ -33,7 +33,7 @@ public class SerialTest
         client.Disable();
     }
     
-    [Fact]
+    [Fact(Skip="This test can be performed only on a local machine.")]
     public async Task SerialServerConnectionSuccessTest()
     {
         var server = CreateSerialPort("COM5");
@@ -50,7 +50,7 @@ public class SerialTest
         server.Disable();
     }
     
-    [Fact]
+    [Fact(Skip="This test can be performed only on a local machine.")]
     public async Task SerialClientServerConnectionTest()
     {
         var client = CreateSerialPort("COM3");
@@ -71,7 +71,7 @@ public class SerialTest
         server.Disable();
     }
     
-    [Fact]
+    [Fact(Skip="This test can be performed only on a local machine.")]
     public async Task SerialClientServerDataTransferTest()
     {
         var client = CreateSerialPort("COM1");

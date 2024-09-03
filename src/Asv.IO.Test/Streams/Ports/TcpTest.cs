@@ -22,7 +22,7 @@ public class TcpTest
         IsServer = true
     });
     
-    [Fact]
+    [Fact(Skip="This test can be performed only on a local machine.")]
     public async Task TcpClientConnectionErrorTest()
     {
         var client = CreateTcpClient(port:2005);
@@ -39,7 +39,7 @@ public class TcpTest
         client.Disable();
     }
     
-    [Fact]
+    [Fact(Skip="This test can be performed only on a local machine.")]
     public async Task TcpServerConnectionSuccessTest()
     {
         var server = CreateTcpServer(port:2004);
@@ -56,7 +56,7 @@ public class TcpTest
         server.Disable();
     }
     
-    [Fact]
+    [Fact(Skip="This test can be performed only on a local machine.")]
     public async Task TcpClientServerConnectionTest()
     {
         var client = CreateTcpClient(port:2003);
@@ -77,7 +77,7 @@ public class TcpTest
         server.Disable();
     }
     
-    [Fact]
+    [Fact(Skip="This test can be performed only on a local machine.")]
     public async Task TcpClientServerDataTransferTest()
     {
         var client = CreateTcpClient(port:2002);

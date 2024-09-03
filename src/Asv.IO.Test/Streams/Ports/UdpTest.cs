@@ -1,5 +1,4 @@
 using System;
-using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -19,7 +18,7 @@ public class UdpTest
     });
 
 
-    [Fact]
+    [Fact(Skip="This test can be performed only on a local machine.")]
     public async Task UdpClientConnectionSuccessTest()
     {
         var client = CreateUdpPort(localPort: 2005);
@@ -36,7 +35,7 @@ public class UdpTest
         client.Disable();
     }
 
-    [Fact]
+    [Fact(Skip="This test can be performed only on a local machine.")]
     public async Task UdpServerConnectionSuccessTest()
     {
         var server = CreateUdpPort(localPort: 2004);
@@ -53,7 +52,7 @@ public class UdpTest
         server.Disable();
     }
 
-    [Fact]
+    [Fact(Skip="This test can be performed only on a local machine.")]
     public async Task UdpClientServerConnectionTest()
     {
         var client = CreateUdpPort(localPort: 2002, remotePort: 2007);
@@ -74,7 +73,7 @@ public class UdpTest
         server.Disable();
     }
 
-    [Fact]
+    [Fact(Skip="This test can be performed only on a local machine.")]
     public async Task UdpClientServerDataTransferTest()
     {
         var client = CreateUdpPort(localPort: 2001, remotePort: 2009);

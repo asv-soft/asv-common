@@ -1,9 +1,5 @@
 using System;
-using System.IO;
 using System.Reactive.Disposables;
-using System.Threading;
-using System.Threading.Tasks;
-using Xunit;
 using Xunit.Abstractions;
 
 namespace Asv.Cfg.Test

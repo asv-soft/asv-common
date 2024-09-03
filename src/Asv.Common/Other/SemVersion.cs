@@ -1,7 +1,6 @@
 using System;
 using System.Globalization;
 using System.Runtime.Serialization;
-using System.Security.Permissions;
 using System.Text.RegularExpressions;
 
 namespace Asv.Common
