@@ -26,6 +26,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		Directory.Build.props = Directory.Build.props
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Asv.Composition", "Asv.Composition\Asv.Composition.csproj", "{37FD46DD-B496-4886-B917-7BDB444A69A0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Asv.Composition.Test", "Asv.Composition.Test\Asv.Composition.Test.csproj", "{6BC6A4E2-B9F4-4A8D-8DF3-A84CF6874D6B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -56,6 +60,14 @@ Global
 		{F12AA26E-7252-4A9E-8683-4EE6D2F4E343}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F12AA26E-7252-4A9E-8683-4EE6D2F4E343}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F12AA26E-7252-4A9E-8683-4EE6D2F4E343}.Release|Any CPU.Build.0 = Release|Any CPU
+		{37FD46DD-B496-4886-B917-7BDB444A69A0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{37FD46DD-B496-4886-B917-7BDB444A69A0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{37FD46DD-B496-4886-B917-7BDB444A69A0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{37FD46DD-B496-4886-B917-7BDB444A69A0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6BC6A4E2-B9F4-4A8D-8DF3-A84CF6874D6B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6BC6A4E2-B9F4-4A8D-8DF3-A84CF6874D6B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6BC6A4E2-B9F4-4A8D-8DF3-A84CF6874D6B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6BC6A4E2-B9F4-4A8D-8DF3-A84CF6874D6B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
