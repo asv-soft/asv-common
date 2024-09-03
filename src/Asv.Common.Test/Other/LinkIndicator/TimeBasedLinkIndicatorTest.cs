@@ -1,5 +1,6 @@
 using System;
 using System.Reactive;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Time.Testing;
 using Xunit;
 
@@ -48,6 +49,7 @@ public class TimeBasedObservableLinkIndicatorTest:LinkIndicatorExTestBase<TimeBa
     public void Upgrade_UpdatesStateToConnectedAndResetsTimer()
     {
         var fakeTime = new FakeTimeProvider();
+        
         var linkIndicator = new TimeBasedLinkIndicator(TimeSpan.FromSeconds(1), timeProvider: fakeTime);
         // start in disconnected state
         Assert.Equal(LinkState.Disconnected, linkIndicator.Value);
@@ -65,6 +67,8 @@ public class TimeBasedObservableLinkIndicatorTest:LinkIndicatorExTestBase<TimeBa
         Assert.Equal(LinkState.Downgrade, linkIndicator.Value);
         fakeTime.Advance(TimeSpan.FromMilliseconds(1000));
         Assert.Equal(LinkState.Disconnected, linkIndicator.Value);
+    
+        
     }
     
 }

@@ -7,6 +7,29 @@ namespace Asv.Common
     {
         private const double Pi2 = 2 * Math.PI;
 
+        /// <summary>
+        /// Fast implementation of the square root function Math.Sqrt(x^2 + y^2).
+        /// </summary>
+        /// <param name="x">The number.</param>
+        /// <param name="y">The number.</param>
+        /// <returns>The absolute value of <paramref name="x"/> and <paramref name="y"/>.</returns>
+        public static double Abs(double x, double y)
+        {
+            if (double.IsInfinity(x) || double.IsInfinity(y))
+                return double.PositiveInfinity;
+            var num1 = Math.Abs(x);
+            var num2 = Math.Abs(y);
+            if (num1 > num2)
+            {
+                var num3 = num2 / num1;
+                return num1 * Math.Sqrt(1.0 + num3 * num3);
+            }
+            if (num2 == 0.0)
+                return num1;
+            var num4 = num1 / num2;
+            return num2 * Math.Sqrt(1.0 + num4 * num4);
+        }
+        
         public static string AngleToDegreeString(double angleValue,string formatStringForMinute = "00.00", string nanString = "-")
         {
             if (double.IsNaN(angleValue)) return "";

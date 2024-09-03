@@ -38,7 +38,7 @@ namespace Asv.Cfg.Json
         {
             _fileName = Path.GetFullPath(fileName);
             _sortKeysInFile = sortKeysInFile;
-            _logger = logger ?? NullLogger<JsonOneFileConfiguration>.Instance; 
+            _logger = logger ?? NullLogger.Instance; 
             
             _serializer = JsonHelper.CreateDefaultJsonSerializer();
 

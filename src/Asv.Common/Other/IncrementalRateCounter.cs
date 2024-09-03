@@ -1,32 +1,42 @@
 ﻿using System;
 using System.Linq;
+using System.Threading;
 
 namespace Asv.Common
 {
     public class IncrementalRateCounter
     {
         private readonly CircularBuffer2<double> _valueBuffer;
-        private long _lastValue = long.MaxValue;
-        private DateTime _lastUpdated = DateTime.MaxValue;
+        private long _lastValue = 0;
+        private readonly TimeProvider _timeProvider;
+        private long _lastUpdated;
+        private readonly double[] _buffer;
 
-        public IncrementalRateCounter(int movingAverageSize = 5)
+        public IncrementalRateCounter(int movingAverageSize = 5, TimeProvider? timeProvider = null)
         {
-            _valueBuffer = new CircularBuffer2<double>(movingAverageSize);
+            _timeProvider = timeProvider ?? TimeProvider.System;
+            _buffer = new double[movingAverageSize];
+            _valueBuffer = new CircularBuffer2<double>(_buffer,_buffer.Length);
+            _lastUpdated = _timeProvider.GetTimestamp();
+            for (var i = 0; i < _buffer.Length; i++)
+            {
+                _valueBuffer.PushBack(0);
+            }
         }
 
         public double Calculate(long sum)
         {
-            var now = DateTime.Now;
-            var deltaSeconds = (now - _lastUpdated).TotalSeconds;
+            var lastTime = Interlocked.Exchange(ref _lastUpdated,_timeProvider.GetTimestamp());
+            var elapsedTime = _timeProvider.GetElapsedTime(lastTime);
+            var deltaSeconds = elapsedTime.TotalSeconds;
             if (deltaSeconds <= 0) deltaSeconds = 1;
-            _lastUpdated = now;
-            var value = (sum - _lastValue) / deltaSeconds;
-            if (value >= 0)
+            var rateHz = (sum - _lastValue) / deltaSeconds;
+            if (rateHz >= 0)
             {
-                _valueBuffer.PushFront(value);
+                _valueBuffer.PushBack(rateHz);
             }
             _lastValue = sum;
-            return _valueBuffer.IsFull ? _valueBuffer.Average() : double.NaN;
+            return _buffer.Average();
         }
         
     }
