@@ -1,160 +1,133 @@
+using System.Globalization;
 using Xunit;
 
 namespace Asv.Common.Test;
 
 public class AngleDmTest
 {
-    [Fact]
-    public void Check_double_values()
+    [Theory]
+    [InlineData("2.40", 2.40, "en-US")]
+    [InlineData("-3.40", -3.40, "en-US")]
+    [InlineData("-0.410", -0.41, "en-US")]
+    [InlineData("0.410", 0.41, "en-US")]
+    [InlineData("2,40", 2.40, "ru-RU")] // Примеры для русской локали
+    [InlineData("-3,40", -3.40, "ru-RU")]
+    [InlineData("-0,410", -0.41, "ru-RU")]
+    [InlineData("0,410", 0.41, "ru-RU")]
+    public void CheckDoubleValues(string input, double expectedValue, string culture)
     {
-        var value = 0.0;
-        Assert.True(AngleDm.TryParse("2.40",out value));
-        Assert.Equal(2.40,value);
-        
-        Assert.True(AngleDm.TryParse("-3.40",out value));
-        Assert.Equal(-3.40,value);
-        
-        Assert.True(AngleDm.TryParse("-0.410",out value));
-        Assert.Equal(-0.41,value);
-        
-        Assert.True(AngleDm.TryParse("0.410",out value));
-        Assert.Equal(0.41,value);
+        CultureInfo.CurrentCulture = new CultureInfo(culture);
+
+        // Проверка парсинга с учетом локали
+        Assert.True(AngleDm.TryParse(input, out var value));
+        Assert.Equal(expectedValue, value);
     }
     
-    [Fact]
-    public void CheckPlusAndMinus()
+    [Theory]
+    [InlineData("-0 0", 0)]
+    [InlineData("+0 0", 0)]
+    [InlineData(" -0 0", 0)]
+    [InlineData(" +0 0", 0)]
+    [InlineData(" 0 0", 0)]
+    [InlineData("0 0 ", 0)]
+    public void CheckPlusAndMinus(string input, double expectedValue)
     {
-        var value = 0.0;
-        Assert.True(AngleDm.TryParse("-0 0",out value));
-        Assert.Equal(0,value);
-        Assert.True(AngleDm.TryParse("+0 0",out value));
-        Assert.Equal(0,value);
-        Assert.True(AngleDm.TryParse(" -0 0",out value));
-        Assert.Equal(0,value);
-        Assert.True(AngleDm.TryParse(" +0 0",out value));
-        Assert.Equal(0,value);
-        Assert.True(AngleDm.TryParse(" 0 0",out value));
-        Assert.Equal(0,value);
-        Assert.True(AngleDm.TryParse("0 0 ",out value));
-        Assert.Equal(0,value);
+        Assert.True(AngleDm.TryParse(input, out var value));
+        Assert.Equal(expectedValue, value);
     }
 
-    [Fact]
-    public void CheckDegreeSymbols()
+    [Theory]
+    [InlineData(@"0° 0'", 0, "en-US")]
+    [InlineData(@"0˚ 0'", 0, "en-US")]
+    [InlineData(@"0º 0'", 0, "en-US")]
+    [InlineData(@"0^ 0'", 0, "en-US")]
+    [InlineData(@"0~ 0'", 0, "en-US")]
+    [InlineData(@"0* 0'", 0, "en-US")]
+    [InlineData(@"0 0'", 0, "en-US")]
+    [InlineData(@"0° 0'", 0, "ru-RU")]
+    [InlineData(@"0˚ 0'", 0, "ru-RU")]
+    [InlineData(@"0º 0'", 0, "ru-RU")]
+    [InlineData(@"0^ 0'", 0, "ru-RU")]
+    [InlineData(@"0~ 0'", 0, "ru-RU")]
+    [InlineData(@"0* 0'", 0, "ru-RU")]
+    [InlineData(@"0 0'", 0, "ru-RU")]
+    public void CheckDegreeSymbols(string input, double expectedValue, string culture)
     {
-        var value = 0.0;
-        Assert.True(AngleDm.TryParse(@"0° 0'",out value));
-        Assert.Equal(0,value);
-        Assert.True(AngleDm.TryParse(@"0˚ 0'",out value));
-        Assert.Equal(0,value);
-        Assert.True(AngleDm.TryParse(@"0º 0'",out value));
-        Assert.Equal(0,value);
-        Assert.True(AngleDm.TryParse(@"0^ 0'",out value));
-        Assert.Equal(0,value);
-        Assert.True(AngleDm.TryParse(@"0~ 0'",out value));
-        Assert.Equal(0,value);
-        Assert.True(AngleDm.TryParse(@"0* 0'",out value));
-        Assert.Equal(0,value);
-        Assert.True(AngleDm.TryParse(@"0 0'",out value));
-        Assert.Equal(0,value);
+        CultureInfo.CurrentCulture = new CultureInfo(culture);
+
+        // Проверка парсинга для различных символов градусов с учетом локали
+        Assert.True(AngleDm.TryParse(input, out var value));
+        Assert.Equal(expectedValue, value);
     }
 
-    [Fact]
-    public void CheckMinuteSymbols()
+    [Theory]
+    [InlineData(@"000° 00'", 0, "en-US")]
+    [InlineData(@"000° 00′", 0, "en-US")]
+    [InlineData(@"000° 00'", 0, "ru-RU")]
+    [InlineData(@"000° 00′", 0, "ru-RU")]
+    public void CheckMinuteSymbols(string input, double expectedValue, string culture)
     {
-        var value = 0.0;
-        Assert.True(AngleDm.TryParse(@"000° 00'", out value));
-        Assert.Equal(0, value);
-        Assert.True(AngleDm.TryParse(@"000° 00'", out value));
-        Assert.Equal(0, value);
-        Assert.True(AngleDm.TryParse(@"000° 00'", out value));
-        Assert.Equal(0, value);
-        Assert.True(AngleDm.TryParse(@"000° 00′", out value));
-        Assert.Equal(0, value);
-        Assert.True(AngleDm.TryParse(@"000° 00′", out value));
-        Assert.Equal(0, value);
-        Assert.True(AngleDm.TryParse(@"000° 00′", out value));
-        Assert.Equal(0, value);
-        Assert.True(AngleDm.TryParse(@"000° 00′", out value));
-        Assert.Equal(0, value);
-        Assert.True(AngleDm.TryParse(@"000° 00'", out value));
-        Assert.Equal(0, value);
+        CultureInfo.CurrentCulture = new CultureInfo(culture);
+
+        // Проверка парсинга для различных символов минут с учетом локали
+        Assert.True(AngleDm.TryParse(input, out var value));
+        Assert.Equal(expectedValue, value);
     }
     
-    [Fact]
-    public void CheckValidAngleDegValues()
+    [Theory]
+    [InlineData("+045 0", 45)]
+    [InlineData("-090 0", -90)]
+    [InlineData("060 0", 60)]
+    [InlineData("180 0", 180)]
+    [InlineData("089 0", 89)]
+    [InlineData("-289 0", -289)]
+    [InlineData("-054 0", -54)]
+    [InlineData("+045", 45)]
+    [InlineData("-090", -90)]
+    [InlineData("060", 60)]
+    [InlineData("180", 180)]
+    [InlineData("089", 89)]
+    [InlineData("-289", -289)]
+    [InlineData("-054", -54)]
+    [InlineData("001054000", 1054000)]
+    public void CheckValidAngleDegValues(string input, double expectedValue)
     {
-        var value = 0.0;
-        Assert.True(AngleDm.TryParse("+045 0",out value));
-        Assert.Equal(45,value);
-        Assert.True(AngleDm.TryParse("-090 0",out value));
-        Assert.Equal(-90,value);
-        Assert.True(AngleDm.TryParse("060 0",out value));
-        Assert.Equal(60,value);
-        Assert.True(AngleDm.TryParse("180 0",out value));
-        Assert.Equal(180,value);
-        Assert.True(AngleDm.TryParse("089 0",out value));
-        Assert.Equal(89,value);
-        Assert.True(AngleDm.TryParse("-289 0",out value));
-        Assert.Equal(-289,value);
-        Assert.True(AngleDm.TryParse("-054 0",out value));
-        Assert.Equal(-54,value);
-        
-        Assert.True(AngleDm.TryParse("+045",out value));
-        Assert.Equal(45,value);
-        Assert.True(AngleDm.TryParse("-090",out value));
-        Assert.Equal(-90,value);
-        Assert.True(AngleDm.TryParse("060",out value));
-        Assert.Equal(60,value);
-        Assert.True(AngleDm.TryParse("180",out value));
-        Assert.Equal(180,value);
-        Assert.True(AngleDm.TryParse("089",out value));
-        Assert.Equal(89,value);
-        Assert.True(AngleDm.TryParse("-289",out value));
-        Assert.Equal(-289,value);
-        Assert.True(AngleDm.TryParse("-054",out value));
-        Assert.Equal(-54,value);
-        Assert.True(AngleDm.TryParse("001054000",out value));
-        Assert.Equal(1054000,value);
+        // Проверка парсинга
+        Assert.True(AngleDm.TryParse(input, out var value));
+        Assert.Equal(expectedValue, value);
     }
     
-    [Fact]
-    public void CheckValidAngleMinuteValues()
+    [Theory]
+    [InlineData("00 30", 30.0 / 60.0, "00°30.00′", "en-US")]
+    [InlineData("00 1", 1.0 / 60.0, "00°01.00′", "en-US")]
+    [InlineData("00 09", 9.0 / 60.0, "00°09.00′", "en-US")]
+    [InlineData("00 9", 9.0 / 60.0, "00°09.00′", "en-US")]
+    [InlineData("00 59", 59.0 / 60.0, "00°59.00′", "en-US")]
+    [InlineData("00 30.24", 30.24 / 60.0, "00°30.24′", "en-US")]
+    [InlineData("-00 1.12345", -1.12345 / 60.0, "-00°01.12′", "en-US")]
+    [InlineData("00 09.999", 9.999 / 60.0, "00°10.00′", "en-US")]
+    [InlineData("-00 9.11", -9.11 / 60.0, "-00°09.11′", "en-US")]
+    [InlineData("00 59.99", 59.99 / 60.0, "00°59.99′", "en-US")]
+    [InlineData("00 59.999", 59.999 / 60.0, "01°00.00′", "en-US")]
+    [InlineData("00 30", 30.0 / 60.0, "00°30,00′", "ru-RU")]
+    [InlineData("00 1", 1.0 / 60.0, "00°01,00′", "ru-RU")]
+    [InlineData("00 09", 9.0 / 60.0, "00°09,00′", "ru-RU")]
+    [InlineData("00 9", 9.0 / 60.0, "00°09,00′", "ru-RU")]
+    [InlineData("00 59", 59.0 / 60.0, "00°59,00′", "ru-RU")]
+    [InlineData("00 30.24", 30.24 / 60.0, "00°30,24′", "ru-RU")]
+    [InlineData("-00 1.12345", -1.12345 / 60.0, "-00°01,12′", "ru-RU")]
+    [InlineData("00 09.999", 9.999 / 60.0, "00°10,00′", "ru-RU")]
+    [InlineData("-00 9.11", -9.11 / 60.0, "-00°09,11′", "ru-RU")]
+    [InlineData("00 59.99", 59.99 / 60.0, "00°59,99′", "ru-RU")]
+    [InlineData("00 59.999", 59.999 / 60.0, "01°00,00′", "ru-RU")]
+    public void CheckValidAngleMinuteValues(string input, double expectedValue, string expectedPrint,string culture)
     {
-        var value = 0.0;
-        Assert.True(AngleDm.TryParse("00 30",out value));
-        Assert.Equal(30.0/60.0,value);
-        Assert.Equal($"00°30,00′", AngleDm.PrintDm(value));
-        Assert.True(AngleDm.TryParse("00 1",out value));
-        Assert.Equal(1.0/60.0,value);
-        Assert.Equal($"00°01,00′", AngleDm.PrintDm(value));
-        Assert.True(AngleDm.TryParse("00 09",out value));
-        Assert.Equal(9.0/60.0,value);
-        Assert.Equal($"00°09,00′", AngleDm.PrintDm(value));
-        Assert.True(AngleDm.TryParse("00 9",out value));
-        Assert.Equal(9.0/60.0,value);
-        Assert.Equal($"00°09,00′", AngleDm.PrintDm(value));
-        Assert.True(AngleDm.TryParse("00 59",out value));
-        Assert.Equal(59.0/60.0,value);
-        Assert.Equal($"00°59,00′", AngleDm.PrintDm(value));
-        
-        Assert.True(AngleDm.TryParse("00 30.24",out value));
-        Assert.Equal(30.24/60.0,value);
-        Assert.Equal($"00°30,24′", AngleDm.PrintDm(value));
-        Assert.True(AngleDm.TryParse("-00 1.12345",out value));
-        Assert.Equal(-1.12345/60.0,value);
-        Assert.Equal($"-00°01,12′", AngleDm.PrintDm(value));
-        Assert.True(AngleDm.TryParse("00 09.999",out value));
-        Assert.Equal(9.999/60.0,value);
-        Assert.Equal($"00°10,00′", AngleDm.PrintDm(value));
-        Assert.True(AngleDm.TryParse("-00 9.11",out value));
-        Assert.Equal(-9.11/60.0,value);
-        Assert.Equal($"-00°09,11′", AngleDm.PrintDm(value));
-        Assert.True(AngleDm.TryParse("00 59.99",out value));
-        Assert.Equal(59.99/60.0,value);
-        Assert.Equal($"00°59,99′", AngleDm.PrintDm(value));
-        Assert.True(AngleDm.TryParse("00 59.999",out value));
-        Assert.Equal(59.999/60.0,value);
-        Assert.Equal($"01°00,00′", AngleDm.PrintDm(value));
+        CultureInfo.CurrentCulture = new CultureInfo(culture);
+        // Проверка парсинга
+        Assert.True(AngleDm.TryParse(input, out var value));
+        Assert.Equal(expectedValue, value);
+
+        // Проверка печати
+        Assert.Equal(expectedPrint, AngleDm.PrintDm(value));
     }
 }

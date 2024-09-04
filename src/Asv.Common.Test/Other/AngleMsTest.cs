@@ -1,120 +1,122 @@
+using System.Globalization;
 using Xunit;
 
 namespace Asv.Common.Test;
 
 public class AngleMsTest
 {
-    [Fact]
-    public void Check_double_values()
+    [Theory]
+    [InlineData("en-US", "2.40", 2.40)]
+    [InlineData("en-US", "-3.40", -3.40)]
+    [InlineData("en-US", "-0.410", -0.41)]
+    [InlineData("en-US", "0.410", 0.41)]
+    [InlineData("ru-RU", "2,40", 2.40)]
+    [InlineData("ru-RU", "-3,40", -3.40)]
+    [InlineData("ru-RU", "-0,410", -0.41)]
+    [InlineData("ru-RU", "0,410", 0.41)]
+    public void Check_double_values(string culture, string input, double expected)
     {
-        var value = 0.0;
-        Assert.True(AngleMs.TryParse("2.40",out value));
-        Assert.Equal(2.40,value);
-        
-        Assert.True(AngleMs.TryParse("-3.40",out value));
-        Assert.Equal(-3.40,value);
-        
-        Assert.True(AngleMs.TryParse("-0.410",out value));
-        Assert.Equal(-0.41,value);
-        
-        Assert.True(AngleMs.TryParse("0.410",out value));
-        Assert.Equal(0.41,value);
+        CultureInfo.CurrentCulture = new CultureInfo(culture);
+        Assert.True(AngleMs.TryParse(input, out var value));
+        Assert.Equal(expected, value);
     }
     
-    [Fact]
-    public void CheckPlusAndMinus()
+    [Theory]
+    [InlineData("ru-RU", "-0 0")]
+    [InlineData("ru-RU", "+0 0")]
+    [InlineData("ru-RU", " -0 0")]
+    [InlineData("ru-RU", " +0 0")]
+    [InlineData("ru-RU", " 0 0")]
+    [InlineData("ru-RU", "0 0 ")]
+    [InlineData("en-US", "-0 0")]
+    [InlineData("en-US", "+0 0")]
+    [InlineData("en-US", " -0 0")]
+    [InlineData("en-US", " +0 0")]
+    [InlineData("en-US", " 0 0")]
+    [InlineData("en-US", "0 0 ")]
+    public void TryParse_Success_WithPlusMinusSymbol(string culture, string input)
     {
-        var value = 0.0;
-        Assert.True(AngleMs.TryParse("-0 0",out value));
-        Assert.Equal(0,value);
-        Assert.True(AngleMs.TryParse("+0 0",out value));
-        Assert.Equal(0,value);
-        Assert.True(AngleMs.TryParse(" -0 0",out value));
-        Assert.Equal(0,value);
-        Assert.True(AngleMs.TryParse(" +0 0",out value));
-        Assert.Equal(0,value);
-        Assert.True(AngleMs.TryParse(" 0 0",out value));
-        Assert.Equal(0,value);
-        Assert.True(AngleMs.TryParse("0 0 ",out value));
-        Assert.Equal(0,value);
+        CultureInfo.CurrentCulture = new CultureInfo(culture);
+        Assert.True(AngleMs.TryParse(input, out var value));
+        Assert.Equal(0, value);
     }
+
     
-    [Fact]
-    public void CheckMinuteSymbols()
+    [Theory]
+    [InlineData("ru-RU", @"00' 00""")]
+    [InlineData("ru-RU", @"00' 00 ")]
+    [InlineData("ru-RU", @"00' 00"" ")]
+    [InlineData("ru-RU", @"00′ 00""")]
+    [InlineData("ru-RU", @"00′ 00 """)]
+    [InlineData("ru-RU", @"00′ 00"" ")]
+    [InlineData("ru-RU", @"00′ 00 ")]
+    [InlineData("ru-RU", @"00' 00 """)]
+    [InlineData("en-US", @"00' 00""")]
+    [InlineData("en-US", @"00' 00 ")]
+    [InlineData("en-US", @"00' 00"" ")]
+    [InlineData("en-US", @"00′ 00""")]
+    [InlineData("en-US", @"00′ 00 """)]
+    [InlineData("en-US", @"00′ 00"" ")]
+    [InlineData("en-US", @"00′ 00 ")]
+    [InlineData("en-US", @"00' 00 """)]
+    public void CheckMinuteSymbols(string culture, string input)
     {
-        var value = 0.0;
-        Assert.True(AngleMs.TryParse(@"00' 00""",out value));
-        Assert.Equal(0,value);
-        Assert.True(AngleMs.TryParse(@"00' 00 ",out value));
-        Assert.Equal(0,value);
-        Assert.True(AngleMs.TryParse(@"00' 00"" ",out value));
-        Assert.Equal(0,value);
-        Assert.True(AngleMs.TryParse(@"00′ 00""",out value));
-        Assert.Equal(0,value);
-        Assert.True(AngleMs.TryParse(@"00′ 00 """,out value));
-        Assert.Equal(0,value);
-        Assert.True(AngleMs.TryParse(@"00′ 00"" ",out value));
-        Assert.Equal(0,value);
-        Assert.True(AngleMs.TryParse(@"00′ 00 ",out value));
-        Assert.Equal(0,value);
-        Assert.True(AngleMs.TryParse(@"00' 00 """,out value));
-        Assert.Equal(0,value);
+        CultureInfo.CurrentCulture = new CultureInfo(culture);
+        Assert.True(AngleMs.TryParse(input, out var value));
+        Assert.Equal(0, value);
     }
 
-    [Fact]
-    public void CheckValidAngleMsMinuteValues()
+    [Theory]
+    [InlineData("ru-RU", "30 00", 30.0 / 60.0, "30′00.00˝")]
+    [InlineData("ru-RU", "1 00", 1.0 / 60.0, "01′00.00˝")]
+    [InlineData("ru-RU", "09 00", 9.0 / 60.0, "09′00.00˝")]
+    [InlineData("ru-RU", "9 00", 9.0 / 60.0, "09′00.00˝")]
+    [InlineData("ru-RU", "59 00", 59.0 / 60.0, "59′00.00˝")]
+    [InlineData("ru-RU", "120 30", 120.0 / 60.0 + 30.0 / 3600.0, "120′30.00˝")]
+    [InlineData("ru-RU", "-92 1", -92.0 / 60.0 - 1.0 / 3600.0, "92′01.00˝")]
+    [InlineData("ru-RU", "10000 09.14", 10000.0 / 60.0 + 9.14 / 3600.0, "10000′09.14˝")]
+    [InlineData("en-US", "30 00", 30.0 / 60.0, "30′00.00˝")]
+    [InlineData("en-US", "1 00", 1.0 / 60.0, "01′00.00˝")]
+    [InlineData("en-US", "09 00", 9.0 / 60.0, "09′00.00˝")]
+    [InlineData("en-US", "9 00", 9.0 / 60.0, "09′00.00˝")]
+    [InlineData("en-US", "59 00", 59.0 / 60.0, "59′00.00˝")]
+    [InlineData("en-US", "120 30", 120.0 / 60.0 + 30.0 / 3600.0, "120′30.00˝")]
+    [InlineData("en-US", "-92 1", -92.0 / 60.0 - 1.0 / 3600.0, "92′01.00˝")]
+    [InlineData("en-US", "10000 09.14", 10000.0 / 60.0 + 9.14 / 3600.0, "10000′09.14˝")]
+    public void CheckValidAngleMsMinuteValues(string culture, string input, double expectedValue, string expectedOutput)
     {
-        var value = 0.0;
-        Assert.True(AngleMs.TryParse("30 00",out value));
-        Assert.Equal(30.0/60.0,value);
-        Assert.Equal("30′00,00˝", AngleMs.PrintMs(value));
-        Assert.True(AngleMs.TryParse("1 00",out value));
-        Assert.Equal(1.0/60.0,value);
-        Assert.Equal("01′00,00˝", AngleMs.PrintMs(value));
-        Assert.True(AngleMs.TryParse("09 00",out value));
-        Assert.Equal(9.0/60.0,value);
-        Assert.Equal("09′00,00˝", AngleMs.PrintMs(value));
-        Assert.True(AngleMs.TryParse("9 00",out value));
-        Assert.Equal(9.0/60.0,value);
-        Assert.Equal("09′00,00˝", AngleMs.PrintMs(value));
-        Assert.True(AngleMs.TryParse("59 00",out value));
-        Assert.Equal(59.0/60.0,value);
-        Assert.Equal("59′00,00˝", AngleMs.PrintMs(value));
-        
-        Assert.True(AngleMs.TryParse("120 30",out value));
-        Assert.Equal(120.0/60.0 + 30.0/3600.0,value);
-        Assert.Equal("120′30,00˝", AngleMs.PrintMs(value));
-        Assert.True(AngleMs.TryParse("-92 1",out value));
-        Assert.Equal(-92.0/60.0 - 1.0/3600.0,value);
-        Assert.Equal("92′01,00˝", AngleMs.PrintMs(value));
-        Assert.True(AngleMs.TryParse("10000 09.14",out value));
-        Assert.Equal( 10000.0/60.0 + 9.14/3600.0,value);
-        Assert.Equal("10000′09,14˝", AngleMs.PrintMs(value));
+        CultureInfo.CurrentCulture = new CultureInfo(culture);
+        Assert.True(AngleMs.TryParse(input, out var value));
+        Assert.Equal(expectedValue, value);
+        Assert.Equal(expectedOutput, AngleMs.PrintMs(value));
     }
 
-    [Fact]
-    public void CheckValidAngleMsSecondValues()
+    [Theory]
+    [InlineData("ru-RU", "00 01", 1.0 / 3600.0)]
+    [InlineData("ru-RU", "-00 1", -1.0 / 3600.0)]
+    [InlineData("ru-RU", "00 09", 9.0 / 3600.0)]
+    [InlineData("ru-RU", "-00 9", -9.0 / 3600.0)]
+    [InlineData("ru-RU", "00 59", 59.0 / 3600.0)]
+    [InlineData("ru-RU", "-00 01.001", -1.001 / 3600.0)]
+    [InlineData("ru-RU", "00 1.001", 1.001 / 3600.0)]
+    [InlineData("ru-RU", "-00 09.001", -9.001 / 3600.0)]
+    [InlineData("ru-RU", "00 9.001", 9.001 / 3600.0)]
+    [InlineData("ru-RU", "-00 59.001", -59.001 / 3600.0)]
+    [InlineData("en-US", "00 01", 1.0 / 3600.0)]
+    [InlineData("en-US", "-00 1", -1.0 / 3600.0)]
+    [InlineData("en-US", "00 09", 9.0 / 3600.0)]
+    [InlineData("en-US", "-00 9", -9.0 / 3600.0)]
+    [InlineData("en-US", "00 59", 59.0 / 3600.0)]
+    [InlineData("en-US", "-00 01.001", -1.001 / 3600.0)]
+    [InlineData("en-US", "00 1.001", 1.001 / 3600.0)]
+    [InlineData("en-US", "-00 09.001", -9.001 / 3600.0)]
+    [InlineData("en-US", "00 9.001", 9.001 / 3600.0)]
+    [InlineData("en-US", "-00 59.001", -59.001 / 3600.0)]
+    public void CheckValidAngleMsSecondValues(string culture, string input, double expectedValue)
     {
-        var value = 0.0;
-        Assert.True(AngleMs.TryParse("00 01",out value));
-        Assert.Equal(1.0/3600.0,value);
-        Assert.True(AngleMs.TryParse("-00 1",out value));
-        Assert.Equal(-1.0/3600.0,value);
-        Assert.True(AngleMs.TryParse("00 09",out value));
-        Assert.Equal(9.0/3600.0,value);
-        Assert.True(AngleMs.TryParse("-00 9",out value));
-        Assert.Equal(-9.0/3600.0,value);
-        Assert.True(AngleMs.TryParse("00 59",out value));
-        Assert.Equal(59.0/3600.0,value);
-        Assert.True(AngleMs.TryParse("-00 01.001",out value));
-        Assert.Equal(-1.001/3600.0,value);
-        Assert.True(AngleMs.TryParse("00 1.001",out value));
-        Assert.Equal(1.001/3600.0,value);
-        Assert.True(AngleMs.TryParse("-00 09.001",out value));
-        Assert.Equal(-9.001/3600.0,value);
-        Assert.True(AngleMs.TryParse("00 9.001",out value));
-        Assert.Equal(9.001/3600.0,value);
-        Assert.True(AngleMs.TryParse("-00 59.001",out value));
-        Assert.Equal(-59.001/3600.0,value);
+        CultureInfo.CurrentCulture = new CultureInfo(culture);
+        Assert.True(AngleMs.TryParse(input, out var value));
+        Assert.Equal(expectedValue, value);
     }
+
 }
