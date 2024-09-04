@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Threading;
 using Xunit;
 
 namespace Asv.Common.Test;
@@ -16,7 +17,7 @@ public class AngleDmTest
     [InlineData("0,410", 0.41, "ru-RU")]
     public void CheckDoubleValues(string input, double expectedValue, string culture)
     {
-        CultureInfo.CurrentCulture = new CultureInfo(culture);
+        Thread.CurrentThread.CurrentCulture = CultureInfo.CurrentCulture = new CultureInfo(culture);
 
         // Проверка парсинга с учетом локали
         Assert.True(AngleDm.TryParse(input, out var value));
@@ -53,7 +54,7 @@ public class AngleDmTest
     [InlineData(@"0 0'", 0, "ru-RU")]
     public void CheckDegreeSymbols(string input, double expectedValue, string culture)
     {
-        CultureInfo.CurrentCulture = new CultureInfo(culture);
+        Thread.CurrentThread.CurrentCulture = CultureInfo.CurrentCulture = new CultureInfo(culture);
 
         // Проверка парсинга для различных символов градусов с учетом локали
         Assert.True(AngleDm.TryParse(input, out var value));
@@ -67,7 +68,7 @@ public class AngleDmTest
     [InlineData(@"000° 00′", 0, "ru-RU")]
     public void CheckMinuteSymbols(string input, double expectedValue, string culture)
     {
-        CultureInfo.CurrentCulture = new CultureInfo(culture);
+        Thread.CurrentThread.CurrentCulture = CultureInfo.CurrentCulture = new CultureInfo(culture);
 
         // Проверка парсинга для различных символов минут с учетом локали
         Assert.True(AngleDm.TryParse(input, out var value));
@@ -122,7 +123,7 @@ public class AngleDmTest
     [InlineData("00 59.999", 59.999 / 60.0, "01°00,00′", "ru-RU")]
     public void CheckValidAngleMinuteValues(string input, double expectedValue, string expectedPrint,string culture)
     {
-        CultureInfo.CurrentCulture = new CultureInfo(culture);
+        Thread.CurrentThread.CurrentCulture = CultureInfo.CurrentCulture = new CultureInfo(culture);
         // Проверка парсинга
         Assert.True(AngleDm.TryParse(input, out var value));
         Assert.Equal(expectedValue, value);
