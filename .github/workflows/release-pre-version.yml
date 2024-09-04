@@ -1,10 +1,11 @@
-name: Deploy Nuget
+name: Build and Publish Pre-Release Version
 
 on:
   push:
     tags:
-    - 'v[0-9]+.[0-9]+.[0-9]+'
-    
+      - "v[0-9]+.[0-9]+.[0-9]+-rc.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+-rc"
+
 env:
   PATH_TO_PROJECTS: ${{ github.workspace }}\src
   PACKAGE_OUTPUT_DIRECTORY: ${{ github.workspace }}\output\
@@ -19,28 +20,28 @@ jobs:
     steps:
       - name: 'Checkout'
         uses: actions/checkout@v3
-      
+
       - name: Setup .Net
         uses: actions/setup-dotnet@v3
         with:
-            dotnet-version: |
-              8.x.x
-        
+          dotnet-version: |
+            8.x.x
+
       - name: Get version
         id: version
         uses: battila7/get-version-action@v2
 
       - name: Check version
         run: echo ${{ steps.version.outputs.version-without-v }}
-        
-      - name: Set project version   
-        run: |    
+
+      - name: Set project version
+        run: |
           dotnet tool install -g dotnet-setversion    
           setversion ${{ steps.version.outputs.version-without-v }} ${{ env.PATH_TO_PROJECTS }}\Asv.Cfg\Asv.Cfg.csproj    
           setversion ${{ steps.version.outputs.version-without-v }} ${{ env.PATH_TO_PROJECTS }}\Asv.Common\Asv.Common.csproj    
           setversion ${{ steps.version.outputs.version-without-v }} ${{ env.PATH_TO_PROJECTS }}\Asv.IO\Asv.IO.csproj       
           setversion ${{ steps.version.outputs.version-without-v }} ${{ env.PATH_TO_PROJECTS }}\Asv.Composition\Asv.Composition.csproj
-    
+
       - name: Restore dependencies
         run: |
           cd src
@@ -52,11 +53,11 @@ jobs:
           dotnet build -c Release --no-restore
 
       - name: Running all tests
-        run:  |    
+        run:  |
           cd src
           dotnet test --no-restore --verbosity normal
-  
-      - name: Pack projects to Nuget 
+
+      - name: Pack projects to Nuget
         run: |
           cd src
           dotnet pack -c Release --no-build --no-restore -p:PackageVersion=${{ steps.version.outputs.version-without-v }} --output ${{ env.PACKAGE_OUTPUT_DIRECTORY }}

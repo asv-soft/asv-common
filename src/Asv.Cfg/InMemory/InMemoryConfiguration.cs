@@ -37,7 +37,6 @@ namespace Asv.Cfg
             {
                 _rw.ExitReadLock();
             }
-
         }
 
         public bool Exist<TPocoType>(string key)
