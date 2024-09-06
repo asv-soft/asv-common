@@ -51,10 +51,7 @@ namespace Asv.Cfg.Test
 
         private string GenerateTempFilePath()
         {
-            return $"{Path.GetTempPath()}\\{Path.GetRandomFileName()}\\{Path.GetRandomFileName()}.zip";
+            return Path.Join(Path.GetTempPath(), Path.GetRandomFileName(), $"{Path.GetRandomFileName()}.zip");
         }
-
-        
-        
     }
 }
