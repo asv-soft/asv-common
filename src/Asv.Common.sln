@@ -24,6 +24,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		..\README.md = ..\README.md
 		..\publish_github.bat = ..\publish_github.bat
 		Directory.Build.props = Directory.Build.props
+		..\.github\workflows\nuget_windows.yml = ..\.github\workflows\nuget_windows.yml
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Asv.Composition", "Asv.Composition\Asv.Composition.csproj", "{37FD46DD-B496-4886-B917-7BDB444A69A0}"

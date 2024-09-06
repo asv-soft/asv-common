@@ -1,11 +1,14 @@
-﻿using System;
+﻿#nullable enable
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using ZLogger;
 
 namespace Asv.IO;
@@ -15,7 +18,26 @@ namespace Asv.IO;
 /// </summary>
 public static class ConsoleAppHelper
 {
-    
+
+    public static IDisposable WaitCancelPressOrProcessExit(ILogger? logger = null)
+    {
+        var waitForProcessShutdownStart = new ManualResetEventSlim();
+        logger??=NullLogger.Instance;
+        AppDomain.CurrentDomain.ProcessExit += (_, _) => {
+            // We got a SIGTERM, signal that graceful shutdown has started
+            logger.LogInformation("Receive ProcessExit event => shutdown app...");
+            waitForProcessShutdownStart.Set();
+        };
+        Console.CancelKeyPress += (_, e) =>
+        {
+            e.Cancel = true;
+            logger.LogInformation("Cancel key pressed => shutdown app...");
+            waitForProcessShutdownStart.Set();
+        };
+        // Wait for shutdown to start
+        waitForProcessShutdownStart.Wait();
+        return waitForProcessShutdownStart;
+    }
     public static void HandleExceptions(ILogger logger)
     {
         TaskScheduler.UnobservedTaskException +=
