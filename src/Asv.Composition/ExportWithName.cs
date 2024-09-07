@@ -4,10 +4,10 @@ namespace Asv.Composition;
 
 [MetadataAttribute]
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
-public class ExportWithName : ExportAttribute,INameMetadata
+public class ExportWithNameAttribute : ExportAttribute,INameMetadata
 {
-    public ExportWithName(Type type, string name, int priority)
-        :base(type)
+    public ExportWithNameAttribute(Type type, string name, int priority)
+        :base(name,type)
     {
         if (string.IsNullOrWhiteSpace(name))
             ArgumentException.ThrowIfNullOrWhiteSpace(nameof(name));
