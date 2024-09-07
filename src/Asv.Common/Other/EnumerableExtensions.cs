@@ -10,36 +10,7 @@ namespace Asv.Common
     /// </summary>
     public static class EnumerableExtensions
     {
-        /// <summary>
-        /// Synchronizes the entries in a dictionary with a provided list of keys by using a value factory function.
-        /// </summary>
-        /// <typeparam name="TKey">The type of the dictionary keys.</typeparam>
-        /// <typeparam name="TValue">The type of the dictionary values.</typeparam>
-        /// <param name="dict">The dictionary to synchronize.</param>
-        /// <param name="keys">The list of keys to synchronize with.</param>
-        /// <param name="valueFactory">The function to create a value for missing keys.</param>
-        /// <returns>True if the dictionary was updated, false otherwise.</returns>
-        public static bool SyncWithKeys<TKey, TValue>(this IDictionary<TKey, TValue> dict, IEnumerable<TKey> keys,
-            Func<TKey, TValue> valueFactory)
-            where TKey : notnull
-        {
-            var updated = false;
-
-            var list = keys.ToImmutableArray();
-            foreach (var key in list.Where(key => !dict.ContainsKey(key)))
-            {
-                dict.Add(key, valueFactory(key));
-                updated = true;
-            }
-            //remove not found keys
-            foreach (var key in dict.Keys.ToImmutableArray().Where(key => !list.Contains(key)))
-            {
-                dict.Remove(key);
-                updated = true;
-            }
-
-            return updated;
-        }
+        
         /// <summary>
         /// Split the elements of a sequence into chunks of size at most <paramref name="size"/>.
         /// </summary>
@@ -99,7 +70,39 @@ namespace Asv.Common
         }
 
 
+        /// <summary>
+        /// Synchronizes a dictionary with a given list of keys.
+        /// Adds keys to the dictionary that are not present and removes keys from the dictionary that are not in the list.
+        /// </summary>
+        /// <typeparam name="TKey">The type of the dictionary keys.</typeparam>
+        /// <typeparam name="TValue">The type of the dictionary values.</typeparam>
+        /// <param name="dict">The dictionary to synchronize.</param>
+        /// <param name="keys">The list of keys to synchronize with.</param>
+        /// <param name="addItem">A function that adds missing keys to the dictionary and returns the corresponding value.</param>
+        /// <param name="afterRemoveItem">An action that is executed after removing a key from the dictionary.</param>
+        /// <returns>True if any changes were made to the dictionary; otherwise, false.</returns>
+        public static bool SyncDictionaryWithKeys<TKey, TValue>(this IDictionary<TKey, TValue> dict, IEnumerable<TKey> keys,
+            Func<TKey, TValue> addItem, Action<TKey>? afterRemoveItem)
+            where TKey : notnull
+        {
+            var updated = false;
 
+            var list = keys.ToImmutableArray();
+            foreach (var key in list.Where(key => !dict.ContainsKey(key)))
+            {
+                dict.Add(key, addItem(key));
+                updated = true;
+            }
+            //remove not found keys
+            foreach (var key in dict.Keys.ToImmutableArray().Where(key => !list.Contains(key)))
+            {
+                dict.Remove(key);
+                afterRemoveItem?.Invoke(key);
+                updated = true;
+            }
+
+            return updated;
+        }
         public static void SyncCollection<T>(this IEnumerable<T> exist, IEnumerable<T> actual, Action<T> deleteCallback, Action<T> addCallback,IEqualityComparer<T> comparer) 
         {
             var toDelete = exist.Except(actual,comparer).ToArray();
