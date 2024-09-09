@@ -20,14 +20,14 @@ public class ULogTokenUnknown : IULogToken
 
     public byte UnknownType { get; set; }
     public byte[] Data { get; set; }
-    public bool TryRead(ReadOnlySequence<byte> data)
+  
+    public void Deserialize(ref ReadOnlySpan<byte> buffer)
     {
-        Data = data.ToArray();
-        return true;
+        Data = buffer.ToArray();
     }
 
-    public void WriteTo(IBufferWriter<byte> writer)
+    public void Serialize(ref Span<byte> buffer)
     {
-        writer.Write(Data);
+        throw new NotImplementedException();
     }
 }

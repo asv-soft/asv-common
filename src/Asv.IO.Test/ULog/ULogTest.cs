@@ -21,12 +21,19 @@ public class ULogTest
         builder.Add(ULogMessageFlagBits.TokenId, () => new ULogMessageFlagBits());
         var reader = new ULogReader(builder.ToImmutable(),null);
 
-        var result = reader.TryRead(mem, out var token);
+        var result = reader.TryRead(mem, out var header);
         Assert.True(result);
-        Assert.NotNull(token);
-        Assert.Equal(ULogToken.FileHeader,token.Type);
-        var header = (ULogTokenFileHeader)token;
-        Assert.Equal(20309082U, header.Timestamp);
-        
+        Assert.NotNull(header);
+        Assert.Equal(ULogToken.FileHeader,header.Type);
+        var headerInst = (ULogTokenFileHeader)header;
+        Assert.Equal(20309082U, headerInst.Timestamp);
+        Assert.Equal(1,headerInst.Version);
+
+        result = reader.TryRead(mem, out var flag);
+        Assert.True(result);
+        Assert.NotNull(header);  
+        Assert.Equal(ULogToken.FlagBits,flag.Type);
+
+
     }
 }

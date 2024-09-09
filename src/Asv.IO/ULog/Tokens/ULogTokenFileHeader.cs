@@ -13,13 +13,15 @@ namespace Asv.IO;
 /// | File magic (7B)                    | Version (1B) | Timestamp (8B) |
 /// ----------------------------------------------------------------------
 /// </summary>
-public class ULogTokenFileHeader: IULogToken
+public class ULogTokenFileHeader: IULogToken,ISizedSpanSerializable
 {
     /// <summary>
     /// File type indicator that reads "ULogXYZ where XYZ is the magic bytes sequence 0x01 0x12 0x35"
     /// </summary>
     private static readonly byte[] FileMagic = [0x55, 0x4c, 0x6f, 0x67, 0x01, 0x12, 0x35];
 
+    public const int HeaderSize = 16;
+    
     private byte _version;
     private ulong _timestamp;
     public const string TokenName = "FileHeader";
@@ -58,7 +60,7 @@ public class ULogTokenFileHeader: IULogToken
             }
             if (b != FileMagic[i])
             {
-                throw new ULogException($"Error to parse ULog header: FileMagic[{i}] want{FileMagic[i]}. Got {b}");
+                
             }
         }
 
@@ -76,11 +78,28 @@ public class ULogTokenFileHeader: IULogToken
         return true;
     }
 
-    public void WriteTo(IBufferWriter<byte> writer)
+    
+
+    public void Deserialize(ref ReadOnlySpan<byte> buffer)
+    {
+        for (var i = 0; i < FileMagic.Length; i++)
+        {
+            if (buffer[i] != FileMagic[i])
+            {
+                throw new ULogException($"Error to parse ULog header: FileMagic[{i}] want{FileMagic[i]}. Got {buffer[i]}");
+            }
+        }
+        buffer = buffer[FileMagic.Length..];
+        BinSerialize.ReadByte(ref buffer, ref _version);
+        BinSerialize.ReadULong(ref buffer, ref _timestamp);
+    }
+
+    public void Serialize(ref Span<byte> buffer)
     {
         throw new NotImplementedException();
     }
 
+    public int GetByteSize() => HeaderSize;
     public override string ToString()
     {
         return $"Version:{Version},Timestamp:{Timestamp}";
