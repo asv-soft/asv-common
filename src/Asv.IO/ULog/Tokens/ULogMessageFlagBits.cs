@@ -3,6 +3,11 @@ using System.Buffers;
 
 namespace Asv.IO;
 
+/// <summary>
+/// 'B': Flag Bits Message
+///
+/// This message provides information to the log parser whether the log is parsable or not.
+/// </summary>
 public class ULogMessageFlagBits:IULogToken
 {
     private byte[] _compatFlags = new byte[8];

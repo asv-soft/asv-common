@@ -1,6 +1,7 @@
 using System;
 using System.Buffers;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -8,13 +9,40 @@ namespace Asv.IO;
 
 public enum ULogToken
 {
-    Unknown = 0,
-    FileHeader = 1,
-    FlagBits
+    Unknown,
+    FileHeader,
+    FlagBits,
+    Format,
 }
 
-public class ULogReader
+public interface IULogReader
 {
+    bool TryRead(ReadOnlySequence<byte> data,out IULogToken? token);
+    IULogToken? CurrentToken { get; }
+    
+    public bool TryRead<TToken>(ReadOnlySequence<byte> data,out TToken? token) 
+        where TToken : class, IULogToken
+    {
+        var result = TryRead(data, out var t);
+        token = t as TToken;
+        Debug.Assert(token == null);
+        return result;
+    }
+}
+
+public static class ULog
+{
+    public static IULogReader CreateReader(ILogger? logger = null)
+    {
+        var builder = ImmutableDictionary.CreateBuilder<byte, Func<IULogToken>>();
+        builder.Add(ULogMessageFlagBits.TokenId, () => new ULogMessageFlagBits());
+        return new ULogReader(builder.ToImmutable(),logger);
+    }
+}
+
+public class ULogReader:IULogReader
+{
+    
     private readonly ImmutableDictionary<byte, Func<IULogToken>> _factory;
     private readonly ILogger _logger;
     private int _tokenCounter;
@@ -25,8 +53,6 @@ public class ULogReader
         _logger = logger ?? NullLogger.Instance;
         _tokenCounter = 0;
     }
-
-    
     
     public bool TryRead(ReadOnlySequence<byte> data,out IULogToken? token)
     {

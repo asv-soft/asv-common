@@ -16,22 +16,20 @@ public class ULogTest
     [Fact]
     public void ReadHeader()
     {
-        var mem = new ReadOnlySequence<byte>(TestData.ulog_log_small);
-        var builder = ImmutableDictionary.CreateBuilder<byte, Func<IULogToken>>();
-        builder.Add(ULogMessageFlagBits.TokenId, () => new ULogMessageFlagBits());
-        var reader = new ULogReader(builder.ToImmutable(),null);
+        var data = new ReadOnlySequence<byte>(TestData.ulog_log_small);
 
-        var result = reader.TryRead(mem, out var header);
+        var reader = ULog.CreateReader();
+
+        var result = reader.TryRead<ULogTokenFileHeader>(data, out var header);
         Assert.True(result);
         Assert.NotNull(header);
         Assert.Equal(ULogToken.FileHeader,header.Type);
-        var headerInst = (ULogTokenFileHeader)header;
-        Assert.Equal(20309082U, headerInst.Timestamp);
-        Assert.Equal(1,headerInst.Version);
+        Assert.Equal(20309082U, header.Timestamp);
+        Assert.Equal(1,header.Version);
 
-        result = reader.TryRead(mem, out var flag);
+        result = reader.TryRead<ULogMessageFlagBits>(data, out var flag);
         Assert.True(result);
-        Assert.NotNull(header);  
+        Assert.NotNull(flag);  
         Assert.Equal(ULogToken.FlagBits,flag.Type);
 
 
