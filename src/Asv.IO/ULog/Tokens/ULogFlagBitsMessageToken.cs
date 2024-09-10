@@ -8,7 +8,7 @@ namespace Asv.IO;
 ///
 /// This message provides information to the log parser whether the log is parsable or not.
 /// </summary>
-public class ULogMessageFlagBits:IULogToken
+public class ULogFlagBitsMessageToken:IULogToken
 {
     private byte[] _compatFlags = new byte[8];
     private byte[] _incompatFlags = new byte[8];

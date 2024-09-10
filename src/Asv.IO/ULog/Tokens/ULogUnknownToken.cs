@@ -1,15 +1,18 @@
 using System;
 using System.Buffers;
+using System.Text;
 
 namespace Asv.IO;
 
-public class ULogTokenUnknown : IULogToken
+public class ULogUnknownToken : IULogToken
 {
     public const ULogToken TokenType = ULogToken.Unknown;
     public const string TokenName =  "Unknown";
     
     private readonly ushort _byteSize;
-    public ULogTokenUnknown(byte type, ushort byteSize)
+    private byte _unknownType;
+
+    public ULogUnknownToken(byte type, ushort byteSize)
     {
         _byteSize = byteSize;
         UnknownType = type;
@@ -18,7 +21,20 @@ public class ULogTokenUnknown : IULogToken
     public string Name => TokenName;
     public ULogToken Type => TokenType;
 
-    public byte UnknownType { get; set; }
+    public char UnknownTypeChar { get; private set; }
+
+    public byte UnknownType
+    {
+        get => _unknownType;
+        set
+        {
+            _unknownType = value;
+            var buff = new char[1];
+            ULog.Encoding.GetChars(new ReadOnlySpan<byte>([_unknownType]), new Span<char>(buff));
+            UnknownTypeChar = buff[0];
+        }
+    }
+
     public byte[] Data { get; set; }
   
     public void Deserialize(ref ReadOnlySpan<byte> buffer)

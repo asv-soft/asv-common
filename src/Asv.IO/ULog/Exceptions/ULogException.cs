@@ -19,3 +19,4 @@ public class ULogException : Exception
 
 public class ULogSizeTooSmallException(string section) 
     : ULogException($"Size too small to read {section}");
+    

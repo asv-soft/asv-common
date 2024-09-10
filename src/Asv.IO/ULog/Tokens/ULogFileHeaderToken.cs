@@ -13,7 +13,7 @@ namespace Asv.IO;
 /// | File magic (7B)                    | Version (1B) | Timestamp (8B) |
 /// ----------------------------------------------------------------------
 /// </summary>
-public class ULogTokenFileHeader: IULogToken,ISizedSpanSerializable
+public class ULogFileHeaderToken: IULogToken,ISizedSpanSerializable
 {
     /// <summary>
     /// File type indicator that reads "ULogXYZ where XYZ is the magic bytes sequence 0x01 0x12 0x35"
