@@ -40,10 +40,12 @@ public class ULogTest
             if (token.Type == ULogToken.Format)
             {
                 var format = token as ULogFormatMessageToken;
-                _output.WriteLine($"Format: {format} {string.Join(",",format.Fields)}");    
+                _output.WriteLine($"Format: {format.Type:G} {string.Join(",",format.Fields)}");    
             }
             
         } 
+
+        
 
 
     }

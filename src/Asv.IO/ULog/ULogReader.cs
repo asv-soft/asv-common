@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Exception = System.Exception;
 
 namespace Asv.IO;
 
@@ -30,43 +31,54 @@ public interface IULogReader
     }
 }
 
-public class ULogReader:IULogReader
+public class ULogReader(ImmutableDictionary<byte, Func<IULogToken>> factory, ILogger? logger = null)
+    : IULogReader
 {
-    
-    private readonly ImmutableDictionary<byte, Func<IULogToken>> _factory;
-    private readonly ILogger _logger;
-    private int _tokenCounter;
+    private ReaderState _state = ReaderState.HeaderSection;
 
-    public ULogReader(ImmutableDictionary<byte,Func<IULogToken>> factory, ILogger? logger = null)
-    {
-        _factory = factory;
-        _logger = logger ?? NullLogger.Instance;
-        _tokenCounter = 0;
-    }
-    
     public bool TryRead(ref SequenceReader<byte> rdr,out IULogToken? token)
     {
         token = null;
-        if (_tokenCounter == 0)
+        switch (_state)
         {
-            var headerBuffer = ArrayPool<byte>.Shared.Rent(ULogFileHeaderToken.HeaderSize);
-            try
-            {
-                if (rdr.TryCopyTo(new Span<byte>(headerBuffer, 0, ULogFileHeaderToken.HeaderSize)) == false) return false;
-                rdr.Advance(ULogFileHeaderToken.HeaderSize);
-                var span = new ReadOnlySpan<byte>(headerBuffer, 0, ULogFileHeaderToken.HeaderSize);
-                token = new ULogFileHeaderToken();
-                token.Deserialize(ref span);
-                ++_tokenCounter;
+            case ReaderState.HeaderSection:
+                if (!InternalReadHeader(rdr, ref token)) return false;
+                _state = ReaderState.FlagBitsMessage;
                 return true;
-            }
-            finally
-            { 
-                ArrayPool<byte>.Shared.Return(headerBuffer);
-            }
-            
+            case ReaderState.FlagBitsMessage:
+                // (https://docs.px4.io/main/en/dev_log/ulog_file_format.html#d-logged-data-message)
+                if (!InternalReadToken(ref rdr, ref token)) return false;
+                Debug.Assert(token != null);
+                if (token.Type != ULogToken.FlagBits)
+                {
+                    _state = ReaderState.Corrupted;
+                    throw new ULogException($"{ULogToken.FlagBits:G} must be right after {ReaderState.HeaderSection:G}, but got {token.Type:G}");
+                }
+                _state = ReaderState.DataSection;
+                break;
+           case ReaderState.DataSection:
+                try
+                {
+                    if (!InternalReadToken(ref rdr, ref token)) return false;
+                }
+                catch (ULogException e)
+                {
+                    _state = ReaderState.Corrupted;
+                }
+                break;
+            case ReaderState.Corrupted:
+                // todo try to find sync message
+                break;
+            default:
+                throw new ArgumentOutOfRangeException();
         }
+        CurrentToken = token;
+        return true;
 
+    }
+
+    private bool InternalReadToken(ref SequenceReader<byte> rdr, ref IULogToken? token)
+    {
         if (rdr.TryReadLittleEndian(out ushort size) == false) return false;
         if (rdr.TryRead(out var type) == false)
         {
@@ -78,32 +90,42 @@ public class ULogReader:IULogReader
         try
         {
             if (rdr.TryCopyTo(new Span<byte>(payloadBuffer,0, size)) == false) return false;
-            rdr.Advance(size);
-            token = _factory.TryGetValue(type, out var tokenFactory) ? tokenFactory() : new ULogUnknownToken(type, size);
+            token = factory.TryGetValue(type, out var tokenFactory) ? tokenFactory() : new ULogUnknownToken(type, size);
             var readSpan = new ReadOnlySpan<byte>(payloadBuffer,0,size);
             token.Deserialize(ref readSpan);
-            _tokenCounter++;
+            rdr.Advance(size);  // advance only if token was read successfully
         }
         finally
         {
             ArrayPool<byte>.Shared.Return(payloadBuffer);
         }
-        
-        
-        // ULogMessageFlagBits message must be the first message right after the header section, so that it has a fixed constant offset from the start of the file!
-        // (https://docs.px4.io/main/en/dev_log/ulog_file_format.html#d-logged-data-message)
-        if (_tokenCounter == 1)
-        {
-            if (token.Type != ULogFlagBitsMessageToken.Token)
-            {
-                throw new ULogException($"{ULogFlagBitsMessageToken.Token:G} message must be right after the header section");
-            }
-        }
-        CurrentToken = token;
-        ++_tokenCounter;
         return true;
-
     }
 
+    private bool InternalReadHeader(SequenceReader<byte> rdr, ref IULogToken? token)
+    {
+        var headerBuffer = ArrayPool<byte>.Shared.Rent(ULogFileHeaderToken.HeaderSize);
+        try
+        {
+            if (rdr.TryCopyTo(new Span<byte>(headerBuffer, 0, ULogFileHeaderToken.HeaderSize)) == false) return false;
+            rdr.Advance(ULogFileHeaderToken.HeaderSize);
+            var span = new ReadOnlySpan<byte>(headerBuffer, 0, ULogFileHeaderToken.HeaderSize);
+            token = new ULogFileHeaderToken();
+            token.Deserialize(ref span);
+            return true;
+        }
+        finally
+        { 
+            ArrayPool<byte>.Shared.Return(headerBuffer);
+        }
+    }
+
+    private enum ReaderState
+    {
+        HeaderSection,
+        FlagBitsMessage,
+        DataSection,
+        Corrupted,
+    }
     public IULogToken? CurrentToken { get; private set; }
 }
