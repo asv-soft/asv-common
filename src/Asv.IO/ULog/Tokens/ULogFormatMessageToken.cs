@@ -15,7 +15,6 @@ namespace Asv.IO;
 /// </summary>
 public class ULogFormatMessageToken: IULogToken
 {
-    
     public static ULogToken Token => ULogToken.Format;
     public const string TokenName = "Format";
     public const byte TokenId = (byte)'F';
