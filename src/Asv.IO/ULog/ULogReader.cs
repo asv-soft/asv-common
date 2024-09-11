@@ -77,7 +77,11 @@ public class ULogReader:IULogReader
         var payloadBuffer = ArrayPool<byte>.Shared.Rent(size);
         try
         {
-            if (rdr.TryCopyTo(new Span<byte>(payloadBuffer,0, size)) == false) return false;
+            if (rdr.TryCopyTo(new Span<byte>(payloadBuffer, 0, size)) == false)
+            {
+                rdr.Rewind(sizeof(ushort) + sizeof(byte));
+                return false;
+            }
             rdr.Advance(size);
             token = _factory.TryGetValue(type, out var tokenFactory) ? tokenFactory() : new ULogUnknownToken(type, size);
             var readSpan = new ReadOnlySpan<byte>(payloadBuffer,0,size);
