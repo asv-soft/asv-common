@@ -19,6 +19,7 @@ public class ULogFlagBitsMessageToken:IULogToken
     public const byte TokenId = (byte)'B';
     public string Name => TokenName;
     public ULogToken Type => Token;
+    public TokenPlaceFlags Section => TokenPlaceFlags.Definition;
 
 
     /// <summary>
@@ -75,7 +76,15 @@ public class ULogFlagBitsMessageToken:IULogToken
     }
 
     public void Serialize(ref Span<byte> buffer)
-    { 
-        
+    {  
+        BinSerialize.WriteBlock(ref buffer, _compatFlags);
+        BinSerialize.WriteBlock(ref buffer, _incompatFlags);
+        for (var i = 0; i < _appendedOffsets.Length; i++)
+        {
+            BinSerialize.WriteULong(ref buffer, _appendedOffsets[i]);
+        }
     }
+
+    public int GetByteSize() => sizeof(byte)*8 + sizeof(byte)*8 + sizeof(ulong)*3;
+    
 }

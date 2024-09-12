@@ -20,6 +20,7 @@ public class ULogUnknownToken : IULogToken
 
     public string Name => TokenName;
     public ULogToken Type => TokenType;
+    public TokenPlaceFlags Section => TokenPlaceFlags.DefinitionAndData;
 
     public char UnknownTypeChar { get; private set; }
 
@@ -44,6 +45,12 @@ public class ULogUnknownToken : IULogToken
 
     public void Serialize(ref Span<byte> buffer)
     {
-        throw new NotImplementedException();
+        Data.CopyTo(buffer);
+        buffer = buffer[Data.Length..];
+    }
+
+    public int GetByteSize()
+    {
+        return _byteSize;
     }
 }

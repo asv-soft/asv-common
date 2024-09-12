@@ -10,11 +10,16 @@ public static partial class ULog
 {
     public static readonly Encoding Encoding = Encoding.UTF8;
     
-    public const char ArrayStart = '[';
-    public const char ArrayEnd = ']';
-    public const char TypeAndNameSeparator = ' ';
-    public const char FieldSeparator = ';';
-    public const char MessageAndFieldsSeparator = ':';
+    public const string ArrayStart = "[";
+    public static readonly int ArrayStartByteSize = Encoding.GetByteCount(ArrayStart);
+    public const string ArrayEnd = "]";
+    public static readonly int ArrayEndByteSize = Encoding.GetByteCount(ArrayEnd);
+    public const string TypeAndNameSeparator = " ";
+    public static readonly int TypeAndNameSeparatorByteSize = Encoding.GetByteCount(TypeAndNameSeparator);
+    public const string FieldSeparator = ";";
+    public static readonly int FieldSeparatorByteSize = Encoding.GetByteCount(FieldSeparator);
+    public const string MessageAndFieldsSeparator = ":";
+    public static readonly int MessageAndFieldsSeparatorByteSize = Encoding.GetByteCount(MessageAndFieldsSeparator);
     public const string Int8TypeName = "int8_t";
     public const string UInt8TypeName = "uint8_t";
     public const string Int16TypeName = "int16_t";
@@ -72,7 +77,7 @@ public static partial class ULog
         }
     }
 
-    public static ULogDataType ParseDataType(ref Span<char> data, out ReadOnlySpan<char> referenceTypeName, out int arrayCount)
+    public static ULogDataType ParseDataType(ref ReadOnlySpan<char> data, out ReadOnlySpan<char> referenceTypeName, out int arrayCount)
     {
         arrayCount = 0;
         // Trim any leading or trailing whitespace

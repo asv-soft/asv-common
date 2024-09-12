@@ -47,7 +47,7 @@ public class ULogFileHeaderToken: IULogToken,ISizedSpanSerializable
 
     public string Name => TokenName;
     public ULogToken Type => TokenType;
-
+    public TokenPlaceFlags Section => TokenPlaceFlags.Header;
     public bool TryRead(ReadOnlySequence<byte> data)
     {
         var rdr = new SequenceReader<byte>(data);
@@ -96,7 +96,13 @@ public class ULogFileHeaderToken: IULogToken,ISizedSpanSerializable
 
     public void Serialize(ref Span<byte> buffer)
     {
-        throw new NotImplementedException();
+        for (var i = 0; i < FileMagic.Length; i++)
+        {
+            buffer[i] = FileMagic[i];
+        }
+        buffer = buffer[FileMagic.Length..];
+        BinSerialize.WriteByte(ref buffer, _version);
+        BinSerialize.WriteULong(ref buffer, _timestamp);
     }
 
     public int GetByteSize() => HeaderSize;

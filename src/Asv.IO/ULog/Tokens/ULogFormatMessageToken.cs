@@ -2,6 +2,7 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -21,11 +22,12 @@ public class ULogFormatMessageToken: IULogToken
 
     
     
-    private string? _messageName;
+    private string _messageName;
     public string Name => TokenName;
     public ULogToken Type => Token;
+    public TokenPlaceFlags Section => TokenPlaceFlags.Definition;
 
-    public string? MessageName
+    public string MessageName
     {
         get => _messageName;
         set
@@ -41,7 +43,7 @@ public class ULogFormatMessageToken: IULogToken
     {
         var charSize = ULog.Encoding.GetCharCount(buffer);
         var charBuffer = new char[charSize];
-        var input = new Span<char>(charBuffer);
+        var input = new ReadOnlySpan<char>(charBuffer);
         var size = ULog.Encoding.GetChars(buffer,charBuffer);
         Debug.Assert(charSize == size);
         
@@ -62,7 +64,9 @@ public class ULogFormatMessageToken: IULogToken
             }
 
             var field = fieldsSpan[..semicolonIndex];
-            Fields.Add(new FormatMessageField(field));
+            var newItem = new FormatMessageField();
+            newItem.Deserialize(ref field);
+            Fields.Add(newItem);
             fieldsSpan = fieldsSpan[(semicolonIndex + 1)..];
         }
 
@@ -70,13 +74,41 @@ public class ULogFormatMessageToken: IULogToken
 
     public void Serialize(ref Span<byte> buffer)
     {
-        throw new NotImplementedException();
+        MessageName.CopyTo(ref buffer, ULog.Encoding);
+        ULog.MessageAndFieldsSeparator.CopyTo(ref buffer, ULog.Encoding);
+        foreach (var field in Fields)
+        {
+            field.Serialize(ref buffer);
+            ULog.FieldSeparator.CopyTo(ref buffer, ULog.Encoding);
+        }
+    }
+
+    public int GetByteSize()
+    {
+        return ULog.Encoding.GetByteCount(MessageName) + ULog.MessageAndFieldsSeparatorByteSize + Fields.Sum(x => x.GetByteSize() + ULog.FieldSeparatorByteSize);
     }
 }
 
-public class FormatMessageField
+public class FormatMessageField:ISizedSpanSerializable
 {
-    public FormatMessageField(Span<char> rawString)
+    public int ArraySize { get; set; }
+    public string? ReferenceName { get; set; }
+    public ULogDataType FieldType { get; set; }
+    public string FieldName { get; set; }
+
+    public bool IsArray => ArraySize>0;
+
+    public int GetByteSize()
+    {
+        if (IsArray)
+        {
+            return ULog.Encoding.GetByteCount(FieldName) + ULog.TypeAndNameSeparatorByteSize + ULog.GetDataTypeName(FieldType, ReferenceName).Length + 
+                   ULog.ArrayStartByteSize + ULog.Encoding.GetByteCount(ArraySize.ToString()) + ULog.ArrayEndByteSize;
+        }
+        return ULog.Encoding.GetByteCount(FieldName) + ULog.TypeAndNameSeparatorByteSize + ULog.GetDataTypeName(FieldType, ReferenceName).Length;
+    }
+
+    public void Deserialize(ref ReadOnlySpan<char> rawString)
     {
         var colonIndex = rawString.IndexOf(ULog.TypeAndNameSeparator);
         if (colonIndex == -1)
@@ -93,28 +125,26 @@ public class FormatMessageField
         }
         ArraySize = arrayCount;
     }
-
-    public int ArraySize { get; set; }
-    public string? ReferenceName { get; set; }
-    public ULogDataType FieldType { get; set; }
-    public string FieldName { get; set; }
-
-    public bool IsArray => ArraySize>0;
-
-    public override string ToString()
+    public void Deserialize(ref ReadOnlySpan<byte> buffer)
     {
-        var sb = new StringBuilder();
-        sb.Append(ULog.GetDataTypeName(FieldType, ReferenceName));
+        var charSize = ULog.Encoding.GetCharCount(buffer);
+         
+        var charBuffer = ArrayPool<char>.Shared.Rent(charSize);
+        var rawString = new ReadOnlySpan<char>(charBuffer, 0, charSize);
+        Deserialize(ref rawString);
+    }
+
+    public void Serialize(ref Span<byte> buffer)
+    {
+        FieldName.CopyTo(ref buffer, ULog.Encoding);
         if (IsArray)
         {
-            sb.Append(ULog.ArrayStart);
-            sb.Append(ArraySize);
-            sb.Append(ULog.ArrayEnd);
+            ULog.ArrayStart.CopyTo(ref buffer, ULog.Encoding);
+            var arraySize = ArraySize.ToString();
+            arraySize.CopyTo(ref buffer, ULog.Encoding);
+            ULog.ArrayEnd.CopyTo(ref buffer, ULog.Encoding);
         }
-
-        sb.Append(ULog.TypeAndNameSeparator);
-        sb.Append(FieldName);
-        return sb.ToString();
+        ULog.TypeAndNameSeparator.CopyTo(ref buffer, ULog.Encoding);
+        ULog.GetDataTypeName(FieldType, ReferenceName).CopyTo(ref buffer, ULog.Encoding);
     }
-    
 }

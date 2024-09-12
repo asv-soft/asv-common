@@ -2,6 +2,7 @@ using System;
 using System.Buffers;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Reflection.Emit;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Exception = System.Exception;
@@ -42,21 +43,35 @@ public class ULogReader(ImmutableDictionary<byte, Func<IULogToken>> factory, ILo
         switch (_state)
         {
             case ReaderState.HeaderSection:
-                if (!InternalReadHeader(rdr, ref token)) return false;
+                // always start with header
+                if (!InternalReadHeader(ref rdr, ref token)) return false;
                 _state = ReaderState.FlagBitsMessage;
                 return true;
             case ReaderState.FlagBitsMessage:
-                // (https://docs.px4.io/main/en/dev_log/ulog_file_format.html#d-logged-data-message)
+                // must be right after header
                 if (!InternalReadToken(ref rdr, ref token)) return false;
                 Debug.Assert(token != null);
                 if (token.Type != ULogToken.FlagBits)
                 {
                     _state = ReaderState.Corrupted;
+                    // (https://docs.px4.io/main/en/dev_log/ulog_file_format.html#d-logged-data-message)
                     throw new ULogException($"{ULogToken.FlagBits:G} must be right after {ReaderState.HeaderSection:G}, but got {token.Type:G}");
                 }
                 _state = ReaderState.DataSection;
                 break;
+           case ReaderState.DefinitionSection:
+                // definition section doesn't have Token Synchronization message
+                if (!InternalReadToken(ref rdr, ref token)) return false;
+                Debug.Assert(token != null);
+                // if we read all definition tokens, then we can switch to data section
+                if (token.Section.HasFlag(TokenPlaceFlags.Data))
+                {
+                    _state = ReaderState.DataSection;
+                }
+                break;
            case ReaderState.DataSection:
+                // data section can have Token Synchronization message
+                // if token we couldn't read token (exception occured), then it's corrupted data and we need to find sync message
                 try
                 {
                     if (!InternalReadToken(ref rdr, ref token)) return false;
@@ -64,10 +79,13 @@ public class ULogReader(ImmutableDictionary<byte, Func<IULogToken>> factory, ILo
                 catch (ULogException e)
                 {
                     _state = ReaderState.Corrupted;
+                    goto corrupted; // uff, I'm so sorry for this goto
                 }
                 break;
             case ReaderState.Corrupted:
-                // todo try to find sync message
+                corrupted:
+                // TODO: try to find sync message and switch to DataSection
+                throw new Exception("Corrupted ULog file. Sync message not implemented.");
                 break;
             default:
                 throw new ArgumentOutOfRangeException();
@@ -102,7 +120,7 @@ public class ULogReader(ImmutableDictionary<byte, Func<IULogToken>> factory, ILo
         return true;
     }
 
-    private bool InternalReadHeader(SequenceReader<byte> rdr, ref IULogToken? token)
+    private bool InternalReadHeader(ref SequenceReader<byte> rdr, ref IULogToken? token)
     {
         var headerBuffer = ArrayPool<byte>.Shared.Rent(ULogFileHeaderToken.HeaderSize);
         try
@@ -126,6 +144,7 @@ public class ULogReader(ImmutableDictionary<byte, Func<IULogToken>> factory, ILo
         FlagBitsMessage,
         DataSection,
         Corrupted,
+        DefinitionSection
     }
     public IULogToken? CurrentToken { get; private set; }
 }

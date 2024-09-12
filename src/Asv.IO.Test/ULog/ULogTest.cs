@@ -37,6 +37,7 @@ public class ULogTest
 
         while (reader.TryRead(ref rdr, out var token))
         {
+            Assert.NotNull(token);
             if (token.Type == ULogToken.Format)
             {
                 var format = token as ULogFormatMessageToken;
