@@ -68,5 +68,40 @@ namespace Asv.IO.Test {
                 return ((byte[])(obj));
             }
         }
+        
+        internal static byte[] ulog_sample {
+            get {
+                object obj = ResourceManager.GetObject("ulog-sample", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
+        internal static byte[] ulog_sample_appended {
+            get {
+                object obj = ResourceManager.GetObject("ulog-sample-appended", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
+        internal static byte[] ulog_sample_appended_multiple {
+            get {
+                object obj = ResourceManager.GetObject("ulog-sample-appended-multiple", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
+        internal static byte[] ulog_sample_logging_tagged_and_default_params {
+            get {
+                object obj = ResourceManager.GetObject("ulog-sample-logging-tagged-and-default-params", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
+        internal static byte[] ulog_sample_px4_events {
+            get {
+                object obj = ResourceManager.GetObject("ulog-sample-px4-events", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
     }
 }

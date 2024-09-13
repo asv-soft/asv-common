@@ -50,6 +50,16 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>TestFiles.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+    <None Remove="Resources\ulog_sample.ulg" />
+    <EmbeddedResource Include="Resources\ulog_sample.ulg" />
+    <None Remove="Resources\ulog_sample_appended.ulg" />
+    <EmbeddedResource Include="Resources\ulog_sample_appended.ulg" />
+    <None Remove="Resources\ulog_sample_appended_multiple.ulg" />
+    <EmbeddedResource Include="Resources\ulog_sample_appended_multiple.ulg" />
+    <None Remove="Resources\ulog_sample_logging_tagged_and_default_params.ulg" />
+    <EmbeddedResource Include="Resources\ulog_sample_logging_tagged_and_default_params.ulg" />
+    <None Remove="Resources\ulog_sample_px4_events.ulg" />
+    <EmbeddedResource Include="Resources\ulog_sample_px4_events.ulg" />
   </ItemGroup>
   <ItemGroup>
     <None Remove="Resources\sample_log_small.ulg" />
