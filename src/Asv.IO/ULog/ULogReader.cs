@@ -17,6 +17,7 @@ public enum ULogToken
     Format,
     Information,
     Parameter,
+    DefaultParameter,
 }
 
 public interface IULogReader
