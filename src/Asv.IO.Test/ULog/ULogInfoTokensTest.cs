@@ -129,7 +129,8 @@ public class ULogInfoTokensTest
 
     [Theory]
     [InlineData(ULog.CharTypeName, "data", 12f)]
-    [InlineData(ULog.FloatTypeName, "data", 3535.455f)]
+    [InlineData(ULog.Int32TypeName, "data", 3535)]
+    [InlineData(ULog.UInt32TypeName, "data", 3535)]
     public void DeserializeToken_NoKeyBytes(string type, string name, ValueType value)
     {
         Assert.Throws<ArgumentOutOfRangeException>(() =>
