@@ -1,149 +1,133 @@
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Text.RegularExpressions;
 
 namespace Asv.IO;
 
-/// <summary>
-/// 'M': Multi Information Message
-///
-/// This message is used to log multiple data fields in a single message.
-/// </summary>
-public partial class ULogMultiInformationMessageToken : IULogToken
+public class ULogMultiInformationMessageToken : IULogToken
 {
-    private const ULogToken TokenType = ULogToken.MultiInformation;
-    private const string TokenName = "MultiInformation";
+    public static ULogToken Token => ULogToken.MultiInformation;
+    public const string TokenName = "MultiInformation";
     public const byte TokenId = (byte)'M';
-    public TokenPlaceFlags Section => TokenPlaceFlags.DefinitionAndData;
+
     public string Name => TokenName;
-    public ULogToken Type => TokenType;
+    public ULogToken Type => Token;
+    public TokenPlaceFlags Section => TokenPlaceFlags.Definition| TokenPlaceFlags.Data;
 
-    private byte _isContinued;
-    private byte _keyLenght;
-    private string _key;
-    private string _value;
+    public bool IsContinued { get; set; }
 
     /// <summary>
-    /// is_continued can be used for split-up messages:
-    /// if set to 1, it is part of the previous message with the same key.
+    /// Key of the Token
+    ///
+    /// Every key value pair must be unique
     /// </summary>
-    public byte IsContinued
-    {
-        get => _isContinued;
-        set => _isContinued = value;
-    }
-    
+    public MultiInformationTokenKey Key { get; set; } = null!;
     /// <summary>
-    /// key_len: Length of the key value
+    /// Value of the token
+    /// 
+    /// Every key value pair must be unique
+    /// The data type is restricted to int32_t and float
     /// </summary>
-    public byte KeyLenght
-    {
-        get => _keyLenght;
-        set => _keyLenght = value;
-    }
+    public MultiInformationTokenValue Value { get; set; }
 
-    /// <summary>
-    /// key: Contains the key string in the formtype name, e.g. char[value_len] sys_toolchain_ver.
-    /// Valid characters for the name: a-zA-Z0-9_-/.
-    /// The type may be one of the basic types including arrays.
-    /// </summary>
-    public string Key
-    {
-        get => _key;
-        set
-        {
-            CheckKey(value);
-            _key = value;
-        }
-    }
-    
-    /// <summary>
-    /// value: Contains the data corresponding to the key e.g. 9.4.0
-    /// </summary>
-    public string Value
-    {
-        get => _value;
-        set
-        {
-            CheckValue(value);
-            _value = value;
-        }
-    }
-
-    /// <summary>
-    /// Explicitly written type from the Key string
-    /// </summary>
-    public ULogDataType KeyType { get; set; }
-
-    /// <summary>
-    /// Explicitly written name from the Key string
-    /// </summary>
-    public string KeyName { get; set; }
-
-    /// <summary>
-    /// Explicitly written value lenght from the Key string
-    /// </summary>
-    public int ValueLenght { get; set; }
-    
     public void Deserialize(ref ReadOnlySpan<byte> buffer)
     {
-        var charSize = ULog.Encoding.GetCharCount(buffer);
-        var charBuffer = new char[charSize];
-        var input = new Span<char>(charBuffer);
-        var size = ULog.Encoding.GetChars(buffer,charBuffer);
-        Debug.Assert(charSize == size);
+        int isContinued = BinSerialize.ReadByte(ref buffer);
+        int keyLen = BinSerialize.ReadByte(ref buffer);
+        var key = buffer[..keyLen];
+        buffer = buffer[keyLen..];
 
-        IsContinued = (byte)input[0];
-        KeyLenght = (byte)input[1];
-        
-        Key = input[2..(KeyLenght + 2)].ToString();
-        Value = input[(KeyLenght + 2)..].ToString();
+        if (isContinued == 1) IsContinued = true;
+        Key = new MultiInformationTokenKey();
+        Key.Deserialize(ref key);
+        var value = buffer;
+        Value = new MultiInformationTokenValue
+        {
+            RawValue = value.ToArray(),
+            Type = Key.Type
+        };
+        buffer = buffer[value.Length..];
     }
 
     public void Serialize(ref Span<byte> buffer)
     {
-        BinSerialize.WriteByte(ref buffer, IsContinued);
-        BinSerialize.WriteByte(ref buffer, KeyLenght);
-
-        BinSerialize.WriteString(ref buffer, Key.AsSpan());
-        BinSerialize.WriteString(ref buffer, Value.AsSpan());
+        Key.Serialize(ref buffer);
+        Value.RawValue.CopyTo(buffer);
     }
 
     public int GetByteSize()
     {
-        return sizeof(byte) + sizeof(byte) + ULog.Encoding.GetByteCount(Key) + ULog.Encoding.GetByteCount(Value);
+        return sizeof(bool) + Key.GetByteSize() + Value.GetByteSize();
     }
-    
-    private const string FixedDataPattern = @"[a-zA-Z0-9_\-\/]+";
-    [GeneratedRegex(FixedDataPattern, RegexOptions.Compiled)]
-    private static partial Regex GetDataRegex();
-    private static readonly Regex DataRegex = GetDataRegex();
+}
 
-    private void CheckKey(ReadOnlySpan<char> key)
+public class MultiInformationTokenKey : ISizedSpanSerializable
+{
+    private string _name;
+    private ULogDataType _type;
+
+    public int ArraySize { get; set; }
+    public bool IsArray => ArraySize>0;
+    public string? ReferenceName { get; set; }
+    public ULogDataType Type { get; set; }
+    public byte Length { get; set; }
+    public string Name
     {
-        if (key.IsEmpty)
-            throw new ULogException("ULog multi info key is empty.");
-        
-        var separator = key.IndexOf(ULog.TypeAndNameSeparator);
-        if (separator == -1)
-            throw new ULogException($"Invalid key: '{ULog.TypeAndNameSeparator}' not found. Origin string: {key.ToString()}");
-        var type = key[..separator];
-        var name = key[separator..];
-
-        KeyType = ULog.ParseDataType(ref type, out var typeName, out var valueLenght);
-        ValueLenght = valueLenght;
-        
-        KeyName = name.Trim().ToString();
-        if (DataRegex.IsMatch(name) == false)
-            throw new ULogException($"Invalid ULog data name. Should be {DataRegex}. Origin value: '{key.ToString()}'");
+        get => _name;
+        set
+        {
+            CheckName(value);
+            _name = value;
+        }
     }
 
-    private void CheckValue(ReadOnlySpan<char> value)
+    public void Deserialize(ref ReadOnlySpan<char> rawString)
     {
-        if (value.IsEmpty)
-            throw new ULogException("ULog multi info value is empty.");
-        if (value.Length != ValueLenght)            
-            throw new ULogException($"Invalid value lenght: '{value.Length}'. Value lenght specified in the key: '{ValueLenght}'. Origin string: {value.ToString()}");
+        var colonIndex = rawString.IndexOf(ULog.TypeAndNameSeparator);
+        if (colonIndex == -1)
+        {
+            throw new ULogException($"Invalid format field: '{ULog.TypeAndNameSeparator}' not found. Origin string: {rawString.ToString()}");
+        }
+        var type = rawString[..colonIndex];
+        Type = ULog.ParseDataType(ref type, out _, out var arrayCount);
+        Name = rawString[(colonIndex + 1)..].Trim().ToString();
+        ArraySize = arrayCount;
+        Length = (byte)(Name.Length + type.Length + ULog.TypeAndNameSeparator.Length); 
+    }
+    public void Deserialize(ref ReadOnlySpan<byte> buffer)
+    {
+        var charSize = ULog.Encoding.GetCharCount(buffer);
+        var charBuffer = new char[charSize];
+        ULog.Encoding.GetChars(buffer,charBuffer);
+        var rawString = new ReadOnlySpan<char>(charBuffer, 0, charSize);
+        Deserialize(ref rawString);
+    }
+
+    public void Serialize(ref Span<byte> buffer)
+    {
+        buffer[0] = Length;
+        buffer.Slice(1);
+        Name.CopyTo(ref buffer, ULog.Encoding);
+        ULog.TypeAndNameSeparator.CopyTo(ref buffer, ULog.Encoding);
+        ULog.GetDataTypeName(Type, null).CopyTo(ref buffer, ULog.Encoding);
+    }
+
+    public int GetByteSize()
+    {
+        return 1 + ULog.Encoding.GetByteCount(ULog.GetDataTypeName(Type, null)) + ULog.TypeAndNameSeparatorByteSize + ULog.Encoding.GetByteCount(Name);
+    }
+
+    private static void CheckName(string?  value)
+    {
+        ULog.CheckMessageName(value);
+        ArgumentException.ThrowIfNullOrWhiteSpace(value);
+    }
+}
+public struct MultiInformationTokenValue
+{ 
+    public required byte[] RawValue { get; init; }
+    public required ULogDataType Type { get; init; }
+
+    public int GetByteSize()
+    {
+        return RawValue.Length + ULog.Encoding.GetByteCount(ULog.GetDataTypeName(Type, null));
     }
 }
