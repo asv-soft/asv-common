@@ -15,6 +15,7 @@ public enum ULogToken
     FileHeader,
     FlagBits,
     Format,
+    MultiInformation
 }
 
 public interface IULogReader
