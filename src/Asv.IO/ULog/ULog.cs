@@ -49,6 +49,7 @@ public static partial class ULog
         var builder = ImmutableDictionary.CreateBuilder<byte, Func<IULogToken>>();
         builder.Add(ULogFlagBitsMessageToken.TokenId, () => new ULogFlagBitsMessageToken());
         builder.Add(ULogFormatMessageToken.TokenId, () => new ULogFormatMessageToken());
+        builder.Add(ULogInformationMessageToken.TokenId, () => new ULogInformationMessageToken());
         builder.Add(ULogMultiInformationMessageToken.TokenId, () => new ULogMultiInformationMessageToken());
         return new ULogReader(builder.ToImmutable(),logger);
     }
