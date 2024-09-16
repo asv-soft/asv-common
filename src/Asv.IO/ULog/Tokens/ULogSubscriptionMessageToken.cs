@@ -32,12 +32,13 @@ public class ULogSubscriptionMessageToken: IULogToken
 
     public void Serialize(ref Span<byte> buffer)
     {
-        throw new NotImplementedException();
+        Fields.Serialize(ref buffer);
+        
     }
 
     public int GetByteSize()
     {
-        throw new NotImplementedException();
+        return Fields.GetByteSize();
     }
 }
 
@@ -45,8 +46,23 @@ public class SubscriptionMessageField : ISizedSpanSerializable
 {
     private string _messageName;
     
+    /// <summary>
+    /// The same message format can have multiple instances, for example if the system has two sensors of the same type.
+    /// 
+    /// The default and first instance must be 0.
+    /// </summary>
     public byte MultiId { get; set; }
+    
+    /// <summary>
+    /// Unique id to match Logged data Message data. The first use must set this to 0, then increase it.
+    ///
+    /// The same msg_id must not be used twice for different subscriptions.
+    /// </summary>
     public Int16 MessageId { get; set; }
+    
+    /// <summary>
+    /// Message name to subscribe to. Must match one of the Format Message definitions.
+    /// </summary>
     public string MessageName
     {
         get => _messageName;
@@ -59,7 +75,7 @@ public class SubscriptionMessageField : ISizedSpanSerializable
     
     public int GetByteSize()
     {
-        return ULog.Encoding.GetByteCount(MessageName) + MessageId + MultiId;
+        return sizeof(byte) + sizeof(Int16) + ULog.Encoding.GetByteCount(MessageName);
     }
 
     public void Deserialize(ref ReadOnlySpan<char> rawString)
@@ -77,11 +93,13 @@ public class SubscriptionMessageField : ISizedSpanSerializable
 
     public void Serialize(ref Span<byte> buffer)
     {
+        BinSerialize.WriteByte(ref buffer, MultiId);
+        BinSerialize.WriteShort(ref buffer, MessageId);
+        BinSerialize.WriteBlock(ref buffer, ULog.Encoding.GetBytes(MessageName));
     }
     private void CheckName(string? name)
     {
         ULog.CheckMessageName(name);
-
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
     }
 }
