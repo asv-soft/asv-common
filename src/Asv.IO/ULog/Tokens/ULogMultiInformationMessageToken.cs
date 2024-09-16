@@ -19,7 +19,7 @@ public class ULogMultiInformationMessageToken : IULogToken
     /// <summary>
     /// IsContinued can be used for split-up messages: if set to 1, it is part of the previous message with the same key.
     /// </summary>
-    public bool IsContinued { get; set; }
+    public byte IsContinued { get; set; }
 
     /// <summary>
     /// Contains InformationMessageToken implementation of a 
@@ -28,14 +28,13 @@ public class ULogMultiInformationMessageToken : IULogToken
 
     public void Deserialize(ref ReadOnlySpan<byte> buffer)
     {
-        int isContinued = BinSerialize.ReadByte(ref buffer);
-        if (isContinued == 1) IsContinued = true;
+        IsContinued = BinSerialize.ReadByte(ref buffer);
         InformationMessage.Deserialize(ref buffer);
     }
 
     public void Serialize(ref Span<byte> buffer)
     {
-        BinSerialize.WriteByte(ref buffer, IsContinued ? (byte)1 : (byte)0);
+        BinSerialize.WriteByte(ref buffer, IsContinued);
         InformationMessage.Serialize(ref buffer);
     }
 
