@@ -17,11 +17,15 @@ public class ULogLoggedDataMessageToken : IULogToken
     public TokenPlaceFlags Section => TokenPlaceFlags.Data;
 
     /// <summary>
-    /// msg_id: unique id to match Logged data Message data. The first use must set this to 0, then increase it.
+    /// MessageId: unique id to match Logged data Message data. The first use must set this to 0, then increase it.
     /// 
     /// The same msg_id must not be used twice for different subscriptions.
     /// </summary>
     public ushort MessageId { get; set; }
+    
+    /// <summary>
+    /// Data contains the logged binary message as defined by Format Message
+    /// </summary>
     public byte Data { get; set; }
     
     public void Deserialize(ref ReadOnlySpan<byte> buffer)
@@ -36,7 +40,7 @@ public class ULogLoggedDataMessageToken : IULogToken
 
     public int GetByteSize()
     {
-        throw new NotImplementedException();
+        return sizeof(ushort);
     }
 
 
