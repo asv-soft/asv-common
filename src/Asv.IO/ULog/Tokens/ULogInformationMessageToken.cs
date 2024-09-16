@@ -6,6 +6,12 @@ using System.Text;
 
 namespace Asv.IO;
 
+/// <summary>
+/// 'I': Information Message
+///
+/// The Information message defines a dictionary type definition key : value pair for any information,
+/// including but not limited to Hardware version, Software version, Build toolchain for the software, etc.
+/// </summary>
 public class ULogInformationMessageToken : IULogToken
 {
     public static ULogToken Token => ULogToken.Information;
@@ -26,7 +32,6 @@ public class ULogInformationMessageToken : IULogToken
     /// Value of the token
     /// 
     /// Every key value pair must be unique
-    /// The data type is restricted to int32_t and float
     /// </summary>
     public InformationTokenValue Value { get; set; }
 
@@ -38,6 +43,7 @@ public class ULogInformationMessageToken : IULogToken
         
         Key = new InformationTokenKey();
         Key.Deserialize(ref key);
+        ArgumentNullException.ThrowIfNull(Key.Type);
         var value = buffer;
         Value = new InformationTokenValue
         {
@@ -59,6 +65,9 @@ public class ULogInformationMessageToken : IULogToken
     }
 }
 
+/// <summary>
+/// Class that describes Token's key
+/// </summary>
 public class InformationTokenKey : ISizedSpanSerializable
 {
     private string _name;
@@ -67,8 +76,22 @@ public class InformationTokenKey : ISizedSpanSerializable
     public int ArraySize { get; set; }
     public bool IsArray => ArraySize>0;
     public string? ReferenceName { get; set; }
+    
+    /// <summary>
+    /// Type of the key
+    /// </summary>
     public ULogDataType Type { get; set; }
+    
+    /// <summary>
+    /// Length of the key
+    /// </summary>
     public byte Length { get; set; }
+    
+    /// <summary>
+    /// Name of the key
+    /// 
+    /// It must match regex: a-zA-Z0-9_-/
+    /// </summary>
     public string Name
     {
         get => _name;
@@ -95,9 +118,9 @@ public class InformationTokenKey : ISizedSpanSerializable
     public void Deserialize(ref ReadOnlySpan<byte> buffer)
     {
         var charSize = ULog.Encoding.GetCharCount(buffer);
-        var charBuffer = new char[charSize];
-        ULog.Encoding.GetChars(buffer,charBuffer);
+        var charBuffer = ArrayPool<char>.Shared.Rent(charSize);
         var rawString = new ReadOnlySpan<char>(charBuffer, 0, charSize);
+        ULog.Encoding.GetChars(buffer,charBuffer);
         Deserialize(ref rawString);
     }
 
@@ -121,11 +144,21 @@ public class InformationTokenKey : ISizedSpanSerializable
         ArgumentException.ThrowIfNullOrWhiteSpace(value);
     }
 }
+
+/// <summary>
+/// Struct that describes Token's value
+/// </summary>
 public struct InformationTokenValue
 { 
+    /// <summary>
+    /// Value in bytes
+    /// </summary>
     public required byte[] RawValue { get; init; }
-    public required ULogDataType Type { get; init; }
     
+    /// <summary>
+    /// Type of the value
+    /// </summary>
+    public required ULogDataType Type { get; init; }
     public int GetByteSize()
     {
         return RawValue.Length + ULog.Encoding.GetByteCount(ULog.GetDataTypeName(Type, null));
