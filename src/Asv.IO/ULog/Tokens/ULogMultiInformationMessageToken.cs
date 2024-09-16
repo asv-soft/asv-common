@@ -22,7 +22,7 @@ public class ULogMultiInformationMessageToken : IULogToken
     public byte IsContinued { get; set; }
 
     /// <summary>
-    /// Contains InformationMessageToken implementation of a 
+    /// Contains the information as defined by Information Message Token
     /// </summary>
     public ULogInformationMessageToken InformationMessage { get; set; } = new();
 
