@@ -18,6 +18,7 @@ public static partial class ULog
         builder.Add(ULogDefaultParameterMessageToken.TokenId, () => new ULogDefaultParameterMessageToken());
         builder.Add(ULogInformationMessageToken.TokenId, () => new ULogInformationMessageToken());
         builder.Add(ULogMultiInformationMessageToken.TokenId, () => new ULogMultiInformationMessageToken());
+        builder.Add(ULogLoggedStringMessageToken.TokenId, () => new ULogLoggedStringMessageToken());
         return new ULogReader(builder.ToImmutable(),logger);
     }
     
