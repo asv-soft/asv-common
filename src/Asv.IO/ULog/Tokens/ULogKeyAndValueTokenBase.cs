@@ -25,6 +25,7 @@ public abstract class ULogKeyAndValueTokenBase: IULogToken
 
     public virtual void Serialize(ref Span<byte> buffer)
     {
+        BinSerialize.WriteByte(ref buffer, (byte) (Key.Type.TypeName.Length + sizeof(byte) + Key.Name.Length));
         Key.Serialize(ref buffer);
         Value.CopyTo(buffer);
         buffer = buffer[Value.Length..];
@@ -32,7 +33,7 @@ public abstract class ULogKeyAndValueTokenBase: IULogToken
 
     public virtual int GetByteSize()
     {
-        return Key.GetByteSize() + Value.Length;
+        return sizeof(byte) + Key.GetByteSize() + Value.Length;
     }
 
     public abstract string TokenName { get; }

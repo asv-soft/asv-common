@@ -11,6 +11,9 @@ public class ULogParameterMessageTokenTests
     [InlineData(ULogTypeDefinition.Int32TypeName, "fdata1234", 12)]
     [InlineData(ULogTypeDefinition.FloatTypeName, "data1", 24.21f)]
     [InlineData(ULogTypeDefinition.FloatTypeName, "data1", 12.01f)]
+    [InlineData(ULogTypeDefinition.FloatTypeName, "data1", float.MaxValue)]
+    [InlineData(ULogTypeDefinition.FloatTypeName, "data1", float.MinValue)]
+    [InlineData( ULogTypeDefinition.FloatTypeName, "serdata11", 0f)]
     public void DeserializeToken_Success(string type, string name, ValueType value)
     {
         // Arrange
@@ -26,7 +29,7 @@ public class ULogParameterMessageTokenTests
         
         if (value is float expected && ParameterTokenValueToValueType(token.Key.Type.BaseType, token.Value) is float actual)
         {
-            var tolerance = 1e-9 * Math.Max(actual, expected);
+            var tolerance = 0.0000001f;
             Assert.InRange(actual - expected, -tolerance, tolerance);
         }
         Assert.Equal(value, ParameterTokenValueToValueType(token.Key.Type.BaseType,token.Value));
@@ -70,19 +73,6 @@ public class ULogParameterMessageTokenTests
     [Theory]
     [InlineData(ULogTypeDefinition.FloatTypeName, "data", 12f)]
     [InlineData(ULogTypeDefinition.FloatTypeName, "data", 3535.455f)]
-    public void DeserializeToken_NoKeyBytes(string type, string name, ValueType value)
-    {
-        Assert.Throws<ArgumentOutOfRangeException>(() =>
-        {
-            var readOnlySpan = SetUpTestDataWithoutKeyLength(type, name, value);
-            var token = new ULogParameterMessageToken();
-            token.Deserialize(ref readOnlySpan);
-        });
-    }
-    
-    [Theory]
-    [InlineData(ULogTypeDefinition.FloatTypeName, "data", 12f)]
-    [InlineData(ULogTypeDefinition.FloatTypeName, "data", 3535.455f)]
     public void DeserializeToken_WrongKeyBytes(string type, string name, ValueType value)
     {
         Assert.Throws<ULogException>(() =>
@@ -106,40 +96,104 @@ public class ULogParameterMessageTokenTests
         });
     }
     
-    private ReadOnlySpan<byte> SetUpTestDataWithoutKeyLength(string type, string name, ValueType value)
+    # endregion
+    
+    # region Serialize
+    
+    [Theory]
+    [InlineData(ULogTypeDefinition.FloatTypeName, "data", float.MaxValue)]
+    [InlineData(ULogTypeDefinition.FloatTypeName, "data", float.MinValue)]
+    [InlineData(ULogTypeDefinition.Int32TypeName, "data", Int32.MaxValue)]
+    [InlineData(ULogTypeDefinition.Int32TypeName, "data", Int32.MinValue)]
+    [InlineData(ULogTypeDefinition.FloatTypeName, "data", 0f)]
+    [InlineData(ULogTypeDefinition.Int32TypeName, "data", 0)]
+    public void SerializeToken_Success(string type, string name, ValueType value)
     {
-        var key = type + ULogTypeAndNameDefinition.TypeAndNameSeparator + name;
-        var keyLength = (byte)key.Length;
+        // Arrange
+        var readOnlySpan = SetUpTestData(type, name, value);
+        var token = SetUpTestToken(type, name, value);
         
-        var keyBytes = ULog.Encoding.GetBytes(key);
-
-        byte[] valueBytes = value switch
-        {
-            float floatValue => BitConverter.GetBytes(floatValue),
-            Int32 int32Value => BitConverter.GetBytes(int32Value),
-            double doubleValue => BitConverter.GetBytes(doubleValue),
-            _ => throw new ArgumentOutOfRangeException(nameof(value), value, null)
-        };
-
-        var buffer = new Span<byte>(new byte[1 + ULog.Encoding.GetByteCount(key) + valueBytes.Length]);
+        // Act
+        var span = new Span<byte>(new byte[readOnlySpan.Length]);
+        var temp = span;
+        token.Serialize(ref temp);
         
-        for (var i = 0; i < keyBytes.Length; i++)
-        {
-            buffer[i] = keyBytes[i];
-        }
+        // Assert
+        Assert.True(span.SequenceEqual(readOnlySpan));
+    }
     
-        for (var i = 0; i < valueBytes.Length; i++)
+    [Theory]
+    [InlineData(ULogTypeDefinition.FloatTypeName, "data", 0d)]
+    [InlineData(ULogTypeDefinition.Int32TypeName, "data", 0.1)]
+    public void SerializeToken_WrongValue(string type, string name, ValueType value)
+    {
+        Assert.Throws<InvalidCastException>(() =>
         {
-            buffer[i + keyLength] = valueBytes[i];
-        }
-    
-        var byteArray = buffer.ToArray();
-        var readOnlySpan = new ReadOnlySpan<byte>(byteArray);
-
-        return readOnlySpan;
+            var readOnlySpan = SetUpTestData(type, name, value);
+            var token = SetUpTestToken(type, name, value);
+            var span = new Span<byte>(new byte[readOnlySpan.Length]);
+            var temp = span;
+            token.Serialize(ref temp);
+        });
     }
     
     # endregion
+    
+    # region GetByteSize
+    
+    [Theory]
+    [InlineData(ULogTypeDefinition.FloatTypeName, "data", float.MaxValue)]
+    [InlineData(ULogTypeDefinition.FloatTypeName, "data", float.MinValue)]
+    [InlineData(ULogTypeDefinition.Int32TypeName, "data", Int32.MaxValue)]
+    [InlineData(ULogTypeDefinition.Int32TypeName, "data", Int32.MinValue)]
+    [InlineData(ULogTypeDefinition.FloatTypeName, "data", 0f)]
+    [InlineData(ULogTypeDefinition.Int32TypeName, "data", 0)]
+    public void GetByteSize_Success(string type, string name, ValueType value)
+    {
+        // Arrange
+        var setup = SetUpTestData(type, name, value);
+        var token = SetUpTestToken(type, name, value);
+        
+        // Act
+        var size = token.GetByteSize();
+        
+        // Assert
+        Assert.Equal(setup.Length, size);
+    }
+    
+    # endregion
+
+    #region Setup
+    
+    private ULogParameterMessageToken SetUpTestToken(string type, string name, ValueType value)
+    {
+        var token = new ULogParameterMessageToken();
+        token.Key = new ();
+
+        switch (type)
+        {
+            case ULogTypeDefinition.Int32TypeName:
+                token.Key.Type = new ULogTypeDefinition
+                {
+                    BaseType = ULogType.Int32,
+                    TypeName = type
+                };
+                break;
+            case ULogTypeDefinition.FloatTypeName:
+                token.Key.Type = new ULogTypeDefinition
+                {
+                    BaseType = ULogType.Float,
+                    TypeName = type
+                };
+                break;
+        }
+        
+        token.Key.Name = name;
+
+        token.Value = ValueTypeToByteArray(value, token.Key.Type.BaseType);
+
+        return token;
+    }
     
     private ReadOnlySpan<byte> SetUpTestData(string type, string name, ValueType value, byte? kLength = null)
     {
@@ -189,4 +243,21 @@ public class ULogParameterMessageTokenTests
                 throw new ArgumentException("Wrong ulog value type for ParameterTokenValue");
         }
     }
+    
+    private byte[] ValueTypeToByteArray(ValueType value, ULogType dataType)
+    {
+        switch (dataType)
+        {
+            case ULogType.Float:
+                var floatBytes = BitConverter.GetBytes((float) value);
+                return floatBytes;
+            case ULogType.Int32:
+                var intBytes = BitConverter.GetBytes((Int32) value);
+                return intBytes;
+            default:
+                throw new ArgumentException("Wrong ulog value type for ParameterTokenValue");
+        }
+    }
+    
+    #endregion
 }

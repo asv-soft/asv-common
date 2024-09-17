@@ -91,7 +91,7 @@ public class ULogMultiInformationMessageToken
 
     # region Deserialize
     [Theory]
-    [InlineData(0, ULogTypeDefinition.UInt32TypeName, "data", 24)]
+    [InlineData(0, ULogTypeDefinition.UInt32TypeName, "data", 24U)]
     [InlineData(1, ULogTypeDefinition.Int32TypeName, "data", 12)]
     [InlineData(1, ULogTypeDefinition.CharTypeName, "data", 'd')]
     public void Multi_DeserializeToken_Success(byte isContinued, string type, string name, ValueType value)
