@@ -27,18 +27,18 @@ public class ULogInformationMessageToken
         var result = reader.TryRead<ULogFileHeaderToken>(ref rdr, out var header);
         Assert.True(result);
         Assert.NotNull(header);
-        Assert.Equal(ULogToken.FileHeader,header.Type);
+        Assert.Equal(ULogToken.FileHeader,header.TokenType);
         Assert.Equal(20309082U, header.Timestamp);
         Assert.Equal(1,header.Version);
         result = reader.TryRead<ULogFlagBitsMessageToken>(ref rdr, out var flag);
         Assert.True(result);
         Assert.NotNull(flag);  
-        Assert.Equal(ULogToken.FlagBits,flag.Type);
+        Assert.Equal(ULogToken.FlagBits,flag.TokenType);
 
         var paramsDict = new Dictionary<string, IList<(ULogType,byte[])>>();
         while (reader.TryRead(ref rdr, out var token))
         {
-            if (token.Type == ULogToken.Information)
+            if (token.TokenType == ULogToken.Information)
             {
                 if (token is IO.ULogInformationMessageToken param)
                 {

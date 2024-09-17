@@ -47,18 +47,20 @@ public partial class ULogFormatMessageToken: IULogToken
         MessageAndFieldsSeparatorByteSize = ULog.Encoding.GetByteCount(new ReadOnlySpan<char>(ref temp));
     }
     
+    public static ULogToken Type => ULogToken.Format;
+    public const string Name = "Format";
+    public const byte TokenId = (byte)'F';
+    
     #endregion
     
-    public static ULogToken Token => ULogToken.Format;
-    public const string TokenName = "Format";
-    public const byte TokenId = (byte)'F';
+    
 
     
     
     
-    public string Name => TokenName;
-    public ULogToken Type => Token;
-    public TokenPlaceFlags Section => TokenPlaceFlags.Definition;
+    public string TokenName => Name;
+    public ULogToken TokenType => Type;
+    public TokenPlaceFlags TokenSection => TokenPlaceFlags.Definition;
     
     private string _messageName = null!;
 
@@ -91,7 +93,7 @@ public partial class ULogFormatMessageToken: IULogToken
         var colonIndex = input.IndexOf(MessageAndFieldsSeparator);
         if (colonIndex == -1)
         {
-            throw new ULogException($"Invalid format message for token {Token:G}: '{MessageAndFieldsSeparator}' not found. Origin string: {input.ToString()}");
+            throw new ULogException($"Invalid format message for token {Type:G}: '{MessageAndFieldsSeparator}' not found. Origin string: {input.ToString()}");
         }
         var messageNameSpan = input[..colonIndex];
         MessageName = messageNameSpan.ToString();
@@ -101,7 +103,7 @@ public partial class ULogFormatMessageToken: IULogToken
             var semicolonIndex = fieldsSpan.IndexOf(FieldSeparator);
             if (semicolonIndex == -1)
             {
-                throw new ULogException($"Invalid format message for token {Token:G}: '{FieldSeparator}' not found. Origin string: {fieldsSpan.ToString()}");
+                throw new ULogException($"Invalid format message for token {Type:G}: '{FieldSeparator}' not found. Origin string: {fieldsSpan.ToString()}");
             }
 
             var field = fieldsSpan[..semicolonIndex];

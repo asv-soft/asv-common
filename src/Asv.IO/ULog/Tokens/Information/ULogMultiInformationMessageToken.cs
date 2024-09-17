@@ -8,14 +8,18 @@ namespace Asv.IO;
 /// </summary>
 public class ULogMultiInformationMessageToken : ULogKeyAndValueTokenBase
 {
-    private static ULogToken Token => ULogToken.MultiInformation;
-    private const string TokenName = "MultiInformation";
+    #region Static
+
+    public static ULogToken Type => ULogToken.MultiInformation;
+    public const string Name = "MultiInformation";
     public const byte TokenId = (byte)'M';
 
+    #endregion
+
     private byte _isContinued;
-    public override string Name => TokenName;
-    public override ULogToken Type => Token;
-    public override TokenPlaceFlags Section => TokenPlaceFlags.Definition| TokenPlaceFlags.Data;
+    public override string TokenName => Name;
+    public override ULogToken TokenType => Type;
+    public override TokenPlaceFlags TokenSection => TokenPlaceFlags.Definition| TokenPlaceFlags.Data;
 
     /// <summary>
     /// IsContinued can be used for split-up messages: if set to 1, it is part of the previous message with the same key.

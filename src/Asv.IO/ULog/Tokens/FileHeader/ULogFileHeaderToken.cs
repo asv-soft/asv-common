@@ -15,17 +15,22 @@ namespace Asv.IO;
 /// </summary>
 public class ULogFileHeaderToken: IULogToken,ISizedSpanSerializable
 {
+    #region Static
+
     /// <summary>
     /// File type indicator that reads "ULogXYZ where XYZ is the magic bytes sequence 0x01 0x12 0x35"
     /// </summary>
     private static readonly byte[] FileMagic = [0x55, 0x4c, 0x6f, 0x67, 0x01, 0x12, 0x35];
 
     public const int HeaderSize = 16;
+    public const string Name = "FileHeader";
+    public const ULogToken Type = ULogToken.FileHeader;
     
+
+    #endregion
     private byte _version;
     private ulong _timestamp;
-    public const string TokenName = "FileHeader";
-    public const ULogToken TokenType = ULogToken.FileHeader;
+    
 
     /// <summary>
     /// File format version
@@ -45,9 +50,9 @@ public class ULogFileHeaderToken: IULogToken,ISizedSpanSerializable
         set => _timestamp = value;
     }
 
-    public string Name => TokenName;
-    public ULogToken Type => TokenType;
-    public TokenPlaceFlags Section => TokenPlaceFlags.Header;
+    public string TokenName => Name;
+    public ULogToken TokenType => Type;
+    public TokenPlaceFlags TokenSection => TokenPlaceFlags.Header;
     public bool TryRead(ReadOnlySequence<byte> data)
     {
         var rdr = new SequenceReader<byte>(data);

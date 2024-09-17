@@ -6,8 +6,12 @@ namespace Asv.IO;
 
 public class ULogUnknownToken : IULogToken
 {
-    public const ULogToken TokenType = ULogToken.Unknown;
-    public const string TokenName =  "Unknown";
+    #region Static
+
+    public const ULogToken Type = ULogToken.Unknown;
+    public const string Name =  "Unknown";
+
+    #endregion
     
     private readonly ushort _byteSize;
     private byte _unknownType;
@@ -18,9 +22,9 @@ public class ULogUnknownToken : IULogToken
         UnknownType = type;
     }
 
-    public string Name => TokenName;
-    public ULogToken Type => TokenType;
-    public TokenPlaceFlags Section => TokenPlaceFlags.DefinitionAndData;
+    public string TokenName => Name;
+    public ULogToken TokenType => Type;
+    public TokenPlaceFlags TokenSection => TokenPlaceFlags.DefinitionAndData;
 
     public char UnknownTypeChar { get; private set; }
 
