@@ -2,7 +2,7 @@ using System;
 
 namespace Asv.IO;
 
-public abstract class KeyValueTokenBase: IULogToken
+public abstract class ULogKeyAndValueTokenBase: IULogToken
 {
     public virtual void Deserialize(ref ReadOnlySpan<byte> buffer)
     {

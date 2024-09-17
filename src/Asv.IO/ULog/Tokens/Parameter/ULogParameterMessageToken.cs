@@ -11,7 +11,7 @@ namespace Asv.IO;
 ///
 /// If a parameter dynamically changes during runtime, this message can also be used in the Data section as well.
 /// </summary>
-public class ULogParameterMessageToken : KeyValueTokenBase
+public class ULogParameterMessageToken : ULogKeyAndValueTokenBase
 {
     public static ULogToken Token => ULogToken.Parameter;
     public const string TokenName = "Parameter";

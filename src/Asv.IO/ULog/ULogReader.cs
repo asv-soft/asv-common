@@ -16,6 +16,7 @@ public enum ULogToken
     FlagBits,
     Format,
     Information,
+    MultiInformation,
     Parameter,
 }
 
