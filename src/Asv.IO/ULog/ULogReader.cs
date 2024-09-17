@@ -19,6 +19,7 @@ public enum ULogToken
     MultiInformation,
     Parameter,
     DefaultParameter,
+    Synchronization,
 }
 
 public interface IULogReader
