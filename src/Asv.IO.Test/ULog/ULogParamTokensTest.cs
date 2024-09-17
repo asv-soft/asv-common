@@ -7,10 +7,10 @@ public class ULogParamTokensTest
 {
     # region Deserialize
     [Theory]
-    [InlineData(ULog.Int32TypeName, "data", 24)]
-    [InlineData(ULog.Int32TypeName, "fdata1234", 12)]
-    [InlineData(ULog.FloatTypeName, "data1", 24.21f)]
-    [InlineData(ULog.FloatTypeName, "data1", 12.01f)]
+    [InlineData(ULogTypeDefinition.Int32TypeName, "data", 24)]
+    [InlineData(ULogTypeDefinition.Int32TypeName, "fdata1234", 12)]
+    [InlineData(ULogTypeDefinition.FloatTypeName, "data1", 24.21f)]
+    [InlineData(ULogTypeDefinition.FloatTypeName, "data1", 12.01f)]
     public void DeserializeToken_Success(string type, string name, ValueType value)
     {
         // Arrange
@@ -21,27 +21,27 @@ public class ULogParamTokensTest
         token.Deserialize(ref readOnlySpan);
         
         // Assert
-        Assert.Equal(type, ULog.GetDataTypeName(token.Key.Type, null));
+        Assert.Equal(type, token.Key.Type.TypeName);
         Assert.Equal(name, token.Key.Name);
         
-        if (value is float expected && ParameterTokenValueToValueType(token.Value) is float actual)
+        if (value is float expected && ParameterTokenValueToValueType(token.Key.Type.BaseType, token.Value) is float actual)
         {
             var tolerance = 1e-9 * Math.Max(actual, expected);
             Assert.InRange(actual - expected, -tolerance, tolerance);
         }
-        Assert.Equal(value, ParameterTokenValueToValueType(token.Value));
+        Assert.Equal(value, ParameterTokenValueToValueType(token.Key.Type.BaseType,token.Value));
     }
     
     [Theory]
-    [InlineData(ULog.UInt8TypeName, "data", 24)]
-    [InlineData(ULog.Int16TypeName, "data", 24)]
-    [InlineData(ULog.UInt16TypeName, "data", 24)]
-    [InlineData(ULog.UInt32TypeName, "data", 24)]
-    [InlineData(ULog.Int64TypeName, "data", 24)]
-    [InlineData(ULog.UInt64TypeName, "data", 24)]
-    [InlineData(ULog.DoubleTypeName, "data", 24)]
-    [InlineData(ULog.BoolTypeName, "data", 24)]
-    [InlineData(ULog.CharTypeName, "data", 24)]
+    [InlineData(ULogTypeDefinition.UInt8TypeName, "data", 24)]
+    [InlineData(ULogTypeDefinition.Int16TypeName, "data", 24)]
+    [InlineData(ULogTypeDefinition.UInt16TypeName, "data", 24)]
+    [InlineData(ULogTypeDefinition.UInt32TypeName, "data", 24)]
+    [InlineData(ULogTypeDefinition.Int64TypeName, "data", 24)]
+    [InlineData(ULogTypeDefinition.UInt64TypeName, "data", 24)]
+    [InlineData(ULogTypeDefinition.DoubleTypeName, "data", 24)]
+    [InlineData(ULogTypeDefinition.BoolTypeName, "data", 24)]
+    [InlineData(ULogTypeDefinition.CharTypeName, "data", 24)]
     public void DeserializeToken_WrongULogType(string type, string name, ValueType value)
     {
         Assert.Throws<ULogException>(() =>
@@ -53,10 +53,10 @@ public class ULogParamTokensTest
     }
     
     [Theory]
-    [InlineData(ULog.FloatTypeName, "%@#", 12.01f)]
-    [InlineData(ULog.FloatTypeName, "`!!!`````````", 12.01f)]
-    [InlineData(ULog.FloatTypeName, "", 12.01f)]
-    [InlineData(ULog.FloatTypeName, null, 12.01f)]
+    [InlineData(ULogTypeDefinition.FloatTypeName, "%@#", 12.01f)]
+    [InlineData(ULogTypeDefinition.FloatTypeName, "`!!!`````````", 12.01f)]
+    [InlineData(ULogTypeDefinition.FloatTypeName, "", 12.01f)]
+    [InlineData(ULogTypeDefinition.FloatTypeName, null, 12.01f)]
     public void DeserializeToken_WrongKeyName(string type, string name, ValueType value)
     {
         Assert.Throws<ULogException>(() =>
@@ -68,8 +68,8 @@ public class ULogParamTokensTest
     }
     
     [Theory]
-    [InlineData(ULog.FloatTypeName, "data", 12f)]
-    [InlineData(ULog.FloatTypeName, "data", 3535.455f)]
+    [InlineData(ULogTypeDefinition.FloatTypeName, "data", 12f)]
+    [InlineData(ULogTypeDefinition.FloatTypeName, "data", 3535.455f)]
     public void DeserializeToken_NoKeyBytes(string type, string name, ValueType value)
     {
         Assert.Throws<ArgumentOutOfRangeException>(() =>
@@ -81,8 +81,8 @@ public class ULogParamTokensTest
     }
     
     [Theory]
-    [InlineData(ULog.FloatTypeName, "data", 12f)]
-    [InlineData(ULog.FloatTypeName, "data", 3535.455f)]
+    [InlineData(ULogTypeDefinition.FloatTypeName, "data", 12f)]
+    [InlineData(ULogTypeDefinition.FloatTypeName, "data", 3535.455f)]
     public void DeserializeToken_WrongKeyBytes(string type, string name, ValueType value)
     {
         Assert.Throws<ULogException>(() =>
@@ -108,7 +108,7 @@ public class ULogParamTokensTest
     
     private ReadOnlySpan<byte> SetUpTestDataWithoutKeyLength(string type, string name, ValueType value)
     {
-        var key = type + ULog.TypeAndNameSeparator + name;
+        var key = type + ULogTypeAndNameDefinition.TypeAndNameSeparator + name;
         var keyLength = (byte)key.Length;
         
         var keyBytes = ULog.Encoding.GetBytes(key);
@@ -143,7 +143,7 @@ public class ULogParamTokensTest
     
     private ReadOnlySpan<byte> SetUpTestData(string type, string name, ValueType value, byte? kLength = null)
     {
-        var key = type + ULog.TypeAndNameSeparator + name;
+        var key = type + ULogTypeAndNameDefinition.TypeAndNameSeparator + name;
         var keyLength = kLength ?? (byte)key.Length;
         
         var keyBytes = ULog.Encoding.GetBytes(key);
@@ -175,15 +175,15 @@ public class ULogParamTokensTest
         return readOnlySpan;
     }
     
-    private ValueType ParameterTokenValueToValueType(ParameterTokenValue value)
+    private ValueType ParameterTokenValueToValueType(ULogType typeBaseType, byte[] value)
     {
-        switch (value.Type)
+        switch (typeBaseType)
         {
-            case ULogDataType.Float:
-                var single = BitConverter.ToSingle(value.RawValue);
+            case ULogType.Float:
+                var single = BitConverter.ToSingle(value);
                 return single;
-            case ULogDataType.Int32:
-                var int32 = BitConverter.ToInt32(value.RawValue);
+            case ULogType.Int32:
+                var int32 = BitConverter.ToInt32(value);
                 return int32;
             default:
                 throw new ArgumentException("Wrong ulog value type for ParameterTokenValue");
