@@ -9,11 +9,11 @@ using Xunit.Abstractions;
 
 namespace Asv.IO.Test;
 
-public class ULogMultiInfoTokenTests
+public class ULogMultiInformationMessageToken
 {
     private readonly ITestOutputHelper _output;
 
-    public ULogMultiInfoTokenTests(ITestOutputHelper output)
+    public ULogMultiInformationMessageToken(ITestOutputHelper output)
     {
         _output = output;
     }
@@ -35,19 +35,19 @@ public class ULogMultiInfoTokenTests
         Assert.NotNull(flag);  
         Assert.Equal(ULogToken.FlagBits,flag.Type);
 
-        var paramsDict = new Dictionary<InformationTokenKey, IList<InformationTokenValue>>();
+        var paramsDict = new Dictionary<string, IList<(ULogType,byte[])>>();
         while (reader.TryRead(ref rdr, out var token))
         {
-            if (token != null && token.Type != ULogToken.MultiInformation) continue;
-            if (token is not ULogMultiInformationMessageToken param) continue;
-            if (!paramsDict.TryGetValue(param.InformationMessage.Key, out var value))
+            if (token is IO.ULogMultiInformationMessageToken param)
             {
-                value = new List<InformationTokenValue> { param.InformationMessage.Value };
-                paramsDict[param.InformationMessage.Key] = value; 
-                continue;
-            }
+                if (!paramsDict.ContainsKey(param.Key.Name))
+                {
+                    paramsDict[param.Key.Name] = new List<(ULogType,byte[])> { new (param.Key.Type.BaseType,param.Value) }; 
+                    continue;
+                }
 
-            value.Add(param.InformationMessage.Value);
+                paramsDict[param.Key.Name].Add(new (param.Key.Type.BaseType,param.Value));
+            }
         }
         
         Assert.NotNull(paramsDict);
@@ -58,93 +58,91 @@ public class ULogMultiInfoTokenTests
             var sb = new StringBuilder();
             foreach (var v in param.Value)
             {
-                sb.Append(ValueToString(v));
+                sb.Append(ValueToString(v.Item1,v.Item2));
             }
 
             var str = sb.ToString();
-            _output.WriteLine($"MULTI INFO: {param.Key.Type} {param.Key.Name} values: {str}");    
+            _output.WriteLine($"{param.Key,-20} = {str}");    
         }
     }
-    private string ValueToString(InformationTokenValue value)
+    private string ValueToString(ULogType type, byte[] value)
     {
-        if (value.RawValue.All(i => i == 0))
+        switch (type)
         {
-            return "0";
+            case ULogType.UInt32:
+            case ULogType.Int32:
+                return BitConverter.ToInt32(value).ToString(CultureInfo.InvariantCulture);
+            case ULogType.Char:
+                return CharToString(value).ToString();
+            default:
+                throw new ArgumentNullException("Wrong ulog value type for InformationTokenValue");
         }
-
-        return value.Type switch
-        {
-            ULogDataType.UInt32 or ULogDataType.Int32 => BitConverter.ToInt32(value.RawValue)
-                .ToString(CultureInfo.InvariantCulture),
-            ULogDataType.Char => CharToString(value).ToString(),
-            _ => throw new ArgumentNullException("Wrong ulog value type for MultiInformationTokenValue")
-        };
     }
 
-    private ReadOnlySpan<char> CharToString(InformationTokenValue value)
+    private ReadOnlySpan<char> CharToString(byte[] value)
     {
-        var charSize = ULog.Encoding.GetCharCount(value.RawValue);
+        var charSize = ULog.Encoding.GetCharCount(value);
         var charBuffer = new char[charSize];
-        ULog.Encoding.GetChars(value.RawValue,charBuffer);
+        ULog.Encoding.GetChars(value,charBuffer);
         var rawString = new ReadOnlySpan<char>(charBuffer, 0, charSize);
         return rawString.ToString();
 
     }
-    
+
     # region Deserialize
     [Theory]
-    [InlineData(0, ULog.UInt32TypeName, "data", 24)]
-    [InlineData(1, ULog.Int32TypeName, "data", 12)]
-    [InlineData(1, ULog.CharTypeName, "data", 'd')]
+    [InlineData(0, ULogTypeDefinition.UInt32TypeName, "data", 24)]
+    [InlineData(1, ULogTypeDefinition.Int32TypeName, "data", 12)]
+    [InlineData(1, ULogTypeDefinition.CharTypeName, "data", 'd')]
     public void Multi_DeserializeToken_Success(byte isContinued, string type, string name, ValueType value)
     {
         var readOnlySpan = SetUpTestData(isContinued, type, name, value);
-        var token = new ULogMultiInformationMessageToken();
+        var token = new IO.ULogMultiInformationMessageToken();
         token.Deserialize(ref readOnlySpan);
-        Assert.Equal(type, ULog.GetDataTypeName(token.InformationMessage.Key.Type, null));
-        Assert.Equal(name, token.InformationMessage.Key.Name);
-        Assert.Equal(value, InformationTokenValueToValueType(token.InformationMessage.Value));
+        Assert.Equal(type, token.Key.Type.TypeName);
+        Assert.Equal(name, token.Key.Name);
+        Assert.Equal(value, ULog.GetSimpleValue(token.Key.Type.BaseType, token.Value));
     }
 
     [Theory]
-    [InlineData(0, ULog.Int32TypeName, "%@#", 523)]
-    [InlineData(1, ULog.CharTypeName, "`!!!`````````", 'd')]
-    [InlineData(1, ULog.UInt32TypeName, "", 523)]
-    [InlineData(1, ULog.Int32TypeName, null, 532)]
+    [InlineData(0, ULogTypeDefinition.Int32TypeName, "%@#", 523)]
+    [InlineData(1, ULogTypeDefinition.CharTypeName, "`!!!`````````", 'd')]
+    [InlineData(1, ULogTypeDefinition.UInt32TypeName, "", 523)]
+    [InlineData(1, ULogTypeDefinition.Int32TypeName, null, 532)]
     public void Multi_DeserializeToken_WrongKeyName(byte isContinued, string type, string name, ValueType value)
     {
         Assert.Throws<ULogException>(() =>
         {
             var readOnlySpan = SetUpTestData(isContinued, type, name, value);
-            var token = new ULogMultiInformationMessageToken();
+            var token = new IO.ULogMultiInformationMessageToken();
             token.Deserialize(ref readOnlySpan);
         });
     }
 
     [Theory]
-    [InlineData(0, ULog.CharTypeName, "data", 12f)]
-    [InlineData(1, ULog.Int32TypeName, "data", 3535)]
-    [InlineData(0, ULog.UInt32TypeName, "data", 3535)]
+    [InlineData(0, ULogTypeDefinition.CharTypeName, "data", 12f)]
+    [InlineData(1, ULogTypeDefinition.Int32TypeName, "data", 3535)]
+    [InlineData(0, ULogTypeDefinition.UInt32TypeName, "data", 3535)]
     public void Multi_DeserializeToken_NoKeyBytes(byte isContinued, string type, string name, ValueType value)
     {
         Assert.Throws<ArgumentOutOfRangeException>(() =>
         {
             var readOnlySpan = SetUpTestDataWithoutKeyLength(isContinued, type, name, value);
-            var token = new ULogMultiInformationMessageToken();
+            var token = new IO.ULogMultiInformationMessageToken();
             token.Deserialize(ref readOnlySpan);
         });
     }
 
     [Theory]
-    [InlineData(0, ULog.Int32TypeName, "data", 123)]
-    [InlineData(1, ULog.UInt32TypeName, "data", 321)]
-    [InlineData(0, ULog.CharTypeName, "data", 'd')]
+    [InlineData(0, ULogTypeDefinition.Int32TypeName, "data", 123)]
+    [InlineData(1, ULogTypeDefinition.UInt32TypeName, "data", 321)]
+    [InlineData(0, ULogTypeDefinition.CharTypeName, "data", 'd')]
     public void Multi_DeserializeToken_WrongKeyBytes(byte isContinued, string type, string name, ValueType value)
     {
         Assert.Throws<ULogException>(() =>
         {
             var readOnlySpan = SetUpTestData(isContinued, type, name, value, 0);
-            var token = new ULogMultiInformationMessageToken();
+            var token = new IO.ULogMultiInformationMessageToken();
             token.Deserialize(ref readOnlySpan);
         });
     }
@@ -158,14 +156,14 @@ public class ULogMultiInfoTokenTests
         Assert.Throws<ULogException>(() =>
         {
             var readOnlySpan = SetUpTestData(isContinued, type, name, value, 0);
-            var token = new ULogMultiInformationMessageToken();
+            var token = new IO.ULogMultiInformationMessageToken();
             token.Deserialize(ref readOnlySpan);
         });
     }
 
     private ReadOnlySpan<byte> SetUpTestDataWithoutKeyLength(byte isContinued, string type, string name, ValueType value)
     {
-        var key = type + ULog.TypeAndNameSeparator + name;
+        var key = type + ULogTypeAndNameDefinition.TypeAndNameSeparator + name;
         var keyLength = (byte)key.Length;
 
         var keyBytes = ULog.Encoding.GetBytes(key);
@@ -203,7 +201,7 @@ public class ULogMultiInfoTokenTests
 
     private ReadOnlySpan<byte> SetUpTestData(byte isContinued, string type, string name, object value, byte? kLength = null)
     {
-        var key = type + ULog.TypeAndNameSeparator + name;
+        var key = type + ULogTypeAndNameDefinition.TypeAndNameSeparator + name;
         var keyLength = kLength ?? (byte)key.Length;
 
         var keyBytes = ULog.Encoding.GetBytes(key);
@@ -238,18 +236,5 @@ public class ULogMultiInfoTokenTests
         return readOnlySpan;
     }
 
-    private static ValueType InformationTokenValueToValueType(InformationTokenValue value)
-    {
-        switch (value.Type)
-        {
-            case ULogDataType.UInt32:
-            case ULogDataType.Int32:
-                return BitConverter.ToInt32(value.RawValue);
-            case ULogDataType.Char:
-                var chars = BitConverter.ToChar(value.RawValue);
-                return chars;
-            default:
-                throw new ArgumentNullException("Wrong ulog value type for InformationTokenValue");
-        }
-    }
+    
 }

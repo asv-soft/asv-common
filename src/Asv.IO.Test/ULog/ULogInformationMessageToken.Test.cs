@@ -9,11 +9,11 @@ using Xunit.Abstractions;
 
 namespace Asv.IO.Test;
 
-public class ULogInfoTokensTest
+public class ULogInformationMessageToken
 {
     private readonly ITestOutputHelper _output;
 
-    public ULogInfoTokensTest(ITestOutputHelper output)
+    public ULogInformationMessageToken(ITestOutputHelper output)
     {
         _output = output;
     }
@@ -40,7 +40,7 @@ public class ULogInfoTokensTest
         {
             if (token.Type == ULogToken.Information)
             {
-                if (token is ULogInformationMessageToken param)
+                if (token is IO.ULogInformationMessageToken param)
                 {
                     if (!paramsDict.ContainsKey(param.Key.Name))
                     {
@@ -100,11 +100,11 @@ public class ULogInfoTokensTest
     public void DeserializeToken_Success(string type, string name, ValueType value)
     {
         var readOnlySpan = SetUpTestData(type, name, value);
-        var token = new ULogInformationMessageToken();
+        var token = new IO.ULogInformationMessageToken();
         token.Deserialize(ref readOnlySpan);
         Assert.Equal(type, token.Key.Type.TypeName);
         Assert.Equal(name, token.Key.Name);
-        Assert.Equal(value, InformationTokenValueToValueType(token.Key.Type.BaseType, token.Value));
+        Assert.Equal(value, ULog.GetSimpleValue(token.Key.Type.BaseType, token.Value));
     }
 
     [Theory]
@@ -117,7 +117,7 @@ public class ULogInfoTokensTest
         Assert.Throws<ULogException>(() =>
         {
             var readOnlySpan = SetUpTestData(type, name, value);
-            var token = new ULogInformationMessageToken();
+            var token = new IO.ULogInformationMessageToken();
             token.Deserialize(ref readOnlySpan);
         });
     }
@@ -131,7 +131,7 @@ public class ULogInfoTokensTest
         Assert.Throws<ArgumentOutOfRangeException>(() =>
         {
             var readOnlySpan = SetUpTestDataWithoutKeyLength(type, name, value);
-            var token = new ULogInformationMessageToken();
+            var token = new IO.ULogInformationMessageToken();
             token.Deserialize(ref readOnlySpan);
         });
     }
@@ -145,7 +145,7 @@ public class ULogInfoTokensTest
         Assert.Throws<ULogException>(() =>
         {
             var readOnlySpan = SetUpTestData(type, name, value, 0);
-            var token = new ULogInformationMessageToken();
+            var token = new IO.ULogInformationMessageToken();
             token.Deserialize(ref readOnlySpan);
         });
     }
@@ -159,7 +159,7 @@ public class ULogInfoTokensTest
         Assert.Throws<ULogException>(() =>
         {
             var readOnlySpan = SetUpTestData(type, name, value, 0);
-            var token = new ULogInformationMessageToken();
+            var token = new IO.ULogInformationMessageToken();
             token.Deserialize(ref readOnlySpan);
         });
     }
@@ -233,38 +233,5 @@ public class ULogInfoTokensTest
         return readOnlySpan;
     }
 
-    private ValueType InformationTokenValueToValueType(ULogType type, byte[] value)
-    {
-        switch (type)
-        {
-            case ULogType.Float:
-                return BitConverter.ToSingle(value);
-            case ULogType.Int32:
-                return BitConverter.ToInt32(value);
-            case ULogType.UInt32:
-                return BitConverter.ToUInt32(value);
-            case ULogType.Char:
-                return BitConverter.ToChar(value);
-            case ULogType.Int8:
-                return (sbyte)value[0];
-            case ULogType.UInt8:
-                return value[0];
-            case ULogType.Int16:
-                return BitConverter.ToInt16(value);
-            case ULogType.UInt16:
-                return BitConverter.ToUInt16(value);
-            case ULogType.Int64:
-                return BitConverter.ToInt64(value);
-            case ULogType.UInt64:
-                return BitConverter.ToUInt64(value);
-            case ULogType.Double:
-                return BitConverter.ToDouble(value);
-            case ULogType.Bool:
-                return value[0] != 0;
-            case ULogType.ReferenceType:
-            default:
-                throw new ArgumentOutOfRangeException(nameof(type), type, null);
-        }
-        
-    }
+    
 }
