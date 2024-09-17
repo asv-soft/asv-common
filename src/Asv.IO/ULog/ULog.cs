@@ -23,6 +23,7 @@ public static partial class ULog
         builder.Add(ULogFlagBitsMessageToken.TokenId, () => new ULogFlagBitsMessageToken());
         builder.Add(ULogFormatMessageToken.TokenId, () => new ULogFormatMessageToken());
         builder.Add(ULogParameterMessageToken.TokenId, () => new ULogParameterMessageToken()); //TODO delete before pr
+        builder.Add(ULogInformationMessageToken.TokenId, () => new ULogInformationMessageToken());
         return new ULogReader(builder.ToImmutable(),logger);
     }
 

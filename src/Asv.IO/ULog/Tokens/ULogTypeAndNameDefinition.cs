@@ -14,7 +14,7 @@ public partial class ULogTypeAndNameDefinition:ISizedSpanSerializable
 {
     #region Static
 
-    private const string FixedNamePattern = @"[a-zA-Z0-9_]*";
+    private const string FixedNamePattern = @"[a-zA-Z0-9_]+";
     [GeneratedRegex(FixedNamePattern, RegexOptions.Compiled)]
     private static partial Regex GetNameRegex();
     public static readonly Regex NameRegex = GetNameRegex();
@@ -77,10 +77,18 @@ public partial class ULogTypeAndNameDefinition:ISizedSpanSerializable
     {
         var charSize = ULog.Encoding.GetCharCount(buffer);
         var charBuffer = ArrayPool<char>.Shared.Rent(charSize);
-        var rawString = new ReadOnlySpan<char>(charBuffer, 0, charSize);
-        var cnt = ULog.Encoding.GetChars(buffer, charBuffer);
-        Debug.Assert(cnt == charSize);
-        Deserialize(ref rawString);
+        try
+        {
+            var rawString = new ReadOnlySpan<char>(charBuffer, 0, charSize);
+            var cnt = ULog.Encoding.GetChars(buffer, charBuffer);
+            Debug.Assert(cnt == charSize);
+            Deserialize(ref rawString);
+        }
+        finally
+        {
+            ArrayPool<char>.Shared.Return(charBuffer);
+        }
+        
     }
 
     public void Serialize(ref Span<byte> buffer)
