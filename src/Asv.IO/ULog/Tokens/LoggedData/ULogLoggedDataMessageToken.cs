@@ -6,16 +6,20 @@ namespace Asv.IO;
 /// <summary>
 /// 'D': Logged Data Message 
 /// </summary>
-public class ULogLoggedDataMessageToken : IULogToken
+public class ULogLoggedDataMessageToken : ULogKeyAndValueTokenBase
 {
-    public static ULogToken Token => ULogToken.LoggedData;
-    public const string TokenName = "LoggedData";
+    #region Static
+
+    public const string Name = "LoggedData";
+    public static ULogToken Type => ULogToken.LoggedData;
     public const byte TokenId = (byte)'D';
 
-    public string Name => TokenName;
-    public ULogToken Type => Token;
-    public TokenPlaceFlags Section => TokenPlaceFlags.Data;
-
+    #endregion
+    
+    public override string TokenName => TokenName;
+    public override ULogToken TokenType => Type;
+    public override TokenPlaceFlags TokenSection => TokenPlaceFlags.Data;
+    
     /// <summary>
     /// msg_id: unique id to match Logged data Message data. The first use must set this to 0, then increase it.
     /// 
@@ -26,7 +30,7 @@ public class ULogLoggedDataMessageToken : IULogToken
     /// <summary>
     /// data contains the logged binary message as defined by Format Message
     /// </summary>
-    public FormatMessageField Data { get; set; } = new();
+    public ULogTypeAndNameDefinition Data { get; set; } = new();
     
     public void Deserialize(ref ReadOnlySpan<byte> buffer)
     {
