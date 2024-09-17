@@ -43,7 +43,6 @@ public class ULogTest
                 var format = token as ULogFormatMessageToken;
                 _output.WriteLine($"Format: {format.Type:G} {string.Join(",",format.Fields)}");    
             }
-            
         } 
 
         
