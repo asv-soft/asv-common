@@ -11,54 +11,43 @@ namespace Asv.IO;
 ///
 /// If a parameter dynamically changes during runtime, this message can also be used in the Data section as well.
 /// </summary>
-public sealed class ULogParameterMessageToken : IULogToken
+public class ULogParameterMessageToken : KeyValueTokenBase
 {
     public static ULogToken Token => ULogToken.Parameter;
     public const string TokenName = "Parameter";
     public const byte TokenId = (byte)'P';
     
-    public string Name => TokenName;
-    public ULogToken Type => Token;
-    public TokenPlaceFlags Section => TokenPlaceFlags.Definition | TokenPlaceFlags.Data;
+    public override string Name => TokenName;
+    public override ULogToken Type => Token;
+    public override TokenPlaceFlags Section => TokenPlaceFlags.Definition | TokenPlaceFlags.Data;
 
-    /// <summary>
-    /// Key of the Token
-    ///
-    /// Every key value pair must be unique
-    /// </summary>
-    public ULogTypeAndNameDefinition Key { get; set; } = null!;
-    
-    /// <summary>
-    /// Value of the token
-    /// 
-    ///  The data type is restricted to int32_t and float
-    /// </summary>
-    public byte[] Value { get; set; }
-
-    public void Deserialize(ref ReadOnlySpan<byte> buffer)
+    public override void Deserialize(ref ReadOnlySpan<byte> buffer)
     {
-        var keyLen = BinSerialize.ReadByte(ref buffer);
-        var key = buffer[..keyLen];
-        Key = new ULogTypeAndNameDefinition();
-        Key.Deserialize(ref key);
+        base.Deserialize(ref buffer);
         if (Key.Type.BaseType != ULogType.Float && Key.Type.BaseType != ULogType.Int32)
         {
             throw new ULogException($"Parameter message value type must be {ULogType.Float} or {ULogType.Int32}");
         }
-        buffer = buffer[keyLen..];
-        Value = buffer.ToArray();
     }
 
-    public void Serialize(ref Span<byte> buffer) // TODO: test Serealization
+    public override void Serialize(ref Span<byte> buffer)
     {
-        Key.Serialize(ref buffer);
-        Value.CopyTo(buffer);
-        buffer = buffer[Value.Length..];
+        ArgumentNullException.ThrowIfNull(Key);
+        if (Key.Type.BaseType != ULogType.Float && Key.Type.BaseType != ULogType.Int32)
+        {
+            throw new ULogException($"Parameter message value type must be {ULogType.Float} or {ULogType.Int32}");
+        }
+        base.Serialize(ref buffer);
     }
 
-    public int GetByteSize()
+    public override int GetByteSize()
     {
-        return Key.GetByteSize() + Value.Length;
+        ArgumentNullException.ThrowIfNull(Key);
+        if (Key.Type.BaseType != ULogType.Float && Key.Type.BaseType != ULogType.Int32)
+        {
+            throw new ULogException($"Parameter message value type must be {ULogType.Float} or {ULogType.Int32}");
+        }
+        return base.GetByteSize();
     }
 }
 
