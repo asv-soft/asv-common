@@ -35,20 +35,20 @@ public class ULogInfoTokensTest
         Assert.NotNull(flag);  
         Assert.Equal(ULogToken.FlagBits,flag.Type);
 
-        var paramsDict = new Dictionary<InformationTokenKey, IList<InformationTokenValue>>();
+        var paramsDict = new Dictionary<string, IList<(ULogType,byte[])>>();
         while (reader.TryRead(ref rdr, out var token))
         {
             if (token.Type == ULogToken.Information)
             {
                 if (token is ULogInformationMessageToken param)
                 {
-                    if (!paramsDict.ContainsKey(param.Key))
+                    if (!paramsDict.ContainsKey(param.Key.Name))
                     {
-                        paramsDict[param.Key] = new List<InformationTokenValue> { param.Value }; 
+                        paramsDict[param.Key.Name] = new List<(ULogType,byte[])> { new (param.Key.Type.BaseType,param.Value) }; 
                         continue;
                     }
 
-                    paramsDict[param.Key].Add(param.Value);
+                    paramsDict[param.Key.Name].Add(new (param.Key.Type.BaseType,param.Value));
                 }
             }
         }
@@ -61,37 +61,32 @@ public class ULogInfoTokensTest
             var sb = new StringBuilder();
             foreach (var v in param.Value)
             {
-                sb.Append(ValueToString(v));
+                sb.Append(ValueToString(v.Item1,v.Item2));
             }
 
             var str = sb.ToString();
-            _output.WriteLine($"INFO: {param.Key.Type} {param.Key.Name} values: {str}");    
+            _output.WriteLine($"{param.Key,-20} = {str}");    
         }
     }
-    private string ValueToString(InformationTokenValue value)
+    private string ValueToString(ULogType type, byte[] value)
     {
-        if (value.RawValue.All(i => i == 0))
+        switch (type)
         {
-            return "0";
-        }
-
-        switch (value.Type)
-        {
-            case ULogDataType.UInt32:
-            case ULogDataType.Int32:
-                return BitConverter.ToInt32(value.RawValue).ToString(CultureInfo.InvariantCulture);
-            case ULogDataType.Char:
+            case ULogType.UInt32:
+            case ULogType.Int32:
+                return BitConverter.ToInt32(value).ToString(CultureInfo.InvariantCulture);
+            case ULogType.Char:
                  return CharToString(value).ToString();
             default:
                 throw new ArgumentNullException("Wrong ulog value type for InformationTokenValue");
         }
     }
 
-    private ReadOnlySpan<char> CharToString(InformationTokenValue value)
+    private ReadOnlySpan<char> CharToString(byte[] value)
     {
-        var charSize = ULog.Encoding.GetCharCount(value.RawValue);
+        var charSize = ULog.Encoding.GetCharCount(value);
         var charBuffer = new char[charSize];
-        ULog.Encoding.GetChars(value.RawValue,charBuffer);
+        ULog.Encoding.GetChars(value,charBuffer);
         var rawString = new ReadOnlySpan<char>(charBuffer, 0, charSize);
         return rawString.ToString();
 
@@ -99,24 +94,24 @@ public class ULogInfoTokensTest
     
     # region Deserialize
     [Theory]
-    [InlineData(ULog.UInt32TypeName, "data", 24)]
-    [InlineData(ULog.Int32TypeName, "data", 12)]
-    [InlineData(ULog.CharTypeName, "data", 'd')]
+    [InlineData(ULogTypeDefinition.UInt32TypeName, "data", 24U)]
+    [InlineData(ULogTypeDefinition.Int32TypeName, "data", 12)]
+    [InlineData(ULogTypeDefinition.CharTypeName, "data", 'd')]
     public void DeserializeToken_Success(string type, string name, ValueType value)
     {
         var readOnlySpan = SetUpTestData(type, name, value);
         var token = new ULogInformationMessageToken();
         token.Deserialize(ref readOnlySpan);
-        Assert.Equal(type, ULog.GetDataTypeName(token.Key.Type, null));
+        Assert.Equal(type, token.Key.Type.TypeName);
         Assert.Equal(name, token.Key.Name);
-        Assert.Equal(value, InformationTokenValueToValueType(token.Value));
+        Assert.Equal(value, InformationTokenValueToValueType(token.Key.Type.BaseType, token.Value));
     }
 
     [Theory]
-    [InlineData(ULog.Int32TypeName, "%@#", 523)]
-    [InlineData(ULog.CharTypeName, "`!!!`````````", 'd')]
-    [InlineData(ULog.UInt32TypeName, "", 523)]
-    [InlineData(ULog.Int32TypeName, null, 532)]
+    [InlineData(ULogTypeDefinition.Int32TypeName, "%@#", 523)]
+    [InlineData(ULogTypeDefinition.CharTypeName, "`!!!`````````", 'd')]
+    [InlineData(ULogTypeDefinition.UInt32TypeName, "", 523)]
+    [InlineData(ULogTypeDefinition.Int32TypeName, null, 532)]
     public void DeserializeToken_WrongKeyName(string type, string name, ValueType value)
     {
         Assert.Throws<ULogException>(() =>
@@ -128,9 +123,9 @@ public class ULogInfoTokensTest
     }
 
     [Theory]
-    [InlineData(ULog.CharTypeName, "data", 12f)]
-    [InlineData(ULog.Int32TypeName, "data", 3535)]
-    [InlineData(ULog.UInt32TypeName, "data", 3535)]
+    [InlineData(ULogTypeDefinition.CharTypeName, "data", 12f)]
+    [InlineData(ULogTypeDefinition.Int32TypeName, "data", 3535)]
+    [InlineData(ULogTypeDefinition.UInt32TypeName, "data", 3535)]
     public void DeserializeToken_NoKeyBytes(string type, string name, ValueType value)
     {
         Assert.Throws<ArgumentOutOfRangeException>(() =>
@@ -142,9 +137,9 @@ public class ULogInfoTokensTest
     }
 
     [Theory]
-    [InlineData(ULog.Int32TypeName, "data", 123)]
-    [InlineData(ULog.UInt32TypeName, "data", 321)]
-    [InlineData(ULog.CharTypeName, "data", 'd')]
+    [InlineData(ULogTypeDefinition.Int32TypeName, "data", 123)]
+    [InlineData(ULogTypeDefinition.UInt32TypeName, "data", 321)]
+    [InlineData(ULogTypeDefinition.CharTypeName, "data", 'd')]
     public void DeserializeToken_WrongKeyBytes(string type, string name, ValueType value)
     {
         Assert.Throws<ULogException>(() =>
@@ -171,7 +166,7 @@ public class ULogInfoTokensTest
 
     private ReadOnlySpan<byte> SetUpTestDataWithoutKeyLength(string type, string name, ValueType value)
     {
-        var key = type + ULog.TypeAndNameSeparator + name;
+        var key = type + ULogTypeAndNameDefinition.TypeAndNameSeparator + name;
         var keyLength = (byte)key.Length;
 
         var keyBytes = ULog.Encoding.GetBytes(key);
@@ -206,7 +201,7 @@ public class ULogInfoTokensTest
 
     private ReadOnlySpan<byte> SetUpTestData(string type, string name, object value, byte? kLength = null)
     {
-        var key = type + ULog.TypeAndNameSeparator + name;
+        var key = type + ULogTypeAndNameDefinition.TypeAndNameSeparator + name;
         var keyLength = kLength ?? (byte)key.Length;
 
         var keyBytes = ULog.Encoding.GetBytes(key);
@@ -238,18 +233,38 @@ public class ULogInfoTokensTest
         return readOnlySpan;
     }
 
-    private ValueType InformationTokenValueToValueType(InformationTokenValue value)
+    private ValueType InformationTokenValueToValueType(ULogType type, byte[] value)
     {
-        switch (value.Type)
+        switch (type)
         {
-            case ULogDataType.UInt32:
-            case ULogDataType.Int32:
-                return BitConverter.ToInt32(value.RawValue);
-            case ULogDataType.Char:
-                var chars = BitConverter.ToChar(value.RawValue);
-                return chars;
+            case ULogType.Float:
+                return BitConverter.ToSingle(value);
+            case ULogType.Int32:
+                return BitConverter.ToInt32(value);
+            case ULogType.UInt32:
+                return BitConverter.ToUInt32(value);
+            case ULogType.Char:
+                return BitConverter.ToChar(value);
+            case ULogType.Int8:
+                return (sbyte)value[0];
+            case ULogType.UInt8:
+                return value[0];
+            case ULogType.Int16:
+                return BitConverter.ToInt16(value);
+            case ULogType.UInt16:
+                return BitConverter.ToUInt16(value);
+            case ULogType.Int64:
+                return BitConverter.ToInt64(value);
+            case ULogType.UInt64:
+                return BitConverter.ToUInt64(value);
+            case ULogType.Double:
+                return BitConverter.ToDouble(value);
+            case ULogType.Bool:
+                return value[0] != 0;
+            case ULogType.ReferenceType:
             default:
-                throw new ArgumentNullException("Wrong ulog value type for InformationTokenValue");
+                throw new ArgumentOutOfRangeException(nameof(type), type, null);
         }
+        
     }
 }
