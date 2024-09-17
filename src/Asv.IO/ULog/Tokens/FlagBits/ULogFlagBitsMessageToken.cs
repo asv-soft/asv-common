@@ -10,16 +10,21 @@ namespace Asv.IO;
 /// </summary>
 public class ULogFlagBitsMessageToken:IULogToken
 {
+    #region Static
+
+    public static ULogToken Type => ULogToken.FlagBits;
+    public const string Name = "FlagBits";
+    public const byte TokenId = (byte)'B';
+
+    #endregion
+    
     private byte[] _compatFlags = new byte[8];
     private byte[] _incompatFlags = new byte[8];
     private ulong[] _appendedOffsets = new ulong[3];
-    public static ULogToken Token => ULogToken.FlagBits;
-    public const string TokenName = "FlagBits";
-        
-    public const byte TokenId = (byte)'B';
-    public string Name => TokenName;
-    public ULogToken Type => Token;
-    public TokenPlaceFlags Section => TokenPlaceFlags.Definition;
+    
+    public string TokenName => Name;
+    public ULogToken TokenType => Type;
+    public TokenPlaceFlags TokenSection => TokenPlaceFlags.Definition;
 
 
     /// <summary>

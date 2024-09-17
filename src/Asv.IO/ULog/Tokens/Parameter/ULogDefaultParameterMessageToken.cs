@@ -9,13 +9,13 @@ namespace Asv.IO;
 /// </summary>
 public class ULogDefaultParameterMessageToken : ULogParameterMessageToken
 {
-    public new static ULogToken Token => ULogToken.DefaultParameter;
-    public new const string TokenName = "Default Parameter";
+    public static ULogToken Token => ULogToken.DefaultParameter;
+    public new const string Name = "Default Parameter";
     public new const byte TokenId = (byte)'Q';
     
-    public override string Name => TokenName;
-    public override ULogToken Type => Token;
-    public override TokenPlaceFlags Section => TokenPlaceFlags.Definition | TokenPlaceFlags.Data;
+    public override string TokenName => Name;
+    public override ULogToken TokenType => Token;
+    public override TokenPlaceFlags TokenSection => TokenPlaceFlags.Definition | TokenPlaceFlags.Data;
 
     private ULogParameterDefaultTypes _defaultTypes;
 

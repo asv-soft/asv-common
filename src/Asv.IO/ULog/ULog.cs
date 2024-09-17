@@ -17,9 +17,10 @@ public static partial class ULog
         builder.Add(ULogParameterMessageToken.TokenId, () => new ULogParameterMessageToken());
         builder.Add(ULogDefaultParameterMessageToken.TokenId, () => new ULogDefaultParameterMessageToken());
         builder.Add(ULogInformationMessageToken.TokenId, () => new ULogInformationMessageToken());
+        builder.Add(ULogMultiInformationMessageToken.TokenId, () => new ULogMultiInformationMessageToken());
         return new ULogReader(builder.ToImmutable(),logger);
     }
-
+    
     public static ValueType GetSimpleValue(ULogType type, byte[] value)
     {
         switch (type)
@@ -52,5 +53,7 @@ public static partial class ULog
             default:
                 throw new ArgumentOutOfRangeException(nameof(type), type, null);
         }
+        
     }
+
 }

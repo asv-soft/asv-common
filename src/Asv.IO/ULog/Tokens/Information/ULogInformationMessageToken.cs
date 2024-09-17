@@ -12,14 +12,18 @@ namespace Asv.IO;
 /// The Information message defines a dictionary type definition key : value pair for any information,
 /// including but not limited to Hardware version, Software version, Build toolchain for the software, etc.
 /// </summary>
-public class ULogInformationMessageToken : KeyValueTokenBase
+public class ULogInformationMessageToken : ULogKeyAndValueTokenBase
 {
-    public static ULogToken Token => ULogToken.Information;
-    public const string TokenName = "Information";
+    #region Static
+
+    public static ULogToken Type => ULogToken.Information;
+    public const string Name = "Information";
     public const byte TokenId = (byte)'I';
 
-    public override string Name => TokenName;
-    public override ULogToken Type => Token;
-    public override TokenPlaceFlags Section => TokenPlaceFlags.Definition | TokenPlaceFlags.Data;
+    #endregion
+
+    public override string TokenName => Name;
+    public override ULogToken TokenType => Type;
+    public override TokenPlaceFlags TokenSection => TokenPlaceFlags.Definition | TokenPlaceFlags.Data;
     
 }

@@ -48,7 +48,7 @@
   <ItemGroup>
     <EmbeddedResource Update="TestData.resx">
       <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>TestFiles.Designer.cs</LastGenOutput>
+      <LastGenOutput>Resources1.Designer.cs</LastGenOutput>
     </EmbeddedResource>
     <None Remove="Resources\ulog_sample.ulg" />
     <EmbeddedResource Include="Resources\ulog_sample.ulg" />

@@ -16,6 +16,7 @@ public enum ULogToken
     FlagBits,
     Format,
     Information,
+    MultiInformation,
     Parameter,
     DefaultParameter,
 }
@@ -54,11 +55,11 @@ public class ULogReader(ImmutableDictionary<byte, Func<IULogToken>> factory, ILo
                 // must be right after header
                 if (!InternalReadToken(ref rdr, ref token)) return false;
                 Debug.Assert(token != null);
-                if (token.Type != ULogToken.FlagBits)
+                if (token.TokenType != ULogToken.FlagBits)
                 {
                     _state = ReaderState.Corrupted;
                     // (https://docs.px4.io/main/en/dev_log/ulog_file_format.html#d-logged-data-message)
-                    throw new ULogException($"{ULogToken.FlagBits:G} must be right after {ReaderState.HeaderSection:G}, but got {token.Type:G}");
+                    throw new ULogException($"{ULogToken.FlagBits:G} must be right after {ReaderState.HeaderSection:G}, but got {token.TokenType:G}");
                 }
                 _state = ReaderState.DataSection;
                 break;
@@ -67,7 +68,7 @@ public class ULogReader(ImmutableDictionary<byte, Func<IULogToken>> factory, ILo
                 if (!InternalReadToken(ref rdr, ref token)) return false;
                 Debug.Assert(token != null);
                 // if we read all definition tokens, then we can switch to data section
-                if (token.Section.HasFlag(TokenPlaceFlags.Data))
+                if (token.TokenSection.HasFlag(TokenPlaceFlags.Data))
                 {
                     _state = ReaderState.DataSection;
                 }

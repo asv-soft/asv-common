@@ -2,7 +2,16 @@ using System;
 
 namespace Asv.IO;
 
-public abstract class KeyValueTokenBase: IULogToken
+/// <summary>
+/// Base class for ULog key-value tokens.
+///
+/// e.g. Information, Parameter, etc.
+/// 
+/// uint8_t key_len;
+/// char key[key_len];
+/// char value[header.msg_size-2-key_len]
+/// </summary>
+public abstract class ULogKeyAndValueTokenBase: IULogToken
 {
     public virtual void Deserialize(ref ReadOnlySpan<byte> buffer)
     {
@@ -27,9 +36,9 @@ public abstract class KeyValueTokenBase: IULogToken
         return sizeof(byte) + Key.GetByteSize() + Value.Length;
     }
 
-    public abstract string Name { get; }
-    public abstract ULogToken Type { get; }
-    public abstract TokenPlaceFlags Section { get; }
+    public abstract string TokenName { get; }
+    public abstract ULogToken TokenType { get; }
+    public abstract TokenPlaceFlags TokenSection { get; }
     
     public ULogTypeAndNameDefinition Key { get; set; } = null!;
     public byte[] Value { get; set; }

@@ -6,9 +6,9 @@ namespace Asv.IO;
 
 public interface IULogToken:ISizedSpanSerializable
 {
-    string Name { get; }
-    ULogToken Type { get; }
-    TokenPlaceFlags Section { get; }
+    string TokenName { get; }
+    ULogToken TokenType { get; }
+    TokenPlaceFlags TokenSection { get; }
 }
 
 /// <summary>

@@ -3,7 +3,7 @@ using Xunit;
 
 namespace Asv.IO.Test;
 
-public class ULogParamTokensTests
+public class ULogParameterMessageTokenTests
 {
     # region Deserialize
     [Theory]

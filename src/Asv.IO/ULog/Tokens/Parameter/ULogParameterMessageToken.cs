@@ -11,15 +11,19 @@ namespace Asv.IO;
 ///
 /// If a parameter dynamically changes during runtime, this message can also be used in the Data section as well.
 /// </summary>
-public class ULogParameterMessageToken : KeyValueTokenBase
+public class ULogParameterMessageToken : ULogKeyAndValueTokenBase
 {
-    public static ULogToken Token => ULogToken.Parameter;
-    public const string TokenName = "Parameter";
+    #region Static
+
+    public static ULogToken Type => ULogToken.Parameter;
+    public const string Name = "Parameter";
     public const byte TokenId = (byte)'P';
+
+    #endregion
     
-    public override string Name => TokenName;
-    public override ULogToken Type => Token;
-    public override TokenPlaceFlags Section => TokenPlaceFlags.Definition | TokenPlaceFlags.Data;
+    public override string TokenName => Name;
+    public override ULogToken TokenType => Type;
+    public override TokenPlaceFlags TokenSection => TokenPlaceFlags.Definition | TokenPlaceFlags.Data;
 
     public override void Deserialize(ref ReadOnlySpan<byte> buffer)
     {
