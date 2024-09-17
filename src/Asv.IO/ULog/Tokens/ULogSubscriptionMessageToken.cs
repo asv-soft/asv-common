@@ -18,34 +18,6 @@ public class ULogSubscriptionMessageToken : IULogToken
     public string Name => TokenName;
     public ULogToken Type => Token;
     public TokenPlaceFlags Section => TokenPlaceFlags.Definition | TokenPlaceFlags.Data;
-    public SubscriptionMessageFields Fields { get; set; } = null!;
-
-    public void Deserialize(ref ReadOnlySpan<byte> buffer)
-    {
-        Fields = new SubscriptionMessageFields
-        {
-            MultiId = BinSerialize.ReadByte(ref buffer),
-            MessageId = BinSerialize.ReadUShort(ref buffer)
-        };
-        Fields.Deserialize(ref buffer);
-        buffer = buffer[Fields.MessageName.Length..];
-    }
-
-    public void Serialize(ref Span<byte> buffer)
-    {
-        Fields.Serialize(ref buffer);
-    }
-
-    public int GetByteSize()
-    {
-        return Fields.GetByteSize();
-    }
-}
-
-public class SubscriptionMessageFields : ISizedSpanSerializable
-{
-    private string _messageName;
-
     /// <summary>
     /// The same message format can have multiple instances, for example if the system has two sensors of the same type.
     /// 
@@ -59,6 +31,33 @@ public class SubscriptionMessageFields : ISizedSpanSerializable
     /// The same msg_id must not be used twice for different subscriptions.
     /// </summary>
     public ushort MessageId { get; set; }
+    public SubscriptionMessageFields Fields { get; set; } = null!;
+
+    public void Deserialize(ref ReadOnlySpan<byte> buffer)
+    {
+        MultiId = BinSerialize.ReadByte(ref buffer);
+        MessageId = BinSerialize.ReadUShort(ref buffer);
+        Fields = new SubscriptionMessageFields();
+        Fields.Deserialize(ref buffer);
+        buffer = buffer[Fields.MessageName.Length..];
+    }
+
+    public void Serialize(ref Span<byte> buffer)
+    {
+        BinSerialize.WriteByte(ref buffer, MultiId);
+        BinSerialize.WriteUShort(ref buffer, MessageId);
+        Fields.Serialize(ref buffer);
+    }
+
+    public int GetByteSize()
+    {
+        return Fields.GetByteSize();
+    }
+}
+
+public class SubscriptionMessageFields : ISizedSpanSerializable
+{
+    private string _messageName;
 
     /// <summary>
     /// Message name to subscribe to. Must match one of the Format Message definitions.
@@ -95,8 +94,6 @@ public class SubscriptionMessageFields : ISizedSpanSerializable
     public void Serialize(ref Span<byte> buffer)
     {
         CheckName(MessageName);
-        BinSerialize.WriteByte(ref buffer, MultiId);
-        BinSerialize.WriteUShort(ref buffer, MessageId);
         BinSerialize.WriteBlock(ref buffer, ULog.Encoding.GetBytes(MessageName));
     }
 
