@@ -1,12 +1,11 @@
 using System;
-using System.Security.AccessControl;
 
 namespace Asv.IO;
 
 /// <summary>
 /// 'D': Logged Data Message 
 /// </summary>
-public class ULogLoggedDataMessageToken : ULogKeyAndValueTokenBase
+public class ULogLoggedDataMessageToken : IULogToken
 {
     #region Static
 
@@ -16,9 +15,9 @@ public class ULogLoggedDataMessageToken : ULogKeyAndValueTokenBase
 
     #endregion
     
-    public override string TokenName => TokenName;
-    public override ULogToken TokenType => Type;
-    public override TokenPlaceFlags TokenSection => TokenPlaceFlags.Data;
+    public string TokenName => TokenName;
+    public ULogToken TokenType => Type;
+    public TokenPlaceFlags TokenSection => TokenPlaceFlags.Data;
     
     /// <summary>
     /// msg_id: unique id to match Logged data Message data. The first use must set this to 0, then increase it.
@@ -30,22 +29,22 @@ public class ULogLoggedDataMessageToken : ULogKeyAndValueTokenBase
     /// <summary>
     /// data contains the logged binary message as defined by Format Message
     /// </summary>
-    public ULogTypeAndNameDefinition Data { get; set; } = new();
+    public byte[] Data { get; set; } = [];
     
-    public override void Deserialize(ref ReadOnlySpan<byte> buffer)
+    public void Deserialize(ref ReadOnlySpan<byte> buffer)
     {
         MessageId = BinSerialize.ReadUShort(ref buffer);
-        Data.Deserialize(ref buffer);
+        Data = BinSerialize.ReadBlock(ref buffer, buffer.Length);
     }
 
-    public override void Serialize(ref Span<byte> buffer)
+    public void Serialize(ref Span<byte> buffer)
     {
         BinSerialize.WriteUShort(ref buffer, MessageId);
-        Data.Serialize(ref buffer);
+        BinSerialize.WriteBlock(ref buffer, Data);
     }
 
-    public override int GetByteSize()
+    public int GetByteSize()
     {
-        return 2 + Data.GetByteSize();
+        return sizeof(ushort) /*msg_id*/ + Data.Length /*data*/ ;
     }
 }

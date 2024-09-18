@@ -10,13 +10,13 @@ public class ULogLoggedDataMessageTokenTests
     #region Deserialize
     
     [Theory]
-    [InlineData(0, ULogTypeDefinition.FloatTypeName, "data")]
-    [InlineData(1, ULogTypeDefinition.Int32TypeName, "value")]
-    [InlineData(42, ULogTypeDefinition.FloatTypeName, "speed")]
-    public void DeserializeToken_Success(ushort messageId, string type, string name)
+    [InlineData(1, new byte[] { 0x01, 0x02, 0x03, 0x04 })]
+    [InlineData(42, new byte[] { 0xFF, 0xAA, 0xBB, 0xCC })]
+    [InlineData(65535, new byte[] { 0x10, 0x20, 0x30 })]
+    public void DeserializeToken_Success(ushort messageId, byte[] data)
     {
         // Arrange
-        var readOnlySpan = SetUpTestData(messageId, type, name);
+        var readOnlySpan = SetUpTestData(messageId, data);
         var token = new ULogLoggedDataMessageToken();
         
         // Act
@@ -24,34 +24,22 @@ public class ULogLoggedDataMessageTokenTests
         
         // Assert
         Assert.Equal(messageId, token.MessageId);
-        Assert.Equal(type, token.Data.Type.TypeName);
-        Assert.Equal(name, token.Data.Name);
+        Assert.Equal(data, token.Data);
     }
-    
-    [Theory]
-    [InlineData(1, ULogTypeDefinition.FloatTypeName, null)]
-    public void DeserializeToken_WrongData(ushort messageId, string type, string name)
-    {
-        Assert.Throws<ULogException>(() =>
-        {
-            var readOnlySpan = SetUpTestData(messageId, type, name);
-            var token = new ULogLoggedDataMessageToken();
-            token.Deserialize(ref readOnlySpan);
-        });
-    }
-    
+
     #endregion
     
     #region Serialize
     
     [Theory]
-    [InlineData(0, ULogTypeDefinition.FloatTypeName, "data")]
-    [InlineData(1, ULogTypeDefinition.Int32TypeName, "value")]
-    public void SerializeToken_Success(ushort messageId, string type, string name)
+    [InlineData(1, new byte[] { 0x01, 0x02, 0x03, 0x04 })]
+    [InlineData(42, new byte[] { 0xFF, 0xAA, 0xBB, 0xCC })]
+    [InlineData(65535, new byte[] { 0x10, 0x20, 0x30 })]
+    public void SerializeToken_Success(ushort messageId, byte[] data)
     {
         // Arrange
-        var readOnlySpan = SetUpTestData(messageId, type, name);
-        var token = SetUpTestToken(messageId, type, name);
+        var readOnlySpan = SetUpTestData(messageId, data);
+        var token = SetUpTestToken(messageId, data);
         
         // Act
         var span = new Span<byte>(new byte[readOnlySpan.Length]);
@@ -61,32 +49,20 @@ public class ULogLoggedDataMessageTokenTests
         // Assert
         Assert.True(span.SequenceEqual(readOnlySpan));
     }
-    
-    [Theory]
-    [InlineData(0, ULogTypeDefinition.FloatTypeName, null)]
-    public void SerializeToken_WrongData(ushort messageId, string type, string name)
-    {
-        Assert.Throws<ULogException>(() =>
-        {
-            var token = SetUpTestToken(messageId, type, name);
-            var span = new Span<byte>(new byte[1024]);
-            var temp = span;
-            token.Serialize(ref temp);
-        });
-    }
-    
-    #endregion
 
+    #endregion
+    
     #region GetByteSize
     
     [Theory]
-    [InlineData(0, ULogTypeDefinition.FloatTypeName, "data")]
-    [InlineData(1, ULogTypeDefinition.Int32TypeName, "value")]
-    public void GetByteSize_Success(ushort messageId, string type, string name)
+    [InlineData(1, new byte[] { 0x01, 0x02, 0x03, 0x04 })]
+    [InlineData(42, new byte[] { 0xFF, 0xAA, 0xBB, 0xCC })]
+    [InlineData(65535, new byte[] { 0x10, 0x20, 0x30 })]
+    public void GetByteSize_Success(ushort messageId, byte[] data)
     {
         // Arrange
-        var setup = SetUpTestData(messageId, type, name);
-        var token = SetUpTestToken(messageId, type, name);
+        var setup = SetUpTestData(messageId, data);
+        var token = SetUpTestToken(messageId, data);
         
         // Act
         var size = token.GetByteSize();
@@ -94,33 +70,28 @@ public class ULogLoggedDataMessageTokenTests
         // Assert
         Assert.Equal(setup.Length, size);
     }
-    
+
     #endregion
-    private static ULogLoggedDataMessageToken SetUpTestToken(ushort messageId, string type, string name)
+    
+    private static ULogLoggedDataMessageToken SetUpTestToken(ushort messageId, byte[] data)
     {
+        return new ULogLoggedDataMessageToken
+        {
+            MessageId = messageId,
+            Data = data
+        };
+    }
+
+    private static ReadOnlySpan<byte> SetUpTestData(ushort messageId, byte[] data)
+    {
+        var buffer = new Span<byte>(new byte[sizeof(ushort) + data.Length]);
+        var temp = buffer;
         var token = new ULogLoggedDataMessageToken
         {
             MessageId = messageId,
-            Data = new ULogTypeAndNameDefinition
-            {
-                Type = new ULogTypeDefinition
-                {
-                    TypeName = type,
-                    BaseType = type == ULogTypeDefinition.FloatTypeName ? ULogType.Float : ULogType.Int32
-                },
-                Name = name
-            }
+            Data = data
         };
-        return token;
-    }
-
-    private ReadOnlySpan<byte> SetUpTestData(ushort messageId, string type, string name)
-    {
-        var token = SetUpTestToken(messageId, type, name);
-        var buffer = new Span<byte>(new byte[token.GetByteSize()]);
-        var temp = buffer;
         token.Serialize(ref temp);
         return new ReadOnlySpan<byte>(buffer.ToArray());
     }
-
 }
