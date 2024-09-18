@@ -1,5 +1,6 @@
 using System;
 using System.Buffers;
+using System.Drawing;
 
 namespace Asv.IO;
 
@@ -19,6 +20,7 @@ public class ULogSubscriptionMessageToken : IULogToken
     public string Name => TokenName;
     public ULogToken Type => Token;
     public TokenPlaceFlags Section => TokenPlaceFlags.Definition | TokenPlaceFlags.Data;
+    
     /// <summary>
     /// The same message format can have multiple instances, for example if the system has two sensors of the same type.
     /// 
@@ -41,7 +43,7 @@ public class ULogSubscriptionMessageToken : IULogToken
         get => _messageName;
         set
         {
-            CheckName(value);
+            ULog.CheckMessageName(value);;
             _messageName = value;
         }
     }
@@ -58,6 +60,7 @@ public class ULogSubscriptionMessageToken : IULogToken
 
     public void Serialize(ref Span<byte> buffer)
     {
+        ULog.CheckMessageName(MessageName);
         BinSerialize.WriteByte(ref buffer, MultiId);
         BinSerialize.WriteUShort(ref buffer, MessageId);
         BinSerialize.WriteBlock(ref buffer, ULog.Encoding.GetBytes(MessageName));
@@ -65,12 +68,6 @@ public class ULogSubscriptionMessageToken : IULogToken
 
     public int GetByteSize()
     {
-        return 1 + 2 + ULog.Encoding.GetByteCount(MessageName);
-    }
-    
-    private void CheckName(string? name)
-    {
-        ULog.CheckMessageName(name);
-        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        return sizeof(byte) + sizeof(ushort) + ULog.Encoding.GetByteCount(MessageName);
     }
 }
