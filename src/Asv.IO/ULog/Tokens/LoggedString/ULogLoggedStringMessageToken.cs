@@ -62,9 +62,12 @@ public class ULogLoggedStringMessageToken : IULogToken
 
     public void Serialize(ref Span<byte> buffer)
     {
+        ULogFormatMessageToken.CheckMessageName(Message);
         BinSerialize.WriteByte(ref buffer, (byte)LogLevel);
         BinSerialize.WriteULong(ref buffer, TimeStamp); 
-        Message.CopyTo(ref buffer, ULog.Encoding);    }
+        Message.CopyTo(ref buffer, ULog.Encoding);
+        
+    }
 
     public int GetByteSize()
     {
