@@ -19,7 +19,6 @@ public enum ULogToken
     MultiInformation,
     Parameter,
     DefaultParameter,
-    LoggedData,
     TaggedLoggedString
 }
 
