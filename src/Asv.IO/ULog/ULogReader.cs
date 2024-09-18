@@ -19,7 +19,8 @@ public enum ULogToken
     MultiInformation,
     Parameter,
     DefaultParameter,
-    LoggedData
+    LoggedData,
+    TaggedLoggedString
 }
 
 public interface IULogReader
