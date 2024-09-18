@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.Text;
 using Xunit;
 using Xunit.Abstractions;
@@ -7,6 +8,30 @@ namespace Asv.IO.Test;
 
 public class ULogLoggedDataMessageTokenTests
 {
+    private readonly ITestOutputHelper _output;
+
+    public ULogLoggedDataMessageTokenTests(ITestOutputHelper output)
+    {
+        _output = output;
+    }
+    
+    [Fact]
+    public void ReadLoggedDataFromFile()
+    {
+        var data = new ReadOnlySequence<byte>(TestData.ulog_log_small);
+        var rdr = new SequenceReader<byte>(data); 
+        var reader = ULog.CreateReader();
+
+        var counter = 0;
+        while (reader.TryRead(ref rdr, out var token))
+        {
+            if (token?.TokenType != ULogToken.LoggedData) continue;
+            Assert.Equal(ULogToken.LoggedData,token.TokenType);
+            counter++;
+        }
+        _output.WriteLine($"Amount of LoggedData: {counter}");
+    }
+    
     #region Deserialize
     
     [Theory]
