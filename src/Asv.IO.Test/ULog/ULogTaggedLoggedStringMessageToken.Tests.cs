@@ -1,5 +1,4 @@
 using System;
-using Asv.IO.TaggedLoggedString;
 using Xunit;
 
 namespace Asv.IO.Test;

@@ -1,6 +1,6 @@
 using System;
 
-namespace Asv.IO.TaggedLoggedString;
+namespace Asv.IO;
 
 public class ULogTaggedLoggedStringMessageToken : IULogToken
 {
