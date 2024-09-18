@@ -27,7 +27,7 @@ public class ULogSubscriptionMessageTokenTests
         // Assert
         Assert.Equal(multiId, token.MultiId);
         Assert.Equal(messageId, token.MessageId);
-        Assert.Equal(messageName, token.Fields.MessageName);
+        Assert.Equal(messageName, token.MessageName);
     }
 
     [Theory]
@@ -128,14 +128,12 @@ public class ULogSubscriptionMessageTokenTests
 
     private ULogSubscriptionMessageToken SetUpTestToken(byte multiId, ushort messageId, string messageName)
     {
-        var token = new ULogSubscriptionMessageToken();
-        token.Fields = new SubscriptionMessageFields()
+        var token = new ULogSubscriptionMessageToken
         {
-            MessageName = messageName
+            MessageName = messageName,
+            MessageId = messageId,
+            MultiId = multiId
         };
-        token.MessageId = messageId;
-        token.MultiId = multiId;
-
         return token;
     }
 
