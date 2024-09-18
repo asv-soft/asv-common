@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Immutable;
 using System.Text;
+using Asv.IO.TaggedLoggedString;
 using Microsoft.Extensions.Logging;
 
 namespace Asv.IO;
@@ -18,6 +19,7 @@ public static partial class ULog
         builder.Add(ULogDefaultParameterMessageToken.TokenId, () => new ULogDefaultParameterMessageToken());
         builder.Add(ULogInformationMessageToken.TokenId, () => new ULogInformationMessageToken());
         builder.Add(ULogMultiInformationMessageToken.TokenId, () => new ULogMultiInformationMessageToken());
+        builder.Add(ULogTaggedLoggedStringMessageToken.TokenId, () => new ULogTaggedLoggedStringMessageToken());
         return new ULogReader(builder.ToImmutable(),logger);
     }
     

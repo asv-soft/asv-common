@@ -17,35 +17,14 @@ public class ULogTaggedLoggedStringMessageToken : IULogToken
     public TokenPlaceFlags TokenSection => TokenPlaceFlags.Data;
 
     /// <summary>
-    /// log_level: same as in the Linux kernel:<list type=""></list>
-    /// EMERG - '0' - System is unusable<list type=""></list>
-    /// ALERT - '1' - Action must be taken immediately<list type=""></list>
-    /// CRIT - '2' - Critical conditions<list type=""></list>
-    /// ERR - '3' - Error conditions<list type=""></list>
-    /// WARNING - '4' - Warning conditions<list type=""></list>
-    /// NOTICE - '5' - Normal but significant condition<list type=""></list>
-    /// INFO - '6' - Informational<list type=""></list>
-    /// DEBUG - '7' - Debug-level messages<list type=""></list>
+    /// log_level: same as in the Linux kernel
     /// </summary>
-    public byte LogLevel { get; set; }
+    public ULogLevel LogLevel { get; set; }
     
     /// <summary>
     /// tag: id representing source of logged message string. It could represent a process, thread or a class depending upon the system architecture.
-    /// For example, a reference implementation for an onboard computer running multiple processes to control different payloads, external disks, serial devices etc can encode these process identifiers using a uint16_t enum into the tag attribute of struct as follows:
-    /// <code>enum class ulog_tag : uint16_t {
-    /// unassigned,
-    /// mavlink_handler,
-    /// ppk_handler,
-    /// camera_handler,
-    /// ptp_handler,
-    /// serial_handler,
-    /// watchdog,
-    /// io_service,
-    /// cbuf,
-    /// ulg
-    ///};</code>
     /// </summary>
-    public MessageTag Tag { get; set; }
+    public ushort Tag { get; set; }
     
     /// <summary>
     /// timestamp: in microseconds
@@ -60,12 +39,10 @@ public class ULogTaggedLoggedStringMessageToken : IULogToken
     public void Deserialize(ref ReadOnlySpan<byte> buffer)
     {
         var level = BinSerialize.ReadByte(ref buffer);
-        if (level > 7) throw new ULogException($"Invalid ULog level: {level}. Must be between 0 and 7.");
-        LogLevel = level;
+        LogLevel = (ULogLevel)level;
         
         var tag = BinSerialize.ReadUShort(ref buffer);
-        if (tag > 9) throw new ULogException($"Invalid ULog tag: {tag}");
-        Tag = (MessageTag)tag;
+        Tag = tag;
         
         Timestamp = BinSerialize.ReadULong(ref buffer);
         
@@ -75,29 +52,60 @@ public class ULogTaggedLoggedStringMessageToken : IULogToken
 
     public void Serialize(ref Span<byte> buffer)
     {
-        BinSerialize.WriteByte(ref buffer, LogLevel);
-        BinSerialize.WriteUShort(ref buffer, (ushort)Tag);
+        BinSerialize.WriteByte(ref buffer, (byte)LogLevel);
+        BinSerialize.WriteUShort(ref buffer, Tag);
         BinSerialize.WriteULong(ref buffer, Timestamp);
         Message.CopyTo(ref buffer, ULog.Encoding);
     }
 
     public int GetByteSize()
     {
-        return 1 + 2 + 8 + ULog.Encoding.GetByteCount(Message);
+        return sizeof(ULogLevel)/*LogLevel*/ 
+               + sizeof(ushort)/*Tag*/ 
+               + sizeof(ulong)/*Timestamp*/ 
+               + ULog.Encoding.GetByteCount(Message);
     }
 
-    [Flags]
-    public enum MessageTag
+    public enum ULogLevel : byte
     {
-        Unassigned = 0,
-        MavlinkHandler = 1,
-        PpkHandler = 2,
-        CameraHandler = 3,
-        PtpHandler = 4,
-        SerialHandler = 5,
-        Watchdog = 6,
-        IoService = 7,
-        Cbuf = 8,
-        Ulg = 9
+        /// <summary>
+        /// System is unusable
+        /// </summary>
+        Emerg = 0,
+        
+        /// <summary>
+        /// Action must be taken immediately
+        /// </summary>
+        Alert = 1,
+        
+        /// <summary>
+        /// Critical conditions
+        /// </summary>
+        Crit = 2,
+        
+        /// <summary>
+        /// Error conditions
+        /// </summary>
+        Err = 3,
+        
+        /// <summary>
+        /// Warning conditions
+        /// </summary>
+        Warning = 4,
+        
+        /// <summary>
+        /// Normal but significant condition
+        /// </summary>
+        Notice = 5,
+        
+        /// <summary>
+        /// Informational
+        /// </summary>
+        Info = 6,
+        
+        /// <summary>
+        /// Debug-level messages
+        /// </summary>
+        Debug = 7
     }
 }
