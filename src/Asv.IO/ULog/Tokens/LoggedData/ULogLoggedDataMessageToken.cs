@@ -32,20 +32,20 @@ public class ULogLoggedDataMessageToken : ULogKeyAndValueTokenBase
     /// </summary>
     public ULogTypeAndNameDefinition Data { get; set; } = new();
     
-    public void Deserialize(ref ReadOnlySpan<byte> buffer)
+    public override void Deserialize(ref ReadOnlySpan<byte> buffer)
     {
-        MessageId = BitConverter.ToUInt16(BinSerialize.ReadBlock(ref buffer, 2));
+        MessageId = BinSerialize.ReadUShort(ref buffer);
         Data.Deserialize(ref buffer);
     }
 
-    public void Serialize(ref Span<byte> buffer)
+    public override void Serialize(ref Span<byte> buffer)
     {
-        BinSerialize.WriteBlock(ref buffer, BitConverter.GetBytes(MessageId));
+        BinSerialize.WriteUShort(ref buffer, MessageId);
         Data.Serialize(ref buffer);
     }
 
-    public int GetByteSize()
+    public override int GetByteSize()
     {
-        return sizeof(ushort) + Data.GetByteSize();
+        return 2 + Data.GetByteSize();
     }
 }
