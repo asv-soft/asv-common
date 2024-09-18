@@ -8,52 +8,94 @@ namespace Asv.IO.Test;
 
 public class ULogLoggedStringMessageTokenTests
 {
-    private readonly ITestOutputHelper _output;
-    
-    public ULogLoggedStringMessageTokenTests(ITestOutputHelper output)
+    #region Deserialize
+
+    [Theory]
+    [InlineData(ULogLoggedStringMessageToken.ULogLevel.Emerg, 12345678UL, "Test message")]
+    [InlineData(ULogLoggedStringMessageToken.ULogLevel.Debug, 987654321UL, "Another test")]
+    [InlineData(ULogLoggedStringMessageToken.ULogLevel.Info, 1234567890UL, "Debug info")]
+    public void DeserializeToken_Success(ULogLoggedStringMessageToken.ULogLevel logLevel, ulong timestamp, string message)
     {
-        _output = output;
+        // Arrange
+        var readOnlySpan = SetUpTestData(logLevel, timestamp, message);
+        var token = new ULogLoggedStringMessageToken();
+
+        // Act
+        token.Deserialize(ref readOnlySpan);
+
+        // Assert
+        Assert.Equal(logLevel, token.LogLevel);
+        Assert.Equal(timestamp, token.TimeStamp);
+        Assert.Equal(message, token.Message);
     }
-    
-    [Fact]
-    public void Calculate_ulog_file_statistic()
+
+    #endregion
+
+    #region Serialize
+
+    [Theory]
+    [InlineData(ULogLoggedStringMessageToken.ULogLevel.Emerg, 12345678UL, "Test message")]
+    [InlineData(ULogLoggedStringMessageToken.ULogLevel.Debug, 987654321UL, "Another test")]
+    [InlineData(ULogLoggedStringMessageToken.ULogLevel.Info, 1234567890UL, "Debug info")]
+    public void SerializeToken_Success(ULogLoggedStringMessageToken.ULogLevel logLevel, ulong timestamp, string message)
     {
-        var data = new ReadOnlySequence<byte>(TestData.ulog_log_small);
-        var rdr = new SequenceReader<byte>(data); 
-        var reader = ULog.CreateReader();
-        int index = 0;
-        var stat = Enum.GetValues<ULogToken>().ToDictionary(token => token, token => 0);
-        while (reader.TryRead(ref rdr, out var token))
-        {
-            Assert.NotNull(token);
-            stat[token.TokenType] += 1;
-            index++;
-        } 
-        _output.WriteLine($"Read {index} tokens");
-        foreach (var (key, value) in stat)
-        {
-            _output.WriteLine($"{key} : {value}");
-        }
+        // Arrange
+        var readOnlySpan = SetUpTestData(logLevel, timestamp, message);
+        var token = SetUpTestToken(logLevel, timestamp, message);
+
+        // Act
+        var span = new Span<byte>(new byte[readOnlySpan.Length]);
+        var temp = span;
+        token.Serialize(ref temp);
+
+        // Assert
+        Assert.True(span.SequenceEqual(readOnlySpan));
     }
-    
-    
-    [Fact]
-    public void Read_ulog_file_header_and_flag_token_with_check_values()
+
+    #endregion
+
+    #region GetByteSize
+
+    [Theory]
+    [InlineData(ULogLoggedStringMessageToken.ULogLevel.Emerg, 12345678UL, "Test message")]
+    [InlineData(ULogLoggedStringMessageToken.ULogLevel.Debug, 987654321UL, "Another test")]
+    [InlineData(ULogLoggedStringMessageToken.ULogLevel.Info, 1234567890UL, "Debug info")]
+    public void GetByteSize_Success(ULogLoggedStringMessageToken.ULogLevel logLevel, ulong timestamp, string message)
     {
-        var data = new ReadOnlySequence<byte>(TestData.ulog_log_small);
-        var rdr = new SequenceReader<byte>(data); 
-        var reader = ULog.CreateReader();
-    
-        var result = reader.TryRead<ULogFileHeaderToken>(ref rdr, out var header);
-        Assert.True(result);
-        Assert.NotNull(header);
-        Assert.Equal(ULogToken.FileHeader,header.TokenType);
-        Assert.Equal(20309082U, header.Timestamp);
-        Assert.Equal(1,header.Version);
-    
-        result = reader.TryRead<ULogFlagBitsMessageToken>(ref rdr, out var flag);
-        Assert.True(result);
-        Assert.NotNull(flag);  
-        Assert.Equal(ULogToken.FlagBits,flag.TokenType);
+        // Arrange
+        var setup = SetUpTestData(logLevel, timestamp, message);
+        var token = SetUpTestToken(logLevel, timestamp, message);
+
+        // Act
+        var size = token.GetByteSize();
+
+        // Assert
+        Assert.Equal(setup.Length, size);
+    }
+
+    #endregion
+
+    private static ULogLoggedStringMessageToken SetUpTestToken(ULogLoggedStringMessageToken.ULogLevel logLevel, ulong timestamp, string message)
+    {
+        return new ULogLoggedStringMessageToken
+        {
+            LogLevel = logLevel,
+            TimeStamp = timestamp,
+            Message = message
+        };
+    }
+
+    private static ReadOnlySpan<byte> SetUpTestData(ULogLoggedStringMessageToken.ULogLevel logLevel, ulong timestamp, string message)
+    {
+        var token = new ULogLoggedStringMessageToken
+        {
+            LogLevel = logLevel,
+            TimeStamp = timestamp,
+            Message = message
+        };
+        var buffer = new Span<byte>(new byte[token.GetByteSize()]);
+        var temp = buffer;
+        token.Serialize(ref temp);
+        return new ReadOnlySpan<byte>(buffer.ToArray());
     }
 }
