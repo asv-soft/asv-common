@@ -12,14 +12,14 @@ namespace Asv.IO;
 /// </summary>
 public class ULogSubscriptionMessageToken : IULogToken
 {
-    private string _messageName;
-    public static ULogToken Token => ULogToken.Subscription;
-    public const string TokenName = "Subscription";
+    public static ULogToken Type = ULogToken.Subscription;
+    public const string Name = "Subscription";
     public const byte TokenId = (byte)'A';
-
-    public string Name => TokenName;
-    public ULogToken Type => Token;
-    public TokenPlaceFlags Section => TokenPlaceFlags.Definition | TokenPlaceFlags.Data;
+   
+    private string _messageName = null!;
+    public string TokenName => Name;
+    public ULogToken TokenType => Type;
+    public TokenPlaceFlags TokenSection => TokenPlaceFlags.Definition | TokenPlaceFlags.Data;
     
     /// <summary>
     /// The same message format can have multiple instances, for example if the system has two sensors of the same type.
@@ -43,7 +43,7 @@ public class ULogSubscriptionMessageToken : IULogToken
         get => _messageName;
         set
         {
-            ULog.CheckMessageName(value);;
+            ULogFormatMessageToken.CheckMessageName(value);;
             _messageName = value;
         }
     }
@@ -60,7 +60,7 @@ public class ULogSubscriptionMessageToken : IULogToken
 
     public void Serialize(ref Span<byte> buffer)
     {
-        ULog.CheckMessageName(MessageName);
+        ULogFormatMessageToken.CheckMessageName(MessageName);
         BinSerialize.WriteByte(ref buffer, MultiId);
         BinSerialize.WriteUShort(ref buffer, MessageId);
         BinSerialize.WriteBlock(ref buffer, ULog.Encoding.GetBytes(MessageName));
@@ -70,4 +70,6 @@ public class ULogSubscriptionMessageToken : IULogToken
     {
         return sizeof(byte) + sizeof(ushort) + ULog.Encoding.GetByteCount(MessageName);
     }
+
+    
 }
