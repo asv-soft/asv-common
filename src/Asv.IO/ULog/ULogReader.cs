@@ -20,6 +20,8 @@ public enum ULogToken
     Parameter,
     DefaultParameter,
     Unsubscription,
+    LoggedString,
+    Synchronization,
 }
 
 public interface IULogReader
