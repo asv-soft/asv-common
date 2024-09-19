@@ -1,6 +1,6 @@
 using System;
 
-namespace Asv.IO.Synchronization;
+namespace Asv.IO;
 
 /// <summary>
 /// 'S': Synchronization message.
