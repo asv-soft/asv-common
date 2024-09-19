@@ -19,6 +19,7 @@ public enum ULogToken
     MultiInformation,
     Parameter,
     DefaultParameter,
+    LoggedString,
     Synchronization,
 }
 
