@@ -15,7 +15,7 @@ public class ULogLoggedDataMessageToken : IULogToken
 
     #endregion
     
-    public string TokenName => TokenName;
+    public string TokenName => Name;
     public ULogToken TokenType => Type;
     public TokenPlaceFlags TokenSection => TokenPlaceFlags.Data;
     
