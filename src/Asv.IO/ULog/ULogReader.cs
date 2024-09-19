@@ -22,6 +22,7 @@ public enum ULogToken
     Unsubscription,
     LoggedString,
     Synchronization,
+    TaggedLoggedString
 }
 
 public interface IULogReader

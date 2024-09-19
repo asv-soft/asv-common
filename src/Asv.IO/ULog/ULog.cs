@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Immutable;
 using System.Text;
-using Asv.IO.Synchronization;
 using Microsoft.Extensions.Logging;
 
 namespace Asv.IO;
@@ -22,6 +21,7 @@ public static partial class ULog
         builder.Add(ULogUnsubscriptionMessageToken.TokenId, () => new ULogUnsubscriptionMessageToken());
         builder.Add(ULogLoggedStringMessageToken.TokenId, () => new ULogLoggedStringMessageToken());
         builder.Add(ULogSynchronizationMessageToken.TokenId, () => new ULogSynchronizationMessageToken());
+        builder.Add(ULogTaggedLoggedStringMessageToken.TokenId, () => new ULogTaggedLoggedStringMessageToken());
         return new ULogReader(builder.ToImmutable(),logger);
     }
     
