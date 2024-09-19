@@ -53,9 +53,17 @@ public class ULogSubscriptionMessageToken : IULogToken
         MessageId = BinSerialize.ReadUShort(ref buffer);
         var charSize = ULog.Encoding.GetCharCount(buffer);
         var charBuffer = ArrayPool<char>.Shared.Rent(charSize);
-        ULog.Encoding.GetChars(buffer, charBuffer);
-        MessageName = new ReadOnlySpan<char>(charBuffer, 0, charSize).Trim().ToString();
-        buffer = buffer[MessageName.Length..];
+        try
+        {
+            ULog.Encoding.GetChars(buffer, charBuffer);
+            MessageName = new ReadOnlySpan<char>(charBuffer, 0, charSize).Trim().ToString();
+            buffer = buffer[MessageName.Length..];
+        }
+        finally
+        { 
+            ArrayPool<char>.Shared.Return(charBuffer);
+        }
+        
     }
 
     public void Serialize(ref Span<byte> buffer)
