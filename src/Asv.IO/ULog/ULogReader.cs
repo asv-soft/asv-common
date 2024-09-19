@@ -21,6 +21,7 @@ public enum ULogToken
     DefaultParameter,
     Unsubscription,
     Subscription,
+    LoggedData,
     LoggedString,
     Synchronization,
     TaggedLoggedString,
