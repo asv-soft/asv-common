@@ -24,6 +24,7 @@ public static partial class ULog
         builder.Add(ULogTaggedLoggedStringMessageToken.TokenId, () => new ULogTaggedLoggedStringMessageToken());
         builder.Add(ULogSubscriptionMessageToken.TokenId, () => new ULogSubscriptionMessageToken());
         builder.Add(ULogDropoutMessageToken.TokenId, () => new ULogDropoutMessageToken());
+        builder.Add(ULogLoggedDataMessageToken.TokenId, () => new ULogLoggedDataMessageToken());
         return new ULogReader(builder.ToImmutable(),logger);
     }
     
