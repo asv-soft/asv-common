@@ -19,7 +19,12 @@ public enum ULogToken
     MultiInformation,
     Parameter,
     DefaultParameter,
-    LoggedData
+    Unsubscription,
+    Subscription,
+    LoggedString,
+    Synchronization,
+    TaggedLoggedString,
+    Dropout
 }
 
 public interface IULogReader
