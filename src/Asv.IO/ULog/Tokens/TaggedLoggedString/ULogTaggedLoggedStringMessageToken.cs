@@ -46,8 +46,7 @@ public class ULogTaggedLoggedStringMessageToken : IULogToken
         
         Timestamp = BinSerialize.ReadULong(ref buffer);
         
-        var messageBytes = buffer[..buffer.Length];
-        Message = ULog.Encoding.GetString(messageBytes);
+        Message = ULog.Encoding.GetString(buffer);
     }
 
     public void Serialize(ref Span<byte> buffer)
