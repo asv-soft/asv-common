@@ -95,8 +95,12 @@ public class ULogReader(ImmutableDictionary<byte, Func<IULogToken>> factory, ILo
                 break;
             case ReaderState.Corrupted:
                 corrupted:
-                // TODO: try to find sync message and switch to DataSection
-                throw new Exception("Corrupted ULog file. Sync message not implemented.");
+                if (!InternalReadSyncSequence(ref rdr, ref token))
+                {
+                    _state = ReaderState.Corrupted;
+                }
+                
+                _state = ReaderState.DataSection;
                 break;
             default:
                 throw new ArgumentOutOfRangeException();
@@ -104,6 +108,38 @@ public class ULogReader(ImmutableDictionary<byte, Func<IULogToken>> factory, ILo
         CurrentToken = token;
         return true;
 
+    }
+    
+    private bool InternalReadSyncSequence(ref SequenceReader<byte> rdr, ref IULogToken? token)
+    {
+        token = null;
+        
+        var buffer = ArrayPool<byte>.Shared.Rent(512);
+        try
+        {
+            var temp = new Span<byte>(buffer);
+            while (true)
+            {
+                if (rdr.TryRead(out var data)) // we have an item to handle
+                {
+                    // возможно стоит искать токен прям здесь, чтобы в случае обнаружения сразу прекратить чтение
+                    BinSerialize.WriteByte(ref temp, data);
+                    rdr.Advance(sizeof(byte));
+                }
+
+                // попробовать найти хэдер и токен, если получилось найти, то
+                // вернуть true и сдвинуть каретку на байт после токена
+
+                // если не получилось найти
+                rdr.Rewind(sizeof(ushort) + sizeof(byte) + ULogSynchronizationMessageToken.SyncMagic.Length);
+            }
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
+        
+        return false;
     }
 
     private bool InternalReadToken(ref SequenceReader<byte> rdr, ref IULogToken? token)
