@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-    <ProductVersion>3.0.0-dev.3</ProductVersion>
+    <ProductVersion>v3.0.0-dev.4</ProductVersion>
     <ProductPrevVersion>2.0.4</ProductPrevVersion>
     <ReactiveVersion>6.0.0</ReactiveVersion>
     <NewtonsoftJsonVersion>13.0.3</NewtonsoftJsonVersion>
