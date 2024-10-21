@@ -49,7 +49,7 @@ jobs:
       - name: Compare tag with NuGet package version
         shell: pwsh
         run: |
-          if (${{ env.PropsVersion }} -ne ${{ env.VERSION }}) {
+          if ("${{ env.PropsVersion }}" -ne "${{ env.VERSION }}") {
             Write-Host "Error: Tag does not match NuGet package version"
             exit 1
           }
