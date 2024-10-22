@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Abstractions;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using Asv.Common;
@@ -18,16 +19,18 @@ namespace Asv.Cfg.Json
         private readonly LockByKeyExecutor<string> _lock = new(ConfigurationHelper.DefaultKeyComparer);
         private readonly ILogger _logger;
         private readonly JsonSerializer _serializer;
+        private readonly IFileSystem _fileSystem;
 
-        public JsonConfiguration(string folderPath, ILogger? logger = null)
+        public JsonConfiguration(string folderPath, ILogger? logger = null, IFileSystem? fileSystem = null)
         {
             _logger = logger ?? NullLogger.Instance;
+            _fileSystem = fileSystem ?? new FileSystem();
             ArgumentException.ThrowIfNullOrWhiteSpace(folderPath);
-            _folderPath = Path.GetFullPath(folderPath);
-            if (!Directory.Exists(folderPath))
+            _folderPath = _fileSystem.Path.GetFullPath(folderPath);
+            if (!_fileSystem.Directory.Exists(folderPath))
             {
                 _logger.ZLogDebug($"Directory not exist. Create '{folderPath}' for configuration");
-                Directory.CreateDirectory(folderPath);
+                _fileSystem.Directory.CreateDirectory(folderPath);
             }
 
             _serializer = JsonHelper.CreateDefaultJsonSerializer();
@@ -38,13 +41,13 @@ namespace Asv.Cfg.Json
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private string GetFilePath(string key)
         {
-            return Path.Combine(_folderPath, $"{key}.json");
+            return _fileSystem.Path.Combine(_folderPath, $"{key}.json");
         }
         
         public IEnumerable<string> AvailableParts
             =>
-                Directory.EnumerateFiles(_folderPath, FixedSearchPattern)
-                    .Select(Path.GetFileNameWithoutExtension)!;
+                _fileSystem.Directory.EnumerateFiles(_folderPath, FixedSearchPattern)
+                    .Select(_fileSystem.Path.GetFileNameWithoutExtension)!;
                 
         public bool Exist(string key)
         {
@@ -54,7 +57,7 @@ namespace Asv.Cfg.Json
 
         private bool InternalExist(string path)
         {
-            return File.Exists(path);
+            return _fileSystem.File.Exists(path);
         }
 
         public TPocoType Get<TPocoType>(string key, Lazy<TPocoType> defaultValue)
@@ -67,7 +70,7 @@ namespace Asv.Cfg.Json
         {
             if (InternalExist(path))
             {
-                using var stream = File.OpenRead(path);
+                using var stream = _fileSystem.File.OpenRead(path);
                 using var reader = new StreamReader(stream);
                 using var jsonReader = new JsonTextReader(reader);
                 return _serializer.Deserialize<TPocoType>(jsonReader) ?? throw new InvalidOperationException();
@@ -87,7 +90,7 @@ namespace Asv.Cfg.Json
         {
             InternalRemove(filepath);
             _logger.ZLogTrace($"Create configuration file '{filepath}'");
-            using var file = File.CreateText(filepath);
+            using var file = _fileSystem.File.CreateText(filepath);
             _serializer.Serialize(file, value);
             file.Flush();
         }
@@ -99,9 +102,9 @@ namespace Asv.Cfg.Json
         }
         private void InternalRemove(string path)
         {
-            if (!File.Exists(path)) return;
+            if (!_fileSystem.File.Exists(path)) return;
             _logger.ZLogTrace($"Delete configuration file '{path}'");
-            File.Delete(path);
+            _fileSystem.File.Delete(path);
         }
 
         public void Dispose()

@@ -38,6 +38,5 @@ namespace Asv.Common
             _lastValue = sum;
             return _buffer.Average();
         }
-        
     }
 }

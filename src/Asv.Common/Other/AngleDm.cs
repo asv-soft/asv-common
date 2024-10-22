@@ -71,6 +71,7 @@ namespace Asv.Common
                 {
                     angle *= sign1;
                 }
+                
                 return result;
             }
             
@@ -115,7 +116,5 @@ namespace Asv.Common
             }
             return $"{(Math.Sign(decimalDegrees) > 0 ? "" : "-")}{degrees:00}°{minutes:00.00}′";  
         }
-
-        
     }
 }

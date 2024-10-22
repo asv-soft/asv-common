@@ -204,10 +204,6 @@ namespace Asv.Common
                 distance -= Pi2;
             
             return distance;
-
         }
-
-        
-
     }
 }

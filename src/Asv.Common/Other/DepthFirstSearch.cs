@@ -23,11 +23,9 @@ namespace Asv.Common
             if (gray.Contains(key)) throw new ArgumentException($"Circular dependency from {key}");
             if (black.Contains(key)) yield break;
             gray.Add(key);
-
             
             var subitems = edges[key];
-
-
+            
             foreach (var subitem in subitems.SelectMany(_ => InternalCalc(_, edges, gray, black)))
             {
                 yield return subitem;
