@@ -14,7 +14,6 @@ namespace Asv.Common
     /// </summary>
     public static class StringExtensions
     {
-
         public static string BytesToString(this long byteCount)
         {
             string[] suf = { "B", "KB", "MB", "GB", "TB", "PB", "EB" }; //Longs run out around EB

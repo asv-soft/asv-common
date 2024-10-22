@@ -53,7 +53,6 @@ namespace Asv.Common
             var s1Group = match.Groups["s1"];
             var s2Group = match.Groups["s2"];
             
-
             if (degGroup.Success == false) return false;
             
             if (degGroup.Success && minGroup.Success == false && secGroup.Success == false) return false;

@@ -13,17 +13,11 @@ namespace Asv.Cfg.Test
             _testOutputHelper = testOutputHelper;
         }
 
-        public override IDisposable CreateForTest(out InMemoryConfiguration configuration)
+        protected override IDisposable CreateForTest(out InMemoryConfiguration configuration)
         {
             configuration = new InMemoryConfiguration();
             var cfg = configuration;
             return Disposable.Create(() => {cfg.Dispose(); });
         }
-
-        
-        
-       
-
-        
     }
 }

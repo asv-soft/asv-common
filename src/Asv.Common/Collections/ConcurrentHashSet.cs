@@ -139,7 +139,5 @@ namespace Asv.Common
                 if (_lock.IsReadLockHeld) _lock.ExitReadLock();
             }
         }
-
-        
     }
 }

@@ -29,7 +29,6 @@ namespace Asv.Common
                     _cancel = new CancellationTokenSource();
                     return _cancel.Token;
                 }
-
             }
         }
 

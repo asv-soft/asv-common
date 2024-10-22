@@ -82,8 +82,7 @@ namespace Asv.Common
             }
             
         }
-
-
+        
         public IEnumerator<KeyValuePair<double, double>> GetEnumerator()
         {
             for (var i = 0; i < _values.Length / _values.Rank; i++)

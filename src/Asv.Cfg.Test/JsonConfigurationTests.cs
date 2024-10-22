@@ -1,5 +1,7 @@
 using System;
 using System.IO;
+using System.IO.Abstractions;
+using System.IO.Abstractions.TestingHelpers;
 using System.Linq;
 using System.Reactive.Disposables;
 using System.Threading;
@@ -57,26 +59,34 @@ namespace Asv.Cfg.Test
     public class JsonConfigurationTests:ConfigurationTestBase<JsonConfiguration>
     {
         private readonly ITestOutputHelper _testOutputHelper;
+        private readonly IFileSystem _fileSystem;
 
         public JsonConfigurationTests(ITestOutputHelper testOutputHelper)
         {
             _testOutputHelper = testOutputHelper;
+            _fileSystem = new MockFileSystem();
         }
 
-        public override IDisposable CreateForTest(out JsonConfiguration configuration)
+        protected override IDisposable CreateForTest(out JsonConfiguration configuration)
         {
-            var workingDir = $"{Path.GetTempPath()}\\{Path.GetRandomFileName()}";
-            if (Directory.Exists(workingDir))
+            var workingDir = _fileSystem.Path.Combine
+            (
+                _fileSystem.Path.GetTempPath(), 
+                _fileSystem.Path.GetRandomFileName()
+            );
+            
+            if (_fileSystem.Directory.Exists(workingDir))
             {
-                Directory.Delete(workingDir);
+                _fileSystem.Directory.Delete(workingDir);
             }
+            
             _testOutputHelper.WriteLine($"Working directory: {workingDir}");
-            configuration = new JsonConfiguration(workingDir);
+            configuration = new JsonConfiguration(workingDir, fileSystem: _fileSystem);
             var cfg = configuration;
             return Disposable.Create(() =>
             {
                 cfg.Dispose();
-                Directory.Delete(workingDir, true);
+                _fileSystem.Directory.Delete(workingDir, true);
             });
         }
         
@@ -87,10 +97,8 @@ namespace Asv.Cfg.Test
         {
             Assert.Throws<ArgumentException>(() =>
             {
-                var configuration = new JsonConfiguration(folderPath);
+                var configuration = new JsonConfiguration(folderPath, fileSystem: _fileSystem);
             });
-            
-            
         }
         
         [Theory]
@@ -99,10 +107,8 @@ namespace Asv.Cfg.Test
         {
             Assert.Throws<ArgumentNullException>(() =>
             {
-                var configuration = new JsonConfiguration(folderPath);
+                var configuration = new JsonConfiguration(folderPath, fileSystem: _fileSystem);
             });
-            
-            
         }
 
         [Fact]
@@ -110,17 +116,11 @@ namespace Asv.Cfg.Test
         {
             using var cleanup = CreateForTest(out var cfg);
             
-            cfg.Set(new TestClass(){ Name = "Test" });
-            var fileName = Directory.GetFiles(cfg.WorkingFolder, "*.json");
+            cfg.Set(new TestClass{ Name = "Test" });
+            var fileName = _fileSystem.Directory.GetFiles(cfg.WorkingFolder, "*.json");
             
-            Assert.Equal(Path.Combine(cfg.WorkingFolder,"TestClass.json"), fileName.FirstOrDefault());
-
-            
+            Assert.Equal(_fileSystem.Path.Combine(cfg.WorkingFolder,"TestClass.json"), fileName.FirstOrDefault());
         }
-      
-
-       
-
         
         [Fact]
         public void Check_If_Multiple_Copies_Of_Same_Setting_Are_Saved_In_Directory()
@@ -135,7 +135,7 @@ namespace Asv.Cfg.Test
             cfg.Set(new TestClass(){ Name = "Test3" });
             Thread.Sleep(50);
 
-            var dirInfo = new DirectoryInfo(cfg.WorkingFolder);
+            var dirInfo = _fileSystem.DirectoryInfo.Wrap(new DirectoryInfo(cfg.WorkingFolder));
             var files = dirInfo.GetFiles();
 
             var fileQuery =
@@ -143,16 +143,9 @@ namespace Asv.Cfg.Test
                 where file.Name == "TestClass.json"
                 select file;
 
-            var fileInfos = fileQuery as FileInfo[] ?? fileQuery.ToArray();
+            var fileInfos = fileQuery as IFileInfo[] ?? fileQuery.ToArray();
 
             Assert.Single(fileInfos);
-
-            
         }
-        
-        
-        
-        
-       
     }
 }

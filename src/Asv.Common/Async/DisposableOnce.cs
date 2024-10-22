@@ -47,6 +47,5 @@ namespace Asv.Common
         protected abstract void InternalDisposeOnce();
         
         #endregion
-
     }
 }

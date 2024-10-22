@@ -9,9 +9,6 @@ namespace Asv.Composition;
 
 public static class CompositionHostHelper
 {
-    
-   
-    
     /// <summary>
     /// Sorts and retrieves the exports from the provided CompositionHost based on their dependencies.
     /// </summary>
@@ -186,6 +183,5 @@ public static class CompositionHostHelper
 
         var enabled = config.First(x => x.Value);
         return foundImpl.First(x => getId(x.Metadata).Equals(enabled.Key));
-
     }
 }

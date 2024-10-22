@@ -4,18 +4,15 @@ namespace Asv.Common
 {
     public class NormalRandom : Random
     {
-        
-        double prevSample = double.NaN;
+        private double _prevSample = double.NaN;
         protected override double Sample()
         {
-            
-            if (!double.IsNaN(prevSample))
+            if (!double.IsNaN(_prevSample))
             {
-                var result = prevSample;
-                prevSample = double.NaN;
+                var result = _prevSample;
+                _prevSample = double.NaN;
                 return result;
             }
-
             
             // Marsaglia polar method
             double u, v, s;
@@ -28,7 +25,7 @@ namespace Asv.Common
             while (u <= -1 || v <= -1 || s >= 1 || s == 0);
             var r = Math.Sqrt(-2 * Math.Log(s) / s);
 
-            prevSample = r * v;
+            _prevSample = r * v;
             return r * u;
         }
     }

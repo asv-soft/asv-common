@@ -7,10 +7,6 @@ using System.Reactive.Subjects;
 
 namespace Asv.Common
 {
-
-
-
-
     public class ProcessRx : IDisposable
     {
         private Process _process;
@@ -63,8 +59,7 @@ namespace Asv.Common
             _process.EnableRaisingEvents = true;
             _input = _process.StandardInput;
         }
-
-
+        
         public void ClearOutput()
         {
             string val;
@@ -110,12 +105,10 @@ namespace Asv.Common
             _process?.Dispose();
 
         }
-
-
+        
         public void WaitForExit()
         {
             _process.WaitForExit();
         }
     }
-
 }

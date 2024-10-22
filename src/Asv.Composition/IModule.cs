@@ -1,7 +1,3 @@
 namespace Asv.Composition;
 
-public interface IModule : IDisposable
-{
-    
-    
-}
+public interface IModule : IDisposable {}

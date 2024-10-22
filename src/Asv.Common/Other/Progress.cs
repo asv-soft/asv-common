@@ -18,5 +18,4 @@ namespace Asv.Common
             _callback(value);
         }
     }
-
 }

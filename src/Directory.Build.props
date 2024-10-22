@@ -6,5 +6,6 @@
     <NewtonsoftJsonVersion>13.0.3</NewtonsoftJsonVersion>
     <ApiCompatVersion>8.0.200</ApiCompatVersion>
     <ZLoggerVersion>2.5.5</ZLoggerVersion>
+    <SystemIOAbstractionsVersion>21.0.29</SystemIOAbstractionsVersion>
   </PropertyGroup>
 </Project>

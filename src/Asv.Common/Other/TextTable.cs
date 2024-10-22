@@ -58,14 +58,11 @@ namespace Asv.Common
 
     public class AsciiTableBorderSingle : TextTableBorder
     {
-
-
         protected override string Source => "+-++" +
                                             "| ||" +
                                             "+-++" +
                                             "+-++";
     }
-
 
     public static class TextTable
     {
@@ -73,8 +70,7 @@ namespace Asv.Common
         public static TextTableBorder Single = new SingleTextTableBorder();
         public static TextTableBorder Double = new DoubleTextTableBorder();
         public static TextTableBorder Empty = new EmptyTextTableBorder();
-
-
+        
         public static void PrintKeyValue(Action<string> write, TextTableBorder border, int keyWidth, int valueWidth, string name,IEnumerable<KeyValuePair<string,string>> values)
         {
             var key = name.PadCenter(keyWidth + valueWidth + 1);
@@ -236,6 +232,4 @@ namespace Asv.Common
             return member.Member as PropertyInfo;
         }
     }
-
-
 }

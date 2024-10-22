@@ -10,7 +10,6 @@ namespace Asv.Common
     /// </summary>
     public static class EnumerableExtensions
     {
-        
         /// <summary>
         /// Split the elements of a sequence into chunks of size at most <paramref name="size"/>.
         /// </summary>
@@ -68,8 +67,7 @@ namespace Asv.Common
                 }
             }
         }
-
-
+        
         /// <summary>
         /// Synchronizes a dictionary with a given list of keys.
         /// Adds keys to the dictionary that are not present and removes keys from the dictionary that are not in the list.
@@ -117,9 +115,7 @@ namespace Asv.Common
                 addCallback(item);
             }
         }
-
         
-
         /// <summary>
         /// Performs an action for each item in the enumerable
         /// </summary>
@@ -290,10 +286,5 @@ namespace Asv.Common
 
             return items.MinItem(selector, out minValue);
         }
-
-
-        
     }
-
-    
 }

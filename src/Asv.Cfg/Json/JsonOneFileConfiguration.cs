@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Abstractions;
 using System.Reactive;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
@@ -28,11 +29,20 @@ namespace Asv.Cfg.Json
         private readonly Subject<Exception> _deferredErrors = new();
         private readonly JsonSerializer _serializer;
         private readonly ILogger _logger;
+        private readonly IFileSystem _fileSystem;
 
 
-        public JsonOneFileConfiguration(string fileName, bool createIfNotExist, TimeSpan? flushToFileDelayMs, bool sortKeysInFile = false, ILogger? logger = null)
+        public JsonOneFileConfiguration(
+            string fileName, 
+            bool createIfNotExist, 
+            TimeSpan? flushToFileDelayMs, 
+            bool sortKeysInFile = false, 
+            ILogger? logger = null,
+            IFileSystem? fileSystem = null
+        )
         {
-            _fileName = Path.GetFullPath(fileName);
+            _fileSystem= fileSystem ?? new FileSystem();
+            _fileName = _fileSystem.Path.GetFullPath(fileName);
             _sortKeysInFile = sortKeysInFile;
             _logger = logger ?? NullLogger.Instance; 
             
@@ -50,25 +60,24 @@ namespace Asv.Cfg.Json
             }
 
             ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
-                
 
-            var dir = Path.GetDirectoryName(Path.GetFullPath(fileName));
+            var dir = _fileSystem.Path.GetDirectoryName(_fileSystem.Path.GetFullPath(fileName));
             ArgumentException.ThrowIfNullOrWhiteSpace(dir);
 
             _saveSubscribe = flushToFileDelayMs == null
                 ? _onNeedToSave.Subscribe(InternalSaveChanges)
                 : _onNeedToSave.Throttle(flushToFileDelayMs.Value).Subscribe(InternalSaveChanges);
 
-            if (Directory.Exists(dir) == false)
+            if (_fileSystem.Directory.Exists(dir) == false)
             {
                 if (!createIfNotExist)
                     throw new DirectoryNotFoundException($"Directory with config file not exist: {dir}");
                 
                 _logger.ZLogWarning($"Directory with config file not exist. Try to create it: {dir}");
-                Directory.CreateDirectory(dir);
+                _fileSystem.Directory.CreateDirectory(dir);
             }
             
-            if (File.Exists(fileName) == false)
+            if (_fileSystem.File.Exists(fileName) == false)
             {
                 if (createIfNotExist)
                 {
@@ -84,7 +93,7 @@ namespace Asv.Cfg.Json
             }
             else
             {
-                var text = File.ReadAllText(_fileName);
+                var text = _fileSystem.File.ReadAllText(_fileName);
                 try
                 {
                     var dict = JsonConvert.DeserializeObject<Dictionary<string, JToken>>(text, new StringEnumConverter()) ?? new Dictionary<string, JToken>();
@@ -106,11 +115,11 @@ namespace Asv.Cfg.Json
             {
                 try
                 {
-                    if (File.Exists(_fileName))
+                    if (_fileSystem.File.Exists(_fileName))
                     {
-                        File.Delete(_fileName);
+                        _fileSystem.File.Delete(_fileName);
                     }
-                    using (var file = File.CreateText(_fileName))
+                    using (var file = _fileSystem.File.CreateText(_fileName))
                     {
                         //serialize object directly into file stream
                         if (_sortKeysInFile)
@@ -185,13 +194,13 @@ namespace Asv.Cfg.Json
         protected override void InternalDisposeOnce()
         {
             _saveSubscribe.Dispose();
-            _onNeedToSave?.Dispose();
+            _onNeedToSave.Dispose();
             _logger.ZLogTrace($"Dispose {nameof(JsonOneFileConfiguration)}");
             if (_deferredFlush)
             {
                 InternalSaveChanges(Unit.Default);    
             }
-            _deferredErrors?.Dispose();
+            _deferredErrors.Dispose();
             _values.Clear();
         }
     }

@@ -19,8 +19,7 @@ namespace Asv.Common
                 return _default;
             }
         }
-
-
+        
         public void SetCorrection(long correctionIn100NanosecondsTicks)
         {
             throw new NotImplementedException();
