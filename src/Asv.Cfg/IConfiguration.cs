@@ -57,7 +57,6 @@ namespace Asv.Cfg
         {
             src.Remove(typeof(TPocoType).Name);
         }
-       
     }
     
     public interface IConfiguration:IDisposable
@@ -68,10 +67,4 @@ namespace Asv.Cfg
         void Set<TPocoType>(string key, TPocoType value);
         void Remove(string key);
     }
-
-   
-
-   
-
-    
 }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Abstractions;
 using System.IO.Compression;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -18,12 +19,20 @@ namespace Asv.Cfg.Json
         private readonly object _sync = new();
         private readonly JsonSerializer _serializer;
         private readonly ILogger _logger;
+        private readonly IFileSystem _fileSystem;
         private const string FixedFileExt = ".json";
 
-        public ZipJsonConfiguration(Stream zipStream,bool leaveOpen = false, ILogger? logger = null)
+        public ZipJsonConfiguration
+        (
+            Stream zipStream,
+            bool leaveOpen = false, 
+            ILogger? logger = null,
+            IFileSystem? fileSystem = null
+        )
         {
-            if (zipStream == null) throw new ArgumentNullException(nameof(zipStream));
+            ArgumentNullException.ThrowIfNull(zipStream);
             _logger = logger ?? NullLogger.Instance;
+            _fileSystem = fileSystem ?? new FileSystem();
             _archive = new ZipArchive(zipStream, ZipArchiveMode.Update, leaveOpen);
             _serializer = JsonHelper.CreateDefaultJsonSerializer();
         }
@@ -43,8 +52,8 @@ namespace Asv.Cfg.Json
             {
                 lock (_sync)
                 {
-                    return _archive.Entries.Where(_ => Path.GetExtension(_.Name) == FixedFileExt)
-                        .Select(x => Path.GetFileNameWithoutExtension(x.Name)).ToArray();
+                    return _archive.Entries.Where(_ => _fileSystem.Path.GetExtension(_.Name) == FixedFileExt)
+                        .Select(x => _fileSystem.Path.GetFileNameWithoutExtension(x.Name)).ToArray();
                 }
             }
         }
@@ -84,6 +93,7 @@ namespace Asv.Cfg.Json
                     _serializer.Serialize(wrt, inst);
                     return inst;
                 }
+                
                 using var stream = entry.Open();
                 using var streamReader = new StreamReader(stream);
                 using var rdr = new JsonTextReader(streamReader);
