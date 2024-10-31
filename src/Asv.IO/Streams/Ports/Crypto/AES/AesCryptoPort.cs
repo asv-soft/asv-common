@@ -21,9 +21,13 @@ public class AesCryptoPort : PortBase
 
     public AesCryptoPort(PortBase port, AesCryptoPortConfig config)
     {
-        if (config == null) throw new ArgumentNullException(nameof(config));
+        if (config == null)
+        {
+            throw new ArgumentNullException(nameof(config));
+        }
+
         _port = port ?? throw new ArgumentNullException(nameof(port));
-        
+
         _aes = Aes.Create();
         _aes.Key = config.Key;
         _aes.IV = config.InitVector;
@@ -43,9 +47,17 @@ public class AesCryptoPort : PortBase
 
         _encryptMemStream = new MemoryStream();
         _decryptMemStream = new MemoryStream();
-        
-        _encryptorStream = new CryptoStream(_encryptMemStream, _aes.CreateEncryptor(), CryptoStreamMode.Write);
-        _decryptorStream = new CryptoStream(_decryptMemStream, _aes.CreateDecryptor(), CryptoStreamMode.Write);
+
+        _encryptorStream = new CryptoStream(
+            _encryptMemStream,
+            _aes.CreateEncryptor(),
+            CryptoStreamMode.Write
+        );
+        _decryptorStream = new CryptoStream(
+            _decryptMemStream,
+            _aes.CreateDecryptor(),
+            CryptoStreamMode.Write
+        );
     }
 
     private void ResetEncryptor()
@@ -53,15 +65,23 @@ public class AesCryptoPort : PortBase
         _encryptorStream?.Dispose();
         _encryptMemStream?.Dispose();
         _encryptMemStream = new MemoryStream();
-        _encryptorStream = new CryptoStream(_encryptMemStream, _aes.CreateEncryptor(), CryptoStreamMode.Write);
+        _encryptorStream = new CryptoStream(
+            _encryptMemStream,
+            _aes.CreateEncryptor(),
+            CryptoStreamMode.Write
+        );
     }
-    
+
     private void ResetDecryptor()
     {
         _decryptorStream?.Dispose();
         _decryptMemStream?.Dispose();
         _decryptMemStream = new MemoryStream();
-        _decryptorStream = new CryptoStream(_decryptMemStream, _aes.CreateDecryptor(), CryptoStreamMode.Write);
+        _decryptorStream = new CryptoStream(
+            _decryptMemStream,
+            _aes.CreateDecryptor(),
+            CryptoStreamMode.Write
+        );
     }
 
     public override PortType PortType => _port.PortType;
@@ -115,7 +135,7 @@ public class AesCryptoPort : PortBase
     protected override void InternalStart()
     {
         _port.Enable();
-        ResetStreams(); 
+        ResetStreams();
     }
 
     private async void OnNewData(byte[] data)
@@ -140,12 +160,19 @@ public class AesCryptoPort : PortBase
                 InternalOnError(ex);
             }
         }
-        else InternalOnData(data);
+        else
+        {
+            InternalOnData(data);
+        }
     }
-    
+
     private static bool IsEncrypted(byte[] data)
     {
-        if (data.Length < HEADER.Length) return false;
+        if (data.Length < HEADER.Length)
+        {
+            return false;
+        }
+
         return !HEADER.Where((t, i) => data[i] != t).Any();
     }
 }

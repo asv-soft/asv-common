@@ -2,7 +2,7 @@ using System;
 
 namespace Asv.IO
 {
-    public abstract class SpanKeyWithNameType<TKey>:ISizedSpanSerializable
+    public abstract class SpanKeyWithNameType<TKey> : ISizedSpanSerializable
     {
         private string _name;
 
@@ -44,6 +44,5 @@ namespace Asv.IO
         {
             return $"[{Id}] {Name}";
         }
-
     }
 }

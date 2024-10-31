@@ -16,28 +16,44 @@ namespace Asv.Common
         public static double Abs(double x, double y)
         {
             if (double.IsInfinity(x) || double.IsInfinity(y))
+            {
                 return double.PositiveInfinity;
+            }
+
             var num1 = Math.Abs(x);
             var num2 = Math.Abs(y);
             if (num1 > num2)
             {
                 var num3 = num2 / num1;
-                return num1 * Math.Sqrt(1.0 + num3 * num3);
+                return num1 * Math.Sqrt(1.0 + (num3 * num3));
             }
+
             if (num2 == 0.0)
+            {
                 return num1;
+            }
+
             var num4 = num1 / num2;
-            return num2 * Math.Sqrt(1.0 + num4 * num4);
+            return num2 * Math.Sqrt(1.0 + (num4 * num4));
         }
-        
-        public static string AngleToDegreeString(double angleValue,string formatStringForMinute = "00.00", string nanString = "-")
+
+        public static string AngleToDegreeString(
+            double angleValue,
+            string formatStringForMinute = "00.00",
+            string nanString = "-"
+        )
         {
-            if (double.IsNaN(angleValue)) return "";
+            if (double.IsNaN(angleValue))
+            {
+                return string.Empty;
+            }
+
             var deg = (int)angleValue;
             angleValue = Math.Abs(angleValue - deg);
             var min = angleValue * 60;
             return $"{deg:D}° {min.ToString(formatStringForMinute)}′";
         }
+
         /// <summary>
         ///   Interpolates data using a piece-wise linear function.
         /// </summary>
@@ -55,27 +71,33 @@ namespace Asv.Common
             double[] x,
             double[] y,
             double lower,
-            double upper)
+            double upper
+        )
         {
             for (var index1 = 0; index1 < x.Length; ++index1)
             {
                 if (value < x[index1])
                 {
                     if (index1 == 0)
+                    {
                         return lower;
+                    }
+
                     var index2 = index1 - 1;
                     var index3 = index1;
                     var num = (value - x[index2]) / (x[index3] - x[index2]);
-                    return y[index2] + (y[index3] - y[index2]) * num;
+                    return y[index2] + ((y[index3] - y[index2]) * num);
                 }
             }
+
             return upper;
         }
 
         public static void LeastSquaresMethod(double[] x, double[] y, out double a, out double b)
         {
-            if (x == null) throw new ArgumentNullException(nameof(x));
-            if (y == null) throw new ArgumentNullException(nameof(y));
+            ArgumentNullException.ThrowIfNull(x);
+
+            ArgumentNullException.ThrowIfNull(y);
 
             var length = Math.Min(x.Length, y.Length);
             if (length == 0)
@@ -96,14 +118,16 @@ namespace Asv.Common
                 sumx2 += x[i] * x[i];
                 sumxy += x[i] * y[i];
             }
-            a = (length * sumxy - sumx * sumy) / (length * sumx2 - sumx * sumx);
-            b = (sumy - a * sumx) / length;
+
+            a = ((length * sumxy) - (sumx * sumy)) / ((length * sumx2) - (sumx * sumx));
+            b = (sumy - (a * sumx)) / length;
         }
 
         public static void SingleLeastSquaresMethod(double[] x, double[] y, out double a)
         {
-            if (x == null) throw new ArgumentNullException(nameof(x));
-            if (y == null) throw new ArgumentNullException(nameof(y));
+            ArgumentNullException.ThrowIfNull(x);
+
+            ArgumentNullException.ThrowIfNull(y);
 
             var length = Math.Min(x.Length, y.Length);
             if (length == 0)
@@ -120,36 +144,37 @@ namespace Asv.Common
                 sumx2 += x[i] * x[i];
                 sumxy += x[i] * y[i];
             }
+
             a = sumxy / sumx2;
         }
-
 
         /// <summary>
         /// Calculate мВт в мкВ
         /// </summary>
-        /// <param name="mW"></param>
-        /// <param name="ohm"></param>
+        /// <param name="mW">.</param>
+        /// <param name="ohm">.</param>
         /// <returns></returns>
-        public static double mW2uV(double mW, double ohm)
+        public static double Mw2Uv(double mW, double ohm)
         {
             return Math.Sqrt((mW / 1000) * ohm) * 1e6;
         }
+
         /// <summary>
         /// Calculate дБм в мВт
         /// </summary>
-        /// <param name="mW"></param>
+        /// <param name="mW">.</param>
         /// <returns></returns>
-        public static double mW2dBm(double mW)
+        public static double Mw2dBm(double mW)
         {
-            return 10*Math.Log10(mW);
+            return 10 * Math.Log10(mW);
         }
 
         /// <summary>
         /// Calculate мВт в дБм
         /// </summary>
-        /// <param name="dBm"></param>
+        /// <param name="dBm">.</param>
         /// <returns></returns>
-        public static double dBm2mW(double dBm)
+        public static double DBm2Mw(double dBm)
         {
             return Math.Pow(10, dBm / 10);
         }
@@ -157,12 +182,12 @@ namespace Asv.Common
         /// <summary>
         /// Calculate dBm в мкВ
         /// </summary>
-        /// <param name="dBm"></param>
-        /// <param name="ohm"></param>
+        /// <param name="dBm">.</param>
+        /// <param name="ohm">.</param>
         /// <returns></returns>
-        public static double dBm2uV(double dBm, double ohm)
+        public static double DBm2Uv(double dBm, double ohm)
         {
-            return mW2uV(dBm2mW(dBm), ohm);
+            return Mw2Uv(DBm2Mw(dBm), ohm);
         }
 
         public static double GetAvgAngleDeg(double[] angles)
@@ -176,11 +201,16 @@ namespace Asv.Common
         public static double GetDistanceAngleDeg(double a, double b)
         {
             // https://en.wikipedia.org/wiki/Mean_of_circular_quantities
-            var distance = (a-b)%360;
+            var distance = (a - b) % 360;
             if (distance < -180)
+            {
                 distance += 360;
+            }
             else if (distance > 179)
+            {
                 distance -= 360;
+            }
+
             return distance;
         }
 
@@ -199,10 +229,14 @@ namespace Asv.Common
             }
 
             if (distance < -Math.PI)
+            {
                 distance += Pi2;
+            }
             else if (distance > Math.PI)
+            {
                 distance -= Pi2;
-            
+            }
+
             return distance;
         }
     }

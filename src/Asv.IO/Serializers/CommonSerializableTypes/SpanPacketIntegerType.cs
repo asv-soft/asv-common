@@ -4,10 +4,7 @@ namespace Asv.IO
 {
     public class SpanPacketIntegerType : ISizedSpanSerializable
     {
-        public SpanPacketIntegerType()
-        {
-            
-        }
+        public SpanPacketIntegerType() { }
 
         public SpanPacketIntegerType(int value)
         {
@@ -23,7 +20,7 @@ namespace Asv.IO
 
         public void Serialize(ref Span<byte> buffer)
         {
-            BinSerialize.WritePackedInteger(ref buffer,Value);
+            BinSerialize.WritePackedInteger(ref buffer, Value);
         }
 
         public int GetByteSize() => BinSerialize.GetSizeForPackedInteger(Value);
@@ -32,7 +29,9 @@ namespace Asv.IO
         {
             return Value.ToString();
         }
+
         public static explicit operator SpanPacketIntegerType(int value) => new(value);
+
         public static implicit operator int(SpanPacketIntegerType value) => value.Value;
     }
 }

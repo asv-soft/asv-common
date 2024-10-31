@@ -13,10 +13,13 @@ namespace Asv.IO
         /// <returns></returns>
         public static double Encode(string data)
         {
-            data ??= "";
+            data ??= string.Empty;
             if (data.Length > 4)
+            {
                 throw new ArgumentOutOfRangeException(
-                    $"Param {nameof(data)} must be less than or equal to 4 letters. {nameof(data)} = {data.Length}");
+                    $"Param {nameof(data)} must be less than or equal to 4 letters. {nameof(data)} = {data.Length}"
+                );
+            }
 
             var length = 4;
 
@@ -37,8 +40,8 @@ namespace Asv.IO
             }
 
             uint result = 0;
-            
-            result |= buffer[buffer.Length-1];
+
+            result |= buffer[buffer.Length - 1];
             for (var i = buffer.Length - 2; i >= 0; i--)
             {
                 result <<= 6;

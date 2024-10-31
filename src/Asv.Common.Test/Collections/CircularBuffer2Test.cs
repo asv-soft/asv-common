@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
-using Xunit;
 using Asv.Common;
+using Xunit;
 
 public class CircularBuffer2Tests
 {
@@ -182,9 +182,8 @@ public class CircularBuffer2Tests
         }
 
         Assert.Equal(new[] { 1, 2, 3 }, items);
-        
     }
-    
+
     [Fact]
     public void CopyTo_ShouldCopyAllElements_WhenBufferIsNotWrapped()
     {
@@ -235,7 +234,7 @@ public class CircularBuffer2Tests
         // Check that the destination was not fully overwritten
         Assert.Equal(new[] { 1, 2 }, destination.ToArray());
     }
-    
+
     [Fact]
     public void CopyTo_ShouldCopyOverflowedData()
     {

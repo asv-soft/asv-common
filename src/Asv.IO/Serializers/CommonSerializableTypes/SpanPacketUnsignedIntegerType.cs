@@ -6,10 +6,7 @@ namespace Asv.IO
     {
         public uint Value { get; set; }
 
-        public SpanPacketUnsignedIntegerType()
-        {
-            
-        }
+        public SpanPacketUnsignedIntegerType() { }
 
         public SpanPacketUnsignedIntegerType(uint value)
         {
@@ -34,6 +31,7 @@ namespace Asv.IO
         }
 
         public static explicit operator SpanPacketUnsignedIntegerType(uint value) => new(value);
+
         public static implicit operator uint(SpanPacketUnsignedIntegerType value) => value.Value;
     }
 }

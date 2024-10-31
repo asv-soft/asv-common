@@ -7,8 +7,5 @@ namespace Asv.Common
         TValue Value { get; }
     }
 
-    public interface IRxEditableValue<TValue> : IRxValue<TValue>,IObserver<TValue>
-    {
-        
-    }
+    public interface IRxEditableValue<TValue> : IRxValue<TValue>, IObserver<TValue> { }
 }

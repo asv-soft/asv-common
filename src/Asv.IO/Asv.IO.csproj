@@ -1,20 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
-    
     <FileVersion>$(ProductVersion)</FileVersion>
     <Version>$(ProductVersion)</Version>
     <PackageVersion>$(ProductVersion)</PackageVersion>
     <ApiCompatGenerateSuppressionFile>true</ApiCompatGenerateSuppressionFile>
     <PackageValidationBaselineVersion>$(ProductPrevVersion)</PackageValidationBaselineVersion>
-    
     <Authors>https://github.com/asv-soft</Authors>
     <Company>https://github.com/asv-soft</Company>
     <Copyright>https://github.com/asv-soft</Copyright>
     <PackageProjectUrl>https://github.com/asv-soft/asv-common</PackageProjectUrl>
     <RepositoryUrl>https://github.com/asv-soft/asv-common</RepositoryUrl>
+    <CodeAnalysisRuleSet>../CodeStyle.ruleset</CodeAnalysisRuleSet>
     <PackageTags />
-    
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageIcon>asv-io-128.png</PackageIcon>
     <LangVersion>latest</LangVersion>
@@ -51,6 +49,14 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="Roslynator.Analyzers" Version="4.12.9">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="StyleCop.Analyzers" Version="1.1.118">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="System.Reactive" Version="$(ReactiveVersion)" />
     <PackageReference Include="ZLogger" Version="$(ZLoggerVersion)" />
     <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />

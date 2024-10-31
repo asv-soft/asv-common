@@ -24,7 +24,10 @@ namespace Asv.IO
             _recvEndPoint = new IPEndPoint(IPAddress.Parse(config.LocalHost), config.LocalPort);
             if (!string.IsNullOrWhiteSpace(config.RemoteHost) && config.RemotePort != 0)
             {
-                _sendEndPoint = new IPEndPoint(IPAddress.Parse(config.RemoteHost), config.RemotePort);
+                _sendEndPoint = new IPEndPoint(
+                    IPAddress.Parse(config.RemoteHost),
+                    config.RemotePort
+                );
             }
 
             _onRecvNewClientSubject = new Subject<IPEndPoint>().DisposeItWith(Disposable);
@@ -35,15 +38,27 @@ namespace Asv.IO
         public override PortType PortType => PortType.Udp;
 
         public override string PortLogName => _config.ToString();
-        protected override async Task InternalSend(ReadOnlyMemory<byte> data, CancellationToken cancel)
+
+        protected override async Task InternalSend(
+            ReadOnlyMemory<byte> data,
+            CancellationToken cancel
+        )
         {
-            if (_udp?.Client == null || _udp.Client.Connected == false) return;
+            if (_udp?.Client == null || _udp.Client.Connected == false)
+            {
+                return;
+            }
+
             await _udp.SendAsync(data, cancel);
         }
 
         protected override Task InternalSend(byte[] data, int count, CancellationToken cancel)
         {
-            if (_udp?.Client == null || _udp.Client.Connected == false) return Task.CompletedTask;
+            if (_udp?.Client == null || _udp.Client.Connected == false)
+            {
+                return Task.CompletedTask;
+            }
+
             return _udp.SendAsync(data, count);
         }
 
@@ -60,21 +75,25 @@ namespace Asv.IO
             {
                 _udp.Connect(_sendEndPoint);
             }
+
             _stop = new CancellationTokenSource();
-            var recvThread = new Thread(ListenAsync) { IsBackground = true, Priority = ThreadPriority.Lowest };
+            var recvThread = new Thread(() => ListenAsync(_stop.Token))
+            {
+                IsBackground = true,
+                Priority = ThreadPriority.Lowest,
+            };
             _stop.Token.Register(() =>
             {
                 try
                 {
-                    recvThread.Abort();
+                    _stop.Cancel();
                 }
-                catch (Exception)
+                catch
                 {
                     // ignore
                 }
             });
             recvThread.Start();
-            
         }
 
         private void ListenAsync(object obj)
@@ -91,12 +110,17 @@ namespace Asv.IO
                         _udp.Connect(_lastRecvEndpoint);
                         _onRecvNewClientSubject.OnNext(_lastRecvEndpoint);
                     }
+
                     InternalOnData(bytes);
                 }
             }
             catch (SocketException ex)
             {
-                if (ex.SocketErrorCode == SocketError.Interrupted) return;
+                if (ex.SocketErrorCode == SocketError.Interrupted)
+                {
+                    return;
+                }
+
                 InternalOnError(ex);
             }
             catch (Exception e)

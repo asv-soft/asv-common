@@ -3,7 +3,6 @@ using System.Diagnostics;
 
 namespace Asv.Common
 {
-
     // Source: https://github.com/csharpvitamins/CSharpVitamins.ShortGuid
     [DebuggerDisplay("{Value}")]
     public struct ShortGuid
@@ -59,7 +58,7 @@ namespace Asv.Common
         /// Returns a value indicating whether this instance and a specified object represent the same type and value.
         /// <para>Compares for equality against other string, Guid and ShortGuid types.</para>
         /// </summary>
-        /// <param name="obj"></param>
+        /// <param name="obj">.</param>
         /// <returns></returns>
         public override bool Equals(object obj)
         {
@@ -73,15 +72,21 @@ namespace Asv.Common
                 return underlyingGuid.Equals(guid);
             }
 
-            if (obj is string str)
+            if (obj is not string str)
             {
-                // Try a ShortGuid string.
-                if (TryDecode(str, out guid))
-                    return underlyingGuid.Equals(guid);
+                return false;
+            }
 
-                // Try a guid string.
-                if (Guid.TryParse(str, out guid))
-                    return underlyingGuid.Equals(guid);
+            // Try a ShortGuid string.
+            if (TryDecode(str, out guid))
+            {
+                return underlyingGuid.Equals(guid);
+            }
+
+            // Try a guid string.
+            if (Guid.TryParse(str, out guid))
+            {
+                return underlyingGuid.Equals(guid);
             }
 
             return false;
@@ -123,9 +128,7 @@ namespace Asv.Common
         {
             var encoded = Convert.ToBase64String(guid.ToByteArray());
 
-            encoded = encoded
-                .Replace("/", "_")
-                .Replace("+", "-");
+            encoded = encoded.Replace("/", "_").Replace("+", "-");
 
             return encoded.Substring(0, 22);
         }
@@ -152,9 +155,7 @@ namespace Asv.Common
                 );
             }
 
-            var base64 = value
-                .Replace("_", "/")
-                .Replace("-", "+") + "==";
+            var base64 = value.Replace("_", "/").Replace("-", "+") + "==";
 
             var blob = Convert.FromBase64String(base64);
             var guid = new Guid(blob);
@@ -163,8 +164,8 @@ namespace Asv.Common
             if (sanityCheck != value)
             {
                 throw new FormatException(
-                    $"Invalid strict ShortGuid encoded string. The string '{value}' is valid URL-safe Base64, " +
-                    $"but failed a round-trip test expecting '{sanityCheck}'."
+                    $"Invalid strict ShortGuid encoded string. The string '{value}' is valid URL-safe Base64, "
+                        + $"but failed a round-trip test expecting '{sanityCheck}'."
                 );
             }
 
@@ -295,11 +296,15 @@ namespace Asv.Common
         {
             // Try a ShortGuid string.
             if (ShortGuid.TryDecode(value, out guid))
+            {
                 return true;
+            }
 
             // Try a Guid string.
             if (Guid.TryParse(value, out guid))
+            {
                 return true;
+            }
 
             guid = Guid.Empty;
             return false;
@@ -313,7 +318,9 @@ namespace Asv.Common
         public static bool operator ==(ShortGuid x, ShortGuid y)
         {
             if (ReferenceEquals(x, null))
+            {
                 return ReferenceEquals(y, null);
+            }
 
             return x.underlyingGuid == y.underlyingGuid;
         }
@@ -324,7 +331,9 @@ namespace Asv.Common
         public static bool operator ==(ShortGuid x, Guid y)
         {
             if (ReferenceEquals(x, null))
+            {
                 return ReferenceEquals(y, null);
+            }
 
             return x.underlyingGuid == y;
         }
@@ -365,13 +374,19 @@ namespace Asv.Common
         public static implicit operator ShortGuid(string value)
         {
             if (string.IsNullOrEmpty(value))
-                return ShortGuid.Empty;
+            {
+                return Empty;
+            }
 
             if (TryParse(value, out ShortGuid shortGuid))
+            {
                 return shortGuid;
+            }
 
-            throw new FormatException("ShortGuid should contain 22 Base64 characters or "
-                                      + "Guid should contain 32 digits with 4 dashes (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx).");
+            throw new FormatException(
+                "ShortGuid should contain 22 Base64 characters or "
+                    + "Guid should contain 32 digits with 4 dashes (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)."
+            );
         }
 
         /// <summary>
@@ -379,13 +394,9 @@ namespace Asv.Common
         /// </summary>
         public static implicit operator ShortGuid(Guid guid)
         {
-            if (guid == Guid.Empty)
-                return ShortGuid.Empty;
-
-            return new ShortGuid(guid);
+            return guid == Guid.Empty ? Empty : new ShortGuid(guid);
         }
 
         #endregion
     }
 }
-

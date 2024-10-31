@@ -1,9 +1,6 @@
 namespace Asv.Common
 {
-    public interface ILinkIndicator : IRxValue<LinkState>
-    {
-
-    }
+    public interface ILinkIndicator : IRxValue<LinkState> { }
 
     public enum LinkState
     {
@@ -12,13 +9,13 @@ namespace Asv.Common
         Connected,
     }
 
-    public class LinkIndicator:RxValueBehaviour<LinkState>, ILinkIndicator
+    public class LinkIndicator : RxValueBehaviour<LinkState>, ILinkIndicator
     {
         private readonly int _downgradeErrors;
         private int _connErrors;
         private readonly object _sync = new();
 
-        public LinkIndicator(int downgradeErrors = 3) 
+        public LinkIndicator(int downgradeErrors = 3)
             : base(LinkState.Disconnected)
         {
             _downgradeErrors = downgradeErrors;
@@ -29,11 +26,21 @@ namespace Asv.Common
             lock (_sync)
             {
                 _connErrors++;
-                if (_connErrors > 0 && _connErrors < 1) OnNext(LinkState.Connected);
-                if (_connErrors >= 1 && _connErrors <= _downgradeErrors) OnNext(LinkState.Downgrade);
-                if (_connErrors >= _downgradeErrors) OnNext(LinkState.Disconnected);
+                if (_connErrors > 0 && _connErrors < 1)
+                {
+                    OnNext(LinkState.Connected);
+                }
+
+                if (_connErrors >= 1 && _connErrors <= _downgradeErrors)
+                {
+                    OnNext(LinkState.Downgrade);
+                }
+
+                if (_connErrors >= _downgradeErrors)
+                {
+                    OnNext(LinkState.Disconnected);
+                }
             }
-            
         }
 
         public void Upgrade()
@@ -50,7 +57,4 @@ namespace Asv.Common
             OnNext(LinkState.Disconnected);
         }
     }
-
-    
-   
 }

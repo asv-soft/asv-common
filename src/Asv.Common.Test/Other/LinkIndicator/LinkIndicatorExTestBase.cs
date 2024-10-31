@@ -11,8 +11,7 @@ public abstract class LinkIndicatorExTestBase<T>
     where T : ILinkIndicatorEx, IDisposable
 {
     protected abstract T CreateLinkIndicator(int downgradeErrors = 3);
-    
-    
+
     [Fact]
     public void Constructor_InitializesCorrectly()
     {
@@ -24,6 +23,7 @@ public abstract class LinkIndicatorExTestBase<T>
         Assert.NotNull(linkIndicator.OnFound);
         Assert.NotNull(linkIndicator.OnLost);
     }
+
     [Fact]
     public void Dispose_DisposesResources()
     {

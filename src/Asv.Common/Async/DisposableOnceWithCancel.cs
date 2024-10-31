@@ -26,6 +26,7 @@ namespace Asv.Common
                     {
                         return IsDisposed ? CancellationToken.None : _cancel.Token;
                     }
+
                     _cancel = new CancellationTokenSource();
                     return _cancel.Token;
                 }
@@ -33,7 +34,7 @@ namespace Asv.Common
         }
 
         protected T AddToDispose<T>(T value)
-            where T:IDisposable
+            where T : IDisposable
         {
             Disposable.Add(value);
             return value;
@@ -43,7 +44,11 @@ namespace Asv.Common
         {
             get
             {
-                if (_dispose != null) return _dispose;
+                if (_dispose != null)
+                {
+                    return _dispose;
+                }
+
                 lock (_sync1)
                 {
                     return _dispose ??= new CompositeDisposable();
@@ -54,7 +59,10 @@ namespace Asv.Common
         protected override void InternalDisposeOnce()
         {
             if (_cancel?.Token.CanBeCanceled == true)
+            {
                 _cancel.Cancel(false);
+            }
+
             _cancel?.Dispose();
             _dispose?.Dispose();
         }

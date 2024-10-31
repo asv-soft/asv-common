@@ -4,7 +4,7 @@ using Xunit.Abstractions;
 
 namespace Asv.Cfg.Test
 {
-    public class InMemoryTests:ConfigurationTestBase<InMemoryConfiguration>
+    public class InMemoryTests : ConfigurationTestBase<InMemoryConfiguration>
     {
         private readonly ITestOutputHelper _testOutputHelper;
 
@@ -17,7 +17,10 @@ namespace Asv.Cfg.Test
         {
             configuration = new InMemoryConfiguration();
             var cfg = configuration;
-            return Disposable.Create(() => {cfg.Dispose(); });
+            return Disposable.Create(() =>
+            {
+                cfg.Dispose();
+            });
         }
     }
 }

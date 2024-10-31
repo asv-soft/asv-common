@@ -27,7 +27,10 @@ namespace Asv.IO
             _cfg = cfg;
             _removeTcpClientSubject = new Subject<TcpClient>().DisposeItWith(Disposable);
             _addTcpClientSubject = new Subject<TcpClient>().DisposeItWith(Disposable);
-            Observable.Timer(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(3)).Where(_=>IsEnabled.Value).Subscribe(DeleteClients, DisposeCancel);
+            Observable
+                .Timer(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(3))
+                .Where(_ => IsEnabled.Value)
+                .Subscribe(DeleteClients, DisposeCancel);
             DisposeCancel.Register(InternalStop);
         }
 
@@ -39,9 +42,12 @@ namespace Asv.IO
             _rw.EnterUpgradeableReadLock();
             try
             {
-
                 var itemsToDelete = _clients.Where(_ => _.Connected == false).ToArray();
-                if (itemsToDelete.Length == 0) return;
+                if (itemsToDelete.Length == 0)
+                {
+                    return;
+                }
+
                 _rw.EnterWriteLock();
                 try
                 {
@@ -65,12 +71,12 @@ namespace Asv.IO
             {
                 _rw.ExitUpgradeableReadLock();
             }
-            
         }
 
         public override PortType PortType { get; } = PortType.Tcp;
 
         public override string PortLogName => _cfg.ToString();
+
         protected override Task InternalSend(ReadOnlyMemory<byte> data, CancellationToken cancel)
         {
             _rw.EnterReadLock();
@@ -78,8 +84,6 @@ namespace Asv.IO
             _rw.ExitReadLock();
             return Task.WhenAll(clients.Select(_ => SendAsync(_, data, cancel)));
         }
-
-        
 
         protected override Task InternalSend(byte[] data, int count, CancellationToken cancel)
         {
@@ -89,36 +93,54 @@ namespace Asv.IO
             return Task.WhenAll(clients.Select(_ => SendAsync(_, data, count, cancel)));
         }
 
-        private async Task SendAsync(TcpClient client, byte[] data, int count, CancellationToken cancel)
+        private async Task SendAsync(
+            TcpClient client,
+            byte[] data,
+            int count,
+            CancellationToken cancel
+        )
         {
-            if (_tcp == null || client == null || client.Connected == false) return;
+            if (_tcp == null || client == null || client.Connected == false)
+            {
+                return;
+            }
+
             try
             {
                 await client.GetStream().WriteAsync(data, 0, count, cancel).ConfigureAwait(false);
             }
-            catch (Exception)
+            catch
             {
-               // Debug.Assert(false);    
+                // Debug.Assert(false);
             }
         }
-        private async Task SendAsync(TcpClient client, ReadOnlyMemory<byte> data, CancellationToken cancel)
+
+        private async Task SendAsync(
+            TcpClient client,
+            ReadOnlyMemory<byte> data,
+            CancellationToken cancel
+        )
         {
-            if (_tcp == null || client == null || client.Connected == false) return;
+            if (_tcp == null || client == null || client.Connected == false)
+            {
+                return;
+            }
+
             try
             {
                 await client.GetStream().WriteAsync(data, cancel).ConfigureAwait(false);
             }
-            catch (Exception)
+            catch
             {
-                // Debug.Assert(false);    
+                // Debug.Assert(false);
             }
         }
+
         protected override void InternalStop()
         {
             _stop?.Cancel(false);
             _stop?.Dispose();
             _stop = null;
-
         }
 
         protected override void InternalStart()
@@ -126,9 +148,17 @@ namespace Asv.IO
             _tcp = new TcpListener(IPAddress.Parse(_cfg.Host), _cfg.Port);
             _tcp.Start();
             _stop = new CancellationTokenSource();
-            var recvConnectionThread = new Thread(RecvConnectionCallback) { IsBackground = true, Priority = ThreadPriority.Lowest };
-            var recvDataThread = new Thread(RecvDataCallback) { IsBackground = true, Priority = ThreadPriority.Lowest };
-            
+            var recvConnectionThread = new Thread(RecvConnectionCallback)
+            {
+                IsBackground = true,
+                Priority = ThreadPriority.Lowest,
+            };
+            var recvDataThread = new Thread(RecvDataCallback)
+            {
+                IsBackground = true,
+                Priority = ThreadPriority.Lowest,
+            };
+
             _stop.Token.Register(() =>
             {
                 try
@@ -141,7 +171,6 @@ namespace Asv.IO
 
                     _clients.Clear();
                     _tcp.Stop();
-                    
 
                     // recvDataThread.Interrupt();
                     // recvConnectionThread.Interrupt();
@@ -149,7 +178,6 @@ namespace Asv.IO
                 catch (Exception)
                 {
                     Debug.Assert(false);
-                    // ignore
                 }
                 finally
                 {
@@ -158,7 +186,6 @@ namespace Asv.IO
             });
             recvDataThread.Start();
             recvConnectionThread.Start();
-
         }
 
         private void RecvConnectionCallback(object obj)
@@ -186,16 +213,13 @@ namespace Asv.IO
                     catch (Exception)
                     {
                         Debug.Assert(false);
-                        // ignore
                     }
-
                 }
             }
             catch (ThreadAbortException)
             {
                 // ignore
             }
-
         }
 
         private void RecvDataCallback(object obj)
@@ -216,19 +240,28 @@ namespace Asv.IO
                             foreach (var otherClients in clients)
                             {
                                 // send to all except the client from whom we received the data
-                                if (otherClients == tcpClient) continue;
-                                SendData(otherClients,data);
+                                if (otherClients == tcpClient)
+                                {
+                                    continue;
+                                }
+
+                                SendData(otherClients, data);
                             }
+
                             InternalOnData(data);
                         }
-                        
                     }
+
                     Thread.Sleep(30);
                 }
             }
             catch (SocketException ex)
             {
-                if (ex.SocketErrorCode == SocketError.Interrupted) return;
+                if (ex.SocketErrorCode == SocketError.Interrupted)
+                {
+                    return;
+                }
+
                 InternalOnError(ex);
             }
             catch (ThreadAbortException)
@@ -239,8 +272,6 @@ namespace Asv.IO
             {
                 InternalOnError(e);
             }
-
-
         }
 
         protected override void InternalDisposeOnce()
@@ -251,13 +282,21 @@ namespace Asv.IO
 
         private void SendData(TcpClient tcpClient, byte[] data)
         {
-            if (tcpClient.Connected == false) return;
-            if (tcpClient.Client.Connected == false) return;
+            if (tcpClient.Connected == false)
+            {
+                return;
+            }
+
+            if (tcpClient.Client.Connected == false)
+            {
+                return;
+            }
+
             try
             {
                 tcpClient.GetStream().Write(data, 0, data.Length);
             }
-            catch (Exception)
+            catch
             {
                 // ignore
             }
@@ -265,9 +304,21 @@ namespace Asv.IO
 
         private byte[] RecvClientData(TcpClient tcpClient)
         {
-            if (tcpClient.Available == 0) return null;
-            if (tcpClient.Connected == false) return null;
-            if (tcpClient.Client.Connected == false) return null;
+            if (tcpClient.Available == 0)
+            {
+                return null;
+            }
+
+            if (tcpClient.Connected == false)
+            {
+                return null;
+            }
+
+            if (tcpClient.Client.Connected == false)
+            {
+                return null;
+            }
+
             var buff = new byte[tcpClient.Available];
             try
             {
@@ -277,11 +328,9 @@ namespace Asv.IO
             {
                 // ignore
             }
-            
+
             return buff;
         }
-
-        
 
         public override string ToString()
         {
@@ -291,7 +340,10 @@ namespace Asv.IO
             {
                 _rw.EnterReadLock();
                 count = _clients.Count;
-                message = string.Join("\n", _clients.Select(_ => $"   - {_.Client.RemoteEndPoint}"));
+                message = string.Join(
+                    "\n",
+                    _clients.Select(_ => $"   - {_.Client.RemoteEndPoint}")
+                );
             }
             catch (Exception e)
             {
@@ -303,11 +355,10 @@ namespace Asv.IO
                 _rw.ExitReadLock();
             }
 
-            
-            return $"TCP\\IP Server      {_cfg.Host}:{_cfg.Port} \n" +
-                   $"Reconnect timeout: {_cfg.ReconnectTimeout:N0} ms\n" +
-                   $"Clients [{count}]:\n" +
-                   $"{message}";
+            return $"TCP\\IP Server      {_cfg.Host}:{_cfg.Port} \n"
+                + $"Reconnect timeout: {_cfg.ReconnectTimeout:N0} ms\n"
+                + $"Clients [{count}]:\n"
+                + $"{message}";
         }
     }
 }

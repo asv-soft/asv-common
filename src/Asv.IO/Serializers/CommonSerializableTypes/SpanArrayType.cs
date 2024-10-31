@@ -23,7 +23,7 @@ namespace Asv.IO
 
         public void Serialize(ref Span<byte> buffer)
         {
-            BinSerialize.WritePackedUnsignedInteger(ref buffer,(uint)Items.Count);
+            BinSerialize.WritePackedUnsignedInteger(ref buffer, (uint)Items.Count);
             foreach (var item in Items)
             {
                 InternalWriteItem(ref buffer, item);
@@ -32,7 +32,8 @@ namespace Asv.IO
 
         public int GetByteSize()
         {
-            return BinSerialize.GetSizeForPackedUnsignedInteger((uint)Items.Count) + Items.Sum(InternalGetItemsSize);
+            return BinSerialize.GetSizeForPackedUnsignedInteger((uint)Items.Count)
+                + Items.Sum(InternalGetItemsSize);
         }
     }
 }

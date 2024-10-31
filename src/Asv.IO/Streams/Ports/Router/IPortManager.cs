@@ -3,7 +3,7 @@ using System.Reactive;
 
 namespace Asv.IO
 {
-    public interface IPortManager: IDataStream,IDisposable
+    public interface IPortManager : IDataStream, IDisposable
     {
         IPortInfo[] Ports { get; }
         void Add(PortSettings settings);
@@ -37,9 +37,15 @@ namespace Asv.IO
 
     public class PortManagerSettings
     {
-        public PortSettings[] Ports { get; set; } = new PortSettings []
-        {
-            new() {ConnectionString = "tcp://172.16.0.1:7341", IsEnabled = true, Title = "Base station"},
-        };
+        public PortSettings[] Ports { get; set; } =
+            new PortSettings[]
+            {
+                new()
+                {
+                    ConnectionString = "tcp://172.16.0.1:7341",
+                    IsEnabled = true,
+                    Title = "Base station",
+                },
+            };
     }
 }

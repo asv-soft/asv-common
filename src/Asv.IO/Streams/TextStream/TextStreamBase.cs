@@ -26,84 +26,105 @@ namespace Asv.IO
             this._config = config ?? new TextReaderBaseConfig();
             this._buffer = new byte[this._config.MaxMessageSize];
             this._input = strm;
-            this._input.SelectMany<byte[], byte>((Func<byte[], IEnumerable<byte>>)(_ => (IEnumerable<byte>)_)).Subscribe<byte>(new Action<byte>(this.OnData), this._cancel.Token);
+            this._input.SelectMany<byte[], byte>(
+                    (Func<byte[], IEnumerable<byte>>)(_ => (IEnumerable<byte>)_)
+                )
+                .Subscribe<byte>(new Action<byte>(this.OnData), this._cancel.Token);
             if (_input is IPort port)
             {
                 port.State.Subscribe(_onPortState, _cancel.Token);
                 _onPortState.OnNext(port.State.Value);
             }
-            else _onPortState.OnNext(PortState.Connected);
+            else
+            {
+                _onPortState.OnNext(PortState.Connected);
+            }
         }
 
         private void OnData(byte data)
         {
-            if (!this._sync)
+            if (!_sync)
             {
-                if ((int)data != (int)this._config.StartByte)
+                if (data != _config.StartByte)
+                {
                     return;
-                this._sync = true;
-                this._readIndex = 0;
+                }
+
+                _sync = true;
+                _readIndex = 0;
             }
-            else if ((int)data == (int)this._config.StopByte)
+            else if (data == _config.StopByte)
             {
-                this._sync = false;
+                _sync = false;
                 try
                 {
-                    this._output.OnNext(this._config.DefaultEncoding.GetString(this._buffer, 0, this._readIndex));
+                    _output.OnNext(_config.DefaultEncoding.GetString(_buffer, 0, this._readIndex));
                 }
                 catch (Exception ex)
                 {
-                    this._onErrorSubject.OnNext(ex);
+                    _onErrorSubject.OnNext(ex);
                 }
             }
             else
             {
-                this._buffer[this._readIndex] = data;
-                ++this._readIndex;
-                if (this._readIndex >= this._config.MaxMessageSize)
+                _buffer[_readIndex] = data;
+                ++_readIndex;
+                if (_readIndex >= _config.MaxMessageSize)
                 {
-                    this._onErrorSubject.OnNext(new Exception(string.Format("Receive buffer overflow. Max message size={0}", (object)this._config.MaxMessageSize)));
-                    this._sync = false;
+                    _onErrorSubject.OnNext(
+                        new Exception(
+                            string.Format(
+                                "Receive buffer overflow. Max message size={0}",
+                                _config.MaxMessageSize
+                            )
+                        )
+                    );
+                    _sync = false;
                 }
             }
         }
 
         public void Dispose()
         {
-            this._cancel.Cancel(false);
+            _cancel.Cancel(false);
         }
 
         public IDisposable Subscribe(IObserver<string> observer)
         {
-            return this._output.Subscribe(observer);
+            return _output.Subscribe(observer);
         }
 
         public IRxValue<PortState> OnPortState => _onPortState;
 
-        public IObservable<Exception> OnError
-        {
-            get
-            {
-                return (IObservable<Exception>)this._onErrorSubject;
-            }
-        }
+        public IObservable<Exception> OnError => _onErrorSubject;
 
         public async Task Send(string value, CancellationToken cancel)
         {
-            
             try
             {
-                using var linkedCancel = CancellationTokenSource.CreateLinkedTokenSource(cancel, this._cancel.Token);
-                byte[] data = this._config.DefaultEncoding.GetBytes(_config.StartByte + value + _config.StopByte);
-                await this._input.Send(data, data.Length, linkedCancel.Token).ConfigureAwait(false);
-                data = (byte[])null;
+                using var linkedCancel = CancellationTokenSource.CreateLinkedTokenSource(
+                    cancel,
+                    _cancel.Token
+                );
+                byte[] data = _config.DefaultEncoding.GetBytes(
+                    _config.StartByte + value + _config.StopByte
+                );
+                await _input.Send(data, data.Length, linkedCancel.Token).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
-                this._onErrorSubject.OnNext(new Exception(string.Format("Error to send text stream data '{0}':{1}", (object)value, (object)ex.Message), ex));
+                _onErrorSubject.OnNext(
+                    new Exception(
+                        string.Format(
+                            "Error to send text stream data '{0}':{1}",
+                            value,
+                            ex.Message
+                        ),
+                        ex
+                    )
+                );
                 throw;
             }
-           
         }
     }
 }

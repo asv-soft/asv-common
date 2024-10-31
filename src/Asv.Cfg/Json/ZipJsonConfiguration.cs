@@ -13,7 +13,7 @@ using ZLogger;
 
 namespace Asv.Cfg.Json
 {
-    public class ZipJsonConfiguration:DisposableOnce, IConfiguration
+    public class ZipJsonConfiguration : DisposableOnce, IConfiguration
     {
         private readonly ZipArchive _archive;
         private readonly object _sync = new();
@@ -22,10 +22,9 @@ namespace Asv.Cfg.Json
         private readonly IFileSystem _fileSystem;
         private const string FixedFileExt = ".json";
 
-        public ZipJsonConfiguration
-        (
+        public ZipJsonConfiguration(
             Stream zipStream,
-            bool leaveOpen = false, 
+            bool leaveOpen = false,
             ILogger? logger = null,
             IFileSystem? fileSystem = null
         )
@@ -36,7 +35,7 @@ namespace Asv.Cfg.Json
             _archive = new ZipArchive(zipStream, ZipArchiveMode.Update, leaveOpen);
             _serializer = JsonHelper.CreateDefaultJsonSerializer();
         }
-        
+
         protected override void InternalDisposeOnce()
         {
             _logger.ZLogTrace($"Dispose ZipJsonConfiguration");
@@ -52,12 +51,13 @@ namespace Asv.Cfg.Json
             {
                 lock (_sync)
                 {
-                    return _archive.Entries.Where(_ => _fileSystem.Path.GetExtension(_.Name) == FixedFileExt)
-                        .Select(x => _fileSystem.Path.GetFileNameWithoutExtension(x.Name)).ToArray();
+                    return _archive
+                        .Entries.Where(_ => _fileSystem.Path.GetExtension(_.Name) == FixedFileExt)
+                        .Select(x => _fileSystem.Path.GetFileNameWithoutExtension(x.Name))
+                        .ToArray();
                 }
             }
         }
-        
 
         public bool Exist(string key)
         {
@@ -65,7 +65,9 @@ namespace Asv.Cfg.Json
             var fileName = GetFilePath(key);
             lock (_sync)
             {
-                return _archive.Entries.Any(x => ConfigurationHelper.DefaultKeyComparer.Equals(x.Name, fileName));
+                return _archive.Entries.Any(x =>
+                    ConfigurationHelper.DefaultKeyComparer.Equals(x.Name, fileName)
+                );
             }
         }
 
@@ -81,10 +83,14 @@ namespace Asv.Cfg.Json
             var fileName = GetFilePath(key);
             lock (_sync)
             {
-                var entry = _archive.Entries.FirstOrDefault(x => ConfigurationHelper.DefaultKeyComparer.Equals(x.Name, fileName));
+                var entry = _archive.Entries.FirstOrDefault(x =>
+                    ConfigurationHelper.DefaultKeyComparer.Equals(x.Name, fileName)
+                );
                 if (entry == default)
                 {
-                    _logger.ZLogTrace($"Configuration key [{key}] not found. Create new with default value");
+                    _logger.ZLogTrace(
+                        $"Configuration key [{key}] not found. Create new with default value"
+                    );
                     var inst = defaultValue.Value;
                     var stream2 = _archive.CreateEntry(fileName);
                     using var file = stream2.Open();
@@ -93,11 +99,12 @@ namespace Asv.Cfg.Json
                     _serializer.Serialize(wrt, inst);
                     return inst;
                 }
-                
+
                 using var stream = entry.Open();
                 using var streamReader = new StreamReader(stream);
                 using var rdr = new JsonTextReader(streamReader);
-                return _serializer.Deserialize<TPocoType>(rdr) ?? throw new InvalidOperationException();
+                return _serializer.Deserialize<TPocoType>(rdr)
+                    ?? throw new InvalidOperationException();
             }
         }
 
@@ -116,7 +123,7 @@ namespace Asv.Cfg.Json
                 _serializer.Serialize(wrt, value);
             }
         }
-        
+
         public void Remove(string key)
         {
             ConfigurationHelper.ValidateKey(key);

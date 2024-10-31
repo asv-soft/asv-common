@@ -1,5 +1,3 @@
 ﻿namespace Asv.Composition.Test;
 
-public class Class1
-{
-}
+public class Class1 { }
