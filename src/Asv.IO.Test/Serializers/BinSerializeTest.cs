@@ -219,14 +219,27 @@ namespace Asv.IO.Test
         [InlineData(50f, 100f, 75f, 75.1f)] // 75.1f, due to only having 8 bit precision.
         [InlineData(-1f, 1f, 0f, 0f)]
         [InlineData(0f, 1f, .25f, .25f)]
-        public void _8BitRangeCanBeSerialized(float min, float max, float val, float expectedVal)
+        public void Write8BitRange_CanBeSerialized_Success(
+            float min,
+            float max,
+            float val,
+            float expectedVal
+        )
         {
+            // Arrange
             var buffer = new byte[1];
             var writeSpan = new Span<byte>(buffer);
+
+            // Act
             BinSerialize.Write8BitRange(ref writeSpan, min, max, val);
 
+            // Assert
             var readSpan = new ReadOnlySpan<byte>(buffer);
-            Assert.Equal(expectedVal, BinSerialize.Read8BitRange(ref readSpan, min, max), precision: 2);
+            Assert.Equal(
+                expectedVal,
+                BinSerialize.Read8BitRange(ref readSpan, min, max),
+                precision: 2
+            );
         }
 
         [Theory]
@@ -239,14 +252,27 @@ namespace Asv.IO.Test
         [InlineData(0f, 65_535f, 65_535f, 65_535f)]
         [InlineData(-1f, 1f, 0f, 0f)]
         [InlineData(0f, 1f, .25f, .25f)]
-        public void _16BitRangeCanBeSerialized(float min, float max, float val, float expectedVal)
+        public void Write16BitRange_CanBeSerialized_Success(
+            float min,
+            float max,
+            float val,
+            float expectedVal
+        )
         {
+            // Arrange
             var buffer = new byte[2];
             var writeSpan = new Span<byte>(buffer);
+
+            // Act
             BinSerialize.Write16BitRange(ref writeSpan, min, max, val);
 
+            // Assert
             var readSpan = new ReadOnlySpan<byte>(buffer);
-            Assert.Equal(expectedVal, BinSerialize.Read16BitRange(ref readSpan, min, max), precision: 4);
+            Assert.Equal(
+                expectedVal,
+                BinSerialize.Read16BitRange(ref readSpan, min, max),
+                precision: 4
+            );
         }
 
         [Theory]
@@ -568,8 +594,13 @@ namespace Asv.IO.Test
             int memStreamBytesWritten;
             using (var memStream = new MemoryStream())
             {
-                using (var binaryWriter = new BinaryWriter(memStream, Encoding.UTF8, leaveOpen: true))
+                using (
+                    var binaryWriter = new BinaryWriter(memStream, Encoding.UTF8, leaveOpen: true)
+                )
+                {
                     binaryWriter.Write(val);
+                }
+
                 memStreamBytesWritten = (int)memStream.Length;
             }
 
@@ -580,7 +611,11 @@ namespace Asv.IO.Test
 
             Assert.Equal(memStreamBytesWritten, writtenBytes);
             Assert.True(
-                memStreamBuffer.AsSpan().Slice(memStreamBytesWritten).SequenceEqual(buffer.AsSpan().Slice(writtenBytes)));
+                memStreamBuffer
+                    .AsSpan()
+                    .Slice(memStreamBytesWritten)
+                    .SequenceEqual(buffer.AsSpan().Slice(writtenBytes))
+            );
         }
     }
 }

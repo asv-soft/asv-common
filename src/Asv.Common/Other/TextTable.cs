@@ -29,39 +29,26 @@ namespace Asv.Common
         public char BottomCenter => Source[13];
         public char BottomIntercection => Source[14];
         public char BottomRight => Source[15];
-
     }
 
     public class EmptyTextTableBorder : TextTableBorder
     {
-        protected override string Source => "    " +
-                                            "    " +
-                                            "    " +
-                                            "    ";
+        protected override string Source => "    " + "    " + "    " + "    ";
     }
 
     public class DoubleTextTableBorder : TextTableBorder
     {
-        protected override string Source => "╔═╦╗" +
-                                            "║ ║║" +
-                                            "╠═╬╣" +
-                                            "╚═╩╝";
+        protected override string Source => "╔═╦╗" + "║ ║║" + "╠═╬╣" + "╚═╩╝";
     }
 
     public class SingleTextTableBorder : TextTableBorder
     {
-        protected override string Source => "┌─┬┐" +
-                                            "│ ││" +
-                                            "├─┼┤" +
-                                            "└─┴┘";
+        protected override string Source => "┌─┬┐" + "│ ││" + "├─┼┤" + "└─┴┘";
     }
 
     public class AsciiTableBorderSingle : TextTableBorder
     {
-        protected override string Source => "+-++" +
-                                            "| ||" +
-                                            "+-++" +
-                                            "+-++";
+        protected override string Source => "+-++" + "| ||" + "+-++" + "+-++";
     }
 
     public static class TextTable
@@ -70,25 +57,45 @@ namespace Asv.Common
         public static TextTableBorder Single = new SingleTextTableBorder();
         public static TextTableBorder Double = new DoubleTextTableBorder();
         public static TextTableBorder Empty = new EmptyTextTableBorder();
-        
-        public static void PrintKeyValue(Action<string> write, TextTableBorder border, int keyWidth, int valueWidth, string name,IEnumerable<KeyValuePair<string,string>> values)
+
+        public static void PrintKeyValue(
+            Action<string> write,
+            TextTableBorder border,
+            int keyWidth,
+            int valueWidth,
+            string name,
+            IEnumerable<KeyValuePair<string, string>> values
+        )
         {
             var key = name.PadCenter(keyWidth + valueWidth + 1);
             write(TableBegin(border, key));
             write(TableRow(border, key));
-            write(border.Middle2Left + string.Empty.PadLeft(keyWidth, border.Middle2Center) + border.TopIntersection +
-                  string.Empty.PadLeft(valueWidth, border.Middle2Center) + border.Middle2Right);
+            write(
+                border.Middle2Left
+                    + string.Empty.PadLeft(keyWidth, border.Middle2Center)
+                    + border.TopIntersection
+                    + string.Empty.PadLeft(valueWidth, border.Middle2Center)
+                    + border.Middle2Right
+            );
 
             foreach (var pair in values)
             {
-                write(TableRow(border, pair.Key.PadRight(keyWidth), pair.Value.PadRight(valueWidth)));
+                write(
+                    TableRow(border, pair.Key.PadRight(keyWidth), pair.Value.PadRight(valueWidth))
+                );
             }
+
             write(TableEnd(border, keyWidth, valueWidth));
         }
 
         public static string TableBegin(TextTableBorder border, IEnumerable<int> values)
         {
-            return border.TopLeft + string.Join(border.TopIntersection.ToString(), values.Select(_ => string.Empty.PadLeft(_, border.TopCenter))) + border.TopRight;
+            return border.TopLeft
+                + string.Join(
+                    border.TopIntersection.ToString(),
+                    values.Select(_ => string.Empty.PadLeft(_, border.TopCenter))
+                )
+                + border.TopRight;
         }
 
         public static string TableBegin(TextTableBorder border, IEnumerable<string> values)
@@ -113,7 +120,9 @@ namespace Asv.Common
 
         private static string TableRow(TextTableBorder border, IEnumerable<string> values)
         {
-            return border.Middle1Left + string.Join(border.Middle1Intersection.ToString(), values) + border.Middle1Right;
+            return border.Middle1Left
+                + string.Join(border.Middle1Intersection.ToString(), values)
+                + border.Middle1Right;
         }
 
         public static string TableEndRow(TextTableBorder border, params string[] values)
@@ -133,7 +142,12 @@ namespace Asv.Common
 
         private static string TableEndRow(TextTableBorder border, IEnumerable<int> values)
         {
-            return border.Middle2Left + string.Join(border.Middle2Intercection.ToString(), values.Select(_ => string.Empty.PadLeft(_, border.Middle2Center))) + border.Middle2Right;
+            return border.Middle2Left
+                + string.Join(
+                    border.Middle2Intercection.ToString(),
+                    values.Select(_ => string.Empty.PadLeft(_, border.Middle2Center))
+                )
+                + border.Middle2Right;
         }
 
         public static string TableEnd(TextTableBorder border, params string[] values)
@@ -148,7 +162,12 @@ namespace Asv.Common
 
         public static string TableEnd(TextTableBorder border, IEnumerable<int> values)
         {
-            return border.BottomLeft + string.Join(border.BottomIntercection.ToString(), values.Select(_ => string.Empty.PadLeft(_, border.BottomCenter))) + border.BottomRight;
+            return border.BottomLeft
+                + string.Join(
+                    border.BottomIntercection.ToString(),
+                    values.Select(_ => string.Empty.PadLeft(_, border.BottomCenter))
+                )
+                + border.BottomRight;
         }
 
         public static string TableEnd(TextTableBorder border, params int[] values)
@@ -156,80 +175,180 @@ namespace Asv.Common
             return TableEnd(border, values.AsEnumerable());
         }
 
-        public static void PrintTableFromObject<T>(Action<string> write, TextTableBorder border, int padding, int maxLength,
-            IEnumerable<T> items)
+        public static void PrintTableFromObject<T>(
+            Action<string> write,
+            TextTableBorder border,
+            int padding,
+            int maxLength,
+            IEnumerable<T> enumerable
+        )
         {
-            if (!items.Any()) return;
-            var props = items.First().GetType().GetProperties().ToDictionary(_ => _, _ => _.Name);
+            var items = enumerable as T[] ?? enumerable.ToArray();
+            if (items.Length == 0)
+            {
+                return;
+            }
+
+            var props = items[0]?.GetType().GetProperties().ToDictionary(_ => _, _ => _.Name);
             PrintTableFromObject(write, border, padding, maxLength, items, props);
         }
 
-        public static void PrintTableFromObject<T>(Action<string> write, TextTableBorder border,int padding, int maxLength, IEnumerable<T> items,
-            params Expression<Func<T, object>>[] properties)
+        public static void PrintTableFromObject<T>(
+            Action<string> write,
+            TextTableBorder border,
+            int padding,
+            int maxLength,
+            IEnumerable<T> items,
+            params Expression<Func<T, object>>[] properties
+        )
         {
-            PrintTableFromObject(write, border, padding, maxLength, items, properties.Select(_ =>GetPropertyInfo(_).Name));
+            PrintTableFromObject(
+                write,
+                border,
+                padding,
+                maxLength,
+                items,
+                properties.Select(_ => GetPropertyInfo(_)?.Name)
+            );
         }
 
-        public static void PrintTableFromObject<T>(Action<string> write, TextTableBorder border, int padding, int maxLength, IEnumerable<T> items,
-            IEnumerable<string> properties)
+        public static void PrintTableFromObject<T>(
+            Action<string> write,
+            TextTableBorder border,
+            int padding,
+            int maxLength,
+            IEnumerable<T> items,
+            IEnumerable<string> properties
+        )
         {
-            PrintTableFromObject(write, border, padding, maxLength, items, properties.ToDictionary(_ => _, _ => _));
+            PrintTableFromObject(
+                write,
+                border,
+                padding,
+                maxLength,
+                items,
+                properties.ToDictionary(_ => _, _ => _)
+            );
         }
 
-        public static void PrintTableFromObject<T>(Action<string> write, TextTableBorder border, int padding, int maxLength,
-            IEnumerable<T> items, IEnumerable<KeyValuePair<string, string>> properties)
+        public static void PrintTableFromObject<T>(
+            Action<string> write,
+            TextTableBorder border,
+            int padding,
+            int maxLength,
+            IEnumerable<T> items,
+            IEnumerable<KeyValuePair<string, string>> properties
+        )
         {
             var t = typeof(T);
-            PrintTableFromObject<T>(write, border, padding, maxLength, items, properties.ToDictionary(_ => t.GetProperty(_.Key),_=>_.Value));
+            PrintTableFromObject<T>(
+                write,
+                border,
+                padding,
+                maxLength,
+                items,
+                properties.ToDictionary(_ => t.GetProperty(_.Key), _ => _.Value)
+            );
         }
 
-        public static void PrintTable(Action<string> write, TextTableBorder border, int padding,int maxLength,
-            string[][] headerWithRows)
+        public static void PrintTable(
+            Action<string> write,
+            TextTableBorder border,
+            int padding,
+            int maxLength,
+            string[][] headerWithRows
+        )
         {
             var columns = headerWithRows.First().Count();
             var rows = headerWithRows.Count();
 
-            var width = Enumerable.Range(0, columns * rows).GroupBy(_ => _ % columns, _ => headerWithRows[_ / columns][_ % columns].TrimToMaxLength(maxLength)).Select(_ => _.Max(__ => __?.Length??0))
-                .Select(_ => _ + padding*2).ToArray();
+            var width = Enumerable
+                .Range(0, columns * rows)
+                .GroupBy(
+                    _ => _ % columns,
+                    _ => headerWithRows[_ / columns][_ % columns].TrimToMaxLength(maxLength)
+                )
+                .Select(_ => _.Max(__ => __?.Length ?? 0))
+                .Select(_ => _ + (padding * 2))
+                .ToArray();
 
             write(TableBegin(border, width));
-            write(TableRow(border, headerWithRows.First().Select((_, i) => string.Empty.PadLeft(padding)+_.TrimToMaxLength(maxLength).PadRight(width[i]- padding))));
+            write(
+                TableRow(
+                    border,
+                    headerWithRows
+                        .First()
+                        .Select(
+                            (_, i) =>
+                                string.Empty.PadLeft(padding)
+                                + _.TrimToMaxLength(maxLength).PadRight(width[i] - padding)
+                        )
+                )
+            );
             write(TableEndRow(border, width));
 
             foreach (var item in headerWithRows.Skip(1))
             {
-                write(TableRow(border, item.Select((_, i) => string.Empty.PadLeft(padding) + (_??string.Empty).TrimToMaxLength(maxLength).PadRight(width[i]-padding))));
+                write(
+                    TableRow(
+                        border,
+                        item.Select(
+                            (_, i) =>
+                                string.Empty.PadLeft(padding)
+                                + (_ ?? string.Empty)
+                                    .TrimToMaxLength(maxLength)
+                                    .PadRight(width[i] - padding)
+                        )
+                    )
+                );
             }
+
             write(TableEnd(border, width));
         }
 
-        public static void PrintTable(Action<string> write, TextTableBorder border, int padding, int maxLength, IEnumerable<IEnumerable<string>> headerWithRows)
+        public static void PrintTable(
+            Action<string> write,
+            TextTableBorder border,
+            int padding,
+            int maxLength,
+            List<string?[]?> headerWithRows
+        )
         {
-            var arr = headerWithRows.Select(_ => _.ToArray()).ToArray();
+            var arr = headerWithRows.Select(_ => _?.ToArray()).ToArray();
             PrintTable(write, border, padding, maxLength, arr);
         }
 
-        public static void PrintTableFromObject<T>(Action<string> write, TextTableBorder border, int padding, int maxLength, IEnumerable<T> items, IEnumerable<KeyValuePair<PropertyInfo,string>> properties)
+        public static void PrintTableFromObject<T>(
+            Action<string> write,
+            TextTableBorder border,
+            int padding,
+            int maxLength,
+            IEnumerable<T> items,
+            IEnumerable<KeyValuePair<PropertyInfo, string>>? properties
+        )
         {
-            var props = properties.ToArray();
-            var values = items.Select(
-                __ => props.Select(prop => prop.Key.GetValue(__)?.ToString()).ToArray())
+            var props = properties?.ToArray();
+            var values = items
+                .Select(__ => props?.Select(prop => prop.Key.GetValue(__)?.ToString()).ToArray())
                 .ToList();
 
-            values.Insert(0, props.Select(_ => _.Value).ToArray());
+            values.Insert(0, props?.Select(_ => _.Value).ToArray());
 
             PrintTable(write, border, padding, maxLength, values);
         }
 
-        public static PropertyInfo GetPropertyInfo<TSource>(Expression<Func<TSource, object>> propertyLambda)
+        public static PropertyInfo? GetPropertyInfo<TSource>(
+            Expression<Func<TSource, object>> propertyLambda
+        )
         {
             var member = propertyLambda.Body as MemberExpression;
             if (member == null)
-            {// value types return Convert(x.property) which can't be cast to MemberExpression
+            { // value types return Convert(x.property) which can't be cast to MemberExpression
                 var expression = propertyLambda.Body as UnaryExpression;
-                member = expression.Operand as MemberExpression;
+                member = expression?.Operand as MemberExpression;
             }
-            return member.Member as PropertyInfo;
+
+            return member?.Member as PropertyInfo;
         }
     }
 }

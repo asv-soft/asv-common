@@ -12,16 +12,21 @@ using ZLogger;
 
 namespace Asv.Cfg
 {
-    public class JsonConfiguration:IConfiguration
+    public class JsonConfiguration : IConfiguration
     {
         private readonly string _folderPath;
         private const string FixedSearchPattern = "*.json";
-        private readonly LockByKeyExecutor<string> _lock = new(ConfigurationHelper.DefaultKeyComparer);
+        private readonly LockByKeyExecutor<string> _lock =
+            new(ConfigurationHelper.DefaultKeyComparer);
         private readonly ILogger _logger;
         private readonly JsonSerializer _serializer;
         private readonly IFileSystem _fileSystem;
 
-        public JsonConfiguration(string folderPath, ILogger? logger = null, IFileSystem? fileSystem = null)
+        public JsonConfiguration(
+            string folderPath,
+            ILogger? logger = null,
+            IFileSystem? fileSystem = null
+        )
         {
             _logger = logger ?? NullLogger.Instance;
             _fileSystem = fileSystem ?? new FileSystem();
@@ -43,16 +48,16 @@ namespace Asv.Cfg
         {
             return _fileSystem.Path.Combine(_folderPath, $"{key}.json");
         }
-        
-        public IEnumerable<string> AvailableParts
-            =>
-                _fileSystem.Directory.EnumerateFiles(_folderPath, FixedSearchPattern)
-                    .Select(_fileSystem.Path.GetFileNameWithoutExtension)!;
-                
+
+        public IEnumerable<string> AvailableParts =>
+            _fileSystem
+                .Directory.EnumerateFiles(_folderPath, FixedSearchPattern)
+                .Select(_fileSystem.Path.GetFileNameWithoutExtension)!;
+
         public bool Exist(string key)
         {
             ConfigurationHelper.ValidateKey(key);
-            return _lock.Execute(key,GetFilePath(key),InternalExist);
+            return _lock.Execute(key, GetFilePath(key), InternalExist);
         }
 
         private bool InternalExist(string path)
@@ -63,18 +68,20 @@ namespace Asv.Cfg
         public TPocoType Get<TPocoType>(string key, Lazy<TPocoType> defaultValue)
         {
             ConfigurationHelper.ValidateKey(key);
-            return _lock.Execute(key,GetFilePath(key),defaultValue,InternalGet);
+            return _lock.Execute(key, GetFilePath(key), defaultValue, InternalGet);
         }
-        
-        private TPocoType InternalGet<TPocoType>(string path,Lazy<TPocoType> defaultValue)
+
+        private TPocoType InternalGet<TPocoType>(string path, Lazy<TPocoType> defaultValue)
         {
             if (InternalExist(path))
             {
                 using var stream = _fileSystem.File.OpenRead(path);
                 using var reader = new StreamReader(stream);
                 using var jsonReader = new JsonTextReader(reader);
-                return _serializer.Deserialize<TPocoType>(jsonReader) ?? throw new InvalidOperationException();
+                return _serializer.Deserialize<TPocoType>(jsonReader)
+                    ?? throw new InvalidOperationException();
             }
+
             var value = defaultValue.Value;
             InternalSet(path, value);
             return value;
@@ -83,9 +90,9 @@ namespace Asv.Cfg
         public void Set<TPocoType>(string key, TPocoType value)
         {
             ConfigurationHelper.ValidateKey(key);
-            _lock.Execute(key, GetFilePath(key),value, InternalSet);
+            _lock.Execute(key, GetFilePath(key), value, InternalSet);
         }
-        
+
         private void InternalSet<TPocoType>(string filepath, TPocoType value)
         {
             InternalRemove(filepath);
@@ -98,18 +105,20 @@ namespace Asv.Cfg
         public void Remove(string key)
         {
             ConfigurationHelper.ValidateKey(key);
-            _lock.Execute(key,GetFilePath(key),InternalRemove);
+            _lock.Execute(key, GetFilePath(key), InternalRemove);
         }
+
         private void InternalRemove(string path)
         {
-            if (!_fileSystem.File.Exists(path)) return;
+            if (!_fileSystem.File.Exists(path))
+            {
+                return;
+            }
+
             _logger.ZLogTrace($"Delete configuration file '{path}'");
             _fileSystem.File.Delete(path);
         }
 
-        public void Dispose()
-        {
-            
-        }
+        public void Dispose() { }
     }
 }

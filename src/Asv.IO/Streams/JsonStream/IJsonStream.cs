@@ -12,7 +12,15 @@ namespace Asv.IO
         Task SendText(string data, CancellationToken cancel);
         Task Send<T>(T data, CancellationToken cancel);
 
-        Task<JObject> RequestText(string request, Func<JObject, bool> responseFilter, CancellationToken cancel);
-        Task<JObject> Request<TRequest>(TRequest request, Func<JObject, bool> responseFilter, CancellationToken cancel);
+        Task<JObject> RequestText(
+            string request,
+            Func<JObject, bool> responseFilter,
+            CancellationToken cancel
+        );
+        Task<JObject> Request<TRequest>(
+            TRequest request,
+            Func<JObject, bool> responseFilter,
+            CancellationToken cancel
+        );
     }
 }

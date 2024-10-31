@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Asv.IO
 {
-    public interface IDataStream:IObservable<byte[]>
+    public interface IDataStream : IObservable<byte[]>
     {
         string Name { get; }
         Task<bool> Send(byte[] data, int count, CancellationToken cancel);
@@ -16,16 +16,25 @@ namespace Asv.IO
 
     public static class DataStreamHelper
     {
-        public static Task<bool> Send(this IDataStream src, ISizedSpanSerializable data,  CancellationToken cancel = default)
+        public static Task<bool> Send(
+            this IDataStream src,
+            ISizedSpanSerializable data,
+            CancellationToken cancel = default
+        )
         {
             return Send(src, data, out var byteSent, cancel);
         }
 
-        public static Task<bool> Send(this IDataStream src, ISizedSpanSerializable data,out int byteSent, CancellationToken cancel = default)
+        public static Task<bool> Send(
+            this IDataStream src,
+            ISizedSpanSerializable data,
+            out int byteSent,
+            CancellationToken cancel = default
+        )
         {
             var size = data.GetByteSize();
             var array = ArrayPool<byte>.Shared.Rent(size);
-            var span = new Span<byte>(array,0,size);
+            var span = new Span<byte>(array, 0, size);
             try
             {
                 byteSent = span.Length;
@@ -39,5 +48,4 @@ namespace Asv.IO
             }
         }
     }
-
 }

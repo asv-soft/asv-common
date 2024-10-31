@@ -77,7 +77,9 @@ namespace Asv.Cfg
             try
             {
                 _rw.EnterWriteLock();
-                var jValue = JsonConvert.DeserializeObject<JToken>(JsonConvert.SerializeObject(value));
+                var jValue = JsonConvert.DeserializeObject<JToken>(
+                    JsonConvert.SerializeObject(value)
+                );
                 Debug.Assert(jValue != null, nameof(jValue) + " != null");
                 _logger.ZLogTrace($"Set configuration key [{key}]");
                 _values[key] = jValue;

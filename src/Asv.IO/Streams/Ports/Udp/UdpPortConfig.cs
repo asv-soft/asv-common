@@ -18,7 +18,7 @@ namespace Asv.IO
                 opt = null;
                 return false;
             }
-            
+
             var coll = PortFactory.ParseQueryString(uri.Query);
 
             opt = new UdpPortConfig
@@ -30,14 +30,15 @@ namespace Asv.IO
             var rhost = coll["rhost"];
             if (!rhost.IsNullOrWhiteSpace())
             {
-                opt.RemoteHost = IPAddress.Parse(rhost).ToString();
+                opt.RemoteHost = IPAddress.Parse(rhost!).ToString();
             }
 
             var rport = coll["rport"];
             if (!rport.IsNullOrWhiteSpace())
             {
-                opt.RemotePort = int.Parse(rport);
+                opt.RemotePort = int.Parse(rport!);
             }
+
             return true;
         }
 
@@ -47,11 +48,10 @@ namespace Asv.IO
             {
                 return $"UDP {LocalHost}:{LocalPort}";
             }
-            else
-            {
-                return $"UDP {LocalHost}:{LocalPort}=>{RemoteHost}:{RemotePort}";
-            }
-            //return $"udp://{LocalHost}:{LocalPort}?rhost={RemoteHost}&rport={RemotePort}";
+
+            return $"UDP {LocalHost}:{LocalPort}=>{RemoteHost}:{RemotePort}";
+
+            // return $"udp://{LocalHost}:{LocalPort}?rhost={RemoteHost}&rport={RemotePort}";
         }
     }
 }

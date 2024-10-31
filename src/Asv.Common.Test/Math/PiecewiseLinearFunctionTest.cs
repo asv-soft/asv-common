@@ -21,7 +21,7 @@ public class PiecewiseLinearFunctionTest
         double[,] values = new double[,]
         {
             { 0.0, 0.0 },
-            { 1.0, 1.0 }
+            { 1.0, 1.0 },
         };
         PiecewiseLinearFunction function = new PiecewiseLinearFunction(values);
 
@@ -35,9 +35,12 @@ public class PiecewiseLinearFunctionTest
         double[,] values = new double[,]
         {
             { 0.0, 0.0 },
-            { 1.0, 2.0 }
+            { 1.0, 2.0 },
         };
-        PiecewiseLinearFunction function = new PiecewiseLinearFunction(values, isScaleForOnePoint: true);
+        PiecewiseLinearFunction function = new PiecewiseLinearFunction(
+            values,
+            isScaleForOnePoint: true
+        );
 
         double result = function[0.5]; // Should return 1.0 because of scaling
         Assert.Equal(1.0, result, 3);
@@ -49,11 +52,11 @@ public class PiecewiseLinearFunctionTest
         double[,] values = new double[,]
         {
             { 0.0, 0.0 },
-            { 1.0, 2.0 }
+            { 1.0, 2.0 },
         };
         PiecewiseLinearFunction function = new PiecewiseLinearFunction(values);
 
-        double result = function[0.5]; 
+        double result = function[0.5];
         Assert.Equal(1, result, 3);
     }
 
@@ -64,21 +67,21 @@ public class PiecewiseLinearFunctionTest
         {
             { 0.0, 0.0 },
             { 1.0, 1.0 },
-            { 2.0, 2.0 }
+            { 2.0, 2.0 },
         };
         PiecewiseLinearFunction function = new PiecewiseLinearFunction(values);
 
         double result = function[1.5]; // Should return 1.5 (interpolated)
         Assert.Equal(1.5, result, 3);
     }
-    
+
     [Fact]
     public void TestNaNInput()
     {
         double[,] values = new double[,]
         {
             { 0.0, 0.0 },
-            { 1.0, 1.0 }
+            { 1.0, 1.0 },
         };
         PiecewiseLinearFunction function = new PiecewiseLinearFunction(values);
 
@@ -92,7 +95,7 @@ public class PiecewiseLinearFunctionTest
         double[,] values = new double[,]
         {
             { 0.0, 0.0 },
-            { 1.0, 1.0 }
+            { 1.0, 1.0 },
         };
         PiecewiseLinearFunction function = new PiecewiseLinearFunction(values);
 
@@ -106,7 +109,7 @@ public class PiecewiseLinearFunctionTest
         double[,] values = new double[,]
         {
             { 1.0, 1.0 },
-            { 2.0, 2.0 }
+            { 2.0, 2.0 },
         };
         PiecewiseLinearFunction function = new PiecewiseLinearFunction(values);
 
@@ -120,21 +123,21 @@ public class PiecewiseLinearFunctionTest
         double[,] values = new double[,]
         {
             { 1.0, 1.0 },
-            { 2.0, 2.0 }
+            { 2.0, 2.0 },
         };
         PiecewiseLinearFunction function = new PiecewiseLinearFunction(values);
 
         double result = function[3.0]; // Should return 3.0 since it's after the last point
         Assert.Equal(3.0, result, 3);
     }
-    
+
     [Fact]
     public void TestValueEnumerator()
     {
         double[,] values = new double[,]
         {
             { 1.0, 1.0 },
-            { 2.0, 2.0 }
+            { 2.0, 2.0 },
         };
         var function = new PiecewiseLinearFunction(values);
 
@@ -145,5 +148,4 @@ public class PiecewiseLinearFunctionTest
         Assert.Equal(2.0, result[1].Key, 3);
         Assert.Equal(2.0, result[1].Value, 3);
     }
-    
 }

@@ -2,12 +2,9 @@ using System;
 
 namespace Asv.IO
 {
-    public class SpanStringType: ISizedSpanSerializable
+    public class SpanStringType : ISizedSpanSerializable
     {
-        public SpanStringType()
-        {
-            
-        }
+        public SpanStringType() { }
 
         public SpanStringType(string value)
         {
@@ -28,13 +25,13 @@ namespace Asv.IO
 
         public int GetByteSize() => BinSerialize.GetSizeForString(Value);
 
-
         public override string ToString()
         {
             return Value ?? "NULL";
         }
 
         public static explicit operator SpanStringType(string value) => new(value);
+
         public static implicit operator string(SpanStringType value) => value.Value;
     }
 }

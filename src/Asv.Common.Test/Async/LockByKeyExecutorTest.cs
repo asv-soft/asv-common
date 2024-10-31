@@ -23,7 +23,7 @@ public class LockByKeyExecutorTest
             var locker = new LockByKeyExecutor<string>(null);
         });
     }
-    
+
     [Fact]
     public void Check_For_ArgumentNullException_When_Execute_Method_Parameter_Is_Null()
     {
@@ -32,19 +32,19 @@ public class LockByKeyExecutorTest
             var locker = new LockByKeyExecutor<string>();
             locker.Execute(null, () => { });
         });
-        
+
         Assert.Throws<ArgumentNullException>(() =>
         {
             var locker = new LockByKeyExecutor<string>();
             locker.Execute("test", null);
         });
-        
+
         Assert.Throws<ArgumentNullException>(() =>
         {
             var locker = new LockByKeyExecutor<string>();
             locker.Execute<string>("test", null);
         });
-        
+
         Assert.Throws<ArgumentNullException>(() =>
         {
             var locker = new LockByKeyExecutor<string>();
@@ -59,7 +59,7 @@ public class LockByKeyExecutorTest
         var threads = new Thread[2];
         var firstStopWatch = new Stopwatch();
         var secondStopWatch = new Stopwatch();
-        
+
         threads[0] = new Thread(() =>
         {
             locker.Execute("one", () => Thread.Sleep(1000));
@@ -80,10 +80,12 @@ public class LockByKeyExecutorTest
         {
             thread.Join();
         }
-        
-        Assert.True(secondStopWatch.ElapsedMilliseconds - firstStopWatch.ElapsedMilliseconds >= 1000);
+
+        Assert.True(
+            secondStopWatch.ElapsedMilliseconds - firstStopWatch.ElapsedMilliseconds >= 1000
+        );
     }
-    
+
     [Fact]
     public void Check_For_Different_Key_Execution()
     {
@@ -91,7 +93,7 @@ public class LockByKeyExecutorTest
         var threads = new Thread[2];
         var firstStopWatch = new Stopwatch();
         var secondStopWatch = new Stopwatch();
-        
+
         threads[0] = new Thread(() =>
         {
             locker.Execute("one", () => Thread.Sleep(1000));
@@ -112,7 +114,9 @@ public class LockByKeyExecutorTest
         {
             thread.Join();
         }
-        
-        Assert.True(secondStopWatch.ElapsedMilliseconds - firstStopWatch.ElapsedMilliseconds < 1000);
+
+        Assert.True(
+            secondStopWatch.ElapsedMilliseconds - firstStopWatch.ElapsedMilliseconds < 1000
+        );
     }
 }

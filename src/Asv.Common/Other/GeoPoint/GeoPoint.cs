@@ -6,19 +6,19 @@ namespace Asv.Common
     /// WGS 84 (EPSG:4326)
     /// https://en.wikipedia.org/wiki/World_Geodetic_System
     /// </summary>
-
     public struct GeoPoint : IEquatable<GeoPoint>
     {
         // West-East
         public readonly double Longitude;
+
         // Nord-South
         public readonly double Latitude;
         public readonly double Altitude;
 
         public static GeoPoint NaN => new(Double.NaN, Double.NaN, Double.NaN);
-        public static GeoPoint Zero => new(0.0, 0.0,0.0);
+        public static GeoPoint Zero => new(0.0, 0.0, 0.0);
         public static GeoPoint ZeroWithAlt => new(0.0, 0.0, 0.0);
-        
+
         public GeoPoint(double latitude, double longitude, double altitude)
         {
             this.Latitude = latitude;
@@ -28,12 +28,20 @@ namespace Asv.Common
 
         public static GeoPoint operator +(GeoPoint x, GeoPoint y)
         {
-            return new GeoPoint(x.Latitude + y.Latitude, x.Longitude + y.Longitude, x.Altitude + y.Altitude);
+            return new GeoPoint(
+                x.Latitude + y.Latitude,
+                x.Longitude + y.Longitude,
+                x.Altitude + y.Altitude
+            );
         }
 
         public static GeoPoint operator -(GeoPoint x, GeoPoint y)
         {
-            return new GeoPoint(x.Latitude - y.Latitude, x.Longitude - y.Longitude, x.Altitude - y.Altitude);
+            return new GeoPoint(
+                x.Latitude - y.Latitude,
+                x.Longitude - y.Longitude,
+                x.Altitude - y.Altitude
+            );
         }
 
         public override string ToString()
@@ -43,7 +51,9 @@ namespace Asv.Common
 
         public bool Equals(GeoPoint other)
         {
-            return Longitude.Equals(other.Longitude) && Latitude.Equals(other.Latitude) && Nullable.Equals(Altitude, other.Altitude);
+            return Longitude.Equals(other.Longitude)
+                && Latitude.Equals(other.Latitude)
+                && Nullable.Equals(Altitude, other.Altitude);
         }
 
         public override bool Equals(object obj)
@@ -56,5 +66,4 @@ namespace Asv.Common
             return Longitude.GetHashCode() ^ Latitude.GetHashCode() ^ Altitude.GetHashCode();
         }
     }
-    
 }

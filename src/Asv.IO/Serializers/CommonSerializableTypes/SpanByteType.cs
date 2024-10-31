@@ -4,10 +4,7 @@ namespace Asv.IO
 {
     public class SpanByteType : ISizedSpanSerializable
     {
-        public SpanByteType()
-        {
-            
-        }
+        public SpanByteType() { }
 
         public SpanByteType(byte value)
         {
@@ -34,6 +31,7 @@ namespace Asv.IO
         }
 
         public static explicit operator SpanByteType(byte value) => new(value);
+
         public static implicit operator byte(SpanByteType value) => value.Value;
     }
 }

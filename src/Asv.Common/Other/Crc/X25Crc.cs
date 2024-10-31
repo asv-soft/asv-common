@@ -22,6 +22,7 @@ namespace Asv.Common
             {
                 crc = Accumulate(bytes[i], crc);
             }
+
             return crc;
         }
 

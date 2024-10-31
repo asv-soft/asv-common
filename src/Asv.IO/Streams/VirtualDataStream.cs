@@ -6,7 +6,6 @@ using Asv.Common;
 
 namespace Asv.IO;
 
-
 public class VirtualDataStream : DisposableOnceWithCancel, IDataStream
 {
     private readonly string _name;
@@ -30,26 +29,32 @@ public class VirtualDataStream : DisposableOnceWithCancel, IDataStream
 
     public Task<bool> Send(byte[] data, int count, CancellationToken cancel)
     {
-        return Task.Run(() =>
-        {
-            Interlocked.Add(ref _txBytes, count);
-            var dataToSend = new byte[count];
-            Array.Copy(data, dataToSend, count);
-            _txPipe.OnNext(dataToSend);
-            return true;
-        }, cancel);
+        return Task.Run(
+            () =>
+            {
+                Interlocked.Add(ref _txBytes, count);
+                var dataToSend = new byte[count];
+                Array.Copy(data, dataToSend, count);
+                _txPipe.OnNext(dataToSend);
+                return true;
+            },
+            cancel
+        );
     }
 
     public Task<bool> Send(ReadOnlyMemory<byte> data, CancellationToken cancel)
     {
-        return Task.Run(() =>
-        {
-            Interlocked.Add(ref _txBytes, data.Length);
-            var dataToSend = new byte[data.Length];
-            data.CopyTo( dataToSend);
-            _txPipe.OnNext(dataToSend);
-            return true;
-        }, cancel);
+        return Task.Run(
+            () =>
+            {
+                Interlocked.Add(ref _txBytes, data.Length);
+                var dataToSend = new byte[data.Length];
+                data.CopyTo(dataToSend);
+                _txPipe.OnNext(dataToSend);
+                return true;
+            },
+            cancel
+        );
     }
 
     public IObserver<byte[]> RxPipe => _rxPipe;

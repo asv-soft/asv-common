@@ -23,7 +23,7 @@ public class AngleDmTest
         Assert.True(AngleDm.TryParse(input, out var value));
         Assert.Equal(expectedValue, value);
     }
-    
+
     [Theory]
     [InlineData("-0 0", 0)]
     [InlineData("+0 0", 0)]
@@ -74,7 +74,7 @@ public class AngleDmTest
         Assert.True(AngleDm.TryParse(input, out var value));
         Assert.Equal(expectedValue, value);
     }
-    
+
     [Theory]
     [InlineData("+045 0", 45)]
     [InlineData("-090 0", -90)]
@@ -97,7 +97,7 @@ public class AngleDmTest
         Assert.True(AngleDm.TryParse(input, out var value));
         Assert.Equal(expectedValue, value);
     }
-    
+
     [Theory]
     [InlineData("00 30", 30.0 / 60.0, "00°30.00′", "en-US")]
     [InlineData("00 1", 1.0 / 60.0, "00°01.00′", "en-US")]
@@ -121,14 +121,20 @@ public class AngleDmTest
     [InlineData("-00 9.11", -9.11 / 60.0, "-00°09,11′", "ru-RU")]
     [InlineData("00 59.99", 59.99 / 60.0, "00°59,99′", "ru-RU")]
     [InlineData("00 59.999", 59.999 / 60.0, "01°00,00′", "ru-RU")]
-    public void CheckValidAngleMinuteValues(string input, double expectedValue, string expectedPrint,string culture)
+    public void CheckValidAngleMinuteValues(
+        string input,
+        double expectedValue,
+        string expectedPrint,
+        string culture
+    )
     {
         Thread.CurrentThread.CurrentCulture = CultureInfo.CurrentCulture = new CultureInfo(culture);
-        // Проверка парсинга
+
+        // Parsing check
         Assert.True(AngleDm.TryParse(input, out var value));
         Assert.Equal(expectedValue, value);
 
-        // Проверка печати
+        // Print check
         Assert.Equal(expectedPrint, AngleDm.PrintDm(value));
     }
 }

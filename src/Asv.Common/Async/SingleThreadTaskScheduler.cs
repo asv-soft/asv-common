@@ -13,24 +13,33 @@ namespace Asv.Common
         private const int Disposed = 1;
         private const int NotDisposed = 0;
         private int _disposeFlag;
-        private BlockingCollection<Task> _tasks;
+        private BlockingCollection<Task>? _tasks;
         private readonly Thread _workThread;
 
-        public SingleThreadTaskScheduler([Localizable(false)] string threadName, int boundedCapacity = 256, ThreadPriority priority = ThreadPriority.Normal, ApartmentState apartmentState = ApartmentState.MTA)
+        public SingleThreadTaskScheduler(
+            [Localizable(false)] string threadName,
+            int boundedCapacity = 256,
+            ThreadPriority priority = ThreadPriority.Normal,
+            ApartmentState apartmentState = ApartmentState.MTA
+        )
         {
             _tasks = new BlockingCollection<Task>(boundedCapacity);
             _workThread = new Thread(() =>
             {
                 foreach (var t in _tasks.GetConsumingEnumerable())
                 {
-                    if (IsDisposed) break;
+                    if (IsDisposed)
+                    {
+                        break;
+                    }
+
                     try
                     {
                         TryExecuteTask(t);
                     }
                     catch (Exception ex)
                     {
-                        //TODO: at Mono sometimes error (System.InvalidOperationException: The task has already completed)
+                        // TODO: at Mono sometimes error (System.InvalidOperationException: The task has already completed)
                         RiseUnhandledTaskException(ex);
                     }
                 }
@@ -38,16 +47,20 @@ namespace Asv.Common
             {
                 IsBackground = true,
                 Name = threadName,
-                Priority = priority
+                Priority = priority,
             };
-            
-            //_workThread.SetApartmentState(apartmentState);
+
+            // _workThread.SetApartmentState(apartmentState);
             _workThread.Start();
         }
 
         protected override void QueueTask(Task task)
         {
-            if (_tasks == null) return;
+            if (_tasks == null)
+            {
+                return;
+            }
+
             Debug.Assert(_tasks.Count < _tasks.BoundedCapacity, "Too many tasks");
             if (!_tasks.IsAddingCompleted)
             {
@@ -57,15 +70,18 @@ namespace Asv.Common
 
         protected override IEnumerable<Task> GetScheduledTasks()
         {
-            return _tasks.ToArray();
+            return _tasks?.ToArray() ?? [];
         }
 
         protected override bool TryExecuteTaskInline(Task task, bool taskWasPreviouslyQueued)
         {
-            if (IsDisposed) return false;
-            return
-                Thread.CurrentThread.GetApartmentState() == ApartmentState.STA &&
-                TryExecuteTask(task);
+            if (IsDisposed)
+            {
+                return false;
+            }
+
+            return Thread.CurrentThread.GetApartmentState() == ApartmentState.STA
+                && TryExecuteTask(task);
         }
 
         public override int MaximumConcurrencyLevel => 1;
@@ -74,8 +90,15 @@ namespace Asv.Common
 
         public void Dispose()
         {
-            if (Interlocked.CompareExchange(ref _disposeFlag, Disposed, NotDisposed) != NotDisposed) return;
-            if (_tasks == null) return;
+            if (Interlocked.CompareExchange(ref _disposeFlag, Disposed, NotDisposed) != NotDisposed)
+            {
+                return;
+            }
+
+            if (_tasks == null)
+            {
+                return;
+            }
 
             _tasks.CompleteAdding();
             _workThread.Join();
@@ -89,7 +112,10 @@ namespace Asv.Common
 
         public void ThrowIfDisposed()
         {
-            if (IsDisposed) throw new ObjectDisposedException(GetType().Name);
+            if (IsDisposed)
+            {
+                throw new ObjectDisposedException(GetType().Name);
+            }
         }
 
         #endregion
@@ -107,9 +133,10 @@ namespace Asv.Common
         {
             if (!CheckAccess())
             {
-                throw new InvalidOperationException("The calling thread does not have access to the data object");
+                throw new InvalidOperationException(
+                    "The calling thread does not have access to the data object"
+                );
             }
-
         }
 
         #endregion

@@ -4,8 +4,7 @@ using System.Reactive.Subjects;
 
 namespace Asv.Common
 {
-
-    public class RxValueBehaviour<T>(T initValue) :DisposableOnce, IRxEditableValue<T>, IDisposable
+    public class RxValueBehaviour<T>(T initValue) : DisposableOnce, IRxEditableValue<T>, IDisposable
     {
         private readonly BehaviorSubject<T> _subject = new(initValue);
 
@@ -15,6 +14,7 @@ namespace Asv.Common
         }
 
         public T Value => _subject.Value;
+
         public void OnCompleted()
         {
             _subject.OnCompleted();
@@ -36,15 +36,13 @@ namespace Asv.Common
             _subject.Dispose();
         }
     }
-    
+
     public class RxValue<TValue> : DisposableOnce, IRxEditableValue<TValue>
     {
-        public RxValue()
-        {
-            
-        }
+        public RxValue() { }
 
-        public RxValue(TValue initValue) : this()
+        public RxValue(TValue initValue)
+            : this()
         {
             _value = initValue;
         }
@@ -52,7 +50,7 @@ namespace Asv.Common
         private readonly Subject<TValue> _subject = new();
         private TValue _value = default!;
 
-        public TValue Value 
+        public TValue Value
         {
             get => _value;
             set
@@ -76,7 +74,7 @@ namespace Asv.Common
                 _subject.OnNext(value);
             }
         }
-        
+
         public void OnError(Exception error)
         {
             if (_subject is { HasObservers: true, IsDisposed: false })
@@ -95,9 +93,17 @@ namespace Asv.Common
 
         public IDisposable Subscribe(IObserver<TValue> observer)
         {
-            if (_subject.IsDisposed) return Disposable.Empty;
+            if (_subject.IsDisposed)
+            {
+                return Disposable.Empty;
+            }
+
             var result = _subject.Subscribe(observer);
-            if (_value != null) observer.OnNext(_value);
+            if (_value != null)
+            {
+                observer.OnNext(_value);
+            }
+
             return result;
         }
 
@@ -105,6 +111,5 @@ namespace Asv.Common
         {
             return Value?.ToString() ?? string.Empty;
         }
-
     }
 }

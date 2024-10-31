@@ -12,10 +12,14 @@ namespace Asv.IO
         Task Send(string value, CancellationToken cancel);
     }
 
-
     public static class TextStreamHelper
     {
-        public static async Task<string> RequestText(this ITextStream strm,string request, int timeoutMs, CancellationToken cancel)
+        public static async Task<string> RequestText(
+            this ITextStream strm,
+            string request,
+            int timeoutMs,
+            CancellationToken cancel
+        )
         {
             using var linkedCancel = CancellationTokenSource.CreateLinkedTokenSource(cancel);
             linkedCancel.CancelAfter(timeoutMs);

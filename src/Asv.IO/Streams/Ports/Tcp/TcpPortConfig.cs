@@ -17,6 +17,7 @@ namespace Asv.IO
                 opt = null;
                 return false;
             }
+
             var coll = PortFactory.ParseQueryString(uri.Query);
             opt = new TcpPortConfig
             {
@@ -31,15 +32,7 @@ namespace Asv.IO
 
         public override string ToString()
         {
-            if (IsServer)
-            {
-                return $"TCP_S {Host}:{Port}";
-            }
-            else
-            {
-                return $"TCP_C {Host}:{Port}";
-            }
-            
+            return IsServer ? $"TCP_S {Host}:{Port}" : $"TCP_C {Host}:{Port}";
         }
     }
 }

@@ -28,9 +28,11 @@ namespace Asv.IO
                 WriteTimeout = int.Parse(coll["wrt"] ?? "1000"),
                 BoundRate = int.Parse(coll["br"] ?? "57600"),
                 WriteBufferSize = int.Parse(coll["ws"] ?? "40960"),
-                Parity = (Parity)Enum.Parse(typeof(Parity), coll["parity"] ?? Parity.None.ToString()),
+                Parity = (Parity)
+                    Enum.Parse(typeof(Parity), coll["parity"] ?? Parity.None.ToString()),
                 DataBits = int.Parse(coll["dataBits"] ?? "8"),
-                StopBits = (StopBits)Enum.Parse(typeof(StopBits), coll["stopBits"] ?? StopBits.One.ToString()),
+                StopBits = (StopBits)
+                    Enum.Parse(typeof(StopBits), coll["stopBits"] ?? StopBits.One.ToString()),
             };
             return true;
         }
@@ -38,7 +40,8 @@ namespace Asv.IO
         public override string ToString()
         {
             return $"Serial {PortName} ({BoundRate})";
-            //return $"serial:{PortName}?br={BoundRate}&wrt={WriteTimeout}&parity={Parity}&dataBits={DataBits}&stopBits={StopBits}";
+
+            // return $"serial:{PortName}?br={BoundRate}&wrt={WriteTimeout}&parity={Parity}&dataBits={DataBits}&stopBits={StopBits}";
         }
     }
 }

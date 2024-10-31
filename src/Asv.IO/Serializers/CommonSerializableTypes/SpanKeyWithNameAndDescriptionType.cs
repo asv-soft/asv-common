@@ -27,7 +27,7 @@ namespace Asv.IO
         public override void Serialize(ref Span<byte> buffer)
         {
             base.Serialize(ref buffer);
-            BinSerialize.WriteString(ref buffer,_description);
+            BinSerialize.WriteString(ref buffer, _description);
         }
 
         public override int GetByteSize()

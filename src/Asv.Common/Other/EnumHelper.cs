@@ -18,7 +18,8 @@ namespace Asv.Common
         /// <param name="enumVal">The enum value</param>
         /// <returns>The attribute of type T that exists on the enum value</returns>
         /// <example>string desc = myEnumVariable.GetAttributeOfType<DescriptionAttribute>().Description;</example>
-        public static T GetAttributeOfType<T>(this Enum enumVal) where T : Attribute
+        public static T? GetAttributeOfType<T>(this Enum enumVal)
+            where T : Attribute
         {
             var type = enumVal.GetType();
             var memInfo = type.GetMember(enumVal.ToString());

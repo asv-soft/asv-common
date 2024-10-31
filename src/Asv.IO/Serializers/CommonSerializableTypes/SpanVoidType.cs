@@ -4,15 +4,9 @@ namespace Asv.IO
 {
     public class SpanVoidType : ISizedSpanSerializable
     {
-        public void Deserialize(ref ReadOnlySpan<byte> buffer)
-        {
-            
-        }
+        public void Deserialize(ref ReadOnlySpan<byte> buffer) { }
 
-        public void Serialize(ref Span<byte> buffer)
-        {
-            
-        }
+        public void Serialize(ref Span<byte> buffer) { }
 
         public int GetByteSize() => 0;
 

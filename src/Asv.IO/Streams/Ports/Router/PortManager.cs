@@ -13,7 +13,12 @@ namespace Asv.IO
         private readonly Action<PortWrapper, byte[], CancellationToken> _onRecv;
         private readonly CancellationTokenSource _cancel = new();
 
-        public PortWrapper(IPort port, string id, PortSettings settings, Action<PortWrapper, byte[], CancellationToken> onRecv)
+        public PortWrapper(
+            IPort port,
+            string id,
+            PortSettings settings,
+            Action<PortWrapper, byte[], CancellationToken> onRecv
+        )
         {
             _onRecv = onRecv;
             Port = port;
@@ -63,12 +68,9 @@ namespace Asv.IO
             State = wraper.Port.State.Value;
             Description = wraper.Port.ToString();
         }
-        
     }
 
-    
-
-    public class PortManager:IPortManager
+    public class PortManager : IPortManager
     {
         private readonly object _sync = new();
         private readonly List<PortWrapper> _ports = new();
@@ -77,10 +79,7 @@ namespace Asv.IO
         private long _rxBytes;
         private long _txBytes;
 
-        public PortManager()
-        {
-            
-        }
+        public PortManager() { }
 
         public IPortInfo[] Ports => GetPortsInfo();
 
@@ -109,10 +108,11 @@ namespace Asv.IO
                 var wrapper = new PortWrapper(port, Guid.NewGuid().ToString(), settings, OnRecv);
                 _ports.Add(wrapper);
             }
+
             _configChangedSubject.OnNext(Unit.Default);
         }
 
-        private void OnRecv(PortWrapper sender, byte[] data,CancellationToken cancel)
+        private void OnRecv(PortWrapper sender, byte[] data, CancellationToken cancel)
         {
             Interlocked.Add(ref _rxBytes, data.Length);
             IEnumerable<PortWrapper> ports;
@@ -120,26 +120,23 @@ namespace Asv.IO
             {
                 // repeat
                 ports = _ports
-                    // exclude self
-                    .Where(_ => _.Id != sender.Id)
-                    // exclude disabled
-                    .Where(_ => _.Port.IsEnabled.Value)
-                    // only connected
-                    .Where(_ => _.Port.State.Value == PortState.Connected);
-                
+                    .Where(_ => _.Id != sender.Id) // exclude self
+                    .Where(_ => _.Port.IsEnabled.Value) // exclude disabled
+                    .Where(_ => _.Port.State.Value == PortState.Connected); // only connected
             }
+
             _onRecv.OnNext(data);
-            Task.WaitAll(ports.Select(_ => _.Port.Send(data, data.Length, cancel)).ToArray(), cancel);
+            Task.WaitAll(
+                ports.Select(_ => _.Port.Send(data, data.Length, cancel)).ToArray(),
+                cancel
+            );
         }
 
         public PortManagerSettings Save()
         {
             lock (_sync)
             {
-                return new PortManagerSettings
-                {
-                    Ports = _ports.Select(_=>_.Settings).ToArray()
-                };
+                return new PortManagerSettings { Ports = _ports.Select(_ => _.Settings).ToArray() };
             }
         }
 
@@ -148,10 +145,15 @@ namespace Asv.IO
             lock (_sync)
             {
                 var item = _ports.FirstOrDefault(_ => _.Id == portId);
-                if (item == null) return;
+                if (item == null)
+                {
+                    return;
+                }
+
                 item.Port.Enable();
                 item.Settings.IsEnabled = true;
             }
+
             _configChangedSubject.OnNext(Unit.Default);
         }
 
@@ -159,11 +161,16 @@ namespace Asv.IO
         {
             lock (_sync)
             {
-                var item =_ports.FirstOrDefault(_ => _.Id == portId);
-                if (item == null) return;
+                var item = _ports.FirstOrDefault(_ => _.Id == portId);
+                if (item == null)
+                {
+                    return;
+                }
+
                 item.Port.Disable();
                 item.Settings.IsEnabled = false;
             }
+
             _configChangedSubject.OnNext(Unit.Default);
         }
 
@@ -176,6 +183,7 @@ namespace Asv.IO
                     Add(port);
                 }
             }
+
             _configChangedSubject.OnNext(Unit.Default);
         }
 
@@ -184,10 +192,15 @@ namespace Asv.IO
             lock (_sync)
             {
                 var item = _ports.Find(_ => _.Id == portId);
-                if (item == null) return false;
+                if (item == null)
+                {
+                    return false;
+                }
+
                 item.Dispose();
                 _ports.Remove(item);
             }
+
             _configChangedSubject.OnNext(Unit.Default);
             return true;
         }
@@ -229,7 +242,9 @@ namespace Asv.IO
             {
                 ports = _ports.Where(_ => _.Port.IsEnabled.Value).ToArray();
             }
-            var res = await Task.WhenAll(ports.Select(_ => _.Port.Send(data, count, cancel))).ConfigureAwait(false);
+
+            var res = await Task.WhenAll(ports.Select(_ => _.Port.Send(data, count, cancel)))
+                .ConfigureAwait(false);
             return res.Any();
         }
 
@@ -241,7 +256,9 @@ namespace Asv.IO
             {
                 ports = _ports.Where(_ => _.Port.IsEnabled.Value).ToArray();
             }
-            var res = await Task.WhenAll(ports.Select(_ => _.Port.Send(data, cancel))).ConfigureAwait(false);
+
+            var res = await Task.WhenAll(ports.Select(_ => _.Port.Send(data, cancel)))
+                .ConfigureAwait(false);
             return res.Any();
         }
 

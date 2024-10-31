@@ -22,7 +22,10 @@ namespace Asv.Common
             }
             finally
             {
-                if (_lock.IsWriteLockHeld) _lock.ExitWriteLock();
+                if (_lock.IsWriteLockHeld)
+                {
+                    _lock.ExitWriteLock();
+                }
             }
         }
 
@@ -35,7 +38,10 @@ namespace Asv.Common
             }
             finally
             {
-                if (_lock.IsWriteLockHeld) _lock.ExitWriteLock();
+                if (_lock.IsWriteLockHeld)
+                {
+                    _lock.ExitWriteLock();
+                }
             }
         }
 
@@ -48,7 +54,10 @@ namespace Asv.Common
             }
             finally
             {
-                if (_lock.IsWriteLockHeld) _lock.ExitWriteLock();
+                if (_lock.IsWriteLockHeld)
+                {
+                    _lock.ExitWriteLock();
+                }
             }
         }
 
@@ -61,7 +70,10 @@ namespace Asv.Common
             }
             finally
             {
-                if (_lock.IsReadLockHeld) _lock.ExitReadLock();
+                if (_lock.IsReadLockHeld)
+                {
+                    _lock.ExitReadLock();
+                }
             }
         }
 
@@ -74,7 +86,10 @@ namespace Asv.Common
             }
             finally
             {
-                if (_lock.IsWriteLockHeld) _lock.ExitWriteLock();
+                if (_lock.IsWriteLockHeld)
+                {
+                    _lock.ExitWriteLock();
+                }
             }
         }
 
@@ -89,11 +104,13 @@ namespace Asv.Common
                 }
                 finally
                 {
-                    if (_lock.IsReadLockHeld) _lock.ExitReadLock();
+                    if (_lock.IsReadLockHeld)
+                    {
+                        _lock.ExitReadLock();
+                    }
                 }
             }
         }
-        
 
         #region Dispose
         public void Dispose()
@@ -101,12 +118,17 @@ namespace Asv.Common
             Dispose(true);
             GC.SuppressFinalize(this);
         }
+
         protected virtual void Dispose(bool disposing)
         {
-            if (disposing)
-                if (_lock != null)
-                    _lock.Dispose();
+            if (!disposing)
+            {
+                return;
+            }
+
+            _lock?.Dispose();
         }
+
         ~ConcurrentHashSet()
         {
             Dispose(false);
@@ -123,7 +145,10 @@ namespace Asv.Common
             }
             finally
             {
-                if (_lock.IsReadLockHeld) _lock.ExitReadLock();
+                if (_lock.IsReadLockHeld)
+                {
+                    _lock.ExitReadLock();
+                }
             }
         }
 
@@ -136,7 +161,10 @@ namespace Asv.Common
             }
             finally
             {
-                if (_lock.IsReadLockHeld) _lock.ExitReadLock();
+                if (_lock.IsReadLockHeld)
+                {
+                    _lock.ExitReadLock();
+                }
             }
         }
     }

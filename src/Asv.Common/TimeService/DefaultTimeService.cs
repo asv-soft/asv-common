@@ -11,15 +11,20 @@ namespace Asv.Common
         {
             get
             {
-                if (_default != null) return _default;
+                if (_default != null)
+                {
+                    return _default;
+                }
+
                 lock (_sync)
                 {
                     _default ??= new DefaultTimeService();
                 }
+
                 return _default;
             }
         }
-        
+
         public void SetCorrection(long correctionIn100NanosecondsTicks)
         {
             throw new NotImplementedException();

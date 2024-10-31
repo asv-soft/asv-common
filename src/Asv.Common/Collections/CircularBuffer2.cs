@@ -8,11 +8,11 @@ namespace Asv.Common
     /// <inheritdoc/>
     /// <summary>
     /// Circular buffer.
-    /// 
+    ///
     /// When writing to a full buffer:
     /// PushBack -> removes this[0] / Front()
     /// PushFront -> removes this[Size-1] / Back()
-    /// 
+    ///
     /// this implementation is inspired by
     /// http://www.boost.org/doc/libs/1_53_0/libs/circular_buffer/doc/circular_buffer.html
     /// because I liked their interface.
@@ -21,6 +21,7 @@ namespace Asv.Common
     {
         private readonly T[] _buffer;
         private readonly int _bufferLength;
+
         /// <summary>
         /// The _start. Index of the first element in buffer.
         /// </summary>
@@ -36,31 +37,28 @@ namespace Asv.Common
         /// </summary>
         private int _size;
 
-        
         /// <summary>
         /// Initializes a new instance of the <see cref="CircularBuffer{T}"/> class.
         /// Use buffer as the backing array for the buffer.
         /// Useful for ArrayPools.
         /// </summary>
-        /// <param name="buffer"></param>
-        /// <param name="length"></param>
+        /// <param name="buffer">.</param>
+        /// <param name="length">.</param>
         public CircularBuffer2(T[] buffer, int length)
         {
             ArgumentNullException.ThrowIfNull(buffer);
-            _buffer = buffer; 
+            _buffer = buffer;
             _bufferLength = length;
             _start = 0;
             _end = 0;
         }
-        
-        public CircularBuffer2(int capacity):this(new T[capacity],capacity)
-        {
-            
-        }
+
+        public CircularBuffer2(int capacity)
+            : this(new T[capacity], capacity) { }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CircularBuffer{T}"/> class.
-        /// 
+        ///
         /// </summary>
         /// <param name='capacity'>
         /// Buffer capacity. Must be positive.
@@ -70,13 +68,14 @@ namespace Asv.Common
         /// Suggestion: use Skip(x).Take(y).ToArray() to build this argument from
         /// any enumerable.
         /// </param>
-        public CircularBuffer2(int capacity, T[] items):this(capacity)
+        public CircularBuffer2(int capacity, T[] items)
+            : this(capacity)
         {
             if (items.Length > capacity)
             {
-                throw new ArgumentException(
-                    "Too many items to fit circular buffer", nameof(items));
+                throw new ArgumentException("Too many items to fit circular buffer", nameof(items));
             }
+
             Array.Copy(items, _buffer, items.Length);
             _size = items.Length;
             _start = 0;
@@ -133,19 +132,23 @@ namespace Asv.Common
         /// valid interval is [0;Size[
         /// </summary>
         /// <param name="index">Index of element to access.</param>
-        /// <exception cref="IndexOutOfRangeException">Thrown when index is outside of [; Size[ interval.</exception>
+        /// <exception cref="IndexOutOfRangeException">Thrown when index is outside the [; Size[ interval.</exception>
         public T this[int index]
         {
             get
             {
                 if (IsEmpty)
                 {
-                    throw new IndexOutOfRangeException($"Cannot access index {index}. Buffer is empty");
+                    throw new IndexOutOfRangeException(
+                        $"Cannot access index {index}. Buffer is empty"
+                    );
                 }
 
                 if (index >= _size)
                 {
-                    throw new IndexOutOfRangeException($"Cannot access index {index}. Buffer size is {_size}");
+                    throw new IndexOutOfRangeException(
+                        $"Cannot access index {index}. Buffer size is {_size}"
+                    );
                 }
 
                 var actualIndex = InternalIndex(index);
@@ -155,12 +158,16 @@ namespace Asv.Common
             {
                 if (IsEmpty)
                 {
-                    throw new IndexOutOfRangeException($"Cannot access index {index}. Buffer is empty");
+                    throw new IndexOutOfRangeException(
+                        $"Cannot access index {index}. Buffer is empty"
+                    );
                 }
 
                 if (index >= _size)
                 {
-                    throw new IndexOutOfRangeException($"Cannot access index {index}. Buffer size is {_size}");
+                    throw new IndexOutOfRangeException(
+                        $"Cannot access index {index}. Buffer size is {_size}"
+                    );
                 }
 
                 var actualIndex = InternalIndex(index);
@@ -171,11 +178,11 @@ namespace Asv.Common
         /// <summary>
         /// Pushes a new element to the back of the buffer. Back()/this[Size-1]
         /// will now return this element.
-        /// 
-        /// When the buffer is full, the element at Front()/this[0] will be 
+        ///
+        /// When the buffer is full, the element at Front()/this[0] will be
         /// popped to allow for this new element to fit.
         /// </summary>
-        /// <param name="item">Item to push to the back of the buffer</param>
+        /// <param name="item">Item to push to the back of the buffer.</param>
         public void PushBack(T item)
         {
             if (IsFull)
@@ -195,11 +202,11 @@ namespace Asv.Common
         /// <summary>
         /// Pushes a new element to the front of the buffer. Front()/this[0]
         /// will now return this element.
-        /// 
-        /// When the buffer is full, the element at Back()/this[Size-1] will be 
+        ///
+        /// When the buffer is full, the element at Back()/this[Size-1] will be
         /// popped to allow for this new element to fit.
         /// </summary>
-        /// <param name="item">Item to push to the front of the buffer</param>
+        /// <param name="item">Item to push to the front of the buffer.</param>
         public void PushFront(T item)
         {
             if (IsFull)
@@ -217,7 +224,7 @@ namespace Asv.Common
         }
 
         /// <summary>
-        /// Removes the element at the back of the buffer. Decreasing the 
+        /// Removes the element at the back of the buffer. Decreasing the
         /// Buffer size by 1.
         /// </summary>
         public void PopBack()
@@ -229,7 +236,7 @@ namespace Asv.Common
         }
 
         /// <summary>
-        /// Removes the element at the front of the buffer. Decreasing the 
+        /// Removes the element at the front of the buffer. Decreasing the
         /// Buffer size by 1.
         /// </summary>
         public void PopFront()
@@ -243,7 +250,7 @@ namespace Asv.Common
         /// <summary>
         /// Clears the contents of the array. Size = 0, Capacity is unchanged.
         /// </summary>
-        /// <exception cref="NotImplementedException"></exception>
+        /// <exception cref="NotImplementedException">.</exception>
         public void Clear()
         {
             // to clear we just reset everything.
@@ -255,8 +262,8 @@ namespace Asv.Common
 
         /// <summary>
         /// Copies the buffer contents to an array, according to the logical
-        /// contents of the buffer (i.e. independent of the internal 
-        /// order/contents)
+        /// contents of the buffer (i.e. independent of the internal
+        /// order/contents).
         /// </summary>
         /// <returns>A new array with a copy of the buffer contents.</returns>
         public T[] ToArray()
@@ -275,11 +282,12 @@ namespace Asv.Common
         }
 
         public void CopyTo(Span<T> buffer)
-        { 
+        {
             if (IsEmpty)
             {
                 return;
             }
+
             Span<T> span;
             if (_start < _end)
             {
@@ -290,7 +298,8 @@ namespace Asv.Common
                     span.CopyTo(buffer);
                     return;
                 }
-                span = new Span<T>(_buffer, _start,count);
+
+                span = new Span<T>(_buffer, _start, count);
                 span.CopyTo(buffer);
             }
             else
@@ -302,6 +311,7 @@ namespace Asv.Common
                     span.CopyTo(buffer);
                     return;
                 }
+
                 span = new Span<T>(_buffer, _start, count);
                 span.CopyTo(buffer);
                 buffer = buffer[count..];
@@ -312,11 +322,12 @@ namespace Asv.Common
                     span.CopyTo(buffer);
                     return;
                 }
+
                 span = new Span<T>(_buffer, 0, _end);
                 span.CopyTo(buffer);
             }
         }
-        
+
         /// <summary>
         /// Get the contents of the buffer as 2 ArraySegments.
         /// Respects the logical contents of the buffer, where
@@ -325,7 +336,7 @@ namespace Asv.Common
         ///
         /// Fast: does not copy the array elements.
         /// Useful for methods like <c>Send(IList&lt;ArraySegment&lt;Byte&gt;&gt;)</c>.
-        /// 
+        ///
         /// <remarks>Segments may be empty.</remarks>
         /// </summary>
         /// <returns>An IList with 2 segments corresponding to the buffer content.</returns>
@@ -347,7 +358,10 @@ namespace Asv.Common
             {
                 for (var i = 0; i < segment.Count; i++)
                 {
-                    yield return segment.Array[segment.Offset + i];
+                    if (segment.Array is not null)
+                    {
+                        yield return segment.Array[segment.Offset + i];
+                    }
                 }
             }
         }
@@ -375,7 +389,7 @@ namespace Asv.Common
         /// Increments the provided index variable by one, wrapping
         /// around if necessary.
         /// </summary>
-        /// <param name="index"></param>
+        /// <param name="index">.</param>
         private void Increment(ref int index)
         {
             if (++index == Capacity)
@@ -388,7 +402,7 @@ namespace Asv.Common
         /// Decrements the provided index variable by one, wrapping
         /// around if necessary.
         /// </summary>
-        /// <param name="index"></param>
+        /// <param name="index">.</param>
         private void Decrement(ref int index)
         {
             if (index == 0)
@@ -413,16 +427,14 @@ namespace Asv.Common
             return _start + (index < (Capacity - _start) ? index : index - Capacity);
         }
 
-        // doing ArrayOne and ArrayTwo methods returning ArraySegment<T> as seen here: 
+        // doing ArrayOne and ArrayTwo methods returning ArraySegment<T> as seen here:
         // http://www.boost.org/doc/libs/1_37_0/libs/circular_buffer/doc/circular_buffer.html#classboost_1_1circular__buffer_1957cccdcb0c4ef7d80a34a990065818d
         // http://www.boost.org/doc/libs/1_37_0/libs/circular_buffer/doc/circular_buffer.html#classboost_1_1circular__buffer_1f5081a54afbc2dfc1a7fb20329df7d5b
         // should help a lot with the code.
-
         #region Array items easy access.
 
-        // The array is composed by at most two non-contiguous segments, 
+        // The array is composed by at most two non-contiguous segments,
         // the next two methods allow easy access to those.
-
         private ArraySegment<T> ArrayOne()
         {
             if (IsEmpty)
@@ -430,7 +442,9 @@ namespace Asv.Common
                 return new ArraySegment<T>([]);
             }
 
-            return _start < _end ? new ArraySegment<T>(_buffer, _start, _end - _start) : new ArraySegment<T>(_buffer, _start, _bufferLength - _start);
+            return _start < _end
+                ? new ArraySegment<T>(_buffer, _start, _end - _start)
+                : new ArraySegment<T>(_buffer, _start, _bufferLength - _start);
         }
 
         private ArraySegment<T> ArrayTwo()
@@ -440,14 +454,11 @@ namespace Asv.Common
                 return new ArraySegment<T>([]);
             }
 
-            return _start < _end ? new ArraySegment<T>(_buffer, _end, 0) : new ArraySegment<T>(_buffer, 0, _end);
+            return _start < _end
+                ? new ArraySegment<T>(_buffer, _end, 0)
+                : new ArraySegment<T>(_buffer, 0, _end);
         }
 
         #endregion
-        
     }
-
-
 }
-
-

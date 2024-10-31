@@ -21,7 +21,7 @@ public class AngleMsTest
         Assert.True(AngleMs.TryParse(input, out var value));
         Assert.Equal(expected, value);
     }
-    
+
     [Theory]
     [InlineData("ru-RU", "-0 0")]
     [InlineData("ru-RU", "+0 0")]
@@ -42,7 +42,6 @@ public class AngleMsTest
         Assert.Equal(0, value);
     }
 
-    
     [Theory]
     [InlineData("ru-RU", @"00' 00""")]
     [InlineData("ru-RU", @"00' 00 ")]
@@ -73,21 +72,25 @@ public class AngleMsTest
     [InlineData("ru-RU", "09 00", 9.0 / 60.0, "09′00,00˝")]
     [InlineData("ru-RU", "9 00", 9.0 / 60.0, "09′00,00˝")]
     [InlineData("ru-RU", "59 00", 59.0 / 60.0, "59′00,00˝")]
-    [InlineData("ru-RU", "120 30", 120.0 / 60.0 + 30.0 / 3600.0, "120′30,00˝")]
-    [InlineData("ru-RU", "-92 1", -92.0 / 60.0 - 1.0 / 3600.0, "92′01,00˝")]
-    [InlineData("ru-RU", "10000 09.14", 10000.0 / 60.0 + 9.14 / 3600.0, "10000′09,14˝")]
-    
+    [InlineData("ru-RU", "120 30", (120.0 / 60.0) + (30.0 / 3600.0), "120′30,00˝")]
+    [InlineData("ru-RU", "-92 1", (-92.0 / 60.0) - (1.0 / 3600.0), "92′01,00˝")]
+    [InlineData("ru-RU", "10000 09.14", (10000.0 / 60.0) + (9.14 / 3600.0), "10000′09,14˝")]
     [InlineData("en-US", "30 00", 30.0 / 60.0, "30′00.00˝")]
     [InlineData("en-US", "1 00", 1.0 / 60.0, "01′00.00˝")]
     [InlineData("en-US", "09 00", 9.0 / 60.0, "09′00.00˝")]
     [InlineData("en-US", "9 00", 9.0 / 60.0, "09′00.00˝")]
     [InlineData("en-US", "59 00", 59.0 / 60.0, "59′00.00˝")]
-    [InlineData("en-US", "120 30", 120.0 / 60.0 + 30.0 / 3600.0, "120′30.00˝")]
-    [InlineData("en-US", "-92 1", -92.0 / 60.0 - 1.0 / 3600.0, "92′01.00˝")]
-    [InlineData("en-US", "10000 09.14", 10000.0 / 60.0 + 9.14 / 3600.0, "10000′09.14˝")]
-    public void CheckValidAngleMsMinuteValues(string culture, string input, double expectedValue, string expectedOutput)
+    [InlineData("en-US", "120 30", (120.0 / 60.0) + (30.0 / 3600.0), "120′30.00˝")]
+    [InlineData("en-US", "-92 1", (-92.0 / 60.0) - (1.0 / 3600.0), "92′01.00˝")]
+    [InlineData("en-US", "10000 09.14", (10000.0 / 60.0) + (9.14 / 3600.0), "10000′09.14˝")]
+    public void CheckValidAngleMsMinuteValues(
+        string culture,
+        string input,
+        double expectedValue,
+        string expectedOutput
+    )
     {
-        Thread.CurrentThread.CurrentCulture = CultureInfo.CurrentCulture = new CultureInfo(culture); 
+        Thread.CurrentThread.CurrentCulture = CultureInfo.CurrentCulture = new CultureInfo(culture);
         Assert.True(AngleMs.TryParse(input, out var value));
         Assert.Equal(expectedValue, value);
         Assert.Equal(expectedOutput, AngleMs.PrintMs(value));
@@ -120,5 +123,4 @@ public class AngleMsTest
         Assert.True(AngleMs.TryParse(input, out var value));
         Assert.Equal(expectedValue, value);
     }
-
 }
