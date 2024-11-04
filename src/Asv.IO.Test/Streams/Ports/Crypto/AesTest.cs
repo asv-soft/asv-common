@@ -1,7 +1,6 @@
 using System;
-using System.IO.Ports;
-using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Time.Testing;
 using Xunit;
 
 namespace Asv.IO.Test;
@@ -9,6 +8,8 @@ namespace Asv.IO.Test;
 [Collection("Sequential")]
 public class AesTest
 {
+    private readonly FakeTimeProvider _timeProvider = new();
+
     public static AesCryptoPort CreateAesCryptoPort(PortBase port) => new(port, new AesCryptoPortConfig
     {
         Key = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6 },
@@ -16,39 +17,39 @@ public class AesTest
     });
 
     #region TCP
-    
+
     [Fact(Skip="This test can be performed only on a local machine.")]
     public async Task AesTcpClientAndServerDataTest()
     {
-        var client = TcpTest.CreateTcpClient(port:1000);
-        var server = TcpTest.CreateTcpServer(port:1000);
+        var client = TcpTest.CreateTcpClient(port: 1000);
+        var server = TcpTest.CreateTcpServer(port: 1000);
         var aesClient = CreateAesCryptoPort(client);
         var aesServer = CreateAesCryptoPort(server);
         aesServer.Enable();
         aesClient.Enable();
 
-        for (int i = 0; i < 10; i++)
+        for (var i = 0; i < 10; i++)
         {
             if (aesClient.State.Value == PortState.Connected && aesServer.State.Value == PortState.Connected) break;
-            Thread.Sleep(1000);
+            _timeProvider.Advance(TimeSpan.FromSeconds(1));
         }
 
         var originData = new byte[Random.Shared.Next(32, 1024)];
-        var recievedData = Array.Empty<byte>();
+        var receivedData = Array.Empty<byte>();
 
         Random.Shared.NextBytes(originData);
 
         using var disp = aesServer.Subscribe(data =>
         {
-            recievedData = data;
+            receivedData = data;
         });
 
         Assert.True(await aesClient.Send(originData, originData.Length, default));
 
-        Thread.Sleep(3000);
+        _timeProvider.Advance(TimeSpan.FromSeconds(3));
         
-        Assert.Equal(originData, recievedData);          
-        
+        Assert.Equal(originData, receivedData);
+
         aesServer.Disable();
         aesClient.Disable();
     }
@@ -56,34 +57,34 @@ public class AesTest
     [Fact(Skip="This test can be performed only on a local machine.")]
     public async Task AesTcpClientDataTest()
     {
-        var client = TcpTest.CreateTcpClient(port:1001);
-        var server = TcpTest.CreateTcpServer(port:1001);
+        var client = TcpTest.CreateTcpClient(port: 1001);
+        var server = TcpTest.CreateTcpServer(port: 1001);
         var aesClient = CreateAesCryptoPort(client);
         server.Enable();
         aesClient.Enable();
 
-        for (int i = 0; i < 10; i++)
+        for (var i = 0; i < 10; i++)
         {
             if (aesClient.State.Value == PortState.Connected && server.State.Value == PortState.Connected) break;
-            Thread.Sleep(1000);
+            _timeProvider.Advance(TimeSpan.FromSeconds(1));
         }
 
         var originData = new byte[Random.Shared.Next(32, 1024)];
-        var recievedData = Array.Empty<byte>();
+        var receivedData = Array.Empty<byte>();
 
         Random.Shared.NextBytes(originData);
 
         using var disp = server.Subscribe(data =>
         {
-            recievedData = data;
+            receivedData = data;
         });
 
         Assert.True(await aesClient.Send(originData, originData.Length, default));
 
-        Thread.Sleep(3000);
-        
-        Assert.NotEqual(originData, recievedData);
-        
+        _timeProvider.Advance(TimeSpan.FromSeconds(3));
+
+        Assert.NotEqual(originData, receivedData);
+
         server.Disable();
         aesClient.Disable();
     }
@@ -100,7 +101,7 @@ public class AesTest
         for (var i = 0; i < 10; i++)
         {
             if (client.State.Value == PortState.Connected && aesServer.State.Value == PortState.Connected) break;
-            await Task.Delay(1000);
+            _timeProvider.Advance(TimeSpan.FromSeconds(1));
         }
 
         var originData = new byte[Random.Shared.Next(32, 1024)];
@@ -115,13 +116,12 @@ public class AesTest
             tcs.SetResult(true);
         });
 
-
         await client.Send(originData, originData.Length, default);
-        
+
         await Task.WhenAny(tcs.Task, Task.Delay(3000));
 
         Assert.Equal(originData, receivedData);
-    
+
         aesServer.Disable();
         client.Disable();
     }
@@ -139,33 +139,33 @@ public class AesTest
         var aesServer = CreateAesCryptoPort(server);
         aesServer.Enable();
         aesClient.Enable();
-        
-        for (int i = 0; i < 10; i++)
+
+        for (var i = 0; i < 10; i++)
         {
             if (aesClient.State.Value == PortState.Connected && aesServer.State.Value == PortState.Connected) break;
-            Thread.Sleep(1000);
+            _timeProvider.Advance(TimeSpan.FromSeconds(1));
         }
-        
+
         var originData = new byte[Random.Shared.Next(32, 1024)];
-        var recievedData = Array.Empty<byte>();
-        
+        var receivedData = Array.Empty<byte>();
+
         Random.Shared.NextBytes(originData);
-        
+
         using var disp = aesServer.Subscribe(data =>
         {
-            recievedData = data;
+            receivedData = data;
         });
-        
+
         Assert.True(await aesClient.Send(originData, originData.Length, default));
-        
-        Thread.Sleep(5000);
-        
-        Assert.Equal(originData, recievedData);
-        
+
+        _timeProvider.Advance(TimeSpan.FromSeconds(5));
+
+        Assert.Equal(originData, receivedData);
+
         aesServer.Disable();
         aesClient.Disable();
     }
-    
+
     [Fact(Skip="This test can be performed only on a local machine.")]
     public async Task AesUdpClientDataTest()
     {
@@ -175,28 +175,28 @@ public class AesTest
         server.Enable();
         aesClient.Enable();
 
-        for (int i = 0; i < 10; i++)
+        for (var i = 0; i < 10; i++)
         {
             if (aesClient.State.Value == PortState.Connected && server.State.Value == PortState.Connected) break;
-            Thread.Sleep(1000);
+            _timeProvider.Advance(TimeSpan.FromSeconds(1));
         }
 
         var originData = new byte[Random.Shared.Next(32, 1024)];
-        var recievedData = Array.Empty<byte>();
+        var receivedData = Array.Empty<byte>();
 
         Random.Shared.NextBytes(originData);
 
         using var disp = server.Subscribe(data =>
         {
-            recievedData = data;
+            receivedData = data;
         });
 
         Assert.True(await aesClient.Send(originData, originData.Length, default));
 
-        Thread.Sleep(5000);
-        
-        Assert.NotEqual(originData, recievedData);
-        
+        _timeProvider.Advance(TimeSpan.FromSeconds(5));
+
+        Assert.NotEqual(originData, receivedData);
+
         server.Disable();
         aesClient.Disable();
     }
@@ -213,35 +213,33 @@ public class AesTest
         for (var i = 0; i < 10; i++)
         {
             if (client.State.Value == PortState.Connected && aesServer.State.Value == PortState.Connected) break;
-            Thread.Sleep(1000);
+            _timeProvider.Advance(TimeSpan.FromSeconds(1));
         }
 
         var originData = new byte[Random.Shared.Next(32, 1024)];
-        var recievedData = Array.Empty<byte>();
+        var receivedData = Array.Empty<byte>();
 
         Random.Shared.NextBytes(originData);
 
         using var disp = aesServer.Subscribe(data =>
         {
-            recievedData = data;
+            receivedData = data;
         });
-        
+
         Assert.True(await client.Send(originData, originData.Length, default));
 
-        Thread.Sleep(5000);
-        
-        Assert.Equal(originData, recievedData);
-        
+        _timeProvider.Advance(TimeSpan.FromSeconds(5));
+
+        Assert.Equal(originData, receivedData);
+
         aesServer.Disable();
         client.Disable();
     }
-    
+
     #endregion
 
     #region Serial
-    //Can be tested with Virtual Serial Port Driver, if there is no real device.
-    //You should create 3 pairs of COM ports [1,2], [3,4], [5,6].
-    
+
     [Fact(Skip="This test can be performed only on a local machine.")]
     public async Task AesSerialClientAndServerDataTest()
     {
@@ -251,66 +249,64 @@ public class AesTest
         var aesServer = CreateAesCryptoPort(server);
         aesServer.Enable();
         aesClient.Enable();
-        
-        for (int i = 0; i < 10; i++)
+
+        for (var i = 0; i < 10; i++)
         {
             if (aesClient.State.Value == PortState.Connected && aesServer.State.Value == PortState.Connected) break;
-            Thread.Sleep(1000);
+            _timeProvider.Advance(TimeSpan.FromSeconds(1));
         }
-        
+
         var originData = new byte[Random.Shared.Next(32, 1024)];
-        var recievedData = Array.Empty<byte>();
-        
+        var receivedData = Array.Empty<byte>();
+
         Random.Shared.NextBytes(originData);
-        
+
         using var disp = aesServer.Subscribe(data =>
         {
-            recievedData = data;
+            receivedData = data;
         });
-        
+
         Assert.True(await aesClient.Send(originData, originData.Length, default));
-        
-        Thread.Sleep(5000);
-        
-        Assert.Equal(originData, recievedData);
-        
+
+        _timeProvider.Advance(TimeSpan.FromSeconds(5));
+
+        Assert.Equal(originData, receivedData);
+
         aesServer.Disable();
         aesClient.Disable();
     }
-    
+
     [Fact(Skip="This test can be performed only on a local machine.")]
     public async Task AesSerialClientDataTest()
     {
-        var serials = SerialPort.GetPortNames();
-        
         var client = SerialTest.CreateSerialPort("COM3");
         var server = SerialTest.CreateSerialPort("COM4");
         var aesClient = CreateAesCryptoPort(client);
         server.Enable();
         aesClient.Enable();
 
-        for (int i = 0; i < 10; i++)
+        for (var i = 0; i < 10; i++)
         {
             if (aesClient.State.Value == PortState.Connected && server.State.Value == PortState.Connected) break;
-            Thread.Sleep(1000);
+            _timeProvider.Advance(TimeSpan.FromSeconds(1));
         }
 
         var originData = new byte[Random.Shared.Next(32, 1024)];
-        var recievedData = Array.Empty<byte>();
+        var receivedData = Array.Empty<byte>();
 
         Random.Shared.NextBytes(originData);
 
         using var disp = server.Subscribe(data =>
         {
-            recievedData = data;
+            receivedData = data;
         });
 
         Assert.True(await aesClient.Send(originData, originData.Length, default));
 
-        Thread.Sleep(5000);
-        
-        Assert.NotEqual(originData, recievedData);
-        
+        _timeProvider.Advance(TimeSpan.FromSeconds(5));
+
+        Assert.NotEqual(originData, receivedData);
+
         server.Disable();
         aesClient.Disable();
     }
@@ -324,31 +320,31 @@ public class AesTest
         aesServer.Enable();
         client.Enable();
 
-        for (int i = 0; i < 10; i++)
+        for (var i = 0; i < 10; i++)
         {
             if (client.State.Value == PortState.Connected && aesServer.State.Value == PortState.Connected) break;
-            Thread.Sleep(1000);
+            _timeProvider.Advance(TimeSpan.FromSeconds(1));
         }
 
         var originData = new byte[Random.Shared.Next(32, 1024)];
-        var recievedData = Array.Empty<byte>();
+        var receivedData = Array.Empty<byte>();
 
         Random.Shared.NextBytes(originData);
 
         using var disp = aesServer.Subscribe(data =>
         {
-            recievedData = data;
+            receivedData = data;
         });
 
         Assert.True(await client.Send(originData, originData.Length, default));
-        
-        Thread.Sleep(3000);
-        
-        Assert.Equal(originData, recievedData);
-        
+
+        _timeProvider.Advance(TimeSpan.FromSeconds(3));
+
+        Assert.Equal(originData, receivedData);
+
         aesServer.Disable();
         client.Disable();
     }
-    
+
     #endregion
 }

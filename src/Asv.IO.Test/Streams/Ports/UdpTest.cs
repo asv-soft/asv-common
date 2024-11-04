@@ -1,6 +1,6 @@
 using System;
-using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Time.Testing;
 using Xunit;
 
 namespace Asv.IO.Test;
@@ -8,6 +8,8 @@ namespace Asv.IO.Test;
 [Collection("Sequential")]
 public class UdpTest
 {
+    private readonly FakeTimeProvider _timeProvider = new();
+
     public static UdpPort CreateUdpPort(string localHost = "127.0.0.1", int localPort = 2050,
         string remoteHost = "127.0.0.1", int remotePort = 2050) => new(new UdpPortConfig
     {
@@ -17,17 +19,16 @@ public class UdpTest
         RemotePort = remotePort
     });
 
-
     [Fact(Skip="This test can be performed only on a local machine.")]
-    public async Task UdpClientConnectionSuccessTest()
+    public void UdpClientConnectionSuccessTest()
     {
         var client = CreateUdpPort(localPort: 2005);
 
         client.Enable();
 
-        for (int i = 0; i < 10; i++)
+        for (var i = 0; i < 10; i++)
         {
-            Thread.Sleep(1000);
+            _timeProvider.Advance(TimeSpan.FromSeconds(1));
         }
 
         Assert.Equal(PortState.Connected, client.State.Value);
@@ -36,15 +37,15 @@ public class UdpTest
     }
 
     [Fact(Skip="This test can be performed only on a local machine.")]
-    public async Task UdpServerConnectionSuccessTest()
+    public void UdpServerConnectionSuccessTest()
     {
         var server = CreateUdpPort(localPort: 2004);
 
         server.Enable();
 
-        for (int i = 0; i < 10; i++)
+        for (var i = 0; i < 10; i++)
         {
-            Thread.Sleep(1000);
+            _timeProvider.Advance(TimeSpan.FromSeconds(1));
         }
 
         Assert.Equal(PortState.Connected, server.State.Value);
@@ -53,7 +54,7 @@ public class UdpTest
     }
 
     [Fact(Skip="This test can be performed only on a local machine.")]
-    public async Task UdpClientServerConnectionTest()
+    public void UdpClientServerConnectionTest()
     {
         var client = CreateUdpPort(localPort: 2002, remotePort: 2007);
         var server = CreateUdpPort(localPort: 2007, remotePort: 2002);
@@ -61,9 +62,9 @@ public class UdpTest
         client.Enable();
         server.Enable();
 
-        for (int i = 0; i < 10; i++)
+        for (var i = 0; i < 10; i++)
         {
-            Thread.Sleep(1000);
+            _timeProvider.Advance(TimeSpan.FromSeconds(1));
         }
 
         Assert.Equal(PortState.Connected, client.State.Value);
@@ -82,24 +83,24 @@ public class UdpTest
         server.Enable();
         client.Enable();
 
-        for (int i = 0; i < 30; i++)
+        for (var i = 0; i < 30; i++)
         {
             if (client.State.Value == PortState.Connected && server.State.Value == PortState.Connected) break;
-            Thread.Sleep(1000);
+            _timeProvider.Advance(TimeSpan.FromSeconds(1));
         }
 
         var originData = new byte[Random.Shared.Next(32, 1024)];
-        var recievedData = Array.Empty<byte>();
+        var receivedData = Array.Empty<byte>();
 
         Random.Shared.NextBytes(originData);
         
-        server.Subscribe(data => recievedData = data);
+        server.Subscribe(data => receivedData = data);
         
         Assert.True(await client.Send(originData, originData.Length, default));
         
-        Thread.Sleep(3000);
+        _timeProvider.Advance(TimeSpan.FromSeconds(3)); 
         
-        Assert.Equal(originData, recievedData);
+        Assert.Equal(originData, receivedData);
         
         client.Disable();
         server.Disable();

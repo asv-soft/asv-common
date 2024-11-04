@@ -1,6 +1,6 @@
 using System;
-using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Time.Testing;
 using Xunit;
 
 namespace Asv.IO.Test;
@@ -8,6 +8,8 @@ namespace Asv.IO.Test;
 [Collection("Sequential")]
 public class TcpTest
 {
+    private readonly FakeTimeProvider _timeProvider = new();
+
     public static TcpClientPort CreateTcpClient(string host = "127.0.0.1", int port = 5050) => new(new TcpPortConfig
     {
         Host = host,
@@ -23,15 +25,15 @@ public class TcpTest
     });
     
     [Fact(Skip="This test can be performed only on a local machine.")]
-    public async Task TcpClientConnectionErrorTest()
+    public void TcpClientConnectionErrorTest()
     {
-        var client = CreateTcpClient(port:2005);
+        var client = CreateTcpClient(port: 2005);
         
         client.Enable();
         
-        for (int i = 0; i < 10; i++)
+        for (var i = 0; i < 10; i++)
         {
-            Thread.Sleep(1000);
+            _timeProvider.Advance(TimeSpan.FromSeconds(1));
         }
         
         Assert.Equal(PortState.Error, client.State.Value);
@@ -40,15 +42,15 @@ public class TcpTest
     }
     
     [Fact(Skip="This test can be performed only on a local machine.")]
-    public async Task TcpServerConnectionSuccessTest()
+    public void TcpServerConnectionSuccessTest()
     {
-        var server = CreateTcpServer(port:2004);
+        var server = CreateTcpServer(port: 2004);
         
         server.Enable();
         
-        for (int i = 0; i < 10; i++)
+        for (var i = 0; i < 10; i++)
         {
-            Thread.Sleep(1000);
+            _timeProvider.Advance(TimeSpan.FromSeconds(1));
         }
         
         Assert.Equal(PortState.Connected, server.State.Value);
@@ -57,17 +59,17 @@ public class TcpTest
     }
     
     [Fact(Skip="This test can be performed only on a local machine.")]
-    public async Task TcpClientServerConnectionTest()
+    public void TcpClientServerConnectionTest()
     {
-        var client = CreateTcpClient(port:2003);
-        var server = CreateTcpServer(port:2003);
+        var client = CreateTcpClient(port: 2003);
+        var server = CreateTcpServer(port: 2003);
         
         client.Enable();
         server.Enable();
         
-        for (int i = 0; i < 10; i++)
+        for (var i = 0; i < 10; i++)
         {
-            Thread.Sleep(1000);
+            _timeProvider.Advance(TimeSpan.FromSeconds(1));
         }
         
         Assert.Equal(PortState.Connected, client.State.Value);
@@ -80,36 +82,35 @@ public class TcpTest
     [Fact(Skip="This test can be performed only on a local machine.")]
     public async Task TcpClientServerDataTransferTest()
     {
-        var client = CreateTcpClient(port:2002);
-        var server = CreateTcpServer(port:2002);
+        var client = CreateTcpClient(port: 2002);
+        var server = CreateTcpServer(port: 2002);
         
         client.Enable();
         server.Enable();
         
-        for (int i = 0; i < 10; i++)
+        for (var i = 0; i < 10; i++)
         {
             if (client.State.Value == PortState.Connected && server.State.Value == PortState.Connected) break;
-            Thread.Sleep(1000);
+            _timeProvider.Advance(TimeSpan.FromSeconds(1));
         }
         
         var originData = new byte[Random.Shared.Next(32, 1024)];
-        var recievedData = Array.Empty<byte>();
+        var receivedData = Array.Empty<byte>();
 
         Random.Shared.NextBytes(originData);
 
         using var disp = server.Subscribe(data =>
         {
-            recievedData = data;
+            receivedData = data;
         });
 
         Assert.True(await client.Send(originData, originData.Length, default));
 
-        Thread.Sleep(5000);
+        _timeProvider.Advance(TimeSpan.FromSeconds(5));
         
-        Assert.Equal(originData, recievedData);
+        Assert.Equal(originData, receivedData);
         
         client.Disable();
         server.Disable();
     }
-    
 }

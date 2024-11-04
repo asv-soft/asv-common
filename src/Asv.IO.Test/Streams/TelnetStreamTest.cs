@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Asv.IO.Test.Streams
+namespace Asv.IO.Test
 {
     public class TelnetStreamTest
     {
