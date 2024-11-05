@@ -5,7 +5,7 @@ using System.IO.Abstractions.TestingHelpers;
 using System.Linq;
 using System.Reactive.Disposables;
 using System.Threading;
-using Asv.Cfg.Json;
+using JetBrains.Annotations;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -56,16 +56,11 @@ namespace Asv.Cfg.Test
     }
     #endregion
     
-    public class JsonConfigurationTests:ConfigurationTestBase<JsonConfiguration>
+    
+    [TestSubject(typeof(JsonConfiguration))]
+    public class JsonConfigurationTest(ITestOutputHelper log) : ConfigurationBaseTest<JsonConfiguration>
     {
-        private readonly ITestOutputHelper _testOutputHelper;
-        private readonly IFileSystem _fileSystem;
-
-        public JsonConfigurationTests(ITestOutputHelper testOutputHelper)
-        {
-            _testOutputHelper = testOutputHelper;
-            _fileSystem = new MockFileSystem();
-        }
+        private readonly IFileSystem _fileSystem = new MockFileSystem();
 
         protected override IDisposable CreateForTest(out JsonConfiguration configuration)
         {
@@ -80,8 +75,8 @@ namespace Asv.Cfg.Test
                 _fileSystem.Directory.Delete(workingDir);
             }
             
-            _testOutputHelper.WriteLine($"Working directory: {workingDir}");
-            configuration = new JsonConfiguration(workingDir, fileSystem: _fileSystem);
+            log.WriteLine($"Working directory: {workingDir}");
+            configuration = new JsonConfiguration(workingDir, logger:new TestLogger(log,TimeProvider.System, "JSON"),  fileSystem: _fileSystem);
             var cfg = configuration;
             return Disposable.Create(() =>
             {

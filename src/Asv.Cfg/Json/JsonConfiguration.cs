@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Newtonsoft.Json;
 using ZLogger;
 
-namespace Asv.Cfg.Json
+namespace Asv.Cfg
 {
     public class JsonConfiguration:IConfiguration
     {

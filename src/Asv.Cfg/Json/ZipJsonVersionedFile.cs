@@ -3,7 +3,7 @@ using System.IO;
 using Asv.Common;
 using Newtonsoft.Json;
 
-namespace Asv.Cfg.Json
+namespace Asv.Cfg
 {
     [method: JsonConstructor]
     public readonly struct ZipJsonFileInfo(string fileVersion, string fileType) : IEquatable<ZipJsonFileInfo>

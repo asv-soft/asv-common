@@ -9,12 +9,12 @@ using System.Reactive.Subjects;
 using Asv.Common;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using ZLogger;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
+using ZLogger;
 
-namespace Asv.Cfg.Json
+namespace Asv.Cfg
 {
     
     public class JsonOneFileConfiguration : DisposableOnce, IConfiguration

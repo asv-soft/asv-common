@@ -3,22 +3,17 @@ using System.IO;
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using System.Reactive.Disposables;
-using Asv.Cfg.Json;
+using JetBrains.Annotations;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Asv.Cfg.Test
 {
-    public class ZipJsonConfigurationTests: ConfigurationTestBase<ZipJsonConfiguration>
+    [TestSubject(typeof(ZipJsonConfiguration))]
+    public class ZipJsonConfigurationTest(ITestOutputHelper log)
+        : ConfigurationBaseTest<ZipJsonConfiguration>
     {
-        private readonly ITestOutputHelper _testOutputHelper;
-        private readonly IFileSystem _fileSystem;
-
-        public ZipJsonConfigurationTests(ITestOutputHelper testOutputHelper)
-        {
-            _testOutputHelper = testOutputHelper;
-            _fileSystem = new MockFileSystem();
-        }
+        private readonly IFileSystem _fileSystem = new MockFileSystem();
 
         [Fact]
         public void Configuration_Should_Throw_Argument_Exception_If_Null()
@@ -38,7 +33,7 @@ namespace Asv.Cfg.Test
                 _fileSystem.Directory.CreateDirectory(dir ?? throw new InvalidOperationException());
             }
             var file = _fileSystem.File.Open(filePath, FileMode.OpenOrCreate);
-            configuration = new ZipJsonConfiguration(file, true, null, fileSystem: _fileSystem);
+            configuration = new ZipJsonConfiguration(file, true, new TestLogger(log,TimeProvider.System, "ZIP_JSON"), fileSystem: _fileSystem);
             var cfg = configuration;
             return Disposable.Create(() =>
             {

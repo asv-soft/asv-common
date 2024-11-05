@@ -2,7 +2,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
 
-namespace Asv.Cfg.Json;
+namespace Asv.Cfg;
 
 public static class JsonHelper
 {

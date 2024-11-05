@@ -5,23 +5,17 @@ using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using System.Linq;
 using System.Reactive.Disposables;
-using Asv.Cfg.Json;
+using JetBrains.Annotations;
 using Newtonsoft.Json;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Asv.Cfg.Test
 {
-    public class JsonOneFileConfigurationTests : ConfigurationTestBase<JsonOneFileConfiguration>
+    [TestSubject(typeof(JsonOneFileConfiguration))]
+    public class JsonOneFileConfigurationTest(ITestOutputHelper log) : ConfigurationBaseTest<JsonOneFileConfiguration>
     {
-        private readonly ITestOutputHelper _testOutputHelper;
-        private readonly IFileSystem _fileSystem;
-
-        public JsonOneFileConfigurationTests(ITestOutputHelper testOutputHelper)
-        {
-            _testOutputHelper = testOutputHelper;
-            _fileSystem = new MockFileSystem();
-        }
+        private readonly IFileSystem _fileSystem = new MockFileSystem();
 
         protected override IDisposable CreateForTest(out JsonOneFileConfiguration configuration)
         {
@@ -30,6 +24,7 @@ namespace Asv.Cfg.Test
                 filePath,
                 true,
                 null,
+                logger:new TestLogger(log,TimeProvider.System, "JSON_ONE_FILE"),
                 fileSystem: _fileSystem
             );
             

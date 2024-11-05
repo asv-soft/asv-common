@@ -7,7 +7,7 @@ namespace Asv.Cfg.Test;
 
 
 
-public abstract class ConfigurationTestBase<T>
+public abstract class ConfigurationBaseTest<T>
     where T:IConfiguration
 {
     protected abstract IDisposable CreateForTest(out T configuration);
@@ -65,7 +65,7 @@ public abstract class ConfigurationTestBase<T>
          Thread.Sleep(50);
             
          var expectedResult = new string[] { "test1", "test2", "test3", "test4" };
-         var actualResult = cfg.AvailableParts.OrderBy(_=>_).ToArray(); // items can be reordered in any way, so we need to sort them 
+         var actualResult = cfg.AvailableParts.OrderBy(x=>x).ToArray(); // items can be reordered in any way, so we need to sort them 
             
          Assert.Equal(expectedResult, actualResult);
      }
