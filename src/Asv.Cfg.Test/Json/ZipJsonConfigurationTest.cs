@@ -2,8 +2,8 @@ using System;
 using System.IO;
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
-using System.Reactive.Disposables;
 using JetBrains.Annotations;
+using R3;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -20,7 +20,7 @@ namespace Asv.Cfg.Test
         {
             Assert.Throws<ArgumentNullException>(() =>
             {
-                var configuration = new ZipJsonConfiguration(null!, fileSystem: _fileSystem);
+                var configuration = new ZipJsonConfiguration(null!);
             });
         }
         
@@ -33,7 +33,7 @@ namespace Asv.Cfg.Test
                 _fileSystem.Directory.CreateDirectory(dir ?? throw new InvalidOperationException());
             }
             var file = _fileSystem.File.Open(filePath, FileMode.OpenOrCreate);
-            configuration = new ZipJsonConfiguration(file, true, new TestLogger(log,TimeProvider.System, "ZIP_JSON"), fileSystem: _fileSystem);
+            configuration = new ZipJsonConfiguration(file, true, new TestLogger(log,TimeProvider.System, "ZIP_JSON"));
             var cfg = configuration;
             return Disposable.Create(() =>
             {

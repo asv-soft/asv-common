@@ -1,44 +1,8 @@
 using System;
-using System.Threading;
+using System.Threading.Tasks;
+using R3;
 
 namespace Asv.Common;
-
-public class TimeBasedLinkIndicatorBase : LinkIndicatorBase
-{
-    private readonly TimeSpan _timeout;
-    private readonly TimeProvider _timeProvider;
-    private readonly ITimer _timer;
-    private long _lastTime;
-
-    public TimeBasedLinkIndicatorBase(TimeSpan timeout,int downgradeErrors = 3,TimeProvider? timeProvider = null) : base(downgradeErrors)
-    {
-        _timeout = timeout;
-        _timeProvider = timeProvider ?? TimeProvider.System;
-        _lastTime = _timeProvider.GetTimestamp();
-        _timer = _timeProvider.CreateTimer(CheckTimeout,null, timeout, timeout);
-            
-    }
-
-    private void CheckTimeout(object? state)
-    {
-        if (_timeProvider.GetElapsedTime(Interlocked.Read(ref _lastTime)) > _timeout)
-        {
-            InternalDowngrade();
-        }
-    }
-
-    protected override void InternalUpgrade()
-    {
-        base.InternalUpgrade();
-        Interlocked.Exchange(ref _lastTime, _timeProvider.GetTimestamp());
-    }
-
-    protected override void InternalDisposeOnce()
-    {
-        base.InternalDisposeOnce();
-        _timer.Dispose();
-    }
-}
 
 public class TimeBasedLinkIndicator(TimeSpan timeout, int downgradeErrors = 3, TimeProvider? timeProvider = null)
     : TimeBasedLinkIndicatorBase(timeout, downgradeErrors, timeProvider)
@@ -49,14 +13,39 @@ public class TimeBasedLinkIndicator(TimeSpan timeout, int downgradeErrors = 3, T
     }
 }
 
-public class TimeBasedObservableLinkIndicator<T>(
-    TimeSpan timeout,
-    int downgradeErrors = 3,
-    TimeProvider? timeProvider = null)
-    : TimeBasedLinkIndicatorBase(timeout, downgradeErrors, timeProvider), IObserver<T>
+public class TimeBasedObservableLinkIndicator<T> : TimeBasedLinkIndicatorBase
 {
-    public void OnNext(T value)
+    private readonly IDisposable _sub1;
+    public TimeBasedObservableLinkIndicator(Observable<T> inputStream,
+        TimeSpan timeout,
+        int downgradeErrors = 3,
+        TimeProvider? timeProvider = null) : base(timeout, downgradeErrors, timeProvider)
     {
-        InternalUpgrade();
+        _sub1 = inputStream.Subscribe(x=>InternalUpgrade());
     }
+
+    #region Dispose
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _sub1.Dispose();
+        }
+
+        base.Dispose(disposing);
+    }
+
+    protected override async ValueTask DisposeAsyncCore()
+    {
+        if (_sub1 is IAsyncDisposable sub1AsyncDisposable)
+            await sub1AsyncDisposable.DisposeAsync();
+        else
+            _sub1.Dispose();
+
+        await base.DisposeAsyncCore();
+    }
+
+    #endregion
+
 }

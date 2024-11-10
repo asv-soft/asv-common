@@ -1,35 +1,28 @@
 using System;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace Asv.Common
 {
     public abstract class DisposableOnce : IDisposable 
     {
-        private bool _disposed;
-        private readonly object _disposingSync = new();
+        private int _isDisposed;
 
         #region Disposing
 
         // ReSharper disable once InconsistentlySynchronizedField
-        protected bool IsDisposed => _disposed;
+        protected bool IsDisposed => _isDisposed != 0;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected void ThrowIfDisposed()
         {
-            lock (_disposingSync)
-            {
-                throw new ObjectDisposedException(this?.GetType().FullName); 
-            }
+            if (_isDisposed == 0) return;
+            throw new ObjectDisposedException(this?.GetType().FullName); 
         }
 
         public void Dispose()
         {
-            if(_disposed) return;
-            lock(_disposingSync)
-            {
-                if(_disposed) return;
-                _disposed = true;
-            }
+            if (Interlocked.Exchange(ref _isDisposed, 1) != 0) return;
             /* We didn't use the following pattern:
             protected virtual void Dispose(bool disposing)
             {

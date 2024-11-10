@@ -1,56 +1,52 @@
 using System;
 using System.Diagnostics;
-using System.Reactive.Linq;
-using System.Reactive.Subjects;
 using System.Threading;
 using System.Threading.Tasks;
 using Asv.Common;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+using R3;
+using ZLogger;
+using ObservableExtensions = System.ObservableExtensions;
 
 namespace Asv.IO
 {
-    public abstract class PortBase : DisposableOnceWithCancel, IPort
+    public abstract class PortBase : IPort, IDisposable, IAsyncDisposable
     {
+        private readonly ILogger _logger;
         private int _isEvaluating;
-        private readonly RxValue<Exception> _portErrorStream = new();
-        private readonly RxValue<PortState> _portStateStream = new();
-        private readonly RxValue<bool> _enableStream = new();
+        private readonly ReactiveProperty<Exception?> _portErrorStream = new();
+        private readonly ReactiveProperty<PortState> _portStateStream = new(PortState.Disabled);
+        private readonly ReactiveProperty<bool> _enableStream = new(false);
         private readonly Subject<byte[]> _outputData = new();
         private long _rxBytes;
         private long _txBytes;
+        private readonly TimeProvider _timeProvider;
+        private readonly IDisposable _sub1;
+        private readonly CancellationTokenSource _disposeCancel = new();
+        private ITimer? _reconnectTimer;
+        private volatile int _isDisposed;
+
+        protected PortBase(TimeProvider? timeProvider = null, ILogger? logger = null)
+        {
+            _logger = logger ?? NullLogger.Instance;
+            _timeProvider = timeProvider ?? TimeProvider.System; 
+            _sub1 = _enableStream.Where(x => x).Subscribe(TryConnect, (_,action) => Task.Factory.StartNew(action));
+        }
 
         public long RxBytes => Interlocked.Read(ref _rxBytes);
         public long TxBytes => Interlocked.Read(ref _txBytes);
         public abstract PortType PortType { get; }
         public TimeSpan ReconnectTimeout { get; set; } = TimeSpan.FromSeconds(5);
-        public IRxValue<bool> IsEnabled => _enableStream;
-        public IRxValue<PortState> State => _portStateStream;
-
-        protected PortBase()
-        {
-            Disposable.AddAction(Disable);
-            Disposable.AddAction(() =>
-            {
-                if (_outputData.IsDisposed == false)
-                {
-                    _outputData.OnCompleted();
-                }
-                _outputData.Dispose();
-            });
-            _enableStream.Where(x => x).Subscribe(_ => Task.Factory.StartNew(TryConnect)).DisposeItWith(Disposable);
-            _portErrorStream.DisposeItWith(Disposable);
-            _portStateStream.DisposeItWith(Disposable);
-            _enableStream.DisposeItWith(Disposable);
-            
-            
-        }
-
+        public Observable<byte[]> OnReceive => _outputData;
+        public ReadOnlyReactiveProperty<bool> IsEnabled => _enableStream;
+        public ReadOnlyReactiveProperty<PortState> State => _portStateStream;
+        public ReadOnlyReactiveProperty<Exception?> Error => _portErrorStream;
         public abstract string PortLogName { get; }
-
         public string Name => PortLogName;
-
         public async Task<bool> Send(byte[] data, int count, CancellationToken cancel)
         {
-            if (!IsEnabled.Value) return false;
+            if (!IsEnabled.CurrentValue) return false;
             if (_portStateStream.Value != PortState.Connected) return false;
             try
             {
@@ -67,7 +63,7 @@ namespace Asv.IO
         
         public async Task<bool> Send(ReadOnlyMemory<byte> data, CancellationToken cancel)
         {
-            if (!IsEnabled.Value) return false;
+            if (!IsEnabled.CurrentValue) return false;
             if (_portStateStream.Value != PortState.Connected) return false;
             try
             {
@@ -84,7 +80,7 @@ namespace Asv.IO
 
         protected abstract Task InternalSend(ReadOnlyMemory<byte> data, CancellationToken cancel);
 
-        public IRxValue<Exception> Error => _portErrorStream;
+        
 
         public void Enable()
         {
@@ -112,11 +108,14 @@ namespace Asv.IO
 
         private void TryConnect()
         {
-            if (Interlocked.CompareExchange(ref _isEvaluating, 1, 0) != 0) return;
+            if (Interlocked.CompareExchange(ref _isEvaluating, 1, 0) != 0)
+            {
+                _logger.ZLogTrace($"Duplicate call TryConnect() for port {PortLogName}");
+                return;
+            }
             try
             {
                 if (!_enableStream.Value) return;
-
                 if (IsDisposed) return;
                 _portStateStream.OnNext(PortState.Connecting);
                 InternalStart();
@@ -153,15 +152,68 @@ namespace Asv.IO
 
         protected void InternalOnError(Exception exception)
         {
+            
             _portStateStream.OnNext(PortState.Error);
             _portErrorStream.OnNext(exception);
-            Observable.Timer(ReconnectTimeout).Subscribe(_ => TryConnect(),DisposeCancel);
+            _reconnectTimer = _timeProvider.CreateTimer(x => TryConnect(), null, ReconnectTimeout, Timeout.InfiniteTimeSpan);
             Stop();
         }
-        
-        public IDisposable Subscribe(IObserver<byte[]> observer)
+
+        protected CancellationToken DisposeCancel => _disposeCancel.Token;
+        protected bool IsDisposed => _isDisposed != 0;
+
+        #region Dispose
+
+        protected virtual void Dispose(bool disposing)
         {
-            return _outputData.Subscribe(observer);
+            
+            if (disposing)
+            {
+                _portErrorStream.Dispose();
+                _portStateStream.Dispose();
+                _enableStream.Dispose();
+                _outputData.Dispose();
+                _sub1.Dispose();
+                _disposeCancel.Dispose();
+                _reconnectTimer?.Dispose();
+            }
         }
+
+        public void Dispose()
+        {
+            if (Interlocked.Exchange(ref _isDisposed, 1) != 0) return;
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual async ValueTask DisposeAsyncCore()
+        {
+            await CastAndDispose(_portErrorStream);
+            await CastAndDispose(_portStateStream);
+            await CastAndDispose(_enableStream);
+            await CastAndDispose(_outputData);
+            await CastAndDispose(_sub1);
+            await CastAndDispose(_disposeCancel);
+            if (_reconnectTimer != null) await _reconnectTimer.DisposeAsync();
+
+            return;
+
+            static async ValueTask CastAndDispose(IDisposable resource)
+            {
+                if (resource is IAsyncDisposable resourceAsyncDisposable)
+                    await resourceAsyncDisposable.DisposeAsync();
+                else
+                    resource.Dispose();
+            }
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            if (Interlocked.Exchange(ref _isDisposed, 1) != 0) return;
+            await DisposeAsyncCore();
+            GC.SuppressFinalize(this);
+        }
+
+        #endregion
     }
 }

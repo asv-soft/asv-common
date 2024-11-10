@@ -1,8 +1,26 @@
+using R3;
+
 namespace Asv.Common
 {
-    public interface ILinkIndicator : IRxValue<LinkState>
+    public interface ILinkIndicator
     {
+        ReactiveProperty<LinkState> State { get; }
+        /// <summary>
+        /// Represents an event that is triggered when the link is connected.
+        /// This event happens when the last state was Disconnected and the new state is Connected (downgrade is not considered).
+        /// If current state is Connected event will be risen immediately after subscription.
+        /// </summary>
+        Observable<Unit> OnFound { get; }
 
+        /// <summary>
+        /// Represents an event that is triggered when the link is lost.
+        /// This event happens when the last state was Connected or Downgrade, and the new state is Disconnected.
+        /// If current state is Disconnected event will be risen immediately after subscription.
+        /// </summary>
+        /// <remarks>
+        /// This event is triggered when the number of connection errors exceeds the specified downgrade errors.
+        /// </remarks>
+        Observable<Unit> OnLost { get; }
     }
 
     public enum LinkState
@@ -11,46 +29,4 @@ namespace Asv.Common
         Downgrade,
         Connected,
     }
-
-    public class LinkIndicator:RxValueBehaviour<LinkState>, ILinkIndicator
-    {
-        private readonly int _downgradeErrors;
-        private int _connErrors;
-        private readonly object _sync = new();
-
-        public LinkIndicator(int downgradeErrors = 3) 
-            : base(LinkState.Disconnected)
-        {
-            _downgradeErrors = downgradeErrors;
-        }
-
-        public void Downgrade()
-        {
-            lock (_sync)
-            {
-                _connErrors++;
-                if (_connErrors > 0 && _connErrors < 1) OnNext(LinkState.Connected);
-                if (_connErrors >= 1 && _connErrors <= _downgradeErrors) OnNext(LinkState.Downgrade);
-                if (_connErrors >= _downgradeErrors) OnNext(LinkState.Disconnected);
-            }
-            
-        }
-
-        public void Upgrade()
-        {
-            lock (_sync)
-            {
-                _connErrors = 0;
-                OnNext(LinkState.Connected);
-            }
-        }
-
-        public void ForceDisconnected()
-        {
-            OnNext(LinkState.Disconnected);
-        }
-    }
-
-    
-   
 }

@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using R3;
 using ZLogger;
 
 namespace Asv.Cfg
@@ -16,12 +17,14 @@ namespace Asv.Cfg
         private readonly Dictionary<string, JToken> _values = new();
         private readonly ReaderWriterLockSlim _rw = new(LockRecursionPolicy.SupportsRecursion);
         private readonly ILogger _logger = logger ?? NullLogger.Instance;
+        private readonly Subject<ConfigurationException> _onError = new();
 
         public void Dispose()
         {
             _logger.ZLogTrace($"Dispose {nameof(InMemoryConfiguration)}");
             _rw.Dispose();
             _values.Clear();
+            _onError.Dispose();
         }
 
         public IEnumerable<string> AvailableParts => GetParts();
@@ -66,6 +69,13 @@ namespace Asv.Cfg
                     return defaultValue.Value;
                 }
             }
+            catch (Exception e)
+            {
+                _logger.ZLogError(e,$"Error to get '{key}' part:{e.Message}");
+                var ex = new ConfigurationException($"Error to get '{key}' part",e);
+                _onError.OnNext(ex);
+                throw ex;
+            }
             finally
             {
                 _rw.ExitUpgradeableReadLock();
@@ -82,6 +92,13 @@ namespace Asv.Cfg
                 _logger.ZLogTrace($"Set configuration key [{key}]");
                 _values[key] = jValue;
             }
+            catch (Exception e)
+            {
+                _logger.ZLogError(e,$"Error to set '{key}' part:{e.Message}");
+                var ex = new ConfigurationException($"Error to set '{key}' part",e);
+                _onError.OnNext(ex);
+                throw ex;
+            }
             finally
             {
                 _rw.ExitWriteLock();
@@ -96,10 +113,19 @@ namespace Asv.Cfg
                 _values.Remove(key);
                 _logger.ZLogTrace($"Remove configuration key [{key}]");
             }
+            catch (Exception e)
+            {
+                _logger.ZLogError(e,$"Error to remove '{key}' part:{e.Message}");
+                var ex = new ConfigurationException($"Error to remove '{key}' part",e);
+                _onError.OnNext(ex);
+                throw ex;
+            }
             finally
             {
                 _rw.ExitWriteLock();
             }
         }
+
+        public Observable<ConfigurationException> OnError => _onError;
     }
 }

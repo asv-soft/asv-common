@@ -1,5 +1,6 @@
 using System;
 using Xunit;
+using R3;
 
 namespace Asv.Common.Test;
 
@@ -8,7 +9,7 @@ namespace Asv.Common.Test;
 /// </summary>
 /// <typeparam name="T">Type that implements ILinkIndicatorEx</typeparam>
 public abstract class LinkIndicatorExTestBase<T>
-    where T : ILinkIndicatorEx, IDisposable
+    where T : ILinkIndicator, IDisposable
 {
     protected abstract T CreateLinkIndicator(int downgradeErrors = 3);
     
@@ -20,7 +21,7 @@ public abstract class LinkIndicatorExTestBase<T>
         var linkIndicator = CreateLinkIndicator();
 
         // Assert
-        Assert.Equal(LinkState.Disconnected, linkIndicator.Value);
+        Assert.Equal(LinkState.Disconnected, linkIndicator.State.Value);
         Assert.NotNull(linkIndicator.OnFound);
         Assert.NotNull(linkIndicator.OnLost);
     }

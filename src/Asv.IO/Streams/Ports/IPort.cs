@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Specialized;
 using Asv.Common;
+using R3;
 
 namespace Asv.IO
 {
@@ -24,9 +25,9 @@ namespace Asv.IO
     {
         PortType PortType { get; }
         TimeSpan ReconnectTimeout { get; set; }
-        IRxValue<bool> IsEnabled { get; }
-        IRxValue<PortState> State { get; }
-        IRxValue<Exception> Error { get; }
+        ReadOnlyReactiveProperty<bool> IsEnabled { get; }
+        ReadOnlyReactiveProperty<PortState> State { get; }
+        ReadOnlyReactiveProperty<Exception?> Error { get; }
         void Enable();
         void Disable();
     }
@@ -42,7 +43,7 @@ namespace Asv.IO
                 if (string.IsNullOrEmpty(row)) continue;
                 var index = row.IndexOf('=');
                 if (index < 0) continue;
-                rc[Uri.UnescapeDataString(row.Substring(0, index))] = Uri.UnescapeDataString(row.Substring(index + 1)); // use Unescape only parts          
+                rc[Uri.UnescapeDataString(row[..index])] = Uri.UnescapeDataString(row[(index + 1)..]); // use Unescape only parts          
             }
             return rc;
         }

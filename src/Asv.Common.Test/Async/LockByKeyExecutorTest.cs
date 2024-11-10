@@ -62,12 +62,12 @@ public class LockByKeyExecutorTest
         
         threads[0] = new Thread(() =>
         {
-            locker.Execute("one", () => Thread.Sleep(1000));
+            locker.Execute("one", () => Thread.Sleep(100));
             firstStopWatch.Stop();
         });
         threads[1] = new Thread(() =>
         {
-            locker.Execute("one", () => Thread.Sleep(1000));
+            locker.Execute("one", () => Thread.Sleep(100));
             secondStopWatch.Stop();
         });
 
@@ -81,7 +81,7 @@ public class LockByKeyExecutorTest
             thread.Join();
         }
         
-        Assert.True(secondStopWatch.ElapsedMilliseconds - firstStopWatch.ElapsedMilliseconds >= 1000);
+        Assert.True(secondStopWatch.ElapsedMilliseconds - firstStopWatch.ElapsedMilliseconds >= 100);
     }
     
     [Fact]

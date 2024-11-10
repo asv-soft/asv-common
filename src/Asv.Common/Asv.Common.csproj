@@ -36,11 +36,11 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="System.Reactive" Version="$(ReactiveVersion)" />
     <PackageReference Include="Microsoft.DotNet.ApiCompat.Task" Version="$(ApiCompatVersion)" >
       <!--using api compatibility purely as a development harness-->
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="R3" Version="1.2.9" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Update="RS.resx">

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
+using R3;
 
 namespace Asv.Cfg
 {
@@ -66,5 +67,6 @@ namespace Asv.Cfg
         TPocoType Get<TPocoType>(string key, Lazy<TPocoType> defaultValue);
         void Set<TPocoType>(string key, TPocoType value);
         void Remove(string key);
+        Observable<ConfigurationException> OnError { get; }
     }
 }

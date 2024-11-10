@@ -3,15 +3,13 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Abstractions;
-using System.Reactive;
-using System.Reactive.Linq;
-using System.Reactive.Subjects;
 using Asv.Common;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
+using R3;
 using ZLogger;
 
 namespace Asv.Cfg
@@ -26,7 +24,7 @@ namespace Asv.Cfg
         private readonly IDisposable _saveSubscribe;
         private readonly object _sync = new();
         private readonly bool _deferredFlush;
-        private readonly Subject<Exception> _deferredErrors = new();
+        private readonly Subject<ConfigurationException> _onError = new();
         private readonly JsonSerializer _serializer;
         private readonly ILogger _logger;
         private readonly IFileSystem _fileSystem;
@@ -38,14 +36,15 @@ namespace Asv.Cfg
             TimeSpan? flushToFileDelayMs, 
             bool sortKeysInFile = false, 
             ILogger? logger = null,
-            IFileSystem? fileSystem = null
+            IFileSystem? fileSystem = null,
+            TimeProvider? timeProvider = null
         )
         {
             _fileSystem= fileSystem ?? new FileSystem();
             _fileName = _fileSystem.Path.GetFullPath(fileName);
             _sortKeysInFile = sortKeysInFile;
             _logger = logger ?? NullLogger.Instance; 
-            
+            timeProvider ??= TimeProvider.System;
             _serializer = JsonHelper.CreateDefaultJsonSerializer();
 
             if (flushToFileDelayMs == null)
@@ -66,7 +65,7 @@ namespace Asv.Cfg
 
             _saveSubscribe = flushToFileDelayMs == null
                 ? _onNeedToSave.Subscribe(InternalSaveChanges)
-                : _onNeedToSave.Throttle(flushToFileDelayMs.Value).Subscribe(InternalSaveChanges);
+                : _onNeedToSave.ThrottleLast(flushToFileDelayMs.Value,timeProvider).Subscribe(InternalSaveChanges);
 
             if (_fileSystem.Directory.Exists(dir) == false)
             {
@@ -88,7 +87,7 @@ namespace Asv.Cfg
                 else
                 {
                     _logger.ZLogWarning($"Config file not exist.");
-                    throw new Exception($"Configuration file not exist {fileName}");
+                    throw new ConfigurationException($"Configuration file not exist {fileName}");
                 }
             }
             else
@@ -102,13 +101,13 @@ namespace Asv.Cfg
                 catch (Exception e)
                 {
                     _logger.ZLogError(e,$"Error to load JSON configuration from file. File content: {text}");
-                    throw;
+                    throw new ConfigurationException($"Error to load JSON configuration from file. File content: {text}",e);
                 }
             }
         }
         
         public string FileName => _fileName;
-        public IObservable<Exception> OnDeferredError => _deferredErrors;
+        
         private void InternalSaveChanges(Unit unit)
         {
             lock (_sync)
@@ -136,6 +135,8 @@ namespace Asv.Cfg
                 catch (Exception e)
                 {
                     _logger.ZLogError(e,$"Error to serialize configuration and save it to file ({_fileName}):{e.Message}");
+                    var ex = new ConfigurationException($"Error to serialize configuration and save it to file ({_fileName})",e);
+                    _onError.OnNext(ex);
                     if (_deferredFlush == false) throw;
                 }
             }
@@ -151,57 +152,111 @@ namespace Asv.Cfg
 
         public TPocoType Get<TPocoType>(string key, Lazy<TPocoType> defaultValue)
         {
-            ConfigurationHelper.ValidateKey(key);
-            if (_values.TryGetValue(key, out var value))
+            try
             {
-                return value.ToObject<TPocoType>() ?? throw new InvalidOperationException();
-            }
+                ConfigurationHelper.ValidateKey(key);
+                if (_values.TryGetValue(key, out var value))
+                {
+                    return value.ToObject<TPocoType>() ?? throw new InvalidOperationException();
+                }
 
-            var inst = defaultValue.Value;
-            Set(key,inst);
-            return inst;
+                var inst = defaultValue.Value;
+                Set(key,inst);
+                return inst;
+            }
+            catch (ConfigurationException ex)
+            {
+                _logger.ZLogError(ex,$"Error to get '{key}' part:{ex.Message}");
+                _onError.OnNext(ex);
+                throw;
+            }
+            catch (Exception e)
+            {
+                _logger.ZLogError(e,$"Error to get '{key}' part:{e.Message}");
+                var ex = new ConfigurationException($"Error to get '{key}' part",e);
+                _onError.OnNext(ex);
+                throw ex;
+            }
         }
 
        
         public void Set<TPocoType>(string key, TPocoType value)
         {
-            ConfigurationHelper.ValidateKey(key);
+            try
+            {
+                ConfigurationHelper.ValidateKey(key);
 
-            using var stream = new MemoryStream();
-            using var writer = new StreamWriter(stream);
-            using var jsonTextWriter = new JsonTextWriter(writer);
-            jsonTextWriter.Formatting = _serializer.Formatting;
-            _serializer.Serialize(jsonTextWriter, value, typeof(TPocoType));
-            writer.Flush();          
-            stream.Position = 0;
-            using var jsonReader = new JsonTextReader(new StreamReader(stream));
-            var jValue = _serializer.Deserialize<JToken>(jsonReader) ?? throw new InvalidOperationException();
-            _logger.ZLogTrace($"Set configuration key [{key}]");
-            _values.AddOrUpdate(key,jValue , (_, _) => jValue);
-            _onNeedToSave.OnNext(Unit.Default);
+                using var stream = new MemoryStream();
+                using var writer = new StreamWriter(stream);
+                using var jsonTextWriter = new JsonTextWriter(writer);
+                jsonTextWriter.Formatting = _serializer.Formatting;
+                _serializer.Serialize(jsonTextWriter, value, typeof(TPocoType));
+                writer.Flush();          
+                stream.Position = 0;
+                using var jsonReader = new JsonTextReader(new StreamReader(stream));
+                var jValue = _serializer.Deserialize<JToken>(jsonReader) ?? throw new InvalidOperationException();
+                _logger.ZLogTrace($"Set configuration key [{key}]");
+                _values.AddOrUpdate(key,jValue , (_, _) => jValue);
+                _onNeedToSave.OnNext(Unit.Default);
+            }
+            catch (ConfigurationException ex)
+            {
+                _logger.ZLogError(ex,$"Error to set '{key}' part:{ex.Message}");
+                _onError.OnNext(ex);
+            }
+            catch (Exception e)
+            {
+                _logger.ZLogError(e,$"Error to set '{key}' part:{e.Message}");
+                var ex = new ConfigurationException($"Error to set '{key}' part",e);
+                _onError.OnNext(ex);
+                throw ex;
+            }
         }
 
         public void Remove(string key)
         {
-            ConfigurationHelper.ValidateKey(key);
-            if (_values.TryRemove(key, out _))
+            try
             {
-                _logger.ZLogTrace($"Remove configuration key [{key}]");
-                _onNeedToSave.OnNext(Unit.Default);
+                ConfigurationHelper.ValidateKey(key);
+                if (_values.TryRemove(key, out _))
+                {
+                    _logger.ZLogTrace($"Remove configuration key [{key}]");
+                    _onNeedToSave.OnNext(Unit.Default);
+                }
+            }
+            catch (ConfigurationException ex)
+            {
+                _logger.ZLogError(ex,$"Error to remove '{key}' part:{ex.Message}");
+                _onError.OnNext(ex);
+            }
+            catch (Exception e)
+            {
+                _logger.ZLogError(e,$"Error to remove '{key}' part:{e.Message}");
+                var ex = new ConfigurationException($"Error to remove '{key}' part",e);
+                _onError.OnNext(ex);
+                throw ex;
             }
         }
 
+        public Observable<ConfigurationException> OnError => _onError;
+
         protected override void InternalDisposeOnce()
         {
+            _logger.ZLogTrace($"Dispose {this}");
             _saveSubscribe.Dispose();
             _onNeedToSave.Dispose();
-            _logger.ZLogTrace($"Dispose {nameof(JsonOneFileConfiguration)}");
+            _onError.Dispose();
             if (_deferredFlush)
             {
                 InternalSaveChanges(Unit.Default);    
             }
-            _deferredErrors.Dispose();
+            _onError.Dispose();
             _values.Clear();
+        }
+
+        public override string ToString()
+        {
+            return $"{nameof(JsonOneFileConfiguration)}:{_fileName}";
         }
     }
 }

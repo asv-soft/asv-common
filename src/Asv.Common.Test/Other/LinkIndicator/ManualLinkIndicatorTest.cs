@@ -1,8 +1,11 @@
 using System;
+using JetBrains.Annotations;
 using Xunit;
+using R3;
 
 namespace Asv.Common.Test;
 
+[TestSubject(typeof(ManualLinkIndicator))]
 public class ManualLinkIndicatorTest:LinkIndicatorExTestBase<ManualLinkIndicator>
 {
     
@@ -21,7 +24,7 @@ public class ManualLinkIndicatorTest:LinkIndicatorExTestBase<ManualLinkIndicator
         linkIndicator.Upgrade();
 
         // Assert
-        Assert.Equal(LinkState.Connected, linkIndicator.Value);
+        Assert.Equal(LinkState.Connected, linkIndicator.State.Value);
     }
     [Fact]
     public void InternalDowngrade_MovesThroughStatesCorrectly()
@@ -33,15 +36,15 @@ public class ManualLinkIndicatorTest:LinkIndicatorExTestBase<ManualLinkIndicator
         // Act & Assert
         // First downgrade - should move to Downgrade
         linkIndicator.Downgrade();
-        Assert.Equal(LinkState.Downgrade, linkIndicator.Value);
+        Assert.Equal(LinkState.Downgrade, linkIndicator.State.Value);
 
         // Second downgrade - should still be in Downgrade
         linkIndicator.Downgrade();
-        Assert.Equal(LinkState.Downgrade, linkIndicator.Value);
+        Assert.Equal(LinkState.Downgrade, linkIndicator.State.Value);
 
         // Third downgrade - should move to Disconnected
         linkIndicator.Downgrade();
-        Assert.Equal(LinkState.Disconnected, linkIndicator.Value);
+        Assert.Equal(LinkState.Disconnected, linkIndicator.State.Value);
     }
     
     [Fact]
@@ -55,7 +58,7 @@ public class ManualLinkIndicatorTest:LinkIndicatorExTestBase<ManualLinkIndicator
         linkIndicator.ForceDisconnected();
 
         // Assert
-        Assert.Equal(LinkState.Disconnected, linkIndicator.Value);
+        Assert.Equal(LinkState.Disconnected, linkIndicator.State.Value);
     }
     
     [Fact]

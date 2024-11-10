@@ -1,6 +1,6 @@
 using System;
-using System.Reactive.Disposables;
 using System.Threading;
+using R3;
 
 namespace Asv.Common
 {

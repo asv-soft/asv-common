@@ -4,9 +4,9 @@ using System.IO;
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using System.Linq;
-using System.Reactive.Disposables;
 using JetBrains.Annotations;
 using Newtonsoft.Json;
+using R3;
 using Xunit;
 using Xunit.Abstractions;
 

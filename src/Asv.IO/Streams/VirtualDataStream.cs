@@ -1,13 +1,13 @@
 using System;
-using System.Reactive.Subjects;
 using System.Threading;
 using System.Threading.Tasks;
 using Asv.Common;
+using R3;
 
 namespace Asv.IO;
 
 
-public class VirtualDataStream : DisposableOnceWithCancel, IDataStream
+public class VirtualDataStream : IDataStream
 {
     private readonly string _name;
     private long _rxBytes;
@@ -18,15 +18,11 @@ public class VirtualDataStream : DisposableOnceWithCancel, IDataStream
     public VirtualDataStream(string name)
     {
         _name = name;
-        _txPipe = new Subject<byte[]>().DisposeItWith(Disposable);
-        _rxPipe = new Subject<byte[]>().DisposeItWith(Disposable);
-        _rxPipe.Subscribe(_ => Interlocked.Add(ref _rxBytes, _.Length));
+        _txPipe = new Subject<byte[]>();
+        _rxPipe = new Subject<byte[]>();
+        _rxPipe.Subscribe(x => Interlocked.Add(ref _rxBytes, x.Length));
     }
 
-    public IDisposable Subscribe(IObserver<byte[]> observer)
-    {
-        return _rxPipe.Subscribe(observer);
-    }
 
     public Task<bool> Send(byte[] data, int count, CancellationToken cancel)
     {
@@ -52,8 +48,8 @@ public class VirtualDataStream : DisposableOnceWithCancel, IDataStream
         }, cancel);
     }
 
-    public IObserver<byte[]> RxPipe => _rxPipe;
-    public IObservable<byte[]> TxPipe => _txPipe;
+    public Observer<byte[]> RxPipe => _rxPipe.AsObserver();
+    public Observable<byte[]> TxPipe => _txPipe;
 
     public string Name => _name;
 

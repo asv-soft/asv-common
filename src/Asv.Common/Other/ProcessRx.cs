@@ -3,31 +3,30 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Reactive.Subjects;
+using R3;
 
 namespace Asv.Common
 {
     public class ProcessRx : IDisposable
     {
-        private Process _process;
-        private readonly BlockingCollection<string> _output = new();
+        private Process? _process;
+        private readonly BlockingCollection<string?> _output = new();
         private StreamWriter _input;
         private readonly Subject<string> _inputSubject = new();
         private readonly Subject<string> _outputSubject = new();
         private readonly Subject<string> _errorSubject = new();
         private const int DefaultTimeoutMs = 5000;
 
-        public IObservable<string> OnInput => _inputSubject;
-        public IObservable<string> OnOutput => _outputSubject;
-        public IObservable<string> OnError => _errorSubject;
+        public Observable<string> OnInput => _inputSubject;
+        public Observable<string> OnOutput => _outputSubject;
+        public Observable<string> OnError => _errorSubject;
 
-        public Process Process => _process;
+        public Process? Process => _process;
 
         public void Start(string filePath, string args, bool createNoWindow = false)
         {
             _process = Process.Start(new ProcessStartInfo(filePath, args)
             {
-
                 RedirectStandardError = true,
                 RedirectStandardInput = true,
                 RedirectStandardOutput = true,
@@ -49,6 +48,7 @@ namespace Asv.Common
             {
                 if (!_outputSubject.IsDisposed || _output.IsAddingCompleted == false)
                 {
+                    if (eventArgs.Data == null) return;
                     _outputSubject.OnNext(eventArgs.Data);
                     _output.Add(eventArgs.Data);
                 }
@@ -62,16 +62,16 @@ namespace Asv.Common
         
         public void ClearOutput()
         {
-            string val;
-            while (_output.TryTake(out val))
+            
+            while (_output.TryTake(out _))
             {
 
             }
         }
 
-        public IEnumerable<string> ReadToEnd()
+        public IEnumerable<string?> ReadToEnd()
         {
-            string val;
+            string? val;
             while (_output.TryTake(out val))
             {
                 yield return val;
@@ -85,10 +85,10 @@ namespace Asv.Common
             _inputSubject.OnNext(value);
         }
 
-        public string Pop(int? timeoutMs = null)
+        public string? Pop(int? timeoutMs = null)
         {
             timeoutMs = timeoutMs ?? DefaultTimeoutMs;
-            string val;
+            string? val;
             if (!_output.TryTake(out val, timeoutMs.Value))
                 throw new Exception("Timeout to get output value");
 
@@ -108,7 +108,7 @@ namespace Asv.Common
         
         public void WaitForExit()
         {
-            _process.WaitForExit();
+            _process?.WaitForExit();
         }
     }
 }

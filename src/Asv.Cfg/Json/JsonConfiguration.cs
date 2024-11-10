@@ -8,6 +8,7 @@ using Asv.Common;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Newtonsoft.Json;
+using R3;
 using ZLogger;
 
 namespace Asv.Cfg
@@ -20,10 +21,12 @@ namespace Asv.Cfg
         private readonly ILogger _logger;
         private readonly JsonSerializer _serializer;
         private readonly IFileSystem _fileSystem;
+        private readonly Subject<ConfigurationException> _onError;
 
         public JsonConfiguration(string folderPath, ILogger? logger = null, IFileSystem? fileSystem = null)
         {
             _logger = logger ?? NullLogger.Instance;
+            _onError = new Subject<ConfigurationException>();
             _fileSystem = fileSystem ?? new FileSystem();
             ArgumentException.ThrowIfNullOrWhiteSpace(folderPath);
             _folderPath = _fileSystem.Path.GetFullPath(folderPath);
@@ -45,25 +48,57 @@ namespace Asv.Cfg
         }
         
         public IEnumerable<string> AvailableParts
-            =>
-                _fileSystem.Directory.EnumerateFiles(_folderPath, FixedSearchPattern)
-                    .Select(_fileSystem.Path.GetFileNameWithoutExtension)!;
-                
-        public bool Exist(string key)
         {
-            ConfigurationHelper.ValidateKey(key);
-            return _lock.Execute(key,GetFilePath(key),InternalExist);
+            get
+            {
+                try
+                {
+
+                    return _fileSystem.Directory.EnumerateFiles(_folderPath, FixedSearchPattern)
+                        .Select(_fileSystem.Path.GetFileNameWithoutExtension)
+                        .Select(x => x ?? string.Empty);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                    throw;
+                }
+            }
         }
 
-        private bool InternalExist(string path)
+        public bool Exist(string key)
         {
-            return _fileSystem.File.Exists(path);
+            try
+            {
+                ConfigurationHelper.ValidateKey(key);
+                return _lock.Execute(key,GetFilePath(key),InternalExist);
+            }
+            catch (Exception e)
+            {
+                _logger.ZLogError(e,$"Error to check exist '{key}' part:{e.Message}");
+                var ex = new ConfigurationException($"Error to check exist '{key}' part",e);
+                _onError.OnNext(ex);
+                throw ex;
+            }
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private bool InternalExist(string path) => _fileSystem.File.Exists(path);
 
         public TPocoType Get<TPocoType>(string key, Lazy<TPocoType> defaultValue)
         {
-            ConfigurationHelper.ValidateKey(key);
-            return _lock.Execute(key,GetFilePath(key),defaultValue,InternalGet);
+            try
+            {
+                ConfigurationHelper.ValidateKey(key);
+                return _lock.Execute(key,GetFilePath(key),defaultValue,InternalGet);
+            }
+            catch (Exception e)
+            {
+                _logger.ZLogError(e,$"Error to get '{key}' part:{e.Message}");
+                var ex = new ConfigurationException($"Error to get exist '{key}' part",e);
+                _onError.OnNext(ex);
+                throw ex;
+            }
         }
         
         private TPocoType InternalGet<TPocoType>(string path,Lazy<TPocoType> defaultValue)
@@ -82,8 +117,18 @@ namespace Asv.Cfg
 
         public void Set<TPocoType>(string key, TPocoType value)
         {
-            ConfigurationHelper.ValidateKey(key);
-            _lock.Execute(key, GetFilePath(key),value, InternalSet);
+            try
+            {
+                ConfigurationHelper.ValidateKey(key);
+                _lock.Execute(key, GetFilePath(key),value, InternalSet);
+            }
+            catch (Exception e)
+            {
+                _logger.ZLogError(e,$"Error to set '{key}' part:{e.Message}");
+                var ex = new ConfigurationException($"Error to set exist '{key}' part",e);
+                _onError.OnNext(ex);
+                throw ex;
+            }
         }
         
         private void InternalSet<TPocoType>(string filepath, TPocoType value)
@@ -97,9 +142,22 @@ namespace Asv.Cfg
 
         public void Remove(string key)
         {
-            ConfigurationHelper.ValidateKey(key);
-            _lock.Execute(key,GetFilePath(key),InternalRemove);
+            try
+            {
+                ConfigurationHelper.ValidateKey(key);
+                _lock.Execute(key,GetFilePath(key),InternalRemove);
+            }
+            catch (Exception e)
+            {
+                _logger.ZLogError(e,$"Error to remove '{key}' part:{e.Message}");
+                var ex = new ConfigurationException($"Error to remove '{key}' part",e);
+                _onError.OnNext(ex);
+                throw ex;
+            }
         }
+
+        public Observable<ConfigurationException> OnError => _onError;
+
         private void InternalRemove(string path)
         {
             if (!_fileSystem.File.Exists(path)) return;
@@ -109,7 +167,13 @@ namespace Asv.Cfg
 
         public void Dispose()
         {
-            
+            _logger.ZLogTrace($"Dispose {this}");
+            _onError.Dispose();
+        }
+
+        public override string ToString()
+        {
+            return $"JsonConfiguration: {_folderPath}";
         }
     }
 }

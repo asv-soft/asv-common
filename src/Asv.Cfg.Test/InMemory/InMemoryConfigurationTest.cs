@@ -1,6 +1,6 @@
 using System;
-using System.Reactive.Disposables;
 using JetBrains.Annotations;
+using R3;
 using Xunit.Abstractions;
 
 namespace Asv.Cfg.Test
