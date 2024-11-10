@@ -1,15 +1,14 @@
 using System;
 using System.Buffers;
 using System.IO;
-using System.Reactive.Subjects;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Asv.Common;
+using R3;
 
 namespace Asv.IO
 {
-    public class TelnetStream : DisposableOnceWithCancel,ITextStream
+    public class TelnetStream : ITextStream
     {
         private readonly byte[] _endBytes;
         private readonly IDataStream _input;
@@ -19,6 +18,9 @@ namespace Asv.IO
         private readonly Subject<Exception> _onErrorSubject;
         private readonly byte[] _buffer;
         private readonly object _sync = new();
+        private readonly Subject<string> _onReceive = new();
+        private readonly IDisposable _sub1;
+        private readonly CancellationTokenSource _disposeCancel = new();
 
 
         public TelnetStream(IDataStream strm, Encoding encoding, int bufferSize = 10*1024, string endChars = "\r\n")
@@ -26,8 +28,8 @@ namespace Asv.IO
             _input = strm ?? throw new ArgumentNullException(nameof(strm));
             _encoding = encoding;
             _buffer = new byte[bufferSize];
-            _input.Subscribe(OnData).DisposeItWith(Disposable);
-            _onErrorSubject = new Subject<Exception>().DisposeItWith(Disposable);
+            _sub1 = _input.OnReceive.Subscribe(OnData);
+            _onErrorSubject = new Subject<Exception>();
             _endBytes = _encoding.GetBytes(endChars);
         }
 
@@ -40,7 +42,8 @@ namespace Asv.IO
                 {
                     if (_readIndex >= _buffer.Length)
                     {
-                        _onErrorSubject.OnNext(new InternalBufferOverflowException(string.Format("Receive buffer overflow. Max message size={0}", _buffer.Length)));
+                        _onErrorSubject.OnNext(new InternalBufferOverflowException(
+                            $"Receive buffer overflow. Max message size={_buffer.Length}"));
                         _readIndex = 0;
                     }
                     _buffer[_readIndex++] = data;
@@ -73,15 +76,10 @@ namespace Asv.IO
                 }
             }
         }
+        private CancellationToken DisposeCancel => _disposeCancel.Token;
+        public Observable<string> OnReceive => _onReceive;
 
-       
-
-        public IDisposable Subscribe(IObserver<string> observer)
-        {
-            return _output.Subscribe(observer);
-        }
-
-        public IObservable<Exception> OnError => _onErrorSubject;
+        public Observable<Exception> OnError => _onErrorSubject;
 
         public async Task Send(string value, CancellationToken cancel)
         {
@@ -98,7 +96,7 @@ namespace Asv.IO
             catch (Exception ex)
             {
                 _onErrorSubject.OnNext(new Exception(
-                    string.Format("Error to send text stream data '{0}':{1}", (object)value, (object)ex.Message), ex));
+                    $"Error to send text stream data '{value}':{ex.Message}", ex));
                 throw;
             }
             finally
@@ -107,6 +105,37 @@ namespace Asv.IO
             }
         }
 
-        
+
+        #region Dispose
+
+        public void Dispose()
+        {
+            _output.Dispose();
+            _onErrorSubject.Dispose();
+            _onReceive.Dispose();
+            _sub1.Dispose();
+            _disposeCancel.Dispose();
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            await CastAndDispose(_output);
+            await CastAndDispose(_onErrorSubject);
+            await CastAndDispose(_onReceive);
+            await CastAndDispose(_sub1);
+            await CastAndDispose(_disposeCancel);
+
+            return;
+
+            static async ValueTask CastAndDispose(IDisposable resource)
+            {
+                if (resource is IAsyncDisposable resourceAsyncDisposable)
+                    await resourceAsyncDisposable.DisposeAsync();
+                else
+                    resource.Dispose();
+            }
+        }
+
+        #endregion
     }
 }

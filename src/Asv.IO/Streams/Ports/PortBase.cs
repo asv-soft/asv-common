@@ -27,13 +27,13 @@ namespace Asv.IO
         private ITimer? _reconnectTimer;
         private volatile int _isDisposed;
 
-        protected PortBase(TimeProvider? timeProvider = null, ILogger? logger = null)
+        protected PortBase(TimeProvider? timeProvider, ILogger? logger)
         {
             _logger = logger ?? NullLogger.Instance;
             _timeProvider = timeProvider ?? TimeProvider.System; 
             _sub1 = _enableStream.Where(x => x).Subscribe(TryConnect, (_,action) => Task.Factory.StartNew(action));
         }
-
+        protected TimeProvider TimeProvider => _timeProvider;
         public long RxBytes => Interlocked.Read(ref _rxBytes);
         public long TxBytes => Interlocked.Read(ref _txBytes);
         public abstract PortType PortType { get; }

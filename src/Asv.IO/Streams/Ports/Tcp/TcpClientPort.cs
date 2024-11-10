@@ -3,18 +3,20 @@ using System.Diagnostics;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace Asv.IO
 {
     public class TcpClientPort:PortBase
     {
         private readonly TcpPortConfig _cfg;
-        private TcpClient _tcp;
-        private CancellationTokenSource _stop;
+        private TcpClient? _tcp;
+        private CancellationTokenSource? _stop;
         private DateTime _lastData;
         private static int _counter;
 
-        public TcpClientPort(TcpPortConfig cfg)
+        public TcpClientPort(TcpPortConfig cfg, TimeProvider? timeProvider = null, ILogger? logger = null) 
+            :base(timeProvider, logger)
         {
             _cfg = cfg;
         }
@@ -51,14 +53,13 @@ namespace Asv.IO
             _tcp = new TcpClient();
             _tcp.Connect(_cfg.Host,_cfg.Port);
             _stop = new CancellationTokenSource();
-            var recvThread = new Thread(ListenAsync) { Name = "TCP_C"+_counter,IsBackground = true, Priority = ThreadPriority.Normal };
+            var recvThread = new Thread(ListenAsync) { Name = "TCP_C"+_counter,IsBackground = true};
             _stop.Token.Register(() =>
             {
                 try
                 {
                     _tcp?.Close();
                     _tcp?.Dispose();
-                    recvThread.Interrupt();
                 }
                 catch (Exception)
                 {
@@ -70,25 +71,28 @@ namespace Asv.IO
 
         }
 
-        private async void ListenAsync(object obj)
+        private async void ListenAsync(object? obj)
         {
+            if (obj is CancellationTokenSource == false) throw new InvalidOperationException();
             var cancellationTokenSource = (CancellationTokenSource)obj;
             try
             {
                 while (cancellationTokenSource.IsCancellationRequested == false)
                 {
+                    var tcp = _tcp;
+                    if (tcp == null) break;
                     if (_cfg.ReconnectTimeout != 0)
                     {
                         if ((DateTime.Now - _lastData).TotalMilliseconds > _cfg.ReconnectTimeout)
                         {
-                            await _tcp.GetStream().WriteAsync([], 0, 0, cancellationTokenSource.Token);
+                            await tcp.GetStream().WriteAsync([], 0, 0, cancellationTokenSource.Token);
                         }
                     }
-                    if (_tcp.Available != 0)
+                    if (tcp.Available != 0)
                     {
                         _lastData = DateTime.Now;
-                        var buff = new byte[_tcp.Available];
-                        var readed = await _tcp.GetStream().ReadAsync(buff, 0, buff.Length, cancellationTokenSource.Token);
+                        var buff = new byte[tcp.Available];
+                        var readed = await tcp.GetStream().ReadAsync(buff, 0, buff.Length, cancellationTokenSource.Token);
                         Debug.Assert(readed == buff.Length);
                         if (readed != 0) InternalOnData(buff);
                     }
@@ -114,13 +118,6 @@ namespace Asv.IO
             }
         }
 
-        protected override void InternalDisposeOnce()
-        {
-            base.InternalDisposeOnce();
-            
-            _tcp?.Dispose();
-        }
-
         public override string ToString()
         {
             try
@@ -137,5 +134,52 @@ namespace Asv.IO
             }
         }
 
+        #region Dispose
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _tcp?.Close();
+                _tcp?.Dispose();
+                _tcp = null;
+                _stop?.Cancel(false);
+                _stop?.Dispose();
+                _stop = null;
+            }
+
+            base.Dispose(disposing);
+        }
+
+        protected override async ValueTask DisposeAsyncCore()
+        {
+            if (_tcp != null)
+            {
+                _tcp.Close();
+                await CastAndDispose(_tcp);
+                _tcp = null;
+            }
+
+            if (_stop != null)
+            {
+                _stop.Cancel(false);
+                await CastAndDispose(_stop);
+                _stop = null;
+            }
+
+            await base.DisposeAsyncCore();
+
+            return;
+
+            static async ValueTask CastAndDispose(IDisposable resource)
+            {
+                if (resource is IAsyncDisposable resourceAsyncDisposable)
+                    await resourceAsyncDisposable.DisposeAsync();
+                else
+                    resource.Dispose();
+            }
+        }
+
+        #endregion
     }
 }

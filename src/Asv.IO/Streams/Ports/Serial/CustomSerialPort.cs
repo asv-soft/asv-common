@@ -1,21 +1,25 @@
 using System;
 using System.IO.Ports;
-using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Asv.Common;
+using Microsoft.Extensions.Logging;
+using R3;
 
 namespace Asv.IO
 {
     public class CustomSerialPort : PortBase
     {
+        
+
         private readonly SerialPortConfig _config;
-        private SerialPort _serial;
+        private SerialPort? _serial;
         private readonly AsyncLock _sync = new();
         private int _isReading;
-        private IDisposable _readingTimer;
+        private IDisposable? _readingTimer;
 
-        public CustomSerialPort(SerialPortConfig config)
+        public CustomSerialPort(SerialPortConfig config, TimeProvider? timeProvider = null, ILogger? logger = null)
+            : base(timeProvider, logger)
         {
             _config = config;
         }
@@ -76,11 +80,11 @@ namespace Asv.IO
                     WriteTimeout = _config.WriteTimeout,
                 };
                 _serial.Open();
-                _readingTimer = Observable.Timer(TimeSpan.FromMilliseconds(30),TimeSpan.FromMilliseconds(30)).Subscribe(TryReadData);
+                _readingTimer = TimeProvider.CreateTimer(TryReadData,null,TimeSpan.FromMilliseconds(30),TimeSpan.FromMilliseconds(30));
             }
         }
 
-        private void TryReadData(long l)
+        private void TryReadData(object? _)
         {
             if (Interlocked.CompareExchange(ref _isReading,1,0) != 0) return;
             try
@@ -109,5 +113,38 @@ namespace Asv.IO
             return $"Serial '{_config.PortName}'\n" +
                    $"Options: {_config.BoundRate} baud {_config.DataBits}-{_config.Parity:G}-{_config.StopBits:G}";
         }
+        
+        #region Dispose
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _serial?.Dispose();
+                _readingTimer?.Dispose();
+            }
+
+            base.Dispose(disposing);
+        }
+
+        protected override async ValueTask DisposeAsyncCore()
+        {
+            if (_serial != null) await CastAndDispose(_serial);
+            if (_readingTimer != null) await CastAndDispose(_readingTimer);
+
+            await base.DisposeAsyncCore();
+
+            return;
+
+            static async ValueTask CastAndDispose(IDisposable resource)
+            {
+                if (resource is IAsyncDisposable resourceAsyncDisposable)
+                    await resourceAsyncDisposable.DisposeAsync();
+                else
+                    resource.Dispose();
+            }
+        }
+
+        #endregion
     }
 }

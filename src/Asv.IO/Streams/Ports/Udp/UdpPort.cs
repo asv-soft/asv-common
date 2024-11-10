@@ -5,32 +5,35 @@ using System.Reactive.Subjects;
 using System.Threading;
 using System.Threading.Tasks;
 using Asv.Common;
+using Microsoft.Extensions.Logging;
 
 namespace Asv.IO
 {
     public class UdpPort : PortBase
     {
         private readonly UdpPortConfig _config;
-        private readonly IPEndPoint _recvEndPoint;
-        private UdpClient _udp;
-        private IPEndPoint _lastRecvEndpoint;
-        private CancellationTokenSource _stop;
-        private readonly IPEndPoint _sendEndPoint;
-        private readonly Subject<IPEndPoint> _onRecvNewClientSubject;
+        private readonly IPEndPoint _receiveEndPoint;
+        private UdpClient? _udp;
+        private IPEndPoint? _lastReceiveEndpoint;
+        private CancellationTokenSource? _stop;
+        private readonly IPEndPoint? _sendEndPoint;
+        private readonly Subject<IPEndPoint> _onReceiveNewClientSubject;
+        private Thread? _receiveThread;
 
-        public UdpPort(UdpPortConfig config)
+        public UdpPort(UdpPortConfig config, TimeProvider? timeProvider = null, ILogger? logger = null)
+            : base(timeProvider, logger)
         {
             _config = config;
-            _recvEndPoint = new IPEndPoint(IPAddress.Parse(config.LocalHost), config.LocalPort);
+            _receiveEndPoint = new IPEndPoint(IPAddress.Parse(config.LocalHost), config.LocalPort);
             if (!string.IsNullOrWhiteSpace(config.RemoteHost) && config.RemotePort != 0)
             {
                 _sendEndPoint = new IPEndPoint(IPAddress.Parse(config.RemoteHost), config.RemotePort);
             }
 
-            _onRecvNewClientSubject = new Subject<IPEndPoint>().DisposeItWith(Disposable);
+            _onReceiveNewClientSubject = new Subject<IPEndPoint>();
         }
 
-        public IObservable<IPEndPoint> OnRecvNewClient => _onRecvNewClientSubject;
+        public IObservable<IPEndPoint> OnReceiveNewClient => _onReceiveNewClientSubject;
 
         public override PortType PortType => PortType.Udp;
 
@@ -55,41 +58,32 @@ namespace Asv.IO
 
         protected override void InternalStart()
         {
-            _udp = new UdpClient(_recvEndPoint);
+            _udp = new UdpClient(_receiveEndPoint);
             if (_sendEndPoint != null)
             {
                 _udp.Connect(_sendEndPoint);
             }
             _stop = new CancellationTokenSource();
-            var recvThread = new Thread(ListenAsync) { IsBackground = true, Priority = ThreadPriority.Lowest };
-            _stop.Token.Register(() =>
-            {
-                try
-                {
-                    recvThread.Abort();
-                }
-                catch (Exception)
-                {
-                    // ignore
-                }
-            });
-            recvThread.Start();
+            _receiveThread = new Thread(ListenAsync) { IsBackground = true };
+            _receiveThread.Start();
             
         }
 
-        private void ListenAsync(object obj)
+        private void ListenAsync(object? obj)
         {
             try
             {
-                var anyEp = new IPEndPoint(IPAddress.Any, _recvEndPoint.Port);
-                while (true)
+                var anyEp = new IPEndPoint(IPAddress.Any, _receiveEndPoint.Port);
+                while (_stop != null || _stop?.IsCancellationRequested == false)
                 {
-                    var bytes = _udp.Receive(ref anyEp);
-                    if (_lastRecvEndpoint == null && _udp.Client.Connected == false)
+                    var udp = _udp;
+                    if (udp == null) break;
+                    var bytes = udp.Receive(ref anyEp);
+                    if (_lastReceiveEndpoint == null && udp.Client.Connected == false)
                     {
-                        _lastRecvEndpoint = anyEp;
-                        _udp.Connect(_lastRecvEndpoint);
-                        _onRecvNewClientSubject.OnNext(_lastRecvEndpoint);
+                        _lastReceiveEndpoint = anyEp;
+                        udp.Connect(_lastReceiveEndpoint);
+                        _onReceiveNewClientSubject.OnNext(_lastReceiveEndpoint);
                     }
                     InternalOnData(bytes);
                 }
@@ -105,15 +99,57 @@ namespace Asv.IO
             }
         }
 
-        protected override void InternalDisposeOnce()
-        {
-            base.InternalDisposeOnce();
-            _udp?.Dispose();
-        }
-
         public override string ToString()
         {
             return $"UDP {_config.LocalHost}:{_config.LocalPort}\n Remote IP:{_config.RemoteHost}:{_config.RemotePort}";
         }
+        
+        #region Dispose
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _udp?.Dispose();
+                _udp = null;
+                _stop?.Cancel(false);
+                _stop?.Dispose();
+                _stop = null;
+                _onReceiveNewClientSubject.Dispose();
+            }
+
+            base.Dispose(disposing);
+        }
+
+        protected override async ValueTask DisposeAsyncCore()
+        {
+            if (_udp != null)
+            {
+                await CastAndDispose(_udp);
+                _udp = null;
+            }
+
+            if (_stop != null)
+            {
+                _stop.Cancel(false);
+                await CastAndDispose(_stop);
+                _stop = null;
+            }
+            await CastAndDispose(_onReceiveNewClientSubject);
+
+            await base.DisposeAsyncCore();
+
+            return;
+
+            static async ValueTask CastAndDispose(IDisposable resource)
+            {
+                if (resource is IAsyncDisposable resourceAsyncDisposable)
+                    await resourceAsyncDisposable.DisposeAsync();
+                else
+                    resource.Dispose();
+            }
+        }
+
+        #endregion
     }
 }

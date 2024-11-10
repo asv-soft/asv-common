@@ -1,109 +1,132 @@
 using System;
 using System.Collections.Generic;
-using System.Reactive.Linq;
-using System.Reactive.Subjects;
 using System.Threading;
 using System.Threading.Tasks;
-using Asv.Common;
+using R3;
 
 namespace Asv.IO
 {
-    public class TextStreamBase : ITextStream, IDisposable, IObservable<string>
+    public class TextStreamBase : ITextStream, IDisposable, IAsyncDisposable
     {
-        private readonly CancellationTokenSource _cancel = new();
         private bool _sync = false;
         private int _readIndex = 0;
         private readonly Subject<string> _output = new();
-        private readonly RxValue<PortState> _onPortState = new();
         private readonly Subject<Exception> _onErrorSubject = new();
         private readonly byte[] _buffer;
         private readonly TextReaderBaseConfig _config;
         private readonly IDataStream _input;
+        private readonly IDisposable _sub1;
+        private readonly CancellationTokenSource _disposeCancel = new();
 
-        public TextStreamBase(IDataStream strm, TextReaderBaseConfig config = null)
+        public TextStreamBase(IDataStream strm, TextReaderBaseConfig? config = null)
         {
-            this._cancel.Token.Register((Action)(() => this._output.Dispose()));
-            this._config = config ?? new TextReaderBaseConfig();
-            this._buffer = new byte[this._config.MaxMessageSize];
-            this._input = strm;
-            this._input.SelectMany<byte[], byte>((Func<byte[], IEnumerable<byte>>)(_ => (IEnumerable<byte>)_)).Subscribe<byte>(new Action<byte>(this.OnData), this._cancel.Token);
-            if (_input is IPort port)
+            _config = config ?? new TextReaderBaseConfig();
+            _buffer = new byte[_config.MaxMessageSize];
+            _input = strm;
+            _sub1 = _input.OnReceive.Subscribe(OnData);
+        }
+        
+        
+
+        private void OnData(byte[] arr)
+        {
+            foreach (var data in arr)
             {
-                port.State.Subscribe(_onPortState, _cancel.Token);
-                _onPortState.OnNext(port.State.Value);
+                if (!_sync)
+                {
+                    if (data != _config.StartByte)
+                        return;
+                    _sync = true;
+                    _readIndex = 0;
+                }
+                else if (data == _config.StopByte)
+                {
+                    _sync = false;
+                    try
+                    {
+                        _output.OnNext(_config.DefaultEncoding.GetString(_buffer, 0, _readIndex));
+                    }
+                    catch (Exception ex)
+                    {
+                        _onErrorSubject.OnNext(ex);
+                    }
+                }
+                else
+                {
+                    _buffer[_readIndex] = data;
+                    ++_readIndex;
+                    if (_readIndex >= _config.MaxMessageSize)
+                    {
+                        _onErrorSubject.OnNext(new Exception($"Receive buffer overflow. Max message size={_config.MaxMessageSize}"));
+                        _sync = false;
+                    }
+                }
             }
-            else _onPortState.OnNext(PortState.Connected);
+        }
+        public Observable<string> OnReceive => _output;
+        public Observable<Exception> OnError => _onErrorSubject;
+        public async Task Send(string value, CancellationToken cancel)
+        {
+            try
+            {
+                using var linkedCancel = CancellationTokenSource.CreateLinkedTokenSource(cancel, DisposeCancel);
+                byte[] data = _config.DefaultEncoding.GetBytes(_config.StartByte + value + _config.StopByte);
+                await _input.Send(data, data.Length, linkedCancel.Token).ConfigureAwait(false);
+                data = null;
+            }
+            catch (Exception ex)
+            {
+                _onErrorSubject.OnNext(new Exception($"Error to send text stream data '{value}':{ex.Message}", ex));
+                throw;
+            }
+           
         }
 
-        private void OnData(byte data)
+        #region Dispose
+
+        private CancellationToken DisposeCancel => _disposeCancel.Token;
+
+        protected virtual void Dispose(bool disposing)
         {
-            if (!this._sync)
+            if (disposing)
             {
-                if ((int)data != (int)this._config.StartByte)
-                    return;
-                this._sync = true;
-                this._readIndex = 0;
-            }
-            else if ((int)data == (int)this._config.StopByte)
-            {
-                this._sync = false;
-                try
-                {
-                    this._output.OnNext(this._config.DefaultEncoding.GetString(this._buffer, 0, this._readIndex));
-                }
-                catch (Exception ex)
-                {
-                    this._onErrorSubject.OnNext(ex);
-                }
-            }
-            else
-            {
-                this._buffer[this._readIndex] = data;
-                ++this._readIndex;
-                if (this._readIndex >= this._config.MaxMessageSize)
-                {
-                    this._onErrorSubject.OnNext(new Exception(string.Format("Receive buffer overflow. Max message size={0}", (object)this._config.MaxMessageSize)));
-                    this._sync = false;
-                }
+                _output.Dispose();
+                _onErrorSubject.Dispose();
+                _sub1.Dispose();
+                _disposeCancel.Dispose();
             }
         }
 
         public void Dispose()
         {
-            this._cancel.Cancel(false);
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
-        public IDisposable Subscribe(IObserver<string> observer)
+        protected virtual async ValueTask DisposeAsyncCore()
         {
-            return this._output.Subscribe(observer);
-        }
+            await CastAndDispose(_output);
+            await CastAndDispose(_onErrorSubject);
+            await CastAndDispose(_sub1);
+            await CastAndDispose(_disposeCancel);
 
-        public IRxValue<PortState> OnPortState => _onPortState;
+            return;
 
-        public IObservable<Exception> OnError
-        {
-            get
+            static async ValueTask CastAndDispose(IDisposable resource)
             {
-                return (IObservable<Exception>)this._onErrorSubject;
+                if (resource is IAsyncDisposable resourceAsyncDisposable)
+                    await resourceAsyncDisposable.DisposeAsync();
+                else
+                    resource.Dispose();
             }
         }
 
-        public async Task Send(string value, CancellationToken cancel)
+        public async ValueTask DisposeAsync()
         {
-            
-            try
-            {
-                using var linkedCancel = CancellationTokenSource.CreateLinkedTokenSource(cancel, this._cancel.Token);
-                byte[] data = this._config.DefaultEncoding.GetBytes(_config.StartByte + value + _config.StopByte);
-                await this._input.Send(data, data.Length, linkedCancel.Token).ConfigureAwait(false);
-                data = (byte[])null;
-            }
-            catch (Exception ex)
-            {
-                this._onErrorSubject.OnNext(new Exception(string.Format("Error to send text stream data '{0}':{1}", (object)value, (object)ex.Message), ex));
-                throw;
-            }
-           
+            await DisposeAsyncCore();
+            GC.SuppressFinalize(this);
         }
+
+        #endregion
     }
 }

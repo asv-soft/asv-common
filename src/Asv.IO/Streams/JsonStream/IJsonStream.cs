@@ -2,12 +2,14 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
+using R3;
 
 namespace Asv.IO
 {
-    public interface IJsonStream : IDisposable, IObservable<JObject>
+    public interface IJsonStream : IDisposable
     {
-        IObservable<Exception> OnError { get; }
+        Observable<Exception> OnError { get; }
+        Observable<JObject> OnData { get; }
 
         Task SendText(string data, CancellationToken cancel);
         Task Send<T>(T data, CancellationToken cancel);

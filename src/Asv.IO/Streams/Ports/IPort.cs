@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Specialized;
 using Asv.Common;
+using Microsoft.Extensions.Logging;
 using R3;
 
 namespace Asv.IO
@@ -49,7 +50,7 @@ namespace Asv.IO
         }
 
 
-        public static IPort Create(string connectionString, bool enabled = false)
+        public static IPort Create(string connectionString, bool enabled = false, TimeProvider? timeProvider = null, ILogger? logger = null)
         {
             var uri = new Uri(connectionString);
             IPort result = null;
@@ -57,11 +58,11 @@ namespace Asv.IO
             {
                 if (tcp.IsServer)
                 {
-                    result = new TcpServerPort(tcp);
+                    result = new TcpServerPort(tcp, timeProvider, logger);
                 }
                 else
                 {
-                    result = new TcpClientPort(tcp);
+                    result = new TcpClientPort(tcp, timeProvider, logger);
                 }
             }
             else if (UdpPortConfig.TryParseFromUri(uri, out var udp))
@@ -70,7 +71,7 @@ namespace Asv.IO
             }
             else if (SerialPortConfig.TryParseFromUri(uri, out var ser))
             {
-                result = new CustomSerialPort(ser);
+                result = new CustomSerialPort(ser, timeProvider, logger);
             }
             else
             {

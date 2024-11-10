@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Time.Testing;
 using Xunit;
+using R3;
 
 namespace Asv.IO.Test;
 
@@ -27,7 +28,7 @@ public class SerialTest
             _timeProvider.Advance(TimeSpan.FromSeconds(1)); 
         }
         
-        Assert.Equal(PortState.Connected, client.State.Value);
+        Assert.Equal(PortState.Connected, client.State.CurrentValue);
         
         client.Disable();
     }
@@ -44,7 +45,7 @@ public class SerialTest
             _timeProvider.Advance(TimeSpan.FromSeconds(1));
         }
         
-        Assert.Equal(PortState.Connected, server.State.Value);
+        Assert.Equal(PortState.Connected, server.State.CurrentValue);
         
         server.Disable();
     }
@@ -63,8 +64,8 @@ public class SerialTest
             _timeProvider.Advance(TimeSpan.FromSeconds(1));
         }
         
-        Assert.Equal(PortState.Connected, client.State.Value);
-        Assert.Equal(PortState.Connected, server.State.Value);
+        Assert.Equal(PortState.Connected, client.State.CurrentValue);
+        Assert.Equal(PortState.Connected, server.State.CurrentValue);
         
         client.Disable();
         server.Disable();
@@ -81,7 +82,7 @@ public class SerialTest
         
         for (var i = 0; i < 10; i++)
         {
-            if (client.State.Value == PortState.Connected && server.State.Value == PortState.Connected) break;
+            if (client.State.CurrentValue == PortState.Connected && server.State.CurrentValue == PortState.Connected) break;
             _timeProvider.Advance(TimeSpan.FromSeconds(1));
         }
         
@@ -90,7 +91,7 @@ public class SerialTest
 
         Random.Shared.NextBytes(originData);
 
-        using var disp = server.Subscribe(data =>
+        using var disp = server.OnReceive.Subscribe(data =>
         {
             receivedData = data;
         });
