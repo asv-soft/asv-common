@@ -1,6 +1,7 @@
 using System;
+using System.Collections.Immutable;
 using System.Diagnostics;
-using System.IO.Pipelines;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -10,128 +11,115 @@ using ZLogger;
 
 namespace Asv.IO;
 
-public class TcpServerPipePortConfig
-{
-    public int CheckOldClientsPeriodMs { get; set; } = 3_000;
-    public string Host { get; set; } = "127.0.0.1";
-    public int Port { get; set; } = 7341;
-}
-
 public class TcpServerPipePort:PipePort
 {
-    private readonly TcpServerPipePortConfig _config;
+    public const string IdTagName = "ID"; 
+    private readonly TcpPipePortConfig _config;
     private readonly IPipeCore _core;
-    private readonly ITimer _timer;
-    private TcpListener? _tcp;
     private readonly ILogger<TcpServerPipePort> _logger;
     private Thread? _listenTask;
-    private CancellationTokenSource? _listenCancel;
+    private Socket? _socket;
+    private readonly string _id;
 
-    public TcpServerPipePort(TcpServerPipePortConfig config, IPipeCore core) : base(core)
+    public TcpServerPipePort(TcpPipePortConfig config, IPipeCore core) 
+        : base(config, core)
     {
         ArgumentNullException.ThrowIfNull(config);
         ArgumentNullException.ThrowIfNull(core);
+        config.Validate();
         _core = core;
         _logger = core.LoggerFactory.CreateLogger<TcpServerPipePort>();
         _config = config;
-        _timer = core.TimeProvider.CreateTimer(RemoveOldEndpoints, null, TimeSpan.FromMilliseconds(_config.CheckOldClientsPeriodMs), TimeSpan.FromSeconds(_config.CheckOldClientsPeriodMs));
+        _id = $"tcp_s://{config.Host}:{config.Port}";
     }
+    public override string Id => _id;
 
-    private void RemoveOldEndpoints(object? state)
+    protected override void InternalSafeDisable()
     {
-        
-    }
-
-    protected void InternalStop()
-    {
-        if (_tcp != null)
+        if (_socket != null)
         {
-            var tcp = _tcp;
-            tcp.Stop();
-            tcp.Dispose();
-            tcp.Stop();    
-            _tcp = null;
+            var socket = _socket;
+            socket.Close();
+            socket.Dispose();
+            _socket = null;
         }
-
-        if (_listenCancel != null)
-        {
-            var cancel = _listenCancel;
-            if (cancel.IsCancellationRequested == false) cancel.Cancel(false);
-            cancel.Dispose();
-            _listenCancel = null;
-        }
-        
     }
 
-    protected void InternalStart()
+    protected override void InternalSafeEnable(CancellationToken startCancel)
     {
-        _tcp?.Stop();
-        _tcp?.Dispose();
-        _tcp = new TcpListener(IPAddress.Parse(_config.Host), _config.Port);
-        _tcp.Start();
-        _listenCancel = new CancellationTokenSource();
-        _listenTask = new Thread(AcceptNewEndpoint);
-        _listenTask.Start(_listenCancel.Token);
+        _socket?.Close();
+        _socket?.Dispose();
+        
+        _socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
+        _socket.Bind(new IPEndPoint(IPAddress.Parse(_config.Host), _config.Port));
+        _listenTask = new Thread(AcceptNewEndpoint) { IsBackground = true, Name = Id };
+        _listenTask.Start(startCancel);
     }
 
-    private async void AcceptNewEndpoint(object? state)
+    private void AcceptNewEndpoint(object? state)
     {
         var cancel = (CancellationToken)(state ?? throw new ArgumentNullException(nameof(state)));
-        var tcp = _tcp;
-        Debug.Assert(tcp != null);
         try
         {
-            while (cancel is { IsCancellationRequested: false })
+            while (_socket != null && cancel is { IsCancellationRequested: false })
             {
                 try
                 {
-                    var newClient = await tcp.AcceptTcpClientAsync(cancel);
-                    InternalAddPipe(new TcpServerEndpoint(newClient, _core));
-                }
-                catch (ThreadAbortException ex)
-                {
-                    _logger.ZLogDebug(ex, $"Thread abort exception:{ex.Message}");
-                    // ignore
-                }
-                catch (SocketException ex)
-                {
-                    _logger.ZLogDebug(ex, $"Socket exception:{ex.Message}");
-                    // ignore
+                    var socket = _socket.Accept();
+                    InternalAddPipe(new TcpSocketEndpoint(_config, this, socket, _core));
                 }
                 catch (Exception ex)
                 {
                     _logger.ZLogError(ex, $"Unhandled exception:{ex.Message}");
                     Debug.Assert(false);
-                    // ignore
+                    InternalPublishError(ex);
                 }
             }
         }
         catch (ThreadAbortException ex)
         {
             _logger.ZLogDebug(ex, $"Thread abort exception:{ex.Message}");
-            // ignore
+            InternalPublishError(ex);
         }
     }
 
+    #region Dispose
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _socket?.Close();
+            _socket?.Dispose();
+            _socket = null;
+        }
+
+        base.Dispose(disposing);
+    }
+
+    protected override async ValueTask DisposeAsyncCore()
+    {
+        if (_socket != null)
+        {
+            _socket.Close();
+            await CastAndDispose(_socket);
+            _socket = null;
+        }
+
+        await base.DisposeAsyncCore();
+
+        return;
+
+        static async ValueTask CastAndDispose(IDisposable resource)
+        {
+            if (resource is IAsyncDisposable resourceAsyncDisposable)
+                await resourceAsyncDisposable.DisposeAsync();
+            else
+                resource.Dispose();
+        }
+    }
+
+    #endregion
+    
 }
 
-internal class TcpServerEndpoint : PipeEndpoint
-{
-    private readonly TcpClient _newClient;
-
-    public TcpServerEndpoint(TcpClient newClient, IPipeCore core)
-    : base(core)
-    {
-        _newClient = newClient;
-    }
-
-    protected override Task InternalWrite(PipeReader outputReader, CancellationToken cancel)
-    {
-        return outputReader.CopyToAsync(_newClient.GetStream(),cancel);
-    }
-
-    protected override Task InternalRead(PipeWriter inputWriter, CancellationToken cancel)
-    {
-        return _newClient.GetStream().CopyToAsync(inputWriter, cancel);
-    }
-}

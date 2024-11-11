@@ -30,7 +30,7 @@ namespace Asv.Common
                     }
                     catch (Exception ex)
                     {
-                        //TODO: at Mono sometimes error (System.InvalidOperationException: The task has already completed)
+                        //Mono sometimes error (System.InvalidOperationException: The task has already completed)
                         RiseUnhandledTaskException(ex);
                     }
                 }
