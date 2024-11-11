@@ -1,4 +1,5 @@
 using System;
+using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -22,7 +23,11 @@ namespace Asv.Common
 
         public void Dispose()
         {
-            if (Interlocked.Exchange(ref _isDisposed, 1) != 0) return;
+            // Make sure we're the first call to Dispose
+            if (Interlocked.CompareExchange(ref _isDisposed, 1, 0) == 1)
+            {
+                return;
+            }
             /* We didn't use the following pattern:
             protected virtual void Dispose(bool disposing)
             {

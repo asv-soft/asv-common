@@ -52,7 +52,8 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="System.Reactive" Version="$(ReactiveVersion)" />
+    <PackageReference Include="ObservableCollections.R3" Version="3.3.1" />
+    <PackageReference Include="System.IO.Pipelines" Version="8.0.0" />
     <PackageReference Include="ZLogger" Version="$(ZLoggerVersion)" />
     <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
     <PackageReference Include="System.IO.Ports" Version="8.0.0" />

@@ -1,11 +1,10 @@
 using System;
 using System.Net;
 using System.Net.Sockets;
-using System.Reactive.Subjects;
 using System.Threading;
 using System.Threading.Tasks;
-using Asv.Common;
 using Microsoft.Extensions.Logging;
+using R3;
 
 namespace Asv.IO
 {
@@ -33,7 +32,7 @@ namespace Asv.IO
             _onReceiveNewClientSubject = new Subject<IPEndPoint>();
         }
 
-        public IObservable<IPEndPoint> OnReceiveNewClient => _onReceiveNewClientSubject;
+        public Observable<IPEndPoint> OnReceiveNewClient => _onReceiveNewClientSubject;
 
         public override PortType PortType => PortType.Udp;
 
