@@ -12,29 +12,14 @@ public class PipeEndpointConfig:PipeConfigBase
 {
     public int ProcessIntervalMs { get; set; } = 30;
     public bool UseSynchronizationContext { get; set; } = false;
-    public long PauseWriterThreshold { get; set; } = -1;
-    public long ResumeWriterThreshold { get; set; } = -1;
+    public long PauseWriterThreshold { get; set; } = 65_536;
+    public long ResumeWriterThreshold { get; set; } = 65_536;
     public int MinimumSegmentSize { get; set; } = -1;
     public override bool TryValidate(out string? error)
     {
         if (ProcessIntervalMs <= 0)
         {
             error = $"{nameof(ProcessIntervalMs)} must be greater than 0";
-            return false;
-        }
-        if (PauseWriterThreshold < 0)
-        {
-            error = $"{nameof(PauseWriterThreshold)} must be greater than or equal to 0";
-            return false;
-        }
-        if (ResumeWriterThreshold < 0)
-        {
-            error = $"{nameof(ResumeWriterThreshold)} must be greater than or equal to 0";
-            return false;
-        }
-        if (MinimumSegmentSize < 0)
-        {
-            error = $"{nameof(MinimumSegmentSize)} must be greater than or equal to 0";
             return false;
         }
         error = null;
@@ -87,6 +72,7 @@ public abstract class PipeEndpoint : IPipeEndpoint
         }
         try
         {
+            Console.WriteLine($"Process {Id}");
             Task.WaitAll(InternalRead(_input.Writer, _disposeCancel.Token), InternalWrite(_output.Reader, _disposeCancel.Token));
         }
         catch (Exception e)

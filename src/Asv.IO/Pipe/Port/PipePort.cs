@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Immutable;
+using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
@@ -42,9 +43,66 @@ public class PipePortConfig:PipeEndpointConfig
 }
 public abstract class PipePort:IPipePort
 {
+    #region Static
+    // ReSharper disable once UseCollectionExpression
+    // Important !!! (Avoid zero-length array allocations. Use collection expressions) The identity of these arrays matters, so we can't use the shared Array.Empty<T>() instance either explicitly, or indirectly via a collection expression
+#pragma warning disable CA1825
+    private static readonly IPipeEndpoint[] Disposed = new IPipeEndpoint[0]; 
+#pragma warning restore CA1825
+    
+    public static NameValueCollection ParseQueryString(string requestQueryString)
+    {
+        var rc = new NameValueCollection();
+        var ar1 = requestQueryString.Split('&', '?');
+        foreach (var row in ar1)
+        {
+            if (string.IsNullOrEmpty(row)) continue;
+            var index = row.IndexOf('=');
+            if (index < 0) continue;
+            rc[Uri.UnescapeDataString(row[..index])] = Uri.UnescapeDataString(row[(index + 1)..]); // use Unescape only parts          
+        }
+        return rc;
+    }
+    
+    public static IPipePort Create(string connectionString, IPipeCore core)
+    {
+        var uri = new Uri(connectionString);
+        IPipePort? result = null;
+        if (TcpPipePortConfig.TryParseFromUri(uri, out var tcp))
+        {
+            Debug.Assert(tcp != null, nameof(tcp) + " != null");
+            if (tcp.IsServer)
+            {
+                result = new TcpServerPipePort(tcp, core);
+            }
+            else
+            {
+                result = new TcpClientPipePort(tcp, core);
+            }
+        }
+        else if (UdpPortConfig.TryParseFromUri(uri, out var udp))
+        {
+            //result = new UdpPort(udp);
+        }
+        else if (SerialPortConfig.TryParseFromUri(uri, out var ser))
+        {
+            //result = new CustomSerialPort(ser, timeProvider, logger);
+        }
+        else
+        {
+            throw new Exception($"Connection string '{connectionString}' is invalid");
+        }
+      
+        return result;
+    }
+
+    #endregion
+    
+    
+    
     private readonly PipePortConfig _config;
     private readonly IPipeCore _core;
-    private readonly ObservableList<IPipeEndpoint> _pipes;
+    private IPipeEndpoint[] _pipes;
     private CancellationTokenSource? _startStopCancel;
     private readonly ILogger<PipePort> _logger;
     private readonly ReactiveProperty<PipePortStatus> _status = new(PipePortStatus.Disconnected);
@@ -54,6 +112,7 @@ public abstract class PipePort:IPipePort
     private volatile int _isBusy;
     private ITimer? _reconnectTimer;
     private readonly ITimer _timer;
+    private readonly Subject<IPipeEndpoint[]> _endpoints = new();
 
     protected PipePort(PipePortConfig config, IPipeCore core)
     {
@@ -81,12 +140,29 @@ public abstract class PipePort:IPipePort
     public ReadOnlyReactiveProperty<PipePortStatus> Status => _status;
     public ReadOnlyReactiveProperty<bool> IsEnabled => _isEnabled;
     public TagList Tags { get; } = [];
-    public IReadOnlyObservableList<IPipeEndpoint> Pipes => _pipes;
+    public IPipeEndpoint[] Pipes => Volatile.Read(ref _pipes);
+
+    public Observable<IPipeEndpoint[]> OnEndpointsChanged => _endpoints;
+
     protected void InternalAddPipe(IPipeEndpoint pipe)
     {
         if (IsDisposed) return;
         _logger.ZLogInformation($"{this} add pipe endpoint {pipe}");
-        _pipes.Add(pipe);
+        for (;;)
+        {
+            var pipes = Volatile.Read(ref _pipes);
+            if (pipes == Disposed) break;
+            var count = pipes.Length;
+            var newPipe = new IPipeEndpoint[count + 1];
+            Array.Copy(pipes, 0, newPipe, 0, count);
+            newPipe[count] = pipe;
+            if (Interlocked.CompareExchange(ref _pipes, newPipe, pipes) == pipes)
+            {
+                break;
+            }
+        }
+        
+        
     }
     protected void InternalRemovePipe(IPipeEndpoint pipe)
     {
@@ -94,7 +170,31 @@ public abstract class PipePort:IPipePort
         _logger.ZLogInformation($"{this} remove pipe endpoint {pipe}");
         try
         {
-            _pipes.Remove(pipe);
+            for (;;)
+            {
+                var pipes = Volatile.Read(ref _pipes);
+                if (pipes == Disposed) break;
+                var count = pipes.Length;
+                if (count == 0) break;
+                var newPipe = new IPipeEndpoint[count - 1];
+                for (var i = 0; i < count; i++)
+                {
+                    if (pipes[i] == pipe)
+                    {
+                        Array.Copy(pipes, i + 1, newPipe, i + 1, count - i - 1);
+                        Array.Copy(pipes, 0, newPipe, i + 1, count - i - 1);
+                        break;
+                    }
+                }
+                if (Interlocked.CompareExchange(ref _pipes, newPipe, pipes) == pipes)
+                {
+                    break;
+                }
+                else
+                {
+                    Debug.Assert( false,"Remove pipe endpoint failed");
+                }
+            }
             pipe.Dispose();
         }
         catch (Exception e)
@@ -131,6 +231,7 @@ public abstract class PipePort:IPipePort
             Interlocked.Exchange(ref _isBusy, 0);
         }
     }
+
     public void Disable()
     {
         if (IsDisposed) return;
@@ -163,7 +264,7 @@ public abstract class PipePort:IPipePort
             Interlocked.Exchange(ref _isBusy, 0);
         }
     }
-
+    
     protected abstract void InternalSafeDisable();
     protected abstract void InternalSafeEnable(CancellationToken token);
     
@@ -199,6 +300,7 @@ public abstract class PipePort:IPipePort
         if (disposing)
         {
             _timer.Dispose();
+            _endpoints.Dispose();
             _startStopCancel?.Cancel(false);
             _startStopCancel?.Dispose();
             _startStopCancel = null;
@@ -206,8 +308,7 @@ public abstract class PipePort:IPipePort
             _error.Dispose();
             _isEnabled.Dispose();
             _reconnectTimer?.Dispose();
-            _pipes.ToImmutableArray().ForEach(x=>x.Dispose());
-            _pipes.Clear();
+            Interlocked.Exchange(ref _pipes, Disposed).ForEach(x=>x.Dispose());
         }
     }
 
@@ -230,17 +331,16 @@ public abstract class PipePort:IPipePort
             _startStopCancel = null;
         }
         await _timer.DisposeAsync();
+        await CastAndDispose(_endpoints);
         await CastAndDispose(_status);
         await CastAndDispose(_error);
         await CastAndDispose(_isEnabled);
         if (_reconnectTimer != null) await _reconnectTimer.DisposeAsync();
 
-        foreach (var endpoint in _pipes.ToImmutableArray())
+        foreach (var endpoint in Interlocked.Exchange(ref _pipes, Disposed))
         {
             await CastAndDispose(endpoint);
         }
-        _pipes.Clear();
-        
         return;
 
         static async ValueTask CastAndDispose(IDisposable resource)

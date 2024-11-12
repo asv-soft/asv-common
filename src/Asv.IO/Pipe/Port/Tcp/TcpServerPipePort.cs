@@ -1,7 +1,5 @@
 using System;
-using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -20,6 +18,7 @@ public class TcpServerPipePort:PipePort
     private Thread? _listenTask;
     private Socket? _socket;
     private readonly string _id;
+    private const int MaxConnection = 128;
 
     public TcpServerPipePort(TcpPipePortConfig config, IPipeCore core) 
         : base(config, core)
@@ -52,6 +51,7 @@ public class TcpServerPipePort:PipePort
         
         _socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
         _socket.Bind(new IPEndPoint(IPAddress.Parse(_config.Host), _config.Port));
+        _socket.Listen(MaxConnection);
         _listenTask = new Thread(AcceptNewEndpoint) { IsBackground = true, Name = Id };
         _listenTask.Start(startCancel);
     }

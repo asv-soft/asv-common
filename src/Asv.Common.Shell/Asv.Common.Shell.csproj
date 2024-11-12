@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+    
+    <ItemGroup>
+        <PackageReference Include="ConsoleAppFramework" Version="5.2.4"/>
+        <PackageReference Include="Spectre.Console" Version="0.49.1" />
+        <PackageReference Include="AutoFixture.Xunit2" Version="4.18.1" />
+    </ItemGroup>
+    
+    <ItemGroup>
+      <ProjectReference Include="..\Asv.IO\Asv.IO.csproj" />
+    </ItemGroup>
+
+</Project>
