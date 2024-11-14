@@ -2,6 +2,7 @@ using System;
 using System.Buffers;
 using System.Diagnostics;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace Asv.IO
 {
@@ -17,8 +18,18 @@ namespace Asv.IO
 
     public static class SpanSerializableHelper
     {
-        
-        
+        public static ValueTask<int> Serialize(this ISpanSerializable src,Memory<byte> destination)
+        {
+            var span = destination.Span;
+            src.Serialize(ref span);
+            return ValueTask.FromResult(destination.Length - span.Length);
+        }
+        public static ValueTask<int> Deserialize(this ISpanSerializable src, ReadOnlyMemory<byte> destination)
+        {
+            var span = destination.Span;
+            src.Deserialize(ref span);
+            return ValueTask.FromResult(destination.Length - span.Length);
+        }
         public static T Deserialize<T>(ref ReadOnlySpan<byte> data) where T : ISizedSpanSerializable, new()
         {
             var result = new T();

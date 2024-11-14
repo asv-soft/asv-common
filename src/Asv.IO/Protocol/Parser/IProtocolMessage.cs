@@ -1,6 +1,6 @@
 namespace Asv.IO;
 
-public interface IPipeMessage
+public interface IProtocolMessage:ISizedSpanSerializable
 {
     /// <summary>
     /// Gets the unique identifier of the protocol.
