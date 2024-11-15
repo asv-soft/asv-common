@@ -37,6 +37,8 @@ public abstract class ProtocolConnection : IProtocolConnection
     private readonly ILogger<ProtocolConnection> _logger;
     private int _isDisposed;
     private readonly IDisposable _parserSub;
+    private readonly ReactiveProperty<bool> _isConnected = new (true);
+    private readonly ImmutableHashSet<string> _parserAvailable;
 
     protected ProtocolConnection(string id, ProtocolConnectionConfig config, IEnumerable<IProtocolParser> parsers, IEnumerable<IProtocolRouteFilter> filters, IPipeCore core)
     {
@@ -46,6 +48,7 @@ public abstract class ProtocolConnection : IProtocolConnection
         Id = id;
         _filters = [..filters.OrderBy(x=>x.Priority)];
         _parsers = [..parsers];
+        _parserAvailable = _parsers.Select(x=>x.ProtocolId).ToImmutableHashSet();
         
         var disposableBuilder = Disposable.CreateBuilder();
         foreach (var parser in _parsers)
@@ -109,7 +112,7 @@ public abstract class ProtocolConnection : IProtocolConnection
         {
             _logger.ZLogError(e, $"Error while reading loop {Id}");
             _onMessageReceived.OnErrorResume(new ProtocolConnectionException(this, $"Error at read loop:{e.Message}",e));
-            await DisposeAsync();
+            _isConnected.OnNext(false);
         }
     }
 
@@ -120,13 +123,14 @@ public abstract class ProtocolConnection : IProtocolConnection
     {
         try
         {
-            while (_disposeCancel.IsCancellationRequested == false)
+            while (_disposeCancel.IsCancellationRequested == false && _isConnected.CurrentValue)
             {
                 var msg = await _outputChannel.Reader.ReadAsync(_disposeCancel.Token);
-                foreach (var filter in _filters)
-                {
-                    if (filter.OnSendFilterTransform(ref msg, this) == false) return;
-                }
+                // skip not supported messages
+                if (_parserAvailable.Contains(msg.ProtocolId) == false) continue;
+                
+                var filterResult = _filters.Any(f => f.OnSendFilterTransform(ref msg, this) == false);
+                if (filterResult) continue;
                 using var mem = MemoryPool<byte>.Shared.Rent(msg.GetByteSize());
                 var writeBytes = await msg.Serialize(mem.Memory);
                 var sendBytes = await InternalWrite(mem.Memory[..writeBytes], _disposeCancel.Token);
@@ -140,7 +144,7 @@ public abstract class ProtocolConnection : IProtocolConnection
         {
             _logger.ZLogError(e, $"Error while writing loop {Id}");
             _onMessageSent.OnErrorResume(new ProtocolConnectionException(this, $"Error at write loop:{e.Message}",e));
-            await DisposeAsync();
+            _isConnected.OnNext(false);
         }
     }
     public uint StatRxBytes => _statBytesReceived;
@@ -153,8 +157,12 @@ public abstract class ProtocolConnection : IProtocolConnection
     public Observable<IProtocolMessage> OnMessageSent => _onMessageSent;
     public ValueTask Send(IProtocolMessage message, CancellationToken cancel = default)
     {
-        return IsDisposed ? ValueTask.CompletedTask : _outputChannel.Writer.WriteAsync(message, cancel);
+        if (IsDisposed) return ValueTask.CompletedTask;
+        if (_isConnected.CurrentValue == false) return ValueTask.CompletedTask;
+        return _outputChannel.Writer.WriteAsync(message, cancel);
     }
+
+    public ReadOnlyReactiveProperty<bool> IsConnected => _isConnected;
 
     #region Dispose
 
@@ -163,10 +171,17 @@ public abstract class ProtocolConnection : IProtocolConnection
     {
         if (disposing)
         {
+            if (Interlocked.CompareExchange(ref _isDisposed, 1, 0) == 1)
+            {
+                _logger.ZLogTrace($"Skip duplicate {nameof(Dispose)} {Id}");
+                return;
+            }
+            _logger.ZLogTrace($"{nameof(Dispose)} {Id}");
             foreach (var parser in _parsers)
             {
                 parser.Dispose();
             }
+            _isConnected.Dispose();
             _parserSub.Dispose();
             _onMessageReceived.Dispose();
             _onMessageSent.Dispose();
@@ -176,18 +191,20 @@ public abstract class ProtocolConnection : IProtocolConnection
 
     public void Dispose()
     {
-        if (Interlocked.CompareExchange(ref _isDisposed, 1, 0) == 1)
-        {
-            _logger.ZLogTrace($"Skip duplicate {nameof(Dispose)} {Id}");
-            return;
-        }
-        _logger.ZLogTrace($"{nameof(Dispose)} {Id}");
         Dispose(true);
         GC.SuppressFinalize(this);
     }
 
     protected virtual async ValueTask DisposeAsyncCore()
     {
+        if (Interlocked.CompareExchange(ref _isDisposed, 1, 0) == 1)
+        {
+            _logger.ZLogTrace($"Skip duplicate {nameof(DisposeAsync)} {Id}");
+            return;
+        }
+        _logger.ZLogTrace($"{nameof(DisposeAsync)} {Id}");
+        
+        await CastAndDispose(_isConnected);
         await CastAndDispose(_parserSub);
         await CastAndDispose(_onMessageReceived);
         await CastAndDispose(_onMessageSent);
@@ -210,12 +227,6 @@ public abstract class ProtocolConnection : IProtocolConnection
 
     public async ValueTask DisposeAsync()
     {
-        if (Interlocked.CompareExchange(ref _isDisposed, 1, 0) == 1)
-        {
-            _logger.ZLogTrace($"Skip duplicate {nameof(DisposeAsync)} {Id}");
-            return;
-        }
-        _logger.ZLogTrace($"{nameof(DisposeAsync)} {Id}");
         await DisposeAsyncCore();
         GC.SuppressFinalize(this);
     }

@@ -16,19 +16,3 @@ public class ProtocolException : Exception
     {
     }
 }
-
-public class ProtocolConnectionException : ProtocolException
-{
-    public ProtocolConnectionException(IProtocolConnection connection)
-    {
-        
-    }
-
-    public ProtocolConnectionException(IProtocolConnection connection, string message) : base(message)
-    {
-    }
-
-    public ProtocolConnectionException(IProtocolConnection connection, string message, Exception inner) : base(message, inner)
-    {
-    }
-}

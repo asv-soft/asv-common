@@ -2,13 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using R3;
 
 namespace Asv.IO;
 
-public interface IProtocolConnection:IDisposable, IAsyncDisposable
+public interface IProtocolConnection:IDisposable, IAsyncDisposable,IProtocolMessagePipe
 {
     uint StatRxBytes { get; }
     uint StatTxBytes { get; }
@@ -17,10 +15,9 @@ public interface IProtocolConnection:IDisposable, IAsyncDisposable
     string Id { get; }
     TagList Tags { get; }
     IEnumerable<IProtocolParser> Parsers { get; }
-    Observable<IProtocolMessage> OnMessageReceived { get; }
-    Observable<IProtocolMessage> OnMessageSent { get; }
-    ValueTask Send(IProtocolMessage message, CancellationToken cancel = default);
+    ReadOnlyReactiveProperty<bool> IsConnected { get; }
     bool IsDisposed { get; }
+    
 }
 
 public interface IProtocolRouteFilter

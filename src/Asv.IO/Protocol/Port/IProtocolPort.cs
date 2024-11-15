@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using ObservableCollections;
 using R3;
 
 namespace Asv.IO;
@@ -11,15 +12,14 @@ public enum ProtocolPortStatus
     Connected,
     Error
 }
-public interface IProtocolPort:IDisposable,IAsyncDisposable
+public interface IProtocolPort:IDisposable,IAsyncDisposable,IProtocolMessagePipe
 {
     string Id { get; }
     ReadOnlyReactiveProperty<ProtocolException?> Error { get; }
     ReadOnlyReactiveProperty<ProtocolPortStatus> Status { get; }
     ReadOnlyReactiveProperty<bool> IsEnabled { get; }
     TagList Tags { get; }
-    IProtocolConnection[] Connections { get; }
-    Observable<IProtocolConnection[]> OnConnectionsChanged { get; }
+    IReadOnlyObservableList<IProtocolConnection> Connections { get; }
     void Enable();
     void Disable();
     bool IsDisposed { get; }
