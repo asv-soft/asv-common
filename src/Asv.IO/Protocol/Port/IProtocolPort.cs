@@ -18,7 +18,7 @@ public interface IProtocolPort:IDisposable,IAsyncDisposable,IProtocolMessagePipe
     ReadOnlyReactiveProperty<ProtocolException?> Error { get; }
     ReadOnlyReactiveProperty<ProtocolPortStatus> Status { get; }
     ReadOnlyReactiveProperty<bool> IsEnabled { get; }
-    TagList Tags { get; }
+    ProtocolTags Tags { get; }
     IReadOnlyObservableList<IProtocolConnection> Connections { get; }
     void Enable();
     void Disable();

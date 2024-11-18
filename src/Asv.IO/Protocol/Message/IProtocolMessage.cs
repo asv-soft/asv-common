@@ -10,4 +10,5 @@ public interface IProtocolMessage:ISizedSpanSerializable
     /// assigned to the protocol.
     /// </remarks>
     string ProtocolId { get; }
+    ProtocolTags Tags { get; }
 }

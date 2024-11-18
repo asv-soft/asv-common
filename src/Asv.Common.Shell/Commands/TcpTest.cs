@@ -13,8 +13,8 @@ public class TcpTest
     [Command("tcp-test")]
     public async Task<int> Run()
     {
-        var client = PipePort.Create("tcp://127.0.0.1:7341", new PipeCore());
-        var server = PipePort.Create("tcp://127.0.0.1:7341?srv=true", new PipeCore());
+        var client = PipePort.Create("tcp://127.0.0.1:7341", new ProtocolCore());
+        var server = PipePort.Create("tcp://127.0.0.1:7341?srv=true", new ProtocolCore());
         server.Enable();
         client.Enable();
         

@@ -13,17 +13,9 @@ public interface IProtocolConnection:IDisposable, IAsyncDisposable,IProtocolMess
     uint StatTxMessages { get; }
     uint StatRxMessages { get; }
     string Id { get; }
-    TagList Tags { get; }
+    ProtocolTags Tags { get; }
     IEnumerable<IProtocolParser> Parsers { get; }
     ReadOnlyReactiveProperty<bool> IsConnected { get; }
     bool IsDisposed { get; }
     
 }
-
-public interface IProtocolRouteFilter
-{
-    int Priority { get; }
-    bool OnReceiveFilterAndTransform(ref IProtocolMessage message, ProtocolConnection connection);
-    bool OnSendFilterTransform(ref IProtocolMessage message, ProtocolConnection connection);
-}   
-

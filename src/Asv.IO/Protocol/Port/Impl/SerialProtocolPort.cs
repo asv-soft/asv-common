@@ -20,18 +20,18 @@ public class SerialProtocolPortConfig:ProtocolPortConfig
 public class SerialProtocolPort:ProtocolPort
 {
     private readonly SerialProtocolPortConfig _config;
-    private readonly IPipeCore _core;
-    private readonly IEnumerable<IProtocolRouteFilter> _filters;
+    private readonly IProtocolCore _core;
+    private readonly IEnumerable<IProtocolProcessingFeature> _features;
     private readonly Func<IEnumerable<IProtocolParser>> _parserFactory;
     private SerialPort? _serial;
     public const string Scheme = "serial";
     
-    public SerialProtocolPort(SerialProtocolPortConfig config, IPipeCore core, IEnumerable<IProtocolRouteFilter> filters, Func<IEnumerable<IProtocolParser>> parserFactory) 
+    public SerialProtocolPort(SerialProtocolPortConfig config, IProtocolCore core, IEnumerable<IProtocolProcessingFeature> features, Func<IEnumerable<IProtocolParser>> parserFactory) 
         : base($"{Scheme}_{config.PortName}", config, core)
     {
         _config = config;
         _core = core;
-        _filters = filters;
+        _features = features;
         _parserFactory = parserFactory;
     }
 
@@ -56,7 +56,7 @@ public class SerialProtocolPort:ProtocolPort
             WriteTimeout = _config.WriteTimeout,
         };
         _serial.Open();
-        InternalAddConnection(new SerialProtocolConnection(_serial,$"{Id}_{_config.BoundRate}_{_config.DataBits}_{_config.Parity}_{_config.StopBits}",_config, _parserFactory(), _filters, _core));
+        InternalAddConnection(new SerialProtocolConnection(_serial,$"{Id}_{_config.BoundRate}_{_config.DataBits}_{_config.Parity}_{_config.StopBits}",_config, _parserFactory(), _features, _core));
         
     }
 }

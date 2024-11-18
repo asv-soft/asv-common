@@ -11,8 +11,8 @@ public class SerialProtocolConnection(
     string id,
     ProtocolConnectionConfig config,
     IEnumerable<IProtocolParser> parsers,
-    IEnumerable<IProtocolRouteFilter> filters,
-    IPipeCore core)
+    IEnumerable<IProtocolProcessingFeature> filters,
+    IProtocolCore core)
     : ProtocolConnection(id, config, parsers, filters, core)
 {
     protected override int GetAvailableBytesToRead() => port.BytesToRead;

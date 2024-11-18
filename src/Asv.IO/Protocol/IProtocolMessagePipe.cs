@@ -10,3 +10,4 @@ public interface IProtocolMessagePipe
     Observable<IProtocolMessage> OnMessageSent { get; }
     ValueTask Send(IProtocolMessage message, CancellationToken cancel = default);
 }
+

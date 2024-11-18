@@ -21,35 +21,35 @@ public class ProtocolConnectionConfig
 }
 public abstract class ProtocolConnection : IProtocolConnection
 {
-    private readonly IPipeCore _core;
+    private readonly IProtocolCore _core;
     private uint _statBytesReceived;
     private uint _statBytesSent;
     private uint _statMessageSent;
     private uint _statMessageReceived;
     private readonly TimeSpan _readEmptyLoopDelay;
     private readonly ImmutableArray<IProtocolParser> _parsers;
-    private readonly ImmutableArray<IProtocolRouteFilter> _filters;
+    private readonly ImmutableArray<IProtocolProcessingFeature> _filters;
     private readonly Subject<IProtocolMessage> _onMessageReceived = new();
     private readonly Subject<IProtocolMessage> _onMessageSent = new();
     private readonly Channel<IProtocolMessage> _outputChannel;
     private readonly CancellationTokenSource _disposeCancel;
-    private readonly TagList _tags = [];
     private readonly ILogger<ProtocolConnection> _logger;
     private int _isDisposed;
     private readonly IDisposable _parserSub;
     private readonly ReactiveProperty<bool> _isConnected = new (true);
     private readonly ImmutableHashSet<string> _parserAvailable;
 
-    protected ProtocolConnection(string id, ProtocolConnectionConfig config, IEnumerable<IProtocolParser> parsers, IEnumerable<IProtocolRouteFilter> filters, IPipeCore core)
+    protected ProtocolConnection(string id, ProtocolConnectionConfig config, IEnumerable<IProtocolParser> parsers, IEnumerable<IProtocolProcessingFeature> filters, IProtocolCore core)
     {
         _core = core;
+        Tags = new ProtocolTags();
+        Tags.SetConnectionId(id);
         _readEmptyLoopDelay = TimeSpan.FromMilliseconds(config.ReadEmptyLoopDelayMs);
         _logger = core.LoggerFactory.CreateLogger<ProtocolConnection>();
         Id = id;
         _filters = [..filters.OrderBy(x=>x.Priority)];
         _parsers = [..parsers];
         _parserAvailable = _parsers.Select(x=>x.ProtocolId).ToImmutableHashSet();
-        
         var disposableBuilder = Disposable.CreateBuilder();
         foreach (var parser in _parsers)
         {
@@ -70,6 +70,7 @@ public abstract class ProtocolConnection : IProtocolConnection
     private void InternalOnMessageReceived(IProtocolMessage message)
     {
         Interlocked.Increment(ref _statMessageReceived);
+        Tags.CopyTo(message.Tags);
         foreach (var filter in _filters)
         {
             if (filter.OnReceiveFilterAndTransform(ref message, this) == false) return;
@@ -151,7 +152,7 @@ public abstract class ProtocolConnection : IProtocolConnection
     public uint StatTxBytes => _statBytesSent;
     public uint StatTxMessages => _statMessageSent;
     public uint StatRxMessages => _statMessageReceived;
-    public TagList Tags => _tags;
+    public ProtocolTags Tags { get; }
     public IEnumerable<IProtocolParser> Parsers => _parsers;
     public Observable<IProtocolMessage> OnMessageReceived => _onMessageReceived;
     public Observable<IProtocolMessage> OnMessageSent => _onMessageSent;
@@ -181,6 +182,7 @@ public abstract class ProtocolConnection : IProtocolConnection
             {
                 parser.Dispose();
             }
+            Tags.Clear();
             _isConnected.Dispose();
             _parserSub.Dispose();
             _onMessageReceived.Dispose();
@@ -213,7 +215,7 @@ public abstract class ProtocolConnection : IProtocolConnection
         {
             await CastAndDispose(parser);
         }
-
+        Tags.Clear();
         return;
 
         static async ValueTask CastAndDispose(IDisposable resource)

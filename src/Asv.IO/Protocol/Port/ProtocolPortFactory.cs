@@ -1,28 +1,48 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Collections.Specialized;
 using System.Diagnostics;
 
 namespace Asv.IO;
 
+//          userinfo       host      port
+//          ┌──┴───┐ ┌──────┴──────┐ ┌┴─┐
+//  tcp_s://john.doe@www.example.com:1234/forum/questions/?br=115200&timeout=1000#protocol=mavlink&feature
+//  └─┬─┘   └─────────────┬─────────────┘└───────┬───────┘ └────────────┬────────────┘ └───────┬───────┘
+//  scheme            authority                path                   query                 fragment
+
+
+public delegate IProtocolPort CreatePortDelegate(
+    string? userInfo, 
+    string? host, 
+    int? port, 
+    string? path, 
+    NameValueCollection query,
+    IProtocolCore core, 
+    ImmutableArray<IProtocolProcessingFeature> features,
+    IProtocolParserFactory parserFactory,
+    IReadOnlySet<string> parsers);
+
 public interface IProtocolPortFactory
 {
-    IProtocolPort Create(string connectionString, IPipeCore core,
-        IEnumerable<IProtocolRouteFilter> filters, Func<IEnumerable<IProtocolParser>> parserFactory);
+    IProtocolPort Create(Uri connectionString);
+}
+
+public static class ProtocolPortFactoryHelper
+{
+    public static IProtocolPort Create(this IProtocolPortFactory src, string connectionString)
+    {
+        return src.Create(new Uri(connectionString));
+    }
 }
 
 public class ProtocolPortFactory:IProtocolPortFactory
 {
-    public ProtocolPortFactory(IPipeCore core)
+    public ProtocolPortFactory(IProtocolCore core, IProtocolParserFactory parserFactory, ImmutableArray<IProtocolProcessingFeature> features)
     {
         
     }
-    
-    public static void RegisterPortFactory(string scheme, Func<Uri, IProtocolPort> factory)
-    {
-        
-    }
-
     private static NameValueCollection ParseQueryString(string requestQueryString)
     {
         var rc = new NameValueCollection();
@@ -39,8 +59,8 @@ public class ProtocolPortFactory:IProtocolPortFactory
     
     
     
-    public IProtocolPort Create(string connectionString, IPipeCore core,
-        IEnumerable<IProtocolRouteFilter> filters, Func<IEnumerable<IProtocolParser>> parserFactory)
+    public IProtocolPort Create(string connectionString, IProtocolCore core,
+        IEnumerable<IProtocolProcessingFeature> filters, Func<IEnumerable<IProtocolParser>> parserFactory)
     {
         var uri = new Uri(connectionString);
         IProtocolPort? result = null;
@@ -81,4 +101,9 @@ public class ProtocolPortFactory:IProtocolPortFactory
         throw new Exception($"Connection string '{connectionString}' is invalid");
     }
 
+    public IProtocolPort Create(Uri connectionString)
+    {
+        var scheme = connectionString.Scheme.Trim().ToLower();
+        
+    }
 }

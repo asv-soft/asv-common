@@ -17,7 +17,7 @@ public class UdpProtocolPort:ProtocolPort
 {
     public const string Scheme = "udp";
     
-    public UdpProtocolPort(UdpProtocolPortConfig config, IEnumerable<IProtocolRouteFilter> filters, Func<IEnumerable<IProtocolParser>> parserFactory, IPipeCore core) 
+    public UdpProtocolPort(UdpProtocolPortConfig config, IEnumerable<IProtocolProcessingFeature> filters, Func<IEnumerable<IProtocolParser>> parserFactory, IProtocolCore core) 
         : base($"{Scheme}_{config.LocalHost}_{config.LocalPort}", config, core)
     {
         

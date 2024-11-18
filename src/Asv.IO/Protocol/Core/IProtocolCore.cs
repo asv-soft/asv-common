@@ -6,16 +6,16 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Asv.IO;
 
-public interface IPipeCore
+public interface IProtocolCore
 {
     ILoggerFactory LoggerFactory { get; }
     TimeProvider TimeProvider { get; }
     IMeterFactory MeterFactory { get; }
 }
 
-public class PipeCore : IPipeCore
+public class ProtocolCore : IProtocolCore
 {
-    public PipeCore(ILoggerFactory? loggerFactory = null, TimeProvider? timeProvider = null, IMeterFactory? meterFactory = null)
+    public ProtocolCore(ILoggerFactory? loggerFactory = null, TimeProvider? timeProvider = null, IMeterFactory? meterFactory = null)
     {
         LoggerFactory = loggerFactory ?? NullLoggerFactory.Instance;
         TimeProvider = timeProvider ?? TimeProvider.System;

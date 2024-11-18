@@ -18,12 +18,12 @@ public class TcpClientProtocolPort:ProtocolPort
     public const string Scheme = "tcp_c";
     
     private readonly TcpClientProtocolPortConfig _config;
-    private readonly IPipeCore _core;
-    private readonly IEnumerable<IProtocolRouteFilter> _filters;
+    private readonly IProtocolCore _core;
+    private readonly IEnumerable<IProtocolProcessingFeature> _filters;
     private readonly Func<IEnumerable<IProtocolParser>> _parserFactory;
     private Socket? _socket;
     
-    public TcpClientProtocolPort(TcpClientProtocolPortConfig config, IPipeCore core, IEnumerable<IProtocolRouteFilter> filters, Func<IEnumerable<IProtocolParser>> parserFactory) 
+    public TcpClientProtocolPort(TcpClientProtocolPortConfig config, IProtocolCore core, IEnumerable<IProtocolProcessingFeature> filters, Func<IEnumerable<IProtocolParser>> parserFactory) 
         : base($"{Scheme}_{config.Host}_{config.Port}", config, core)
     {
         _config = config;

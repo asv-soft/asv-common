@@ -25,14 +25,14 @@ public class TcpServerProtocolPort:ProtocolPort
     public const string Scheme = "tcp_s";
     
     private readonly TcpServerProtocolPortConfig _config;
-    private readonly IEnumerable<IProtocolRouteFilter> _filters;
+    private readonly IEnumerable<IProtocolProcessingFeature> _filters;
     private readonly Func<IEnumerable<IProtocolParser>> _parserFactory;
-    private readonly IPipeCore _core;
+    private readonly IProtocolCore _core;
     private Socket? _socket;
     private Thread? _listenThread;
     private readonly ILogger<TcpServerProtocolPort> _logger;
 
-    public TcpServerProtocolPort(TcpServerProtocolPortConfig config, IEnumerable<IProtocolRouteFilter> filters, Func<IEnumerable<IProtocolParser>> parserFactory, IPipeCore core) 
+    public TcpServerProtocolPort(TcpServerProtocolPortConfig config, IEnumerable<IProtocolProcessingFeature> filters, Func<IEnumerable<IProtocolParser>> parserFactory, IProtocolCore core) 
         : base($"{Scheme}_{config.Host}_{config.Port}", config, core)
     {
         ArgumentNullException.ThrowIfNull(config);

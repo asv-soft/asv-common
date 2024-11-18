@@ -21,7 +21,7 @@ public abstract class ProtocolPort : IProtocolPort
     
 
     private readonly ProtocolPortConfig _config;
-    private readonly IPipeCore _core;
+    private readonly IProtocolCore _core;
     private readonly ILogger<ProtocolPort> _logger;
     private readonly ObservableList<IProtocolConnection> _connections = new();
     private readonly ReaderWriterLockSlim _connectionsLock = new();
@@ -35,17 +35,18 @@ public abstract class ProtocolPort : IProtocolPort
     private ITimer? _reconnectTimer;
     private int _isDisposed;
 
-    protected ProtocolPort(string id, ProtocolPortConfig config, IPipeCore core)
+    protected ProtocolPort(string id, ProtocolPortConfig config, IProtocolCore core)
     {
         if (string.IsNullOrWhiteSpace(id))
             throw new ArgumentException("Value cannot be null or whitespace.", nameof(id));
         Id = id;
         ArgumentNullException.ThrowIfNull(config);
         ArgumentNullException.ThrowIfNull(core);
+        Tags = new();
+        Tags.SetPortId(id);
         _config = config;
         _core = core;
         _logger = core.LoggerFactory.CreateLogger<ProtocolPort>();
-        Tags = [];
         _logger.ZLogInformation($"Create port {this} {config}");
     }
     
@@ -81,7 +82,7 @@ public abstract class ProtocolPort : IProtocolPort
             _connections.Add(pipe);
             // we no need to dispose subscriptions here, because it will be disposed by connection itself
             pipe.IsConnected.Where(x => x == false).Subscribe(pipe, (x, p) => InternalRemoveConnection(p));
-            pipe.OnMessageReceived.Subscribe(_onMessageReceived.AsObserver());
+            pipe.OnMessageReceived.Do(x=>Tags.CopyTo(x.Tags)).Subscribe(_onMessageReceived.AsObserver());
         }
         catch (Exception e)
         {
@@ -102,7 +103,7 @@ public abstract class ProtocolPort : IProtocolPort
 
     public ReadOnlyReactiveProperty<bool> IsEnabled => _isEnabled;
 
-    public TagList Tags { get; } 
+    public ProtocolTags Tags { get; }
     public IReadOnlyObservableList<IProtocolConnection> Connections => _connections;
     public void Enable()
     {
@@ -230,6 +231,8 @@ public abstract class ProtocolPort : IProtocolPort
             {
                 _connectionsLock.ExitWriteLock();
             }
+
+            Tags.Clear();
             _connectionsLock.Dispose();
             _onMessageReceived.Dispose();
             _onMessageSent.Dispose();
