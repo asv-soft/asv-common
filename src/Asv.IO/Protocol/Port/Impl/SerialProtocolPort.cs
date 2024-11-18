@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO.Ports;
 using System.Threading;
 
@@ -7,6 +8,17 @@ namespace Asv.IO;
 
 public class SerialProtocolPortConfig:ProtocolPortConfig
 {
+    public static SerialProtocolPortConfig Parse(PortArgs args)
+    {
+        var config = new SerialProtocolPortConfig
+        {
+            PortName = args.Path ?? throw new ArgumentNullException(nameof(args.Path)),
+            BoundRate = int.Parse(args.Query["br"] ?? "115200")
+        };
+
+        return config;
+    }
+    
     public int DataBits { get; set; } = 8;
     public int BoundRate { get; set; } = 115200;
     public Parity Parity { get; set; } = Parity.None;
@@ -19,6 +31,16 @@ public class SerialProtocolPortConfig:ProtocolPortConfig
 
 public class SerialProtocolPort:ProtocolPort
 {
+    #region Facory
+
+    public static IProtocolPort CreatePort(PortArgs args, IProtocolCore core, ImmutableArray<IProtocolProcessingFeature> features, Func<ImmutableArray<IProtocolParser>> parserFactory)
+    {
+        var config = SerialProtocolPortConfig.Parse(args);
+        return new SerialProtocolPort(config, core, features, parserFactory);
+    }
+
+    #endregion
+    
     private readonly SerialProtocolPortConfig _config;
     private readonly IProtocolCore _core;
     private readonly IEnumerable<IProtocolProcessingFeature> _features;
@@ -26,7 +48,7 @@ public class SerialProtocolPort:ProtocolPort
     private SerialPort? _serial;
     public const string Scheme = "serial";
     
-    public SerialProtocolPort(SerialProtocolPortConfig config, IProtocolCore core, IEnumerable<IProtocolProcessingFeature> features, Func<IEnumerable<IProtocolParser>> parserFactory) 
+    public SerialProtocolPort(SerialProtocolPortConfig config, IProtocolCore core, IEnumerable<IProtocolProcessingFeature> features, Func<ImmutableArray<IProtocolParser>> parserFactory) 
         : base($"{Scheme}_{config.PortName}", config, core)
     {
         _config = config;

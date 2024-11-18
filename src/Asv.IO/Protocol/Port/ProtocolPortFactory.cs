@@ -12,17 +12,16 @@ namespace Asv.IO;
 //  └─┬─┘   └─────────────┬─────────────┘└───────┬───────┘ └────────────┬────────────┘ └───────┬───────┘
 //  scheme            authority                path                   query                 fragment
 
+public class PortArgs
+{
+    public string? UserInfo { get; set; }
+    public string? Host { get; set; }
+    public int? Port { get; set; }
+    public string? Path { get; set; }
+    public NameValueCollection Query { get; set; } = new();
+}
 
-public delegate IProtocolPort CreatePortDelegate(
-    string? userInfo, 
-    string? host, 
-    int? port, 
-    string? path, 
-    NameValueCollection query,
-    IProtocolCore core, 
-    ImmutableArray<IProtocolProcessingFeature> features,
-    IProtocolParserFactory parserFactory,
-    IReadOnlySet<string> parsers);
+public delegate IProtocolPort CreatePortDelegate(PortArgs args, IProtocolCore core, ImmutableArray<IProtocolProcessingFeature> features);
 
 public interface IProtocolPortFactory
 {
