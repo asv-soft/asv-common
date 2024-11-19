@@ -39,7 +39,7 @@ public abstract class ProtocolConnection : IProtocolConnection
     private readonly ReactiveProperty<bool> _isConnected = new (true);
     private readonly ImmutableHashSet<string> _parserAvailable;
 
-    protected ProtocolConnection(string id, ProtocolConnectionConfig config, IEnumerable<IProtocolParser> parsers, IEnumerable<IProtocolProcessingFeature> filters, IProtocolCore core)
+    protected ProtocolConnection(string id, ProtocolConnectionConfig config, ImmutableArray<IProtocolParser> parsers, ImmutableArray<IProtocolProcessingFeature> features, IProtocolCore core)
     {
         _core = core;
         Tags = new ProtocolTags();
@@ -47,9 +47,9 @@ public abstract class ProtocolConnection : IProtocolConnection
         _readEmptyLoopDelay = TimeSpan.FromMilliseconds(config.ReadEmptyLoopDelayMs);
         _logger = core.LoggerFactory.CreateLogger<ProtocolConnection>();
         Id = id;
-        _filters = [..filters.OrderBy(x=>x.Priority)];
-        _parsers = [..parsers];
-        _parserAvailable = _parsers.Select(x=>x.Info).ToImmutableHashSet();
+        _filters = features;
+        _parsers = parsers;
+        _parserAvailable = _parsers.Select(x=>x.Info.Id).ToImmutableHashSet();
         var disposableBuilder = Disposable.CreateBuilder();
         foreach (var parser in _parsers)
         {
@@ -67,15 +67,23 @@ public abstract class ProtocolConnection : IProtocolConnection
         readThread.Start();
     }
 
-    private void InternalOnMessageReceived(IProtocolMessage message)
+    private async void InternalOnMessageReceived(IProtocolMessage message)
     {
-        Interlocked.Increment(ref _statMessageReceived);
-        Tags.CopyTo(message.Tags);
-        foreach (var filter in _filters)
+        try
         {
-            if (filter.ProcessReceiveMessage(ref message, this) == false) return;
+            Interlocked.Increment(ref _statMessageReceived);
+            Tags.CopyTo(message.Tags);
+            foreach (var filter in _filters)
+            {
+                if (await filter.ProcessReceiveMessage(ref message, this,_disposeCancel.Token) == false) return;
+            }
+            _onMessageReceived.OnNext(message);
         }
-        _onMessageReceived.OnNext(message);
+        catch (Exception e)
+        {
+            _logger.ZLogError(e, $"Error while processing message {message}");
+            _onMessageReceived.OnErrorResume(new ProtocolConnectionException(this, $"Error at message processing:{e.Message}",e));
+        }
     }
 
     public string Id { get; }
@@ -128,9 +136,14 @@ public abstract class ProtocolConnection : IProtocolConnection
             {
                 var msg = await _outputChannel.Reader.ReadAsync(_disposeCancel.Token);
                 // skip not supported messages
-                if (_parserAvailable.Contains(msg.ProtocolId) == false) continue;
-                
-                var filterResult = _filters.Any(f => f.ProcessSendMessage(ref msg, this) == false);
+                if (_parserAvailable.Contains(msg.Protocol.Id) == false) continue;
+                var filterResult = true;
+                foreach (var item in _filters)
+                {
+                    if (await item.ProcessSendMessage(ref msg, this, _disposeCancel.Token)) continue;
+                    filterResult = false;
+                    break;
+                }
                 if (filterResult) continue;
                 using var mem = MemoryPool<byte>.Shared.Rent(msg.GetByteSize());
                 var writeBytes = await msg.Serialize(mem.Memory);

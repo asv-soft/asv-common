@@ -1,68 +1,93 @@
 using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
+using System.Buffers;
 
 namespace Asv.IO;
 
-public class ExampleParser(ImmutableDictionary<ushort, Func<ExampleMessageBase>> messageFactory)
-    : ProtocolParserBase<ExampleMessageBase, ushort>(messageFactory)
+public class ExampleParser(IProtocolMessageFactory<ExampleMessageBase,byte> messageFactory, IProtocolCore core)
+    : ProtocolParser<ExampleMessageBase, byte>(messageFactory,core)
 {
-    private readonly ImmutableDictionary<ushort, Func<ExampleMessageBase>> _messageFactory = messageFactory;
+    private const int MaxMessageSize = 255;
+    public const byte SyncByte = 0x0A;
+    
+    private State _state = State.Sync;
+    private readonly byte[] _buffer = ArrayPool<byte>.Shared.Rent(MaxMessageSize);
+    private byte _size;
+    private int _read;
 
-    public static readonly ProtocolParserInfo ParserInfo = new("Example", "Example parser", "Example parser fro tests");
-
-
-    public override ProtocolParserInfo Info => ParserInfo;
+    public override ProtocolInfo Info => ExampleProtocol.Info;
+    private enum State
+    {
+        Sync,
+        MessageId,
+        Size,
+        MessageData,
+        Crc
+    }
     public override bool Push(byte data)
     {
-        
+        switch (_state)
+        {
+            case State.Sync:
+                if (data == SyncByte)
+                {
+                    _buffer[0] = data;
+                    _state = State.MessageId;
+                }
+                return false;
+            case State.MessageId:
+                _buffer[1] = data;
+                _state = State.MessageData;
+                return false;
+            case State.Size:
+                _buffer[2] = data;
+                _size = data;
+                _read = 0;
+                return false;
+            case State.MessageData:
+                _buffer[3 + _read] = data;
+                _read++;
+                if (_size == _read)
+                {
+                    _state = State.Crc;
+                }
+                return false;
+            case State.Crc:
+                _buffer[3 + _size] = data;
+                _state = State.Sync;
+                try
+                {
+                    var span = new ReadOnlySpan<byte>(_buffer, 0, _size + 3);
+                    InternalParsePacket(_buffer[1], ref span, false);
+                    return true;
+                }
+                catch (ProtocolParserException ex)
+                {
+                    InternalOnError(ex);
+                    return false;
+                }
+                catch (Exception ex)
+                {
+                    InternalOnError(new ProtocolParserException(Info,"Parser ",ex));
+                    return false;
+                }
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
     }
+
+    
 
     public override void Reset()
     {
-        
+        _state = State.Sync;
     }
-}
 
-public abstract class ExampleMessageBase : IProtocolMessage<ushort>
-{
-    public abstract void Deserialize(ref ReadOnlySpan<byte> buffer);
-    public abstract void Serialize(ref Span<byte> buffer);
-    public abstract int GetByteSize();
-    public ProtocolParserInfo ProtocolId => ExampleParser.ParserInfo;
-    public ProtocolTags Tags { get; } = new();
-    public abstract string Name { get; }
-    public string GetIdAsString() => Id.ToString();
-    public abstract ushort Id { get; }
-}
-
-public class ExampleMessage1: ExampleMessageBase
-{
-    public const string MessageName = "ExampleMessage1";
-    public const int MessageId = 1;
-    
-    public override void Deserialize(ref ReadOnlySpan<byte> buffer)
+    protected override void Dispose(bool disposing)
     {
-        
+        if (disposing)
+        {
+            ArrayPool<byte>.Shared.Return(_buffer);
+        }
+        base.Dispose(disposing);
     }
-
-    public override void Serialize(ref Span<byte> buffer)
-    {
-        BinSerialize.WritePackedInteger(ref buffer, Value1);
-        BinSerialize.WriteUShort(ref buffer, Value2);
-        BinSerialize.WriteString(ref buffer, Value3 ?? string.Empty);
-    }
-
-    public override int GetByteSize()
-    {
-        return BinSerialize.GetSizeForPackedInteger(Value1) + sizeof(ushort) + BinSerialize.GetSizeForString(Value3 ?? string.Empty);   
-    }
-
-    public override string Name => MessageName;
-    public override ushort Id => MessageId;
-
-    public int Value1 { get; set; }
-    public ushort Value2 { get; set; }
-    public string? Value3 { get; set; }
-    
 }

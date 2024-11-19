@@ -24,3 +24,9 @@ public interface IProtocolPort:IDisposable,IAsyncDisposable,IProtocolMessagePipe
     void Disable();
     bool IsDisposed { get; }
 }
+
+public class PortTypeInfo(string scheme, string name)
+{
+    public string Scheme { get; set; } = scheme;
+    public string Name { get; set; } = name;
+}

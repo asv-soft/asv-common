@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,10 +11,10 @@ public class SocketProtocolConnection(
     Socket socket,
     string id,
     ProtocolConnectionConfig config,
-    IEnumerable<IProtocolParser> parsers,
-    IEnumerable<IProtocolProcessingFeature> filters,
+    ImmutableArray<IProtocolParser> parsers,
+    ImmutableArray<IProtocolProcessingFeature> features,
     IProtocolCore core)
-    : ProtocolConnection(id, config, parsers, filters, core)
+    : ProtocolConnection(id, config, parsers, features, core)
 {
     
     protected override int GetAvailableBytesToRead() => socket.Available;

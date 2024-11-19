@@ -8,6 +8,7 @@
     </PropertyGroup>
     
     <ItemGroup>
+        <PackageReference Include="BenchmarkDotNet" Version="0.14.0" />
         <PackageReference Include="ConsoleAppFramework" Version="5.2.4"/>
         <PackageReference Include="Spectre.Console" Version="0.49.1" />
         <PackageReference Include="AutoFixture.Xunit2" Version="4.18.1" />

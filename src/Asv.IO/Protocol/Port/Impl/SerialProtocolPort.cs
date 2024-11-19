@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO.Ports;
+using System.Linq;
 using System.Threading;
 
 namespace Asv.IO;
@@ -31,31 +32,26 @@ public class SerialProtocolPortConfig:ProtocolPortConfig
 
 public class SerialProtocolPort:ProtocolPort
 {
-    #region Facory
-
-    public static IProtocolPort CreatePort(PortArgs args, IProtocolCore core, ImmutableArray<IProtocolProcessingFeature> features, Func<ImmutableArray<IProtocolParser>> parserFactory)
-    {
-        var config = SerialProtocolPortConfig.Parse(args);
-        return new SerialProtocolPort(config, core, features, parserFactory);
-    }
-
-    #endregion
-    
+    public const string Scheme = "serial";
+    public static readonly PortTypeInfo Info = new(Scheme, "Serial port");
     private readonly SerialProtocolPortConfig _config;
     private readonly IProtocolCore _core;
-    private readonly IEnumerable<IProtocolProcessingFeature> _features;
-    private readonly Func<IEnumerable<IProtocolParser>> _parserFactory;
     private SerialPort? _serial;
-    public const string Scheme = "serial";
-    
-    public SerialProtocolPort(SerialProtocolPortConfig config, IProtocolCore core, IEnumerable<IProtocolProcessingFeature> features, Func<ImmutableArray<IProtocolParser>> parserFactory) 
-        : base($"{Scheme}_{config.PortName}", config, core)
+    private readonly ImmutableArray<IProtocolProcessingFeature> _features;
+    private readonly ImmutableArray<ParserFactoryDelegate> _parserFactory;
+
+
+    public SerialProtocolPort(
+        SerialProtocolPortConfig config, 
+        ImmutableArray<IProtocolProcessingFeature> features, 
+        ImmutableArray<ParserFactoryDelegate> parserFactory,
+        IProtocolCore core) 
+        : base($"{Scheme}_{config.PortName}", config, features, core)
     {
         _config = config;
         _core = core;
         _features = features;
         _parserFactory = parserFactory;
-        
     }
 
     protected override void InternalSafeDisable()
@@ -79,7 +75,20 @@ public class SerialProtocolPort:ProtocolPort
             WriteTimeout = _config.WriteTimeout,
         };
         _serial.Open();
-        InternalAddConnection(new SerialProtocolConnection(_serial,$"{Id}_{_config.BoundRate}_{_config.DataBits}_{_config.Parity}_{_config.StopBits}",_config, _parserFactory(), _features, _core));
+        InternalAddConnection(new SerialProtocolConnection(
+            _serial,
+            $"{Id}_{_config.BoundRate}_{_config.DataBits}_{_config.Parity}_{_config.StopBits}",
+            _config,[.._parserFactory.Select(x=>x(_core))], _features, _core));
         
+    }
+}
+
+public static class SerialProtocolPortHelper
+{
+    public static void RegisterSerialPort(this IProtocolBuilder builder)
+    {
+        builder.RegisterPort(SerialProtocolPort.Info, 
+            (args, features, parserFactory,core) 
+                => new SerialProtocolPort(SerialProtocolPortConfig.Parse(args), features, parserFactory,core));
     }
 }

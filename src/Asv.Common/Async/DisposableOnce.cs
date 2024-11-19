@@ -11,13 +11,13 @@ namespace Asv.Common
 
         #region Disposing
 
-        // ReSharper disable once InconsistentlySynchronizedField
-        protected bool IsDisposed => _isDisposed != 0;
+        
+        protected bool IsDisposed => Volatile.Read(ref _isDisposed) != 0;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected void ThrowIfDisposed()
         {
-            if (_isDisposed == 0) return;
+            if (Volatile.Read(ref _isDisposed) == 0) return;
             throw new ObjectDisposedException(this?.GetType().FullName); 
         }
 

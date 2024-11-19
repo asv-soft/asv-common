@@ -2,20 +2,21 @@ using System;
 using System.Collections.Immutable;
 using System.Threading;
 using System.Threading.Tasks;
+using Asv.Common;
 using R3;
 
 namespace Asv.IO;
 
-public abstract class ProtocolParserBase<TMessage,TMessageId> : IProtocolParser
-    where TMessage : IProtocolMessage
+public abstract class ProtocolParser<TMessage,TMessageId> : AsyncDisposableOnce, IProtocolParser
+    where TMessage : IProtocolMessage<TMessageId>
     where TMessageId : struct
 {
-    private readonly ImmutableDictionary<TMessageId, Func<TMessage>> _messageFactory;
+    private readonly IProtocolMessageFactory<TMessage,TMessageId> _messageFactory;
     private readonly Subject<IProtocolMessage> _onMessage = new();
     private uint _readBytes;
     private uint _readMessages;
 
-    protected ProtocolParserBase(ImmutableDictionary<TMessageId,Func<TMessage>> messageFactory)
+    protected ProtocolParser(IProtocolMessageFactory<TMessage,TMessageId> messageFactory, IProtocolCore core)
     {
         ArgumentNullException.ThrowIfNull(messageFactory);
         _messageFactory = messageFactory;
@@ -23,19 +24,19 @@ public abstract class ProtocolParserBase<TMessage,TMessageId> : IProtocolParser
     }
     public uint StatRxBytes => _readBytes;
     public uint StatRxMessages => _readMessages;
-    public abstract ProtocolParserInfo Info { get; }
+    public abstract ProtocolInfo Info { get; }
     public ProtocolTags Tags { get; }
     public Observable<IProtocolMessage> OnMessage => _onMessage;
     public abstract bool Push(byte data);
     public abstract void Reset();
     protected void InternalParsePacket(TMessageId id, ref ReadOnlySpan<byte> data, bool ignoreReadNotAllData = false)
     {
-        if (!_messageFactory.TryGetValue(id, out var factory))
+        var message = _messageFactory.Create(id);
+        if (message == null)
         {
-            _onMessage.OnErrorResume(new ProtocolParserUnknownMessageException(Info,id));
+            InternalOnError(new ProtocolParserUnknownMessageException(Info,id));
             return;
         }
-        var message = factory();
         try
         {
             var count = data.Length;
@@ -44,7 +45,7 @@ public abstract class ProtocolParserBase<TMessage,TMessageId> : IProtocolParser
         }
         catch (Exception e)
         {
-            _onMessage.OnErrorResume(new ProtocolDeserializeMessageException(Info, message, e));
+            InternalOnError(new ProtocolDeserializeMessageException(Info, message, e));
             return;
         }
         Interlocked.Increment(ref _readMessages);
@@ -54,42 +55,43 @@ public abstract class ProtocolParserBase<TMessage,TMessageId> : IProtocolParser
         }
         catch (Exception e)
         {
-            _onMessage.OnErrorResume(new ProtocolPublishMessageException(Info, message, e));
+            InternalOnError(new ProtocolPublishMessageException(Info, message, e));
         }
 
         if (!ignoreReadNotAllData && !data.IsEmpty)
         {
-            _onMessage.OnErrorResume(new ProtocolParserReadNotAllDataWhenDeserializePacketException(Info, message));
+            InternalOnError(new ProtocolParserReadNotAllDataWhenDeserializePacketException(Info, message));
         }
+    }
+
+    protected void InternalOnError(ProtocolParserException ex)
+    {
+        _onMessage.OnErrorResume(ex);
     }
 
     #region Dispose
 
-    protected virtual void Dispose(bool disposing)
+
+    protected override void Dispose(bool disposing)
     {
         if (disposing)
         {
             _onMessage.Dispose();
         }
+
+        base.Dispose(disposing);
     }
 
-    public void Dispose()
+    protected override async ValueTask DisposeAsyncCore()
     {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
+        if (_onMessage is IAsyncDisposable onMessageAsyncDisposable)
+            await onMessageAsyncDisposable.DisposeAsync();
+        else
+            _onMessage.Dispose();
 
-    protected virtual ValueTask DisposeAsyncCore()
-    {
-        _onMessage.Dispose();
-        return ValueTask.CompletedTask;
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        await DisposeAsyncCore();
-        GC.SuppressFinalize(this);
+        await base.DisposeAsyncCore();
     }
 
     #endregion
 }
+

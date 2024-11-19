@@ -1,5 +1,6 @@
 using System.Buffers;
 using Asv.IO;
+using BenchmarkDotNet.Running;
 using ConsoleAppFramework;
 using Microsoft.Extensions.Logging;
 using R3;
@@ -9,6 +10,12 @@ namespace Asv.Common.Shell;
 
 public class TcpTest
 {
+    [Command("b-test")]
+    public void Benchmark()
+    {
+        BenchmarkRunner.Run<SwitchVsDictionary>();
+    }
+
     /// <summary>
     /// Command test tcp connection
     /// <param name="logLevel">-v, Logging level </param>
@@ -20,25 +27,43 @@ public class TcpTest
 #else
         LogLevel logLevel = LogLevel.Information
 #endif
-        )
+    )
     {
-        using var factory = LoggerFactory.Create(builder =>
+
+
+        var loggerFactory = LoggerFactory.Create(builder =>
         {
             builder.ClearProviders();
             builder.SetMinimumLevel(logLevel);
             builder.AddZLoggerConsole(options =>
             {
                 options.IncludeScopes = true;
-                
+
                 options.UsePlainTextFormatter(formatter =>
                 {
-                    formatter.SetPrefixFormatter($"{0:HH:mm:ss.fff} | ={1:short}= | {2,-40} ", (in MessageTemplate template, in LogInfo info) => template.Format(info.Timestamp, info.LogLevel,info.Category));
-                    formatter.SetExceptionFormatter((writer, ex) => Utf8StringInterpolation.Utf8String.Format(writer, $"{ex.Message}"));
+                    formatter.SetPrefixFormatter($"{0:HH:mm:ss.fff} | ={1:short}= | {2,-40} ",
+                        (in MessageTemplate template, in LogInfo info) =>
+                            template.Format(info.Timestamp, info.LogLevel, info.Category));
+                    formatter.SetExceptionFormatter((writer, ex) =>
+                        Utf8StringInterpolation.Utf8String.Format(writer, $"{ex.Message}"));
                 });
             });
         });
-        var core = new ProtocolCore(factory);
-        var parserFactory = new Par
+        var protocol = Protocol.Create(builder =>
+        {
+            builder.SetLog(loggerFactory);
+            builder.RegisterExampleProtocol();
+            
+            builder.RegisterSerialPort();
+            builder.RegisterTcpClientPort();
+            builder.RegisterTcpServerPort();
+            builder.RegisterUdpPort();
+            
+        });
+        
+        return 0;
+
+        //var portFactory = new ProtocolPortFactory(core, parserFactory);
 
         /*var client = PipePort.Create("tcp://127.0.0.1:7341", new ProtocolCore());
         var server = PipePort.Create("tcp://127.0.0.1:7341?srv=true", new ProtocolCore());
@@ -92,5 +117,6 @@ public class TcpTest
 
         ConsoleAppHelper.WaitCancelPressOrProcessExit();
         return 0;*/
+
     }
 }

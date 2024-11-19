@@ -4,19 +4,19 @@ namespace Asv.IO;
 
 public class ProtocolParserException : Exception
 {
-    public ProtocolParserInfo Parser { get; }
+    public ProtocolInfo Parser { get; }
 
-    public ProtocolParserException(ProtocolParserInfo parser)
+    public ProtocolParserException(ProtocolInfo parser)
     {
         Parser = parser;
     }
 
-    public ProtocolParserException(ProtocolParserInfo parser,string message) : base(message)
+    public ProtocolParserException(ProtocolInfo parser,string message) : base(message)
     {
         Parser = parser;
     }
 
-    public ProtocolParserException(ProtocolParserInfo parser, string message, Exception inner) : base(message, inner)
+    public ProtocolParserException(ProtocolInfo parser, string message, Exception inner) : base(message, inner)
     {
         Parser = parser;
     }

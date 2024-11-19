@@ -11,7 +11,7 @@ public interface IProtocolMessage:ISizedSpanSerializable
     /// The Info property is a string that represents the unique identifier
     /// assigned to the protocol.
     /// </remarks>
-    ProtocolParserInfo ProtocolId { get; }
+    ProtocolInfo Protocol { get; }
     ProtocolTags Tags { get; }
     string Name { get; }
     string GetIdAsString();
@@ -20,6 +20,4 @@ public interface IProtocolMessage:ISizedSpanSerializable
 public interface IProtocolMessage<out TMessageId> : IProtocolMessage
 {
     TMessageId Id { get; }
-
 }
-

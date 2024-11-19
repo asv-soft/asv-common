@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -11,24 +13,39 @@ public class TcpClientProtocolPortConfig:ProtocolPortConfig
 {
     public string Host { get; set; } = "127.0.0.1";
     public int Port { get; set; } = 7341;
+
+    public static TcpClientProtocolPortConfig Parse(PortArgs args)
+    {
+        var config = new TcpClientProtocolPortConfig
+        {
+            Host = args.Host ?? "127.0.0.1",
+            Port = args.Port ?? 7341
+        };
+        return config;
+    }
 }
 
 public class TcpClientProtocolPort:ProtocolPort
 {
     public const string Scheme = "tcp_c";
+    public static readonly PortTypeInfo Info  = new(Scheme, "Tcp client port");
     
     private readonly TcpClientProtocolPortConfig _config;
     private readonly IProtocolCore _core;
-    private readonly IEnumerable<IProtocolProcessingFeature> _filters;
-    private readonly Func<IEnumerable<IProtocolParser>> _parserFactory;
     private Socket? _socket;
-    
-    public TcpClientProtocolPort(TcpClientProtocolPortConfig config, IProtocolCore core, IEnumerable<IProtocolProcessingFeature> filters, Func<IEnumerable<IProtocolParser>> parserFactory) 
-        : base($"{Scheme}_{config.Host}_{config.Port}", config, core)
+    private readonly ImmutableArray<ParserFactoryDelegate> _parserFactory;
+    private readonly ImmutableArray<IProtocolProcessingFeature> _features;
+
+    public TcpClientProtocolPort(
+        TcpClientProtocolPortConfig config, 
+        ImmutableArray<IProtocolProcessingFeature> features, 
+        ImmutableArray<ParserFactoryDelegate> parserFactory,
+        IProtocolCore core) 
+        : base($"{Scheme}_{config.Host}_{config.Port}", config, features, core)
     {
         _config = config;
         _core = core;
-        _filters = filters;
+        _features = features;
         _parserFactory = parserFactory;
         ArgumentNullException.ThrowIfNull(config);
     }
@@ -49,7 +66,10 @@ public class TcpClientProtocolPort:ProtocolPort
         _socket?.Dispose();
         _socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
         _socket.Connect(_config.Host,_config.Port);
-        InternalAddConnection(new SocketProtocolConnection(_socket,$"{Id}_{_socket.RemoteEndPoint}", _config,_parserFactory(),_filters, _core));
+        InternalAddConnection(new SocketProtocolConnection(
+            _socket,
+            $"{Id}_{_socket.RemoteEndPoint}",
+            _config,[.._parserFactory.Select(x=>x(_core))], _features, _core));
     }
 
     #region Dispose
@@ -75,4 +95,14 @@ public class TcpClientProtocolPort:ProtocolPort
     }
 
     #endregion
+}
+
+public static class TcpClientProtocolPortHelper
+{
+    public static void RegisterTcpClientPort(this IProtocolBuilder builder)
+    {
+        builder.RegisterPort(TcpClientProtocolPort.Info, 
+            (args, features, parserFactory,core) 
+                => new TcpClientProtocolPort(TcpClientProtocolPortConfig.Parse(args), features, parserFactory,core));
+    }
 }

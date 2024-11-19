@@ -36,7 +36,8 @@ public abstract class ProtocolPort : IProtocolPort
     private ITimer? _reconnectTimer;
     private int _isDisposed;
 
-    protected ProtocolPort(string id, IEnumerable<IProtocolProcessingFeature> features, ProtocolPortConfig config, IProtocolCore core)
+    protected ProtocolPort(string id, ProtocolPortConfig config, IEnumerable<IProtocolProcessingFeature> features,
+        IProtocolCore core)
     {
         if (string.IsNullOrWhiteSpace(id))
             throw new ArgumentException("Value cannot be null or whitespace.", nameof(id));

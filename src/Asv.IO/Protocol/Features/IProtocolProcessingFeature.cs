@@ -15,9 +15,3 @@ public interface IProtocolProcessingFeature
     ValueTask<bool> ProcessSendMessage(ref IProtocolMessage message, IProtocolRouter router, CancellationToken cancel);
     ValueTask<bool> ProcessReceivedMessage(ref IProtocolMessage message, IProtocolRouter router, CancellationToken cancel);
 }
-
-public interface IProtocolProcessingFeatureFactory
-{
-    IReadOnlySet<string> SupportedFeatures { get; }
-    IProtocolProcessingFeature Create(string id);
-}

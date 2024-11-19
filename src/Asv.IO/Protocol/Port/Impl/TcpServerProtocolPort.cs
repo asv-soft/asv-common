@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -18,35 +20,52 @@ public class TcpServerProtocolPortConfig:ProtocolPortConfig
     public string Host { get; set; } = "127.0.0.1";
     public int Port { get; set; } = 7341;
     public int MaxConnection { get; set; } = 100;
+
+    public static TcpServerProtocolPortConfig Parse(PortArgs args)
+    {
+        return new TcpServerProtocolPortConfig()
+        {
+            Host = args.Host ?? "127.0.0.1",
+            Port = args.Port ?? 7341,
+            
+        };
+    }
 }
 
 public class TcpServerProtocolPort:ProtocolPort
 {
     public const string Scheme = "tcp_s";
+    public static PortTypeInfo Info => new(Scheme, "Tcp server port");
     
     private readonly TcpServerProtocolPortConfig _config;
-    private readonly IEnumerable<IProtocolProcessingFeature> _filters;
-    private readonly Func<IEnumerable<IProtocolParser>> _parserFactory;
     private readonly IProtocolCore _core;
     private Socket? _socket;
     private Thread? _listenThread;
     private readonly ILogger<TcpServerProtocolPort> _logger;
+    private readonly ImmutableArray<ParserFactoryDelegate> _parserFactory;
+    private readonly ImmutableArray<IProtocolProcessingFeature> _features;
 
-    public TcpServerProtocolPort(TcpServerProtocolPortConfig config, IEnumerable<IProtocolProcessingFeature> filters, Func<IEnumerable<IProtocolParser>> parserFactory, IProtocolCore core) 
-        : base($"{Scheme}_{config.Host}_{config.Port}", config, core)
+    public TcpServerProtocolPort(
+        TcpServerProtocolPortConfig config, 
+        ImmutableArray<IProtocolProcessingFeature> features, 
+        ImmutableArray<ParserFactoryDelegate> parserFactory,
+        IProtocolCore core) 
+        : base($"{Scheme}_{config.Host}_{config.Port}", config, features, core)
     {
         ArgumentNullException.ThrowIfNull(config);
-        ArgumentNullException.ThrowIfNull(filters);
+        ArgumentNullException.ThrowIfNull(features);
         ArgumentNullException.ThrowIfNull(parserFactory);
         ArgumentNullException.ThrowIfNull(core);
         _config = config;
-        _filters = filters;
+        _features = features;
         _parserFactory = parserFactory;
         _core = core;
         _logger = core.LoggerFactory.CreateLogger<TcpServerProtocolPort>();
     }
 
     
+
+
     protected override void InternalSafeEnable(CancellationToken token)
     {
         _socket?.Close();
@@ -69,7 +88,10 @@ public class TcpServerProtocolPort:ProtocolPort
                 try
                 {
                     var socket = _socket.Accept();
-                    InternalAddConnection(new SocketProtocolConnection( socket,$"{Id}_{_socket.RemoteEndPoint}",_config,_parserFactory(),_filters,_core));
+                    InternalAddConnection(new SocketProtocolConnection( 
+                        socket,
+                        $"{Id}_{_socket.RemoteEndPoint}",
+                        _config,[.._parserFactory.Select(x=>x(_core))],_features,_core));
                 }
                 catch (Exception ex)
                 {
@@ -127,4 +149,14 @@ public class TcpServerProtocolPort:ProtocolPort
     #endregion
     
     
+}
+
+public static class TcpServerProtocolPortHelper
+{
+    public static void RegisterTcpServerPort(this IProtocolBuilder builder)
+    {
+        builder.RegisterPort(TcpServerProtocolPort.Info, 
+            (args, features, parserFactory,core) 
+                => new TcpServerProtocolPort(TcpServerProtocolPortConfig.Parse(args), features, parserFactory,core));
+    }
 }

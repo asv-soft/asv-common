@@ -10,10 +10,6 @@ using ZLogger;
 
 namespace Asv.IO;
 
-public class ProtocolRouterConfig
-{
-    
-}
 
 public class PortConfig
 {
@@ -33,7 +29,6 @@ public interface IProtocolRouter : IProtocolMessagePipe
 
 public class ProtocolRouter:IProtocolRouter
 {
-    private readonly ProtocolRouterConfig _config;
     private readonly ImmutableArray<IProtocolProcessingFeature> _features;
     private readonly IProtocolCore _core;
     private readonly Subject<IProtocolMessage> _internalMessageReceived = new();
@@ -45,14 +40,9 @@ public class ProtocolRouter:IProtocolRouter
     private readonly IDisposable _sub1;
     private readonly CancellationTokenSource _disposeCancel = new();
 
-    public ProtocolRouter(ProtocolRouterConfig config, IEnumerable<IProtocolProcessingFeature> features, IProtocolCore core)
+    public ProtocolRouter(IProtocol protocol)
     {
-        ArgumentNullException.ThrowIfNull(config);
-        ArgumentNullException.ThrowIfNull(core);
-        _logger = core.LoggerFactory.CreateLogger<ProtocolRouter>();
-        _config = config;
-        _features = [..features];
-        _core = core;
+        ArgumentNullException.ThrowIfNull(protocol);
         _sub1 = _internalMessageReceived.Subscribe(RouteReceivedMessage);
     }
     
@@ -96,7 +86,8 @@ public class ProtocolRouter:IProtocolRouter
 
     public IProtocolPort AddPort(PortConfig config)
     {
-        var port = _portFactory.Create(config.ConnectionString);
+        return null;
+        /*var port = _portFactory.Create(config.ConnectionString);
         port.OnMessageReceived.Subscribe(_internalMessageReceived.AsObserver());
         port.Tags.SetPortName(config.Name);
         _ports.Add(port);
@@ -108,12 +99,12 @@ public class ProtocolRouter:IProtocolRouter
         {
             port.Disable();
         }
-        return port;
+        return port;*/
     }
 
     public void AddPort(IProtocolPort port)
     {
-        _portLock.EnterWriteLock();
+        /*_portLock.EnterWriteLock();
         try
         {
             var sub = port.OnMessageReceived.Subscribe(_internalMessageReceived.AsObserver());
@@ -124,6 +115,7 @@ public class ProtocolRouter:IProtocolRouter
         {
             _portLock.ExitWriteLock();   
         }
+        */
         
     }
 
