@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -7,6 +9,11 @@ using R3;
 using ZLogger;
 
 namespace Asv.IO;
+
+public class ProtocolRouterConfig
+{
+    
+}
 
 public class PortConfig
 {
@@ -17,7 +24,7 @@ public class PortConfig
 
 public interface IProtocolRouter : IProtocolMessagePipe
 {
-    IProtocolPort AddPort(PortConfig config);
+    void AddPort(IProtocolPort port);
     bool RemovePort(IProtocolPort port);
     IReadOnlyObservableList<IProtocolPort> Ports { get; }
 }
@@ -26,30 +33,37 @@ public interface IProtocolRouter : IProtocolMessagePipe
 
 public class ProtocolRouter:IProtocolRouter
 {
-    private readonly IProtocolPortFactory _factory;
+    private readonly ProtocolRouterConfig _config;
+    private readonly ImmutableArray<IProtocolProcessingFeature> _features;
     private readonly IProtocolCore _core;
-    private readonly Subject<IProtocolMessage> _onMessageReceived = new();
+    private readonly Subject<IProtocolMessage> _internalMessageReceived = new();
     private readonly Subject<IProtocolMessage> _onMessageSent = new();
     private readonly ObservableList<IProtocolPort> _ports = new();
+    private readonly List<(IProtocolPort,IDisposable)> _portSubscriptions = new();
     private readonly ReaderWriterLockSlim _portLock = new ();
     private readonly ILogger<ProtocolRouter> _logger;
     private readonly IDisposable _sub1;
+    private readonly CancellationTokenSource _disposeCancel = new();
 
-    public ProtocolRouter(IProtocolPortFactory factory, IProtocolCore core)
+    public ProtocolRouter(ProtocolRouterConfig config, IEnumerable<IProtocolProcessingFeature> features, IProtocolCore core)
     {
-        ArgumentNullException.ThrowIfNull(factory);
+        ArgumentNullException.ThrowIfNull(config);
         ArgumentNullException.ThrowIfNull(core);
         _logger = core.LoggerFactory.CreateLogger<ProtocolRouter>();
-        _factory = factory;
+        _config = config;
+        _features = [..features];
         _core = core;
-        _sub1 = _onMessageReceived.Subscribe(RouteReceivedMessage);
+        _sub1 = _internalMessageReceived.Subscribe(RouteReceivedMessage);
     }
-
-    private async void RouteReceivedMessage(IProtocolMessage msg)
+    
+    private async void RouteReceivedMessage(IProtocolMessage message)
     {
         try
         {
-            await Send(msg);
+            foreach (var feature in _features)
+            {
+                await feature.ProcessReceivedMessage(ref message, this, _disposeCancel.Token);
+            }
         }
         catch (Exception e)
         {
@@ -57,17 +71,16 @@ public class ProtocolRouter:IProtocolRouter
         }
     }
 
-
-    public Observable<IProtocolMessage> OnMessageReceived => _onMessageReceived;
+    public Observable<IProtocolMessage> OnMessageReceived => _internalMessageReceived;
     public Observable<IProtocolMessage> OnMessageSent => _onMessageSent;
     public async ValueTask Send(IProtocolMessage message, CancellationToken cancel = default)
     {
         _portLock.EnterReadLock();
         try
         {
-            foreach (var connection in _ports)
+            foreach (var port in _ports)
             {
-                await connection.Send(message, cancel);
+                await port.Send(message, cancel);
             }
         }
         finally
@@ -76,10 +89,15 @@ public class ProtocolRouter:IProtocolRouter
         }
     }
 
+    public void AddFeature(string featureId)
+    {
+        throw new NotImplementedException();
+    }
+
     public IProtocolPort AddPort(PortConfig config)
     {
-        var port = _factory.Create(config.ConnectionString);
-        port.OnMessageReceived.Subscribe(_onMessageReceived.AsObserver());
+        var port = _portFactory.Create(config.ConnectionString);
+        port.OnMessageReceived.Subscribe(_internalMessageReceived.AsObserver());
         port.Tags.SetPortName(config.Name);
         _ports.Add(port);
         if (config.IsEnabled)
@@ -93,11 +111,37 @@ public class ProtocolRouter:IProtocolRouter
         return port;
     }
 
+    public void AddPort(IProtocolPort port)
+    {
+        _portLock.EnterWriteLock();
+        try
+        {
+            var sub = port.OnMessageReceived.Subscribe(_internalMessageReceived.AsObserver());
+            _portSubscriptions.Add(sub);
+            _ports.Add(port);
+        }
+        finally
+        {
+            _portLock.ExitWriteLock();   
+        }
+        
+    }
+
     public bool RemovePort(IProtocolPort port)
     {
-        if (!_ports.Remove(port)) return false;
-        port.Dispose();
-        return true;
+        _portLock.EnterWriteLock();
+        try
+        {
+            if (!_ports.Remove(port)) return false;
+            port.Dispose();
+            return true;
+        }
+        finally
+        {
+            _portLock.ExitWriteLock();   
+        }
+
+        
     }
 
     public IReadOnlyObservableList<IProtocolPort> Ports => _ports;

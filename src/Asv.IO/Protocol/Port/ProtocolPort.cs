@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
@@ -35,7 +36,7 @@ public abstract class ProtocolPort : IProtocolPort
     private ITimer? _reconnectTimer;
     private int _isDisposed;
 
-    protected ProtocolPort(string id, ProtocolPortConfig config, IProtocolCore core)
+    protected ProtocolPort(string id, IEnumerable<IProtocolProcessingFeature> features, ProtocolPortConfig config, IProtocolCore core)
     {
         if (string.IsNullOrWhiteSpace(id))
             throw new ArgumentException("Value cannot be null or whitespace.", nameof(id));
@@ -43,7 +44,6 @@ public abstract class ProtocolPort : IProtocolPort
         ArgumentNullException.ThrowIfNull(config);
         ArgumentNullException.ThrowIfNull(core);
         Tags = new();
-        Tags.SetPortId(id);
         _config = config;
         _core = core;
         _logger = core.LoggerFactory.CreateLogger<ProtocolPort>();

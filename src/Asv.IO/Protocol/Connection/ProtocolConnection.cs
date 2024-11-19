@@ -49,7 +49,7 @@ public abstract class ProtocolConnection : IProtocolConnection
         Id = id;
         _filters = [..filters.OrderBy(x=>x.Priority)];
         _parsers = [..parsers];
-        _parserAvailable = _parsers.Select(x=>x.ProtocolId).ToImmutableHashSet();
+        _parserAvailable = _parsers.Select(x=>x.Info).ToImmutableHashSet();
         var disposableBuilder = Disposable.CreateBuilder();
         foreach (var parser in _parsers)
         {
@@ -73,7 +73,7 @@ public abstract class ProtocolConnection : IProtocolConnection
         Tags.CopyTo(message.Tags);
         foreach (var filter in _filters)
         {
-            if (filter.OnReceiveFilterAndTransform(ref message, this) == false) return;
+            if (filter.ProcessReceiveMessage(ref message, this) == false) return;
         }
         _onMessageReceived.OnNext(message);
     }
@@ -130,7 +130,7 @@ public abstract class ProtocolConnection : IProtocolConnection
                 // skip not supported messages
                 if (_parserAvailable.Contains(msg.ProtocolId) == false) continue;
                 
-                var filterResult = _filters.Any(f => f.OnSendFilterTransform(ref msg, this) == false);
+                var filterResult = _filters.Any(f => f.ProcessSendMessage(ref msg, this) == false);
                 if (filterResult) continue;
                 using var mem = MemoryPool<byte>.Shared.Rent(msg.GetByteSize());
                 var writeBytes = await msg.Serialize(mem.Memory);

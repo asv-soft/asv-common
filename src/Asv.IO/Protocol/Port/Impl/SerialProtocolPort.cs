@@ -55,6 +55,7 @@ public class SerialProtocolPort:ProtocolPort
         _core = core;
         _features = features;
         _parserFactory = parserFactory;
+        
     }
 
     protected override void InternalSafeDisable()

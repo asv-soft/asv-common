@@ -1,7 +1,9 @@
 using System.Buffers;
 using Asv.IO;
 using ConsoleAppFramework;
+using Microsoft.Extensions.Logging;
 using R3;
+using ZLogger;
 
 namespace Asv.Common.Shell;
 
@@ -9,15 +11,40 @@ public class TcpTest
 {
     /// <summary>
     /// Command test tcp connection
+    /// <param name="logLevel">-v, Logging level </param>
     /// </summary>
     [Command("tcp-test")]
-    public async Task<int> Run()
+    public async Task<int> Run(
+#if DEBUG
+        LogLevel logLevel = LogLevel.Trace
+#else
+        LogLevel logLevel = LogLevel.Information
+#endif
+        )
     {
-        var client = PipePort.Create("tcp://127.0.0.1:7341", new ProtocolCore());
+        using var factory = LoggerFactory.Create(builder =>
+        {
+            builder.ClearProviders();
+            builder.SetMinimumLevel(logLevel);
+            builder.AddZLoggerConsole(options =>
+            {
+                options.IncludeScopes = true;
+                
+                options.UsePlainTextFormatter(formatter =>
+                {
+                    formatter.SetPrefixFormatter($"{0:HH:mm:ss.fff} | ={1:short}= | {2,-40} ", (in MessageTemplate template, in LogInfo info) => template.Format(info.Timestamp, info.LogLevel,info.Category));
+                    formatter.SetExceptionFormatter((writer, ex) => Utf8StringInterpolation.Utf8String.Format(writer, $"{ex.Message}"));
+                });
+            });
+        });
+        var core = new ProtocolCore(factory);
+        var parserFactory = new Par
+
+        /*var client = PipePort.Create("tcp://127.0.0.1:7341", new ProtocolCore());
         var server = PipePort.Create("tcp://127.0.0.1:7341?srv=true", new ProtocolCore());
         server.Enable();
         client.Enable();
-        
+
         client.Status.Subscribe(x=>Console.WriteLine($"Client Status: {x:G}"));
         server.Status.Subscribe(x=>Console.WriteLine($"Server Status: {x:G}"));
 
@@ -35,10 +62,10 @@ public class TcpTest
                 {
                     pipe.Output.Write(data);
                     pipe.Output.FlushAsync();
-                }    
+                }
             }
         }).Start();
-        
+
         new Thread(() =>
         {
             while (true)
@@ -49,21 +76,21 @@ public class TcpTest
                     {
                         if (pipe.Input.TryRead(out var result))
                         {
-                            
+
                         }
                         else
                         {
                             Thread.Sleep(100);
                         }
-                        
-                    }    
-            
-                }    
+
+                    }
+
+                }
             }
         }).Start();
-        
-        
+
+
         ConsoleAppHelper.WaitCancelPressOrProcessExit();
-        return 0;
+        return 0;*/
     }
 }

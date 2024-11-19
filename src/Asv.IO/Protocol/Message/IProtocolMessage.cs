@@ -1,3 +1,5 @@
+using System;
+
 namespace Asv.IO;
 
 public interface IProtocolMessage:ISizedSpanSerializable
@@ -6,9 +8,18 @@ public interface IProtocolMessage:ISizedSpanSerializable
     /// Gets the unique identifier of the protocol.
     /// </summary>
     /// <remarks>
-    /// The ProtocolId property is a string that represents the unique identifier
+    /// The Info property is a string that represents the unique identifier
     /// assigned to the protocol.
     /// </remarks>
-    string ProtocolId { get; }
+    ProtocolParserInfo ProtocolId { get; }
     ProtocolTags Tags { get; }
+    string Name { get; }
+    string GetIdAsString();
 }
+
+public interface IProtocolMessage<out TMessageId> : IProtocolMessage
+{
+    TMessageId Id { get; }
+
+}
+
