@@ -82,6 +82,7 @@ public class UdpProtocolPort:ProtocolPort
        
     }
 
+    public override PortTypeInfo TypeInfo => Info;
     protected override void InternalSafeDisable()
     {
         if (_socket != null)

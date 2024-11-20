@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Collections.Specialized;
 
@@ -13,7 +14,10 @@ namespace Asv.IO;
 
 public interface IProtocol
 {
-   
+    IEnumerable<PortTypeInfo> Ports { get; }
+    IEnumerable<ProtocolInfo> Protocols { get; }
+    IProtocolPort CreatePort(Uri connectionString);
+    IProtocolParser CreateParser(string protocolId);
 }
 
 public class Protocol:IProtocol
@@ -50,6 +54,7 @@ public class Protocol:IProtocol
     private readonly ImmutableArray<PortTypeInfo> _portInfos;
     private readonly IProtocolCore _core;
     
+    
     internal Protocol(
         ImmutableArray<IProtocolProcessingFeature> features, 
         ImmutableDictionary<string, ParserFactoryDelegate> parsers, 
@@ -64,5 +69,27 @@ public class Protocol:IProtocol
         _ports = ports;
         _portInfos = portInfos;
         _core = core;
+    }
+
+    public IEnumerable<PortTypeInfo> Ports => _portInfos;
+    public IEnumerable<ProtocolInfo> Protocols => _protocols;
+    public IProtocolPort CreatePort(Uri connectionString)
+    {
+        if (!_ports.TryGetValue(connectionString.Scheme, out var factory))
+        {
+            throw new InvalidOperationException($"Port type {connectionString.Scheme} not found");
+        }
+        
+        var args = new PortArgs
+        {
+            Path = connectionString.AbsolutePath,
+            Query = ParseQueryString(connectionString.Query)
+        };
+        return factory(args, _features, _parsers.Values.ToImmutableArray(), _core);
+    }
+
+    public IProtocolParser CreateParser(string protocolId)
+    {
+        throw new NotImplementedException();
     }
 }

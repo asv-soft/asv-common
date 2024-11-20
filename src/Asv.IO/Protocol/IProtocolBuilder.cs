@@ -12,7 +12,7 @@ public class PortArgs
     public string? Host { get; set; }
     public int? Port { get; set; }
     public string? Path { get; set; }
-    public NameValueCollection Query { get; set; } = new();
+    public NameValueCollection Query { get; set; }
 }
 
 public delegate IProtocolPort PortFactoryDelegate(

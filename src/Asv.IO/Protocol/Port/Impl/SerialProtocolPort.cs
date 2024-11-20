@@ -54,6 +54,8 @@ public class SerialProtocolPort:ProtocolPort
         _parserFactory = parserFactory;
     }
 
+    public override PortTypeInfo TypeInfo => Info;
+
     protected override void InternalSafeDisable()
     {
         if (_serial != null)

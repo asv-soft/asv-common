@@ -49,7 +49,7 @@ public class TcpClientProtocolPort:ProtocolPort
         _parserFactory = parserFactory;
         ArgumentNullException.ThrowIfNull(config);
     }
-
+    public override PortTypeInfo TypeInfo => Info;
     protected override void InternalSafeDisable()
     {
         if (_socket != null)

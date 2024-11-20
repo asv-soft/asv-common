@@ -63,7 +63,7 @@ public class TcpServerProtocolPort:ProtocolPort
         _logger = core.LoggerFactory.CreateLogger<TcpServerProtocolPort>();
     }
 
-    
+    public override PortTypeInfo TypeInfo => Info;
 
 
     protected override void InternalSafeEnable(CancellationToken token)

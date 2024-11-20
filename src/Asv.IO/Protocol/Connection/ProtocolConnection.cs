@@ -19,7 +19,7 @@ public class ProtocolConnectionConfig
     public int OutputQueueSize { get; set; } = 100;
     public int ReadEmptyLoopDelayMs { get; set; } = 30;
 }
-public abstract class ProtocolConnection : IProtocolConnection
+public abstract class ProtocolConnection:  IProtocolConnection
 {
     private readonly IProtocolCore _core;
     private uint _statBytesReceived;

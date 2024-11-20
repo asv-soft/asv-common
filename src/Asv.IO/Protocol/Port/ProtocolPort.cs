@@ -19,8 +19,7 @@ public class ProtocolPortConfig : ProtocolConnectionConfig
 
 public abstract class ProtocolPort : IProtocolPort
 {
-    
-
+    private int _isBusy;
     private readonly ProtocolPortConfig _config;
     private readonly IProtocolCore _core;
     private readonly ILogger<ProtocolPort> _logger;
@@ -28,7 +27,6 @@ public abstract class ProtocolPort : IProtocolPort
     private readonly ReaderWriterLockSlim _connectionsLock = new();
     private readonly Subject<IProtocolMessage> _onMessageReceived = new();
     private readonly Subject<IProtocolMessage> _onMessageSent = new();
-    private int _isBusy;
     private readonly ReactiveProperty<ProtocolException?> _error = new();
     private readonly ReactiveProperty<ProtocolPortStatus> _status = new();
     private readonly ReactiveProperty<bool> _isEnabled = new();
@@ -97,6 +95,8 @@ public abstract class ProtocolPort : IProtocolPort
     }
     
     public string Id { get; }
+    public abstract PortTypeInfo TypeInfo { get; }
+    public IEnumerable<ProtocolInfo> Protocols { get; }
 
     public ReadOnlyReactiveProperty<ProtocolException?> Error => _error;
 

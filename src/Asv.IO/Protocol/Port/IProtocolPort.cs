@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using ObservableCollections;
 using R3;
@@ -15,6 +16,8 @@ public enum ProtocolPortStatus
 public interface IProtocolPort:IDisposable,IAsyncDisposable,IProtocolMessagePipe
 {
     string Id { get; }
+    PortTypeInfo TypeInfo { get; }
+    IEnumerable<ProtocolInfo> Protocols { get; }
     ReadOnlyReactiveProperty<ProtocolException?> Error { get; }
     ReadOnlyReactiveProperty<ProtocolPortStatus> Status { get; }
     ReadOnlyReactiveProperty<bool> IsEnabled { get; }
