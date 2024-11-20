@@ -5,7 +5,7 @@ using R3;
 
 namespace Asv.IO;
 
-public interface IProtocolMessagePipe
+public interface IProtocolConnection
 {
     Observable<IProtocolMessage> OnMessageReceived { get; }
     Observable<IProtocolMessage> OnMessageSent { get; }

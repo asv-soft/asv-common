@@ -5,6 +5,7 @@ using ConsoleAppFramework;
 using Microsoft.Extensions.Logging;
 using R3;
 using ZLogger;
+using Exception = System.Exception;
 
 namespace Asv.Common.Shell;
 
@@ -52,14 +53,38 @@ public class TcpTest
         var protocol = Protocol.Create(builder =>
         {
             builder.SetLog(loggerFactory);
+            
             builder.RegisterExampleProtocol();
+            
+            builder.AddFeature(new MessageBroadcastingFeature());
             
             builder.RegisterSerialPort();
             builder.RegisterTcpClientPort();
             builder.RegisterTcpServerPort();
             builder.RegisterUdpPort();
-            
         });
+
+        var server = protocol.CreatePort("tcps://127.0.0.1:7341?max_clients=10#protocols=example");
+        server.Enable();
+        
+        var client = protocol.CreatePort("tcp://127.0.0.1:7341#protocols=example");
+        client.Enable();
+
+        await client.Status.FirstAsync(x => x == ProtocolPortStatus.Connected);
+        
+        var tcs = new TaskCompletionSource();
+        server.OnMessageReceived.Subscribe(x => tcs.SetResult());
+        try
+        {
+            await client.Send(new ExampleMessage1());
+        }
+        catch (Exception e)
+        {
+            
+        }
+        
+
+        await tcs.Task;
         
         return 0;
 

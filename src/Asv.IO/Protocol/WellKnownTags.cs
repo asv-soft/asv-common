@@ -1,5 +1,7 @@
 using System;
+using System.Collections;
 using System.Collections.Concurrent;
+using System.Collections.Specialized;
 using System.Diagnostics;
 
 namespace Asv.IO;
@@ -12,7 +14,7 @@ public static class WellKnownTags
 
     public static string? GetPortId(this ProtocolTags tags)
     {
-        return tags[PortIdTag];
+        return (string?)tags[PortIdTag];
     }
     public static void SetPortId(this ProtocolTags tags, string id)
     {
@@ -32,7 +34,7 @@ public static class WellKnownTags
 
     public static string? GetConnectionId(this ProtocolTags tags)
     {
-        return tags[ConnectionIdTag];
+        return (string?)tags[ConnectionIdTag];
     }
 }
 
@@ -40,22 +42,25 @@ public static class WellKnownTags
 
 public sealed class ProtocolTags
 {
-    private TagList _tagList = new();
+    private readonly HybridDictionary _tagList = new(8, true);
     
     public void Clear()
     {
-        throw new System.NotImplementedException();
+        _tagList.Clear();
     }
 
-    public string? this[string tagName]
+    public object? this[string tagName]
     {
-        get => throw new NotImplementedException();
-        set => throw new NotImplementedException();
+        get => _tagList[tagName];
+        set => _tagList[tagName] = value;
     }
-    
-    public void CopyTo(ProtocolTags tags)
-    {
-        throw new NotImplementedException();
+
+    public void AddRange(ProtocolTags tags)
+    { 
+        foreach (DictionaryEntry tag in tags._tagList)
+        {
+            _tagList[tag.Key] = tag.Value;
+        }
     }
 
     

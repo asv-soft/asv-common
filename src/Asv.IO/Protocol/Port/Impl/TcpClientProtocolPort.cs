@@ -27,26 +27,25 @@ public class TcpClientProtocolPortConfig:ProtocolPortConfig
 
 public class TcpClientProtocolPort:ProtocolPort
 {
-    public const string Scheme = "tcp_c";
+    public const string Scheme = "tcp";
     public static readonly PortTypeInfo Info  = new(Scheme, "Tcp client port");
     
     private readonly TcpClientProtocolPortConfig _config;
     private readonly IProtocolCore _core;
     private Socket? _socket;
-    private readonly ImmutableArray<ParserFactoryDelegate> _parserFactory;
     private readonly ImmutableArray<IProtocolProcessingFeature> _features;
 
     public TcpClientProtocolPort(
         TcpClientProtocolPortConfig config, 
         ImmutableArray<IProtocolProcessingFeature> features, 
-        ImmutableArray<ParserFactoryDelegate> parserFactory,
+        ImmutableDictionary<string, ParserFactoryDelegate> parsers,
+        ImmutableArray<ProtocolInfo> protocols,
         IProtocolCore core) 
-        : base($"{Scheme}_{config.Host}_{config.Port}", config, features, core)
+        : base($"{Scheme}_{config.Host}_{config.Port}", config, features, parsers, protocols, core)
     {
         _config = config;
         _core = core;
         _features = features;
-        _parserFactory = parserFactory;
         ArgumentNullException.ThrowIfNull(config);
     }
     public override PortTypeInfo TypeInfo => Info;
@@ -66,10 +65,10 @@ public class TcpClientProtocolPort:ProtocolPort
         _socket?.Dispose();
         _socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
         _socket.Connect(_config.Host,_config.Port);
-        InternalAddConnection(new SocketProtocolConnection(
+        InternalAddConnection(new SocketProtocolEndpoint(
             _socket,
             $"{Id}_{_socket.RemoteEndPoint}",
-            _config,[.._parserFactory.Select(x=>x(_core))], _features, _core));
+            _config,InternalCreateParsers(), _features, _core));
     }
 
     #region Dispose
@@ -102,7 +101,7 @@ public static class TcpClientProtocolPortHelper
     public static void RegisterTcpClientPort(this IProtocolBuilder builder)
     {
         builder.RegisterPort(TcpClientProtocolPort.Info, 
-            (args, features, parserFactory,core) 
-                => new TcpClientProtocolPort(TcpClientProtocolPortConfig.Parse(args), features, parserFactory,core));
+            (args, features, parsers,protocols,core) 
+                => new TcpClientProtocolPort(TcpClientProtocolPortConfig.Parse(args), features, parsers, protocols, core));
     }
 }

@@ -8,6 +8,16 @@ namespace Asv.IO;
 
 public class PortArgs
 {
+    public PortArgs()
+    {
+    }
+
+    public PortArgs(string? path, NameValueCollection query)
+    {
+        Path = path;
+        Query = query;
+    }
+
     public string? UserInfo { get; set; }
     public string? Host { get; set; }
     public int? Port { get; set; }
@@ -18,7 +28,8 @@ public class PortArgs
 public delegate IProtocolPort PortFactoryDelegate(
     PortArgs args,
     ImmutableArray<IProtocolProcessingFeature> features,
-    ImmutableArray<ParserFactoryDelegate> parserFactory,
+    ImmutableDictionary<string, ParserFactoryDelegate> parsers,
+    ImmutableArray<ProtocolInfo> protocols,
     IProtocolCore core);
 
 public delegate IProtocolParser ParserFactoryDelegate(IProtocolCore core);

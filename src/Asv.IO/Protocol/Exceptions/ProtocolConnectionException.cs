@@ -4,20 +4,20 @@ namespace Asv.IO;
 
 public class ProtocolConnectionException : ProtocolException
 {
-    public IProtocolConnection Connection { get; }
+    public IProtocolEndpoint Endpoint { get; }
 
-    public ProtocolConnectionException(IProtocolConnection connection)
+    public ProtocolConnectionException(IProtocolEndpoint endpoint)
     {
-        Connection = connection;
+        Endpoint = endpoint;
     }
 
-    public ProtocolConnectionException(IProtocolConnection connection, string message) : base(message)
+    public ProtocolConnectionException(IProtocolEndpoint endpoint, string message) : base(message)
     {
-        Connection = connection;
+        Endpoint = endpoint;
     }
 
-    public ProtocolConnectionException(IProtocolConnection connection, string message, Exception inner) : base(message, inner)
+    public ProtocolConnectionException(IProtocolEndpoint endpoint, string message, Exception inner) : base(message, inner)
     {
-        Connection = connection;
+        Endpoint = endpoint;
     }
 }

@@ -13,7 +13,7 @@ public enum ProtocolPortStatus
     Connected,
     Error
 }
-public interface IProtocolPort:IDisposable,IAsyncDisposable,IProtocolMessagePipe
+public interface IProtocolPort:IDisposable,IAsyncDisposable,IProtocolConnection
 {
     string Id { get; }
     PortTypeInfo TypeInfo { get; }
@@ -22,7 +22,7 @@ public interface IProtocolPort:IDisposable,IAsyncDisposable,IProtocolMessagePipe
     ReadOnlyReactiveProperty<ProtocolPortStatus> Status { get; }
     ReadOnlyReactiveProperty<bool> IsEnabled { get; }
     ProtocolTags Tags { get; }
-    IReadOnlyObservableList<IProtocolConnection> Connections { get; }
+    IReadOnlyObservableList<IProtocolEndpoint> Connections { get; }
     void Enable();
     void Disable();
     bool IsDisposed { get; }
@@ -32,4 +32,8 @@ public class PortTypeInfo(string scheme, string name)
 {
     public string Scheme { get; set; } = scheme;
     public string Name { get; set; } = name;
+    public override string ToString()
+    {
+        return $"{Scheme}[{Name}]";
+    }
 }

@@ -36,12 +36,13 @@ public class ExampleParser(IProtocolMessageFactory<ExampleMessageBase,byte> mess
                 return false;
             case State.MessageId:
                 _buffer[1] = data;
-                _state = State.MessageData;
+                _state = State.Size;
                 return false;
             case State.Size:
                 _buffer[2] = data;
                 _size = data;
                 _read = 0;
+                _state = State.MessageData;
                 return false;
             case State.MessageData:
                 _buffer[3 + _read] = data;
@@ -56,7 +57,7 @@ public class ExampleParser(IProtocolMessageFactory<ExampleMessageBase,byte> mess
                 _state = State.Sync;
                 try
                 {
-                    var span = new ReadOnlySpan<byte>(_buffer, 0, _size + 3);
+                    var span = new ReadOnlySpan<byte>(_buffer, 0, _size + 4);
                     InternalParsePacket(_buffer[1], ref span, false);
                     return true;
                 }

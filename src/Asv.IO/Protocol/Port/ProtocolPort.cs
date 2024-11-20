@@ -12,18 +12,24 @@ using ZLogger;
 
 namespace Asv.IO;
 
-public class ProtocolPortConfig : ProtocolConnectionConfig
+public class ProtocolPortConfig : ProtocolEndpointConfig
 {
     public int ReconnectTimeoutMs { get; set; } = 5_000;
+    public override string ToString()
+    {
+        return $"{base.ToString()}, ReconnectTimeoutMs:{ReconnectTimeoutMs}";
+    }
 }
 
 public abstract class ProtocolPort : IProtocolPort
 {
     private int _isBusy;
     private readonly ProtocolPortConfig _config;
+    private readonly ImmutableDictionary<string, ParserFactoryDelegate> _parsers;
+    private readonly ImmutableArray<ProtocolInfo> _protocols;
     private readonly IProtocolCore _core;
     private readonly ILogger<ProtocolPort> _logger;
-    private readonly ObservableList<IProtocolConnection> _connections = new();
+    private readonly ObservableList<IProtocolEndpoint> _connections = new();
     private readonly ReaderWriterLockSlim _connectionsLock = new();
     private readonly Subject<IProtocolMessage> _onMessageReceived = new();
     private readonly Subject<IProtocolMessage> _onMessageSent = new();
@@ -34,7 +40,11 @@ public abstract class ProtocolPort : IProtocolPort
     private ITimer? _reconnectTimer;
     private int _isDisposed;
 
-    protected ProtocolPort(string id, ProtocolPortConfig config, IEnumerable<IProtocolProcessingFeature> features,
+    protected ProtocolPort(string id,
+        ProtocolPortConfig config,
+        ImmutableArray<IProtocolProcessingFeature> features,
+        ImmutableDictionary<string, ParserFactoryDelegate> parsers,
+        ImmutableArray<ProtocolInfo> protocols,
         IProtocolCore core)
     {
         if (string.IsNullOrWhiteSpace(id))
@@ -44,24 +54,26 @@ public abstract class ProtocolPort : IProtocolPort
         ArgumentNullException.ThrowIfNull(core);
         Tags = new();
         _config = config;
+        _parsers = parsers;
+        _protocols = protocols;
         _core = core;
         _logger = core.LoggerFactory.CreateLogger<ProtocolPort>();
         _logger.ZLogInformation($"Create port {this} {config}");
     }
     
-    protected void InternalRemoveConnection(IProtocolConnection connection)
+    protected void InternalRemoveConnection(IProtocolEndpoint endpoint)
     {
         if (IsDisposed) return;
-        _logger.ZLogInformation($"{this} remove connection {connection}");
+        _logger.ZLogInformation($"{this} remove connection {endpoint}");
         _connectionsLock.EnterWriteLock();
         try
         {
-            _connections.Remove(connection);
-            connection.Dispose();
+            _connections.Remove(endpoint);
+            endpoint.Dispose();
         }
         catch (Exception e)
         {
-            _logger.ZLogError($"Error on dispose connection {connection}: {e.Message}");
+            _logger.ZLogError($"Error on dispose connection {endpoint}: {e.Message}");
             Debug.Fail("Error on dispose connection");
         }
         finally
@@ -71,7 +83,7 @@ public abstract class ProtocolPort : IProtocolPort
         
     }
     
-    protected void InternalAddConnection(IProtocolConnection pipe)
+    protected void InternalAddConnection(IProtocolEndpoint pipe)
     {
         if (IsDisposed) return;
         _logger.ZLogInformation($"{this} add pipe endpoint {pipe}");
@@ -81,7 +93,7 @@ public abstract class ProtocolPort : IProtocolPort
             _connections.Add(pipe);
             // we no need to dispose subscriptions here, because it will be disposed by connection itself
             pipe.IsConnected.Where(x => x == false).Subscribe(pipe, (x, p) => InternalRemoveConnection(p));
-            pipe.OnMessageReceived.Do(x=>Tags.CopyTo(x.Tags)).Subscribe(_onMessageReceived.AsObserver());
+            pipe.OnMessageReceived.Do(x=>Tags.AddRange(x.Tags)).Subscribe(_onMessageReceived.AsObserver());
         }
         catch (Exception e)
         {
@@ -93,19 +105,18 @@ public abstract class ProtocolPort : IProtocolPort
             _connectionsLock.ExitWriteLock();
         }
     }
-    
+    protected ImmutableArray<IProtocolParser> InternalCreateParsers()
+    {
+        return [.._protocols.Select(x => _parsers[x.Id](_core))];
+    }
     public string Id { get; }
     public abstract PortTypeInfo TypeInfo { get; }
-    public IEnumerable<ProtocolInfo> Protocols { get; }
-
+    public IEnumerable<ProtocolInfo> Protocols => _protocols;
     public ReadOnlyReactiveProperty<ProtocolException?> Error => _error;
-
     public ReadOnlyReactiveProperty<ProtocolPortStatus> Status => _status;
-
     public ReadOnlyReactiveProperty<bool> IsEnabled => _isEnabled;
-
     public ProtocolTags Tags { get; }
-    public IReadOnlyObservableList<IProtocolConnection> Connections => _connections;
+    public IReadOnlyObservableList<IProtocolEndpoint> Connections => _connections;
     public void Enable()
     {
         if (IsDisposed) return;
@@ -204,10 +215,15 @@ public abstract class ProtocolPort : IProtocolPort
         }
         finally
         {
-            _connectionsLock.EnterReadLock();   
+            _connectionsLock.ExitReadLock();   
         }
     }
-    
+
+    public override string ToString()
+    {
+        return $"{TypeInfo}[{Id}]";
+    }
+
     #region Dispose
 
     public bool IsDisposed => _isDisposed != 0;

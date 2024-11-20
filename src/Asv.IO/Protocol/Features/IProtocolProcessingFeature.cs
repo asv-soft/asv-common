@@ -10,8 +10,8 @@ public interface IProtocolProcessingFeature
     string Description { get; }
     string Id { get; }
     int Priority { get; }
-    ValueTask<bool> ProcessReceiveMessage(ref IProtocolMessage message, IProtocolConnection connection, CancellationToken cancel);
-    ValueTask<bool> ProcessSendMessage(ref IProtocolMessage message, IProtocolConnection connection, CancellationToken cancel);
+    ValueTask<bool> ProcessReceiveMessage(ref IProtocolMessage message, IProtocolEndpoint endpoint, CancellationToken cancel);
+    ValueTask<bool> ProcessSendMessage(ref IProtocolMessage message, IProtocolEndpoint endpoint, CancellationToken cancel);
     ValueTask<bool> ProcessSendMessage(ref IProtocolMessage message, IProtocolRouter router, CancellationToken cancel);
     ValueTask<bool> ProcessReceivedMessage(ref IProtocolMessage message, IProtocolRouter router, CancellationToken cancel);
 }

@@ -34,7 +34,7 @@ public class TcpServerProtocolPortConfig:ProtocolPortConfig
 
 public class TcpServerProtocolPort:ProtocolPort
 {
-    public const string Scheme = "tcp_s";
+    public const string Scheme = "tcps";
     public static PortTypeInfo Info => new(Scheme, "Tcp server port");
     
     private readonly TcpServerProtocolPortConfig _config;
@@ -42,23 +42,21 @@ public class TcpServerProtocolPort:ProtocolPort
     private Socket? _socket;
     private Thread? _listenThread;
     private readonly ILogger<TcpServerProtocolPort> _logger;
-    private readonly ImmutableArray<ParserFactoryDelegate> _parserFactory;
     private readonly ImmutableArray<IProtocolProcessingFeature> _features;
 
     public TcpServerProtocolPort(
         TcpServerProtocolPortConfig config, 
         ImmutableArray<IProtocolProcessingFeature> features, 
-        ImmutableArray<ParserFactoryDelegate> parserFactory,
+        ImmutableDictionary<string, ParserFactoryDelegate> parsers,
+        ImmutableArray<ProtocolInfo> protocols,
         IProtocolCore core) 
-        : base($"{Scheme}_{config.Host}_{config.Port}", config, features, core)
+        : base($"{Scheme}_{config.Host}_{config.Port}", config, features, parsers, protocols, core)
     {
         ArgumentNullException.ThrowIfNull(config);
         ArgumentNullException.ThrowIfNull(features);
-        ArgumentNullException.ThrowIfNull(parserFactory);
         ArgumentNullException.ThrowIfNull(core);
         _config = config;
         _features = features;
-        _parserFactory = parserFactory;
         _core = core;
         _logger = core.LoggerFactory.CreateLogger<TcpServerProtocolPort>();
     }
@@ -88,10 +86,10 @@ public class TcpServerProtocolPort:ProtocolPort
                 try
                 {
                     var socket = _socket.Accept();
-                    InternalAddConnection(new SocketProtocolConnection( 
+                    InternalAddConnection(new SocketProtocolEndpoint( 
                         socket,
                         $"{Id}_{_socket.RemoteEndPoint}",
-                        _config,[.._parserFactory.Select(x=>x(_core))],_features,_core));
+                        _config,InternalCreateParsers(),_features,_core));
                 }
                 catch (Exception ex)
                 {
@@ -156,7 +154,7 @@ public static class TcpServerProtocolPortHelper
     public static void RegisterTcpServerPort(this IProtocolBuilder builder)
     {
         builder.RegisterPort(TcpServerProtocolPort.Info, 
-            (args, features, parserFactory,core) 
-                => new TcpServerProtocolPort(TcpServerProtocolPortConfig.Parse(args), features, parserFactory,core));
+            (args, features, parsers,protocols,core) 
+                => new TcpServerProtocolPort(TcpServerProtocolPortConfig.Parse(args), features, parsers, protocols, core));
     }
 }

@@ -18,7 +18,7 @@ public class PortConfig
     public bool IsEnabled { get; set; } = true;
 }
 
-public interface IProtocolRouter : IProtocolMessagePipe
+public interface IProtocolRouter : IProtocolConnection
 {
     void AddPort(IProtocolPort port);
     bool RemovePort(IProtocolPort port);

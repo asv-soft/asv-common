@@ -38,20 +38,19 @@ public class SerialProtocolPort:ProtocolPort
     private readonly IProtocolCore _core;
     private SerialPort? _serial;
     private readonly ImmutableArray<IProtocolProcessingFeature> _features;
-    private readonly ImmutableArray<ParserFactoryDelegate> _parserFactory;
 
 
     public SerialProtocolPort(
         SerialProtocolPortConfig config, 
         ImmutableArray<IProtocolProcessingFeature> features, 
-        ImmutableArray<ParserFactoryDelegate> parserFactory,
+        ImmutableDictionary<string, ParserFactoryDelegate> parsers,
+        ImmutableArray<ProtocolInfo> protocols,
         IProtocolCore core) 
-        : base($"{Scheme}_{config.PortName}", config, features, core)
+        : base($"{Scheme}_{config.PortName}", config, features, parsers, protocols, core)
     {
         _config = config;
         _core = core;
         _features = features;
-        _parserFactory = parserFactory;
     }
 
     public override PortTypeInfo TypeInfo => Info;
@@ -77,12 +76,14 @@ public class SerialProtocolPort:ProtocolPort
             WriteTimeout = _config.WriteTimeout,
         };
         _serial.Open();
-        InternalAddConnection(new SerialProtocolConnection(
+        InternalAddConnection(new SerialProtocolEndpoint(
             _serial,
             $"{Id}_{_config.BoundRate}_{_config.DataBits}_{_config.Parity}_{_config.StopBits}",
-            _config,[.._parserFactory.Select(x=>x(_core))], _features, _core));
+            _config,InternalCreateParsers(), _features, _core));
         
     }
+
+    
 }
 
 public static class SerialProtocolPortHelper
@@ -90,7 +91,7 @@ public static class SerialProtocolPortHelper
     public static void RegisterSerialPort(this IProtocolBuilder builder)
     {
         builder.RegisterPort(SerialProtocolPort.Info, 
-            (args, features, parserFactory,core) 
-                => new SerialProtocolPort(SerialProtocolPortConfig.Parse(args), features, parserFactory,core));
+            (args, features, parsers,protocols,core) 
+                => new SerialProtocolPort(SerialProtocolPortConfig.Parse(args), features, parsers,protocols,core));
     }
 }

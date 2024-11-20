@@ -6,7 +6,7 @@ using R3;
 
 namespace Asv.IO;
 
-public interface IProtocolConnection:IDisposable, IAsyncDisposable,IProtocolMessagePipe
+public interface IProtocolEndpoint:IDisposable, IAsyncDisposable,IProtocolConnection
 {
     uint StatRxBytes { get; }
     uint StatTxBytes { get; }

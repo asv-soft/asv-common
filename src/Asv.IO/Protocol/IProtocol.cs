@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Collections.Specialized;
+using System.Linq;
 
 namespace Asv.IO;
 
@@ -20,6 +21,14 @@ public interface IProtocol
     IProtocolParser CreateParser(string protocolId);
 }
 
+public static class ProtocolHelper
+{
+    public static IProtocolPort CreatePort(this IProtocol src,string connectionString)
+    {
+        return src.CreatePort(new Uri(connectionString));
+    }
+}
+
 public class Protocol:IProtocol
 {
     #region Static
@@ -34,7 +43,7 @@ public class Protocol:IProtocol
     private static NameValueCollection ParseQueryString(string requestQueryString)
     {
         var rc = new NameValueCollection();
-        var ar1 = requestQueryString.Split('&', '?');
+        var ar1 = requestQueryString.Split('&', '?','#',';');
         foreach (var row in ar1)
         {
             if (string.IsNullOrEmpty(row)) continue;
@@ -45,16 +54,17 @@ public class Protocol:IProtocol
         return rc;
     }
 
-    #endregion
+    public const string ProtocolQueryKey = "protocols";
+    private const char ValuesDelimiter = ',';
     
+    #endregion
+
     private readonly ImmutableArray<IProtocolProcessingFeature> _features;
     private readonly ImmutableDictionary<string, ParserFactoryDelegate> _parsers;
     private readonly ImmutableArray<ProtocolInfo> _protocols;
     private readonly ImmutableDictionary<string, PortFactoryDelegate> _ports;
     private readonly ImmutableArray<PortTypeInfo> _portInfos;
     private readonly IProtocolCore _core;
-    
-    
     internal Protocol(
         ImmutableArray<IProtocolProcessingFeature> features, 
         ImmutableDictionary<string, ParserFactoryDelegate> parsers, 
@@ -79,14 +89,42 @@ public class Protocol:IProtocol
         {
             throw new InvalidOperationException($"Port type {connectionString.Scheme} not found");
         }
+        var additionalArgs = ParseQueryString(connectionString.Fragment);
+        var protoStr = additionalArgs[ProtocolQueryKey];
+
+
+        ImmutableHashSet<string> protocols;
+        if (protoStr != null)
+        {
+            protocols = protoStr.Split(ValuesDelimiter).ToImmutableHashSet();
+        }
+        else
+        {
+            protocols = _protocols.Select(x => x.Id).ToImmutableHashSet();
+        }
+        foreach (var protocol in protocols)
+        {
+            if (_parsers.ContainsKey(protocol) == false)
+            {
+                throw new InvalidOperationException($"Parser for protocol '{protocol}' not found");
+            }
+        }
+
+        var selectedProtocol =  _protocols.Where(x => protocols.Contains(x.Id)).ToImmutableArray();
         
+        var query = ParseQueryString(connectionString.Query);
         var args = new PortArgs
         {
+            UserInfo = connectionString.UserInfo,
+            Host = connectionString.Host,
+            Port = connectionString.Port,
             Path = connectionString.AbsolutePath,
             Query = ParseQueryString(connectionString.Query)
         };
-        return factory(args, _features, _parsers.Values.ToImmutableArray(), _core);
+        return factory(args, _features, _parsers, selectedProtocol , _core);
     }
+
+    
 
     public IProtocolParser CreateParser(string protocolId)
     {

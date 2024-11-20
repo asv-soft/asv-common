@@ -7,14 +7,14 @@ using System.Threading.Tasks;
 
 namespace Asv.IO;
 
-public class SocketProtocolConnection(
+public class SocketProtocolEndpoint(
     Socket socket,
     string id,
-    ProtocolConnectionConfig config,
+    ProtocolEndpointConfig config,
     ImmutableArray<IProtocolParser> parsers,
     ImmutableArray<IProtocolProcessingFeature> features,
     IProtocolCore core)
-    : ProtocolConnection(id, config, parsers, features, core)
+    : ProtocolEndpoint(id, config, parsers, features, core)
 {
     
     protected override int GetAvailableBytesToRead() => socket.Available;

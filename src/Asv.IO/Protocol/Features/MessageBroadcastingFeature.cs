@@ -13,17 +13,17 @@ public class MessageBroadcastingFeature : IProtocolProcessingFeature
     public string Description => "Allows retransmission of incoming messages to all other connections.";
     public string Id => FeatureId;
     public int Priority { get; } = 0;
-    public ValueTask<bool> ProcessReceiveMessage(ref IProtocolMessage message, IProtocolConnection connection, CancellationToken cancel)
+    public ValueTask<bool> ProcessReceiveMessage(ref IProtocolMessage message, IProtocolEndpoint endpoint, CancellationToken cancel)
     {
         // mark message with connection id
-        message.Tags.SetConnectionId(connection.Id);
+        message.Tags.SetConnectionId(endpoint.Id);
         return TrueTask;
     }
 
-    public ValueTask<bool> ProcessSendMessage(ref IProtocolMessage message, IProtocolConnection connection, CancellationToken cancel)
+    public ValueTask<bool> ProcessSendMessage(ref IProtocolMessage message, IProtocolEndpoint endpoint, CancellationToken cancel)
     {
         // check if message was received by this connection => skip it
-        return message.Tags.GetConnectionId() == connection.Id ? FalseTask : TrueTask;
+        return message.Tags.GetConnectionId() == endpoint.Id ? FalseTask : TrueTask;
     }
 
     public ValueTask<bool> ProcessSendMessage(ref IProtocolMessage message, IProtocolRouter router, CancellationToken cancel)

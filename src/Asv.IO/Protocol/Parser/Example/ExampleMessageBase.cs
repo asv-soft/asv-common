@@ -40,8 +40,10 @@ public abstract class ExampleMessageBase : IProtocolMessage<byte>
         {
             throw new ProtocolDeserializeMessageException(Protocol, this, $"Invalid crc: want {calcCrc}, got {buffer[^1]}");
         }
-        InternalDeserialize(ref buffer);
-        BinSerialize.ReadByte(ref buffer); // CRC
+        var size = buffer[2];
+        var internalBuffer = buffer[3..^1];
+        InternalDeserialize(ref internalBuffer);
+        buffer = buffer[(4 + size)..];
     }
     
     public void Serialize(ref Span<byte> buffer)
@@ -50,7 +52,8 @@ public abstract class ExampleMessageBase : IProtocolMessage<byte>
         BinSerialize.WriteByte(ref buffer, ExampleParser.SyncByte);
         BinSerialize.WriteByte(ref buffer, Id);
         var sizeSpan = buffer;
-        var payload = buffer[1..];
+        buffer = buffer[1..];
+        var payload = buffer;
         InternalSerialize(ref buffer);
         var size = (byte)(payload.Length - buffer.Length);
         BinSerialize.WriteByte(ref sizeSpan, size);
