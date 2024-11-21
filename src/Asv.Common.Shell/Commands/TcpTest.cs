@@ -30,8 +30,6 @@ public class TcpTest
 #endif
     )
     {
-
-
         var loggerFactory = LoggerFactory.Create(builder =>
         {
             builder.ClearProviders();
@@ -50,18 +48,12 @@ public class TcpTest
                 });
             });
         });
+        
         var protocol = Protocol.Create(builder =>
         {
             builder.SetLog(loggerFactory);
-            
             builder.RegisterExampleProtocol();
-            
-            builder.AddFeature(new MessageBroadcastingFeature());
-            
-            builder.RegisterSerialPort();
-            builder.RegisterTcpClientPort();
-            builder.RegisterTcpServerPort();
-            builder.RegisterUdpPort();
+            builder.EnableBroadcastFeature();
         });
 
         var server = protocol.CreatePort("tcps://127.0.0.1:7341?max_clients=10#protocols=example");
@@ -73,15 +65,31 @@ public class TcpTest
         await client.Status.FirstAsync(x => x == ProtocolPortStatus.Connected);
         
         var tcs = new TaskCompletionSource();
-        server.OnMessageReceived.Subscribe(x => tcs.SetResult());
-        try
+        var cnt = 0;
+        server.OnRxMessage.Subscribe(x =>
         {
-            await client.Send(new ExampleMessage1());
-        }
-        catch (Exception e)
+            cnt++;
+            Console.WriteLine($"RECV=>{cnt}");
+            if (cnt == 10_000) tcs.SetResult();
+        });
+
+        new Thread(async void () =>
         {
-            
-        }
+            try
+            {
+                var index = 0;
+                while (true)
+                {
+                    index++;
+                    await client.Send(new ExampleMessage1{ Value1 = index}); 
+                    Console.WriteLine($"SEND=>{index}");
+                }
+            }
+            catch (Exception e)
+            {
+                tcs.SetException(e);
+            }
+        }).Start();
         
 
         await tcs.Task;

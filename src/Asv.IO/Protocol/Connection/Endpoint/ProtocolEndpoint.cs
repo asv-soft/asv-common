@@ -23,45 +23,31 @@ public class ProtocolEndpointConfig
         return $"{nameof(OutputQueueSize)}: {OutputQueueSize}, {nameof(ReadEmptyLoopDelayMs)}: {ReadEmptyLoopDelayMs}";
     }
 }
-public abstract class ProtocolEndpoint:  IProtocolEndpoint
+public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
 {
-    private readonly IProtocolCore _core;
-    private uint _statBytesReceived;
-    private uint _statBytesSent;
-    private uint _statMessageSent;
-    private uint _statMessageReceived;
     private readonly TimeSpan _readEmptyLoopDelay;
     private readonly ImmutableArray<IProtocolParser> _parsers;
-    private readonly ImmutableArray<IProtocolProcessingFeature> _features;
-    private readonly Subject<IProtocolMessage> _onMessageReceived = new();
-    private readonly Subject<IProtocolMessage> _onMessageSent = new();
     private readonly Channel<IProtocolMessage> _outputChannel;
-    private readonly CancellationTokenSource _disposeCancel;
     private readonly ILogger<ProtocolEndpoint> _logger;
-    private int _isDisposed;
     private readonly IDisposable _parserSub;
     private readonly ReactiveProperty<bool> _isConnected = new (true);
     private readonly ImmutableHashSet<string> _parserAvailable;
 
-    protected ProtocolEndpoint(string id, ProtocolEndpointConfig config, ImmutableArray<IProtocolParser> parsers, ImmutableArray<IProtocolProcessingFeature> features, IProtocolCore core)
+    protected ProtocolEndpoint(string id, ProtocolEndpointConfig config, ImmutableArray<IProtocolParser> parsers, ImmutableArray<IProtocolFeature> features, IProtocolCore core)
+        :base(id, features,core)
     {
-        ArgumentNullException.ThrowIfNull(id);
         ArgumentNullException.ThrowIfNull(config);
         ArgumentNullException.ThrowIfNull(core);
-        _core = core;
         _readEmptyLoopDelay = TimeSpan.FromMilliseconds(config.ReadEmptyLoopDelayMs);
         _logger = core.LoggerFactory.CreateLogger<ProtocolEndpoint>();
-        Id = id;
-        _features = features;
         _parsers = parsers;
         _parserAvailable = _parsers.Select(x=>x.Info.Id).ToImmutableHashSet();
         var disposableBuilder = Disposable.CreateBuilder();
         foreach (var parser in _parsers)
         {
-            parser.OnMessage.Subscribe(InternalOnMessageReceived).AddTo(ref disposableBuilder);
+            parser.OnMessage.Subscribe(InternalPublishRxMessage).AddTo(ref disposableBuilder);
         }
         _parserSub = disposableBuilder.Build();
-        _disposeCancel = new CancellationTokenSource();
         _outputChannel = config.OutputQueueSize <= 0 
             ? Channel.CreateUnbounded<IProtocolMessage>() 
             : Channel.CreateBounded<IProtocolMessage>(config.OutputQueueSize);
@@ -71,44 +57,22 @@ public abstract class ProtocolEndpoint:  IProtocolEndpoint
         writeThread.Start();
         readThread.Start();
     }
-
-    private async void InternalOnMessageReceived(IProtocolMessage message)
-    {
-        try
-        {
-            Interlocked.Increment(ref _statMessageReceived);
-            Tags.AddRange(message.Tags);
-            foreach (var filter in _features)
-            {
-                if (await filter.ProcessReceiveMessage(ref message, this,_disposeCancel.Token) == false) return;
-            }
-            _onMessageReceived.OnNext(message);
-        }
-        catch (Exception e)
-        {
-            _logger.ZLogError(e, $"Error while processing message {message}");
-            _onMessageReceived.OnErrorResume(new ProtocolConnectionException(this, $"Error at message processing:{e.Message}",e));
-        }
-    }
-
-    public string Id { get; }
     private async void ReadLoop()
     {
         try
         {
-            while (_disposeCancel.IsCancellationRequested == false)
+            while (DisposeCancel.IsCancellationRequested == false)
             {
                 var bufferSize = GetAvailableBytesToRead();
                 if (bufferSize == 0)
                 {
                     // if no bytes received - wait some time
-                    await Task.Delay(_readEmptyLoopDelay, _core.TimeProvider, _disposeCancel.Token);
+                    await Task.Delay(_readEmptyLoopDelay, Core.TimeProvider, DisposeCancel);
                     continue;
                 }
 
                 using var mem = MemoryPool<byte>.Shared.Rent(bufferSize);
-                var readBytes = await InternalRead(mem.Memory, _disposeCancel.Token);
-                Interlocked.Add(ref _statBytesReceived, (uint)readBytes);
+                var readBytes = await InternalRead(mem.Memory, DisposeCancel);
                 for (var i = 0; i < readBytes; i++)
                 {
                     var b = mem.Memory.Span[i];
@@ -126,11 +90,11 @@ public abstract class ProtocolEndpoint:  IProtocolEndpoint
         catch (Exception e)
         {
             _logger.ZLogError(e, $"Error while reading loop {Id}");
-            _onMessageReceived.OnErrorResume(new ProtocolConnectionException(this, $"Error at read loop:{e.Message}",e));
+            InternalOnTxError(new ProtocolConnectionException(this, $"Error at read loop:{e.Message}",e));
             _isConnected.OnNext(false);
         }
     }
-
+    
     protected abstract int GetAvailableBytesToRead();
     protected abstract ValueTask<int> InternalRead(Memory<byte> memory, CancellationToken cancel);
     protected abstract ValueTask<int> InternalWrite(ReadOnlyMemory<byte> memory, CancellationToken cancel);
@@ -138,103 +102,64 @@ public abstract class ProtocolEndpoint:  IProtocolEndpoint
     {
         try
         {
-            while (_disposeCancel.IsCancellationRequested == false && _isConnected.CurrentValue)
+            while (DisposeCancel.IsCancellationRequested == false && _isConnected.CurrentValue)
             {
-                var msg = await _outputChannel.Reader.ReadAsync(_disposeCancel.Token);
+                var msg = await _outputChannel.Reader.ReadAsync(DisposeCancel);
                 // skip not supported messages
                 if (_parserAvailable.Contains(msg.Protocol.Id) == false) continue;
-                var filterResult = true;
-                foreach (var item in _features)
-                {
-                    if (await item.ProcessSendMessage(ref msg, this, _disposeCancel.Token)) continue;
-                    filterResult = false;
-                    break;
-                }
-                if (filterResult == false) continue;
-                using var mem = MemoryPool<byte>.Shared.Rent(msg.GetByteSize());
-                var writeBytes = await msg.Serialize(mem.Memory);
-                var sendBytes = await InternalWrite(mem.Memory[..writeBytes], _disposeCancel.Token);
+                var newMessage = await InternalFilterTxMessage(msg);
+                if (newMessage == null) continue;
+                using var mem = MemoryPool<byte>.Shared.Rent(newMessage.GetByteSize());
+                var writeBytes = await newMessage.Serialize(mem.Memory);
+                var sendBytes = await InternalWrite(mem.Memory[..writeBytes], DisposeCancel);
                 Debug.Assert(writeBytes == sendBytes);
-                Interlocked.Add(ref _statBytesSent, (uint)writeBytes);
-                Interlocked.Increment(ref _statMessageSent);
-                _onMessageSent.OnNext(msg);
+                InternalPublishTxMessage(newMessage);
             }
         }
         catch (Exception e)
         {
             _logger.ZLogError(e, $"Error while writing loop {Id}");
-            _onMessageSent.OnErrorResume(new ProtocolConnectionException(this, $"Error at write loop:{e.Message}",e));
+            InternalOnTxError(new ProtocolConnectionException(this, $"Error at write loop:{e.Message}",e));
             _isConnected.OnNext(false);
         }
     }
-    public uint StatRxBytes => _statBytesReceived;
-    public uint StatTxBytes => _statBytesSent;
-    public uint StatTxMessages => _statMessageSent;
-    public uint StatRxMessages => _statMessageReceived;
-    public ProtocolTags Tags { get; } = new();
-    public IEnumerable<IProtocolParser> Parsers => _parsers;
-    public Observable<IProtocolMessage> OnMessageReceived => _onMessageReceived;
-    public Observable<IProtocolMessage> OnMessageSent => _onMessageSent;
-    public ValueTask Send(IProtocolMessage message, CancellationToken cancel = default)
+  
+    public override ValueTask Send(IProtocolMessage message, CancellationToken cancel = default)
     {
         if (IsDisposed) return ValueTask.CompletedTask;
         if (_isConnected.CurrentValue == false) return ValueTask.CompletedTask;
         return _outputChannel.Writer.WriteAsync(message, cancel);
     }
 
+    public IEnumerable<IProtocolParser> Parsers => _parsers;
     public ReadOnlyReactiveProperty<bool> IsConnected => _isConnected;
 
     #region Dispose
 
-    public bool IsDisposed => _isDisposed != 0;
-    protected virtual void Dispose(bool disposing)
+    protected override void Dispose(bool disposing)
     {
         if (disposing)
         {
-            if (Interlocked.CompareExchange(ref _isDisposed, 1, 0) == 1)
-            {
-                _logger.ZLogTrace($"Skip duplicate {nameof(Dispose)} {Id}");
-                return;
-            }
             _logger.ZLogTrace($"{nameof(Dispose)} {Id}");
             foreach (var parser in _parsers)
             {
                 parser.Dispose();
             }
-            Tags.Clear();
             _isConnected.Dispose();
             _parserSub.Dispose();
-            _onMessageReceived.Dispose();
-            _onMessageSent.Dispose();
-            _disposeCancel.Dispose();
         }
     }
 
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
 
-    protected virtual async ValueTask DisposeAsyncCore()
+    protected override async ValueTask DisposeAsyncCore()
     {
-        if (Interlocked.CompareExchange(ref _isDisposed, 1, 0) == 1)
-        {
-            _logger.ZLogTrace($"Skip duplicate {nameof(DisposeAsync)} {Id}");
-            return;
-        }
         _logger.ZLogTrace($"{nameof(DisposeAsync)} {Id}");
-        
         await CastAndDispose(_isConnected);
         await CastAndDispose(_parserSub);
-        await CastAndDispose(_onMessageReceived);
-        await CastAndDispose(_onMessageSent);
-        await CastAndDispose(_disposeCancel);
         foreach (var parser in _parsers)
         {
             await CastAndDispose(parser);
         }
-        Tags.Clear();
         return;
 
         static async ValueTask CastAndDispose(IDisposable resource)
@@ -246,10 +171,9 @@ public abstract class ProtocolEndpoint:  IProtocolEndpoint
         }
     }
 
-    public async ValueTask DisposeAsync()
+    public override string ToString()
     {
-        await DisposeAsyncCore();
-        GC.SuppressFinalize(this);
+        return Id;
     }
 
     #endregion

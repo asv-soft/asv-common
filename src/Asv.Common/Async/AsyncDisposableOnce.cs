@@ -10,7 +10,7 @@ public abstract class AsyncDisposableOnce : IDisposable, IAsyncDisposable
     private volatile int _isDisposed;
 
     #region Disposing
-    protected bool IsDisposed => _isDisposed != 0;
+    public bool IsDisposed => _isDisposed != 0;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     protected void ThrowIfDisposed()

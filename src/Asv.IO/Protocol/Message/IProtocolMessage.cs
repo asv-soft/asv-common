@@ -2,7 +2,7 @@ using System;
 
 namespace Asv.IO;
 
-public interface IProtocolMessage:ISizedSpanSerializable
+public interface IProtocolMessage:ISizedSpanSerializable, ISupportTag
 {
     /// <summary>
     /// Gets the unique identifier of the protocol.
@@ -12,7 +12,6 @@ public interface IProtocolMessage:ISizedSpanSerializable
     /// assigned to the protocol.
     /// </remarks>
     ProtocolInfo Protocol { get; }
-    ProtocolTags Tags { get; }
     string Name { get; }
     string GetIdAsString();
 }

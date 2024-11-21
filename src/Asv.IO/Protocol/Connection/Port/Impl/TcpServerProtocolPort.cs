@@ -42,15 +42,15 @@ public class TcpServerProtocolPort:ProtocolPort
     private Socket? _socket;
     private Thread? _listenThread;
     private readonly ILogger<TcpServerProtocolPort> _logger;
-    private readonly ImmutableArray<IProtocolProcessingFeature> _features;
+    private readonly ImmutableArray<IProtocolFeature> _features;
 
     public TcpServerProtocolPort(
         TcpServerProtocolPortConfig config, 
-        ImmutableArray<IProtocolProcessingFeature> features, 
+        ImmutableArray<IProtocolFeature> features, 
         ImmutableDictionary<string, ParserFactoryDelegate> parsers,
         ImmutableArray<ProtocolInfo> protocols,
         IProtocolCore core) 
-        : base($"{Scheme}_{config.Host}_{config.Port}", config, features, parsers, protocols, core)
+        : base(ProtocolHelper.NormalizeId($"{Scheme}_{config.Host}_{config.Port}"), config, features, parsers, protocols, core)
     {
         ArgumentNullException.ThrowIfNull(config);
         ArgumentNullException.ThrowIfNull(features);
@@ -72,7 +72,7 @@ public class TcpServerProtocolPort:ProtocolPort
         _socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
         _socket.Bind(new IPEndPoint(IPAddress.Parse(_config.Host), _config.Port));
         _socket.Listen(_config.MaxConnection);
-        _listenThread = new Thread(AcceptNewEndpoint) { IsBackground = true, Name = Id };
+        _listenThread = new Thread(AcceptNewEndpoint) { IsBackground = true, Name = $"WAIT_CLIENTS_{Id}" };
         _listenThread.Start(token);
         
     }
@@ -88,7 +88,7 @@ public class TcpServerProtocolPort:ProtocolPort
                     var socket = _socket.Accept();
                     InternalAddConnection(new SocketProtocolEndpoint( 
                         socket,
-                        $"{Id}_{_socket.RemoteEndPoint}",
+                        ProtocolHelper.NormalizeId($"{Id}_{_socket.RemoteEndPoint}"),
                         _config,InternalCreateParsers(),_features,_core));
                 }
                 catch (Exception ex)
@@ -153,7 +153,7 @@ public static class TcpServerProtocolPortHelper
 {
     public static void RegisterTcpServerPort(this IProtocolBuilder builder)
     {
-        builder.RegisterPort(TcpServerProtocolPort.Info, 
+        builder.RegisterPortType(TcpServerProtocolPort.Info, 
             (args, features, parsers,protocols,core) 
                 => new TcpServerProtocolPort(TcpServerProtocolPortConfig.Parse(args), features, parsers, protocols, core));
     }

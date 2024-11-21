@@ -33,15 +33,15 @@ public class TcpClientProtocolPort:ProtocolPort
     private readonly TcpClientProtocolPortConfig _config;
     private readonly IProtocolCore _core;
     private Socket? _socket;
-    private readonly ImmutableArray<IProtocolProcessingFeature> _features;
+    private readonly ImmutableArray<IProtocolFeature> _features;
 
     public TcpClientProtocolPort(
         TcpClientProtocolPortConfig config, 
-        ImmutableArray<IProtocolProcessingFeature> features, 
+        ImmutableArray<IProtocolFeature> features, 
         ImmutableDictionary<string, ParserFactoryDelegate> parsers,
         ImmutableArray<ProtocolInfo> protocols,
         IProtocolCore core) 
-        : base($"{Scheme}_{config.Host}_{config.Port}", config, features, parsers, protocols, core)
+        : base(ProtocolHelper.NormalizeId($"{Scheme}_{config.Host}_{config.Port}"), config, features, parsers, protocols, core)
     {
         _config = config;
         _core = core;
@@ -67,7 +67,7 @@ public class TcpClientProtocolPort:ProtocolPort
         _socket.Connect(_config.Host,_config.Port);
         InternalAddConnection(new SocketProtocolEndpoint(
             _socket,
-            $"{Id}_{_socket.RemoteEndPoint}",
+            ProtocolHelper.NormalizeId($"{Id}_{_socket.RemoteEndPoint}"),
             _config,InternalCreateParsers(), _features, _core));
     }
 
@@ -100,7 +100,7 @@ public static class TcpClientProtocolPortHelper
 {
     public static void RegisterTcpClientPort(this IProtocolBuilder builder)
     {
-        builder.RegisterPort(TcpClientProtocolPort.Info, 
+        builder.RegisterPortType(TcpClientProtocolPort.Info, 
             (args, features, parsers,protocols,core) 
                 => new TcpClientProtocolPort(TcpClientProtocolPortConfig.Parse(args), features, parsers, protocols, core));
     }

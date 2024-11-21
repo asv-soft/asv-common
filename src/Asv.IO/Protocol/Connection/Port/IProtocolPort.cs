@@ -13,15 +13,13 @@ public enum ProtocolPortStatus
     Connected,
     Error
 }
-public interface IProtocolPort:IDisposable,IAsyncDisposable,IProtocolConnection
+public interface IProtocolPort:IDisposable,IAsyncDisposable,IProtocolConnection, ISupportTag
 {
-    string Id { get; }
     PortTypeInfo TypeInfo { get; }
     IEnumerable<ProtocolInfo> Protocols { get; }
     ReadOnlyReactiveProperty<ProtocolException?> Error { get; }
     ReadOnlyReactiveProperty<ProtocolPortStatus> Status { get; }
     ReadOnlyReactiveProperty<bool> IsEnabled { get; }
-    ProtocolTags Tags { get; }
     IReadOnlyObservableList<IProtocolEndpoint> Connections { get; }
     void Enable();
     void Disable();

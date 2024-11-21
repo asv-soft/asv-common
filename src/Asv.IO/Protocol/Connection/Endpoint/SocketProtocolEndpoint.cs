@@ -12,7 +12,7 @@ public class SocketProtocolEndpoint(
     string id,
     ProtocolEndpointConfig config,
     ImmutableArray<IProtocolParser> parsers,
-    ImmutableArray<IProtocolProcessingFeature> features,
+    ImmutableArray<IProtocolFeature> features,
     IProtocolCore core)
     : ProtocolEndpoint(id, config, parsers, features, core)
 {

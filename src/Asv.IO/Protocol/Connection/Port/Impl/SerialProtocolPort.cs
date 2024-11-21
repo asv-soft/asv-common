@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 using System.IO.Ports;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Asv.IO;
 
@@ -30,19 +31,21 @@ public class SerialProtocolPortConfig:ProtocolPortConfig
 
 }
 
-public class SerialProtocolPort:ProtocolPort
+public sealed class SerialProtocolPort:ProtocolPort
 {
+    
+
     public const string Scheme = "serial";
     public static readonly PortTypeInfo Info = new(Scheme, "Serial port");
     private readonly SerialProtocolPortConfig _config;
     private readonly IProtocolCore _core;
     private SerialPort? _serial;
-    private readonly ImmutableArray<IProtocolProcessingFeature> _features;
+    private readonly ImmutableArray<IProtocolFeature> _features;
 
 
     public SerialProtocolPort(
         SerialProtocolPortConfig config, 
-        ImmutableArray<IProtocolProcessingFeature> features, 
+        ImmutableArray<IProtocolFeature> features, 
         ImmutableDictionary<string, ParserFactoryDelegate> parsers,
         ImmutableArray<ProtocolInfo> protocols,
         IProtocolCore core) 
@@ -78,19 +81,47 @@ public class SerialProtocolPort:ProtocolPort
         _serial.Open();
         InternalAddConnection(new SerialProtocolEndpoint(
             _serial,
-            $"{Id}_{_config.BoundRate}_{_config.DataBits}_{_config.Parity}_{_config.StopBits}",
+            ProtocolHelper.NormalizeId($"{Id}_{_config.BoundRate}_{_config.DataBits}_{_config.Parity}_{_config.StopBits}"),
             _config,InternalCreateParsers(), _features, _core));
         
     }
 
-    
+    #region Dispose
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            if (_serial != null)
+            {
+                _serial.Close();
+                _serial.Dispose();
+                _serial = null;
+            }
+        }
+
+        base.Dispose(disposing);
+    }
+
+    protected override async ValueTask DisposeAsyncCore()
+    {
+        if (_serial != null)
+        {
+            _serial.Close();
+            _serial.Dispose();
+            _serial = null;
+        }
+        await base.DisposeAsyncCore();
+    }
+
+    #endregion
 }
 
 public static class SerialProtocolPortHelper
 {
     public static void RegisterSerialPort(this IProtocolBuilder builder)
     {
-        builder.RegisterPort(SerialProtocolPort.Info, 
+        builder.RegisterPortType(SerialProtocolPort.Info, 
             (args, features, parsers,protocols,core) 
                 => new SerialProtocolPort(SerialProtocolPortConfig.Parse(args), features, parsers,protocols,core));
     }

@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Asv.Common;
 using Microsoft.Extensions.Logging;
 using ObservableCollections;
 using R3;
@@ -21,7 +22,7 @@ public class ProtocolPortConfig : ProtocolEndpointConfig
     }
 }
 
-public abstract class ProtocolPort : IProtocolPort
+public abstract class ProtocolPort : ProtocolConnection, IProtocolPort
 {
     private int _isBusy;
     private readonly ProtocolPortConfig _config;
@@ -31,28 +32,23 @@ public abstract class ProtocolPort : IProtocolPort
     private readonly ILogger<ProtocolPort> _logger;
     private readonly ObservableList<IProtocolEndpoint> _connections = new();
     private readonly ReaderWriterLockSlim _connectionsLock = new();
-    private readonly Subject<IProtocolMessage> _onMessageReceived = new();
-    private readonly Subject<IProtocolMessage> _onMessageSent = new();
     private readonly ReactiveProperty<ProtocolException?> _error = new();
     private readonly ReactiveProperty<ProtocolPortStatus> _status = new();
     private readonly ReactiveProperty<bool> _isEnabled = new();
     private CancellationTokenSource? _startStopCancel;
     private ITimer? _reconnectTimer;
-    private int _isDisposed;
 
     protected ProtocolPort(string id,
         ProtocolPortConfig config,
-        ImmutableArray<IProtocolProcessingFeature> features,
+        ImmutableArray<IProtocolFeature> features,
         ImmutableDictionary<string, ParserFactoryDelegate> parsers,
         ImmutableArray<ProtocolInfo> protocols,
-        IProtocolCore core)
+        IProtocolCore core):base(id, features, core)
     {
         if (string.IsNullOrWhiteSpace(id))
             throw new ArgumentException("Value cannot be null or whitespace.", nameof(id));
-        Id = id;
         ArgumentNullException.ThrowIfNull(config);
         ArgumentNullException.ThrowIfNull(core);
-        Tags = new();
         _config = config;
         _parsers = parsers;
         _protocols = protocols;
@@ -91,9 +87,9 @@ public abstract class ProtocolPort : IProtocolPort
         try
         {
             _connections.Add(pipe);
-            // we no need to dispose subscriptions here, because it will be disposed by connection itself
+            // we don't need to dispose subscriptions here, because it will be disposed by connection itself
             pipe.IsConnected.Where(x => x == false).Subscribe(pipe, (x, p) => InternalRemoveConnection(p));
-            pipe.OnMessageReceived.Do(x=>Tags.AddRange(x.Tags)).Subscribe(_onMessageReceived.AsObserver());
+            pipe.OnRxMessage.Subscribe(InternalPublishRxMessage,InternalPublishRxError, _ => { });
         }
         catch (Exception e)
         {
@@ -109,13 +105,11 @@ public abstract class ProtocolPort : IProtocolPort
     {
         return [.._protocols.Select(x => _parsers[x.Id](_core))];
     }
-    public string Id { get; }
     public abstract PortTypeInfo TypeInfo { get; }
     public IEnumerable<ProtocolInfo> Protocols => _protocols;
     public ReadOnlyReactiveProperty<ProtocolException?> Error => _error;
     public ReadOnlyReactiveProperty<ProtocolPortStatus> Status => _status;
     public ReadOnlyReactiveProperty<bool> IsEnabled => _isEnabled;
-    public ProtocolTags Tags { get; }
     public IReadOnlyObservableList<IProtocolEndpoint> Connections => _connections;
     public void Enable()
     {
@@ -199,18 +193,17 @@ public abstract class ProtocolPort : IProtocolPort
     
     protected abstract void InternalSafeDisable();
     protected abstract void InternalSafeEnable(CancellationToken token);
-
-    public Observable<IProtocolMessage> OnMessageReceived => _onMessageReceived;
-    public Observable<IProtocolMessage> OnMessageSent => _onMessageSent;
-
-    public async ValueTask Send(IProtocolMessage message, CancellationToken cancel = default)
+    public override async ValueTask Send(IProtocolMessage message, CancellationToken cancel = default)
     {
-        _connectionsLock.EnterReadLock();
+        if (IsDisposed) return;
+        var newMessage = await InternalFilterTxMessage(message);
+        if (newMessage == null) return;
         try
         {
+            _connectionsLock.EnterReadLock();
             foreach (var connection in _connections)
             {
-                await connection.Send(message, cancel);
+                await connection.Send(newMessage, cancel);
             }
         }
         finally
@@ -226,15 +219,10 @@ public abstract class ProtocolPort : IProtocolPort
 
     #region Dispose
 
-    public bool IsDisposed => _isDisposed != 0;
-    protected virtual void Dispose(bool disposing)
+    protected override void Dispose(bool disposing)
     {
         if (disposing)
         {
-            if (Interlocked.CompareExchange(ref _isDisposed, 1, 0) == 1)
-            {
-                _logger.ZLogTrace($"Skip duplicate {nameof(Dispose)} call {this}");
-            }
             _connectionsLock.EnterWriteLock();
             try
             {
@@ -249,10 +237,7 @@ public abstract class ProtocolPort : IProtocolPort
                 _connectionsLock.ExitWriteLock();
             }
 
-            Tags.Clear();
             _connectionsLock.Dispose();
-            _onMessageReceived.Dispose();
-            _onMessageSent.Dispose();
             _error.Dispose();
             _status.Dispose();
             _isEnabled.Dispose();
@@ -261,15 +246,9 @@ public abstract class ProtocolPort : IProtocolPort
         }
     }
 
-    protected virtual async ValueTask DisposeAsyncCore()
+    protected override async ValueTask DisposeAsyncCore()
     {
-        if (Interlocked.CompareExchange(ref _isDisposed, 1, 0) == 1)
-        {
-            _logger.ZLogTrace($"Skip duplicate {nameof(DisposeAsync)} {Id}");
-            return;
-        }
         _logger.ZLogTrace($"{nameof(DisposeAsync)} {Id}");
-        
         _connectionsLock.EnterWriteLock();
         try
         {
@@ -284,8 +263,6 @@ public abstract class ProtocolPort : IProtocolPort
             _connectionsLock.ExitWriteLock();
         }
         await CastAndDispose(_connectionsLock);
-        await CastAndDispose(_onMessageReceived);
-        await CastAndDispose(_onMessageSent);
         await CastAndDispose(_error);
         await CastAndDispose(_status);
         await CastAndDispose(_isEnabled);
@@ -301,17 +278,6 @@ public abstract class ProtocolPort : IProtocolPort
             else
                 resource.Dispose();
         }
-    }
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        await DisposeAsyncCore();
-        GC.SuppressFinalize(this);
     }
 
     #endregion

@@ -33,8 +33,14 @@ public abstract class AsyncDisposableWithCancel: AsyncDisposableOnce
     {
         if (disposing)
         {
-            _cancel?.Cancel(false);
-            _cancel?.Dispose();
+            if ( _cancel != null)
+            {
+                if (_cancel.Token.CanBeCanceled)
+                {
+                    _cancel.Cancel(false);    
+                }
+                _cancel.Dispose();
+            }
         }
     }
 
@@ -42,7 +48,10 @@ public abstract class AsyncDisposableWithCancel: AsyncDisposableOnce
     {
         if (_cancel != null)
         {
-            await _cancel.CancelAsync();
+            if (_cancel.Token.CanBeCanceled)
+            {
+                await _cancel.CancelAsync();
+            }
             _cancel.Dispose();
         }
     }

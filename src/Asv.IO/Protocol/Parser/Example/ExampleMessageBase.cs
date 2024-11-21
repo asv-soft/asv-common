@@ -4,6 +4,8 @@ namespace Asv.IO;
 
 public abstract class ExampleMessageBase : IProtocolMessage<byte>
 {
+    private ProtocolTags _tags = [];
+
     public static byte CalcCrc(ReadOnlySpan<byte> buff)
     {
         byte crc = 0;
@@ -63,11 +65,13 @@ public abstract class ExampleMessageBase : IProtocolMessage<byte>
     protected abstract void InternalSerialize(ref Span<byte> buffer);
     protected abstract int InternalGetByteSize();
     
-    public virtual int GetByteSize() => 3 /*SYNC + ID + SIZE + CRC*/ + InternalGetByteSize();
+    public virtual int GetByteSize() => 4 /*SYNC + ID + SIZE + CRC*/ + InternalGetByteSize();
     
     public ProtocolInfo Protocol => ExampleProtocol.Info;
-    public ProtocolTags Tags { get; } = new();
+    
     public abstract string Name { get; }
     public string GetIdAsString() => Id.ToString();
     public abstract byte Id { get; }
+
+    public ref ProtocolTags Tags => ref _tags;
 }
