@@ -6,6 +6,6 @@ public static class ExampleProtocol
 
     public static void RegisterExampleProtocol(this IProtocolBuilder builder)
     {
-        builder.RegisterProtocol(Info, (core) => new ExampleParser(ExampleMessageFactory.Instance, core));
+        builder.RegisterProtocol(Info, (core,stat) => new ExampleParser(ExampleMessageFactory.Instance, core,stat));
     }
 }

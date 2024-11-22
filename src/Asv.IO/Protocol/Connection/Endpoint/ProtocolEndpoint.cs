@@ -18,9 +18,11 @@ public class ProtocolEndpointConfig
 {
     public int OutputQueueSize { get; set; } = 100;
     public int ReadEmptyLoopDelayMs { get; set; } = 30;
+    public bool DropMessageWhenFullTxQueue { get; set; } = false;
+
     public override string ToString()
     {
-        return $"{nameof(OutputQueueSize)}: {OutputQueueSize}, {nameof(ReadEmptyLoopDelayMs)}: {ReadEmptyLoopDelayMs}";
+        return $"{nameof(OutputQueueSize)}: {OutputQueueSize}, {nameof(ReadEmptyLoopDelayMs)}: {ReadEmptyLoopDelayMs} {nameof(DropMessageWhenFullTxQueue)}: {DropMessageWhenFullTxQueue}";
     }
 }
 public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
@@ -33,8 +35,16 @@ public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
     private readonly ReactiveProperty<bool> _isConnected = new (true);
     private readonly ImmutableHashSet<string> _parserAvailable;
 
-    protected ProtocolEndpoint(string id, ProtocolEndpointConfig config, ImmutableArray<IProtocolParser> parsers, ImmutableArray<IProtocolFeature> features, IProtocolCore core)
-        :base(id, features,core)
+    protected ProtocolEndpoint(
+        string id, 
+        ProtocolEndpointConfig config, 
+        ImmutableArray<IProtocolParser> parsers, 
+        ImmutableArray<IProtocolFeature> features,
+        ChannelWriter<IProtocolMessage> rxChannel, 
+        ChannelWriter<ProtocolException> errorChannel,
+        IProtocolCore core,
+        IStatisticHandler? statistic = null)
+        :base(id, features, rxChannel, errorChannel,core,statistic)
     {
         ArgumentNullException.ThrowIfNull(config);
         ArgumentNullException.ThrowIfNull(core);
@@ -45,18 +55,32 @@ public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
         var disposableBuilder = Disposable.CreateBuilder();
         foreach (var parser in _parsers)
         {
-            parser.OnMessage.Subscribe(InternalPublishRxMessage).AddTo(ref disposableBuilder);
+            parser.OnMessage
+                .Subscribe(InternalPublishRxMessage)
+                .AddTo(ref disposableBuilder);
         }
         _parserSub = disposableBuilder.Build();
         _outputChannel = config.OutputQueueSize <= 0 
             ? Channel.CreateUnbounded<IProtocolMessage>() 
-            : Channel.CreateBounded<IProtocolMessage>(config.OutputQueueSize);
+            : Channel.CreateBounded<IProtocolMessage>(new BoundedChannelOptions(config.OutputQueueSize)
+            {
+                AllowSynchronousContinuations = false,
+                SingleReader = true,
+                SingleWriter = false,
+                FullMode = config.DropMessageWhenFullTxQueue ? BoundedChannelFullMode.DropOldest: BoundedChannelFullMode.Wait
+            }, ItemDropped);
         
         var writeThread = new Thread(WriteLoop) { IsBackground = true, Name = $"{id} WriteLoop" };
         var readThread = new Thread(ReadLoop) { IsBackground = true, Name = $"{id} ReadLoop" };
         writeThread.Start();
         readThread.Start();
     }
+
+    private void ItemDropped(IProtocolMessage droppedMessage)
+    {
+        _logger.ZLogTrace($"Dropped message (rx queue is full) {droppedMessage.Protocol.Id} {droppedMessage.Name} "); 
+    }
+
     private async void ReadLoop()
     {
         try
@@ -73,6 +97,7 @@ public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
 
                 using var mem = MemoryPool<byte>.Shared.Rent(bufferSize);
                 var readBytes = await InternalRead(mem.Memory, DisposeCancel);
+                StatisticHandler.AddRxBytes(readBytes);
                 for (var i = 0; i < readBytes; i++)
                 {
                     var b = mem.Memory.Span[i];
@@ -109,11 +134,13 @@ public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
                 if (_parserAvailable.Contains(msg.Protocol.Id) == false) continue;
                 var newMessage = await InternalFilterTxMessage(msg);
                 if (newMessage == null) continue;
-                using var mem = MemoryPool<byte>.Shared.Rent(newMessage.GetByteSize());
+                var size = newMessage.GetByteSize();
+                using var mem = MemoryPool<byte>.Shared.Rent(size);
                 var writeBytes = await newMessage.Serialize(mem.Memory);
                 var sendBytes = await InternalWrite(mem.Memory[..writeBytes], DisposeCancel);
                 Debug.Assert(writeBytes == sendBytes);
-                InternalPublishTxMessage(newMessage);
+                StatisticHandler.AddTxBytes(sendBytes);
+                StatisticHandler.IncrementTxMessages();
             }
         }
         catch (Exception e)
@@ -173,7 +200,7 @@ public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
 
     public override string ToString()
     {
-        return Id;
+        return $"[ENDPOINT]({Id})";
     }
 
     #endregion

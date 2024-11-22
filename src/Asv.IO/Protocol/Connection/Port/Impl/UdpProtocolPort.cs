@@ -6,6 +6,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using ZLogger;
@@ -56,20 +57,27 @@ public class UdpProtocolPort:ProtocolPort
     private Socket? _socket;
     private readonly ILogger<UdpProtocolPort> _logger;
     private readonly ImmutableArray<IProtocolFeature> _features;
+    private readonly ChannelWriter<IProtocolMessage> _rxChannel;
+    private readonly ChannelWriter<ProtocolException> _errorChannel;
 
     public UdpProtocolPort(
         UdpProtocolPortConfig config,
         ImmutableArray<IProtocolFeature> features, 
+        ChannelWriter<IProtocolMessage> rxChannel, 
+        ChannelWriter<ProtocolException> errorChannel,
         ImmutableDictionary<string, ParserFactoryDelegate> parsers,
         ImmutableArray<ProtocolInfo> protocols,
-        IProtocolCore core) 
-        : base(ProtocolHelper.NormalizeId($"{Scheme}_{config.LocalHost}_{config.LocalPort}"), config, features, parsers, protocols, core)
+        IProtocolCore core,
+        IStatisticHandler statistic) 
+        : base(ProtocolHelper.NormalizeId($"{Scheme}_{config.LocalHost}_{config.LocalPort}"), config, features,rxChannel,errorChannel, parsers, protocols, core,statistic)
     {
         ArgumentNullException.ThrowIfNull(config);
         ArgumentNullException.ThrowIfNull(features);
         ArgumentNullException.ThrowIfNull(core);
         _config = config;
         _features = features;
+        _rxChannel = rxChannel;
+        _errorChannel = errorChannel;
         _core = core;
         _logger = core.LoggerFactory.CreateLogger<UdpProtocolPort>();
         _receiveEndPoint = new IPEndPoint(IPAddress.Parse(config.LocalHost), config.LocalPort);
@@ -77,7 +85,6 @@ public class UdpProtocolPort:ProtocolPort
         {
             _sendEndPoint = new IPEndPoint(IPAddress.Parse(config.RemoteHost), config.RemotePort.Value);
         }
-       
     }
 
     public override PortTypeInfo TypeInfo => Info;
@@ -104,7 +111,7 @@ public class UdpProtocolPort:ProtocolPort
         {
             _socket.Connect(_sendEndPoint);
             InternalAddConnection(new SocketProtocolEndpoint(
-                _socket,ProtocolHelper.NormalizeId($"{Id}_{_sendEndPoint}"), _config, InternalCreateParsers(),_features, _core));
+                _socket,ProtocolHelper.NormalizeId($"{Id}_{_sendEndPoint}"), _config, InternalCreateParsers(),_features, _rxChannel,_errorChannel, _core,StatisticHandler));
         }
     }
     
@@ -121,7 +128,7 @@ public class UdpProtocolPort:ProtocolPort
             _socket.ReceiveFrom(span, ref val);
             _socket.Connect(val);
             InternalAddConnection(new SocketProtocolEndpoint(
-                _socket, ProtocolHelper.NormalizeId($"{Id}_{val}"), _config, InternalCreateParsers(),_features, _core));
+                _socket, ProtocolHelper.NormalizeId($"{Id}_{val}"), _config, InternalCreateParsers(),_features,_rxChannel,_errorChannel, _core,StatisticHandler));
         }
         catch (ThreadAbortException ex)
         {
@@ -136,7 +143,7 @@ public static class UdpProtocolPortHelper
     public static void RegisterUdpPort(this IProtocolBuilder builder)
     {
         builder.RegisterPortType(UdpProtocolPort.Info, 
-            (args, features, parsers,protocols,core) 
-                => new UdpProtocolPort(UdpProtocolPortConfig.Parse(args), features, parsers, protocols, core));
+            (args, features, rx, error, parsers,protocols,core,stat) 
+                => new UdpProtocolPort(UdpProtocolPortConfig.Parse(args), features,rx,error, parsers, protocols, core,stat));
     }
 }

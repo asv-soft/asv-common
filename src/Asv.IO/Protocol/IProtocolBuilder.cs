@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 using System.Collections.Specialized;
 using System.Diagnostics.Metrics;
 using System.Linq;
+using System.Threading.Channels;
 using Microsoft.Extensions.Logging;
 
 namespace Asv.IO;
@@ -30,11 +31,14 @@ public class PortArgs
 public delegate IProtocolPort PortFactoryDelegate(
     PortArgs args,
     ImmutableArray<IProtocolFeature> features,
+    ChannelWriter<IProtocolMessage> rxChannel, 
+    ChannelWriter<ProtocolException> errorChannel,
     ImmutableDictionary<string, ParserFactoryDelegate> parsers,
     ImmutableArray<ProtocolInfo> protocols,
-    IProtocolCore core);
+    IProtocolCore core, 
+    IStatisticHandler statistic);
 
-public delegate IProtocolParser ParserFactoryDelegate(IProtocolCore core);
+public delegate IProtocolParser ParserFactoryDelegate(IProtocolCore core, IStatisticHandler statistic);
 
 public interface IProtocolBuilder
 {
@@ -44,7 +48,7 @@ public interface IProtocolBuilder
     void ClearFeatures();
     void EnableFeature(IProtocolFeature feature);
     void ClearPrinters();
-    void AddPrinter(IProtocolMessagePrinter printer);
+    void AddPrinter(IProtocolMessageFormatter formatter);
     void ClearProtocols();
     void RegisterProtocol(ProtocolInfo info, ParserFactoryDelegate factory);
     void ClearPorts();
@@ -61,7 +65,7 @@ public sealed class ProtocolBuilder : IProtocolBuilder
     private readonly ImmutableArray<ProtocolInfo>.Builder _protocolInfoBuilder = ImmutableArray.CreateBuilder<ProtocolInfo>();
     private readonly ImmutableDictionary<string, PortFactoryDelegate>.Builder _portBuilder = ImmutableDictionary.CreateBuilder<string, PortFactoryDelegate>();
     private readonly ImmutableArray<PortTypeInfo>.Builder _portTypeInfoBuilder = ImmutableArray.CreateBuilder<PortTypeInfo>();
-    private readonly List<IProtocolMessagePrinter> _printers = new();
+    private readonly List<IProtocolMessageFormatter> _printers = new();
 
     internal ProtocolBuilder()
     {
@@ -104,9 +108,9 @@ public sealed class ProtocolBuilder : IProtocolBuilder
     {
         _printers.Clear();
     }
-    public void AddPrinter(IProtocolMessagePrinter printer)
+    public void AddPrinter(IProtocolMessageFormatter formatter)
     {
-        _printers.Add(printer);        
+        _printers.Add(formatter);        
     }
 
     public void ClearProtocols()

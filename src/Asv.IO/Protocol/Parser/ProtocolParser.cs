@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Immutable;
-using System.Threading;
 using System.Threading.Tasks;
 using Asv.Common;
 using R3;
@@ -13,17 +11,28 @@ public abstract class ProtocolParser<TMessage,TMessageId> : AsyncDisposableOnce,
 {
     private readonly IProtocolMessageFactory<TMessage,TMessageId> _messageFactory;
     private readonly Subject<IProtocolMessage> _onMessage = new();
-    private uint _readBytes;
-    private uint _readMessages;
 
-    protected ProtocolParser(IProtocolMessageFactory<TMessage,TMessageId> messageFactory, IProtocolCore core)
+    protected ProtocolParser(IProtocolMessageFactory<TMessage,TMessageId> messageFactory, IProtocolCore core, IStatisticHandler? statisticHandler)
     {
         ArgumentNullException.ThrowIfNull(messageFactory);
         _messageFactory = messageFactory;
         Tags = new ProtocolTags();
+        if (statisticHandler == null)
+        {
+            var value = new Statistic();
+            Statistic = value;
+            StatisticHandler = value;
+        }
+        else
+        {
+            var value = new InheritedStatistic(statisticHandler);
+            Statistic = value;
+            StatisticHandler = value;
+        }
     }
-    public uint StatRxBytes => _readBytes;
-    public uint StatRxMessages => _readMessages;
+
+    private IStatisticHandler StatisticHandler { get; }
+    public IStatistic Statistic { get; }
     public abstract ProtocolInfo Info { get; }
     public ProtocolTags Tags { get; }
     public Observable<IProtocolMessage> OnMessage => _onMessage;
@@ -35,31 +44,41 @@ public abstract class ProtocolParser<TMessage,TMessageId> : AsyncDisposableOnce,
         if (message == null)
         {
             InternalOnError(new ProtocolParserUnknownMessageException(Info,id));
+            StatisticHandler.IncrementParserUnknownMessageError();
             return;
         }
+
         try
         {
             var count = data.Length;
             message.Deserialize(ref data);
-            Interlocked.Add(ref _readBytes, (uint)(count - data.Length));
+            StatisticHandler.AddParserBytes(count);
+        }
+        catch (ProtocolParserCrcException ex)
+        {
+            InternalOnError(ex);
+            StatisticHandler.IncrementParserBadCrcError();
         }
         catch (Exception e)
         {
+            StatisticHandler.IncrementParserDeserializeError();
             InternalOnError(new ProtocolDeserializeMessageException(Info, message, e));
             return;
         }
-        Interlocked.Increment(ref _readMessages);
         try
         {
+            StatisticHandler.IncrementParsedMessage();
             _onMessage.OnNext(message);
         }
         catch (Exception e)
         {
+            StatisticHandler.IncrementParserPublishError();
             InternalOnError(new ProtocolPublishMessageException(Info, message, e));
         }
 
         if (!ignoreReadNotAllData && !data.IsEmpty)
         {
+            StatisticHandler.IncrementParserReadNotAllDataError();
             InternalOnError(new ProtocolParserReadNotAllDataWhenDeserializePacketException(Info, message));
         }
     }

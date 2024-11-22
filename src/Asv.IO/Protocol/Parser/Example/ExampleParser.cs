@@ -3,8 +3,8 @@ using System.Buffers;
 
 namespace Asv.IO;
 
-public class ExampleParser(IProtocolMessageFactory<ExampleMessageBase,byte> messageFactory, IProtocolCore core)
-    : ProtocolParser<ExampleMessageBase, byte>(messageFactory,core)
+public class ExampleParser(IProtocolMessageFactory<ExampleMessageBase,byte> messageFactory, IProtocolCore core, IStatisticHandler statisticHandler)
+    : ProtocolParser<ExampleMessageBase, byte>(messageFactory,core,statisticHandler)
 {
     private const int MaxMessageSize = 255;
     public const byte SyncByte = 0x0A;
@@ -42,7 +42,14 @@ public class ExampleParser(IProtocolMessageFactory<ExampleMessageBase,byte> mess
                 _buffer[2] = data;
                 _size = data;
                 _read = 0;
-                _state = State.MessageData;
+                if (_size == 0)
+                {
+                    _state = State.Crc;
+                }
+                else
+                {
+                    _state = State.MessageData;
+                }
                 return false;
             case State.MessageData:
                 _buffer[3 + _read] = data;

@@ -1,6 +1,6 @@
 namespace Asv.IO;
 
-public interface IProtocolMessagePrinter
+public interface IProtocolMessageFormatter
 {
     string Name { get; }
     int Order { get; }
@@ -12,6 +12,6 @@ public static class ProtocolMessagePrinter
 {
     public static void AddPrinterJson(this IProtocolBuilder builder)
     {
-        builder.AddPrinter(new JsonMessagePrinter());
+        builder.AddPrinter(new JsonMessageFormatter());
     }
 }

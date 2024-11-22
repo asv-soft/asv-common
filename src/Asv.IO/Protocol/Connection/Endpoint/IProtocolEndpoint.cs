@@ -6,13 +6,8 @@ using R3;
 
 namespace Asv.IO;
 
-public interface IProtocolEndpoint:IDisposable, IAsyncDisposable,IProtocolConnection, ISupportTag
+public interface IProtocolEndpoint:IDisposable, IAsyncDisposable,IProtocolConnection
 {
-    string Id { get; }
-    uint StatRxBytes { get; }
-    uint StatTxBytes { get; }
-    uint StatRxMessages { get; }
-    uint StatTxMessages { get; }
     IEnumerable<IProtocolParser> Parsers { get; }
     ReadOnlyReactiveProperty<bool> IsConnected { get; }
     bool IsDisposed { get; }

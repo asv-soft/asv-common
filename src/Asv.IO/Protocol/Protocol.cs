@@ -6,7 +6,7 @@ using System.Linq;
 
 namespace Asv.IO;
 
-public class Protocol:IProtocol
+public class Protocol: IProtocol
 {
     #region Static
 
@@ -41,15 +41,17 @@ public class Protocol:IProtocol
     private readonly ImmutableArray<ProtocolInfo> _protocols;
     private readonly ImmutableDictionary<string, PortFactoryDelegate> _ports;
     private readonly ImmutableArray<PortTypeInfo> _portInfos;
-    private readonly ImmutableArray<IProtocolMessagePrinter> _printers;
+    private readonly ImmutableArray<IProtocolMessageFormatter> _printers;
     private readonly IProtocolCore _core;
+    private readonly Statistic _statistic;
+
     internal Protocol(
         ImmutableArray<IProtocolFeature> features, 
         ImmutableDictionary<string, ParserFactoryDelegate> parsers, 
         ImmutableArray<ProtocolInfo> protocols, 
         ImmutableDictionary<string,PortFactoryDelegate> ports, 
         ImmutableArray<PortTypeInfo> portInfos,
-        ImmutableArray<IProtocolMessagePrinter> printers,
+        ImmutableArray<IProtocolMessageFormatter> printers,
         IProtocolCore core)
     {
         _features = features;
@@ -59,13 +61,15 @@ public class Protocol:IProtocol
         _portInfos = portInfos;
         _printers = printers;
         _core = core;
+        _statistic = new Statistic();
     }
 
+    public IStatistic Statistic => _statistic;
     public IProtocolCore Core => _core;
     public ImmutableArray<IProtocolFeature> Features => _features;
-    public IEnumerable<PortTypeInfo> Ports => _portInfos;
-    public IEnumerable<ProtocolInfo> Protocols => _protocols;
-    public IProtocolPort CreatePort(Uri connectionString)
+    public ImmutableArray<PortTypeInfo> AvailablePortTypes => _portInfos;
+    public ImmutableArray<ProtocolInfo> AvailableProtocols => _protocols;
+    public IProtocolPort AddPort(Uri connectionString)
     {
         if (!_ports.TryGetValue(connectionString.Scheme, out var factory))
         {
@@ -94,7 +98,6 @@ public class Protocol:IProtocol
 
         var selectedProtocol =  _protocols.Where(x => protocols.Contains(x.Id)).ToImmutableArray();
         
-        var query = ParseQueryString(connectionString.Query);
         var args = new PortArgs
         {
             UserInfo = connectionString.UserInfo,
@@ -103,21 +106,21 @@ public class Protocol:IProtocol
             Path = connectionString.AbsolutePath,
             Query = ParseQueryString(connectionString.Query)
         };
-        return factory(args, _features, _parsers, selectedProtocol , _core);
+        return factory(args, _features, _parsers, selectedProtocol , _core, _statistic);
     }
 
     public IProtocolParser CreateParser(string protocolId)
     {
         if (_parsers.TryGetValue(protocolId, out var factory))
         {
-            return factory(_core);
+            return factory(_core, _statistic);
         }
         throw new InvalidOperationException($"Parser for protocol '{protocolId}' not found");
     }
 
     public IProtocolRouter CreateRouter(string id)
     {
-        return new ProtocolRouter(id,this);
+        return new ProtocolRouter(id,this,_statistic);
     }
 
     public string? PrintMessage(IProtocolMessage message, PacketFormatting formatting = PacketFormatting.Inline)

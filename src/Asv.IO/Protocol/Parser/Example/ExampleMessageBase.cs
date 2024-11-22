@@ -53,13 +53,14 @@ public abstract class ExampleMessageBase : IProtocolMessage<byte>
         var origin = buffer;
         BinSerialize.WriteByte(ref buffer, ExampleParser.SyncByte);
         BinSerialize.WriteByte(ref buffer, Id);
-        var sizeSpan = buffer;
+        var sizeRef = buffer;
         buffer = buffer[1..];
         var payload = buffer;
         InternalSerialize(ref buffer);
         var size = (byte)(payload.Length - buffer.Length);
-        BinSerialize.WriteByte(ref sizeSpan, size);
-        BinSerialize.WriteByte(ref buffer, CalcCrc(origin[1..^1]));
+        BinSerialize.WriteByte(ref sizeRef, size);
+        var forCrc = origin[1..(size + 3)];
+        BinSerialize.WriteByte(ref buffer, CalcCrc(forCrc));
     }
     protected abstract void InternalDeserialize(ref ReadOnlySpan<byte> buffer);
     protected abstract void InternalSerialize(ref Span<byte> buffer);

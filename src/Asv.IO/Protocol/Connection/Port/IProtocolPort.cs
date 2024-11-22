@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using ObservableCollections;
 using R3;
@@ -13,14 +14,16 @@ public enum ProtocolPortStatus
     Connected,
     Error
 }
-public interface IProtocolPort:IDisposable,IAsyncDisposable,IProtocolConnection, ISupportTag
+public interface IProtocolPort:IDisposable,IAsyncDisposable,IProtocolConnection
 {
     PortTypeInfo TypeInfo { get; }
     IEnumerable<ProtocolInfo> Protocols { get; }
     ReadOnlyReactiveProperty<ProtocolException?> Error { get; }
     ReadOnlyReactiveProperty<ProtocolPortStatus> Status { get; }
     ReadOnlyReactiveProperty<bool> IsEnabled { get; }
-    IReadOnlyObservableList<IProtocolEndpoint> Connections { get; }
+    ImmutableArray<IProtocolEndpoint> Endpoints { get; }
+    Observable<IProtocolEndpoint> EndpointAdded { get; }
+    Observable<IProtocolEndpoint> EndpointRemoved { get; }
     void Enable();
     void Disable();
     bool IsDisposed { get; }

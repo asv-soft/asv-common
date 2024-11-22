@@ -2,13 +2,16 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Asv.Common;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using R3;
 using ZLogger;
 
 namespace Asv.IO;
@@ -19,6 +22,29 @@ namespace Asv.IO;
 public static class ConsoleAppHelper
 {
 
+    public static ILoggerFactory CreateDefaultLog(LogLevel logLevel = LogLevel.Trace, string? folder = null)
+    {
+        return LoggerFactory.Create(builder =>
+        {
+            builder.ClearProviders();
+            builder.SetMinimumLevel(logLevel);
+            builder.AddZLoggerConsole(options =>
+            {
+                options.IncludeScopes = true;
+                
+                options.UsePlainTextFormatter(formatter =>
+                {
+                    formatter.SetPrefixFormatter($"{0:HH:mm:ss.fff} | ={1:short}= | {2,-40} ", (in MessageTemplate template, in LogInfo info) => template.Format(info.Timestamp, info.LogLevel,info.Category));
+                    formatter.SetExceptionFormatter((writer, ex) => Utf8StringInterpolation.Utf8String.Format(writer, $"{ex.Message}"));
+                });
+            });
+            if (folder != null)
+            {
+                builder.AddZLoggerRollingFile((dt, index) => $"{folder}/{dt:yyyy-MM-dd}_{index}.logs", 1024 * 1024);    
+            }
+        });
+    }
+    
     public static IDisposable WaitCancelPressOrProcessExit(ILogger? logger = null)
     {
         var waitForProcessShutdownStart = new ManualResetEventSlim();
@@ -40,17 +66,27 @@ public static class ConsoleAppHelper
     }
     public static void HandleExceptions(ILogger logger)
     {
+        ObservableSystem.RegisterUnhandledExceptionHandler(ex =>
+        {
+            {
+                logger.ZLogCritical(ex,
+                    $"R3 unobserved exception: {ex.Message}");
+                Debug.Fail($"R3 unobserved exception: {ex.Message}");
+            };
+        });
         TaskScheduler.UnobservedTaskException +=
             (sender, args) =>
             {
                 logger.ZLogCritical(args.Exception,
                     $"Task scheduler unobserved task exception from '{sender}': {args.Exception.Message}");
+                Debug.Fail($"R3 unobserved exception: {args.Exception.Message}");
             };
 
         AppDomain.CurrentDomain.UnhandledException +=
             (sender, eventArgs) =>
             {
                 logger.ZLogCritical($"Unhandled AppDomain exception. Sender '{sender}'. Args: {eventArgs.ExceptionObject}");
+                Debug.Fail($"R3 unobserved exception: {eventArgs.ExceptionObject}");
             };
     }
     /// <summary>
@@ -151,6 +187,17 @@ public static class ConsoleAppHelper
         Console.WriteLine(src.PrintWelcome(additionalValues));
         Console.ForegroundColor = old;
     }
+    
+   
+    public static void PrintWelcomeToLog(this Assembly src, ILogger logger,
+        params KeyValuePair<string, string>[] additionalValues)
+    {
+        using var rdr = new StreamReader(new MemoryStream(Encoding.UTF8.GetBytes(src.PrintWelcome(additionalValues))));
+        while (rdr.EndOfStream == false)
+        {
+            logger.LogInformation(rdr.ReadLine());    
+        }
+    }
 
     /// <summary>
     /// Prints the welcome message.
@@ -179,6 +226,7 @@ public static class ConsoleAppHelper
             new("OS", Environment.OSVersion.ToString()),
             new("Machine", Environment.MachineName),
             new("Environment", Environment.Version.ToString()),
+            new("Is64BitProcess", Environment.Is64BitProcess.ToString()),
         };
 
         if (additionalValues != null) values.AddRange(additionalValues);

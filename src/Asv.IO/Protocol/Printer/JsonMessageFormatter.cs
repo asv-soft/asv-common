@@ -3,9 +3,9 @@ using Newtonsoft.Json;
 
 namespace Asv.IO;
 
-public class JsonMessagePrinter:IProtocolMessagePrinter
+public class JsonMessageFormatter:IProtocolMessageFormatter
 {
-    public const string PrinterName = "Default JSON printer";
+    public const string PrinterName = "Default JSON formatter";
 
     public string Name => PrinterName;
     public int Order => int.MaxValue;

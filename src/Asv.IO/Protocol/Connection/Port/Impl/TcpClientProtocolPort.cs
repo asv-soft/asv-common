@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 
 namespace Asv.IO;
@@ -34,18 +35,25 @@ public class TcpClientProtocolPort:ProtocolPort
     private readonly IProtocolCore _core;
     private Socket? _socket;
     private readonly ImmutableArray<IProtocolFeature> _features;
+    private readonly ChannelWriter<IProtocolMessage> _rxChannel;
+    private readonly ChannelWriter<ProtocolException> _errorChannel;
 
     public TcpClientProtocolPort(
         TcpClientProtocolPortConfig config, 
         ImmutableArray<IProtocolFeature> features, 
+        ChannelWriter<IProtocolMessage> rxChannel, 
+        ChannelWriter<ProtocolException> errorChannel,
         ImmutableDictionary<string, ParserFactoryDelegate> parsers,
         ImmutableArray<ProtocolInfo> protocols,
-        IProtocolCore core) 
-        : base(ProtocolHelper.NormalizeId($"{Scheme}_{config.Host}_{config.Port}"), config, features, parsers, protocols, core)
+        IProtocolCore core,
+        IStatisticHandler statistic) 
+        : base(ProtocolHelper.NormalizeId($"{Scheme}_{config.Host}_{config.Port}"), config, features, rxChannel,errorChannel, parsers, protocols, core,statistic)
     {
         _config = config;
         _core = core;
         _features = features;
+        _rxChannel = rxChannel;
+        _errorChannel = errorChannel;
         ArgumentNullException.ThrowIfNull(config);
     }
     public override PortTypeInfo TypeInfo => Info;
@@ -68,7 +76,7 @@ public class TcpClientProtocolPort:ProtocolPort
         InternalAddConnection(new SocketProtocolEndpoint(
             _socket,
             ProtocolHelper.NormalizeId($"{Id}_{_socket.RemoteEndPoint}"),
-            _config,InternalCreateParsers(), _features, _core));
+            _config,InternalCreateParsers(), _features, _rxChannel,_errorChannel,  _core,StatisticHandler));
     }
 
     #region Dispose
@@ -101,7 +109,7 @@ public static class TcpClientProtocolPortHelper
     public static void RegisterTcpClientPort(this IProtocolBuilder builder)
     {
         builder.RegisterPortType(TcpClientProtocolPort.Info, 
-            (args, features, parsers,protocols,core) 
-                => new TcpClientProtocolPort(TcpClientProtocolPortConfig.Parse(args), features, parsers, protocols, core));
+            (args, features, rx, error, parsers,protocols,core,stat) 
+                => new TcpClientProtocolPort(TcpClientProtocolPortConfig.Parse(args), features, rx, error, parsers, protocols, core,stat));
     }
 }

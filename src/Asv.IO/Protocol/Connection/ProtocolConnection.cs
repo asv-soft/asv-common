@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Immutable;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using Asv.Common;
 using Microsoft.Extensions.Logging;
@@ -9,28 +10,39 @@ using ZLogger;
 
 namespace Asv.IO;
 
-public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolConnection, ISupportTag
+public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolConnection
 {
     private readonly ImmutableArray<IProtocolFeature> _features;
-    private readonly Subject<IProtocolMessage> _internalRxMessage = new();
-    private readonly Subject<IProtocolMessage> _internalTxMessage = new();
+    private readonly ChannelWriter<IProtocolMessage> _rxChannel;
+    private readonly ChannelWriter<ProtocolException> _errorChannel;
     private ProtocolTags _internalTags = [];
-    private uint _statRxBytes;
-    private uint _statTxBytes;
-    private uint _statRxMessages;
-    private uint _statTxMessages;
-    private uint _statRxError;
-    private uint _statTxError;
     private readonly ILogger<ProtocolConnection> _logger;
 
-    protected ProtocolConnection(string id, ImmutableArray<IProtocolFeature> features, IProtocolCore core)
+    protected ProtocolConnection(string id, ImmutableArray<IProtocolFeature> features,
+        ChannelWriter<IProtocolMessage> rxChannel, ChannelWriter<ProtocolException> errorChannel, IProtocolCore core, IStatisticHandler? statistic = null)
     {
-        _features = features;
         ArgumentNullException.ThrowIfNull(id);
+        ArgumentNullException.ThrowIfNull(rxChannel);
+        ArgumentNullException.ThrowIfNull(errorChannel);
         ArgumentNullException.ThrowIfNull(core);
+        _logger = core.LoggerFactory.CreateLogger<ProtocolConnection>();
+        _features = features;
+        _rxChannel = rxChannel;
+        _errorChannel = errorChannel;
+        if (statistic == null)
+        {
+            var value = new Statistic();
+            Statistic = value;
+            StatisticHandler = value;
+        }
+        else
+        {
+            var value = new InheritedStatistic(statistic);
+            Statistic = value;
+            StatisticHandler = value;
+        }
         Id = id;
         Core = core;
-        _logger = core.LoggerFactory.CreateLogger<ProtocolConnection>();
         foreach (var feature in _features)
         {
             feature.Register(this);
@@ -38,17 +50,9 @@ public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolC
     }
 
     public string Id { get; }
+    public IStatistic Statistic { get; }
+    protected IStatisticHandler StatisticHandler { get; }
     protected IProtocolCore Core { get; }
-    
-    public uint StatRxBytes => _statRxBytes;
-    public uint StatTxBytes => _statTxBytes;
-    public uint StatRxMessages => _statRxMessages;
-    public uint StatTxMessages => _statTxMessages;
-    public uint RxError => _statRxError;
-    public uint TxError => _statTxError;
-
-    public Observable<IProtocolMessage> OnRxMessage => _internalRxMessage;
-    public Observable<IProtocolMessage> OnTxMessage => _internalTxMessage;
     public abstract ValueTask Send(IProtocolMessage message, CancellationToken cancel = default);
     
     protected async ValueTask<IProtocolMessage?> InternalFilterTxMessage(IProtocolMessage message)
@@ -71,31 +75,30 @@ public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolC
                 if (newMsg == null) return;
                 message = newMsg;
             }
-            Interlocked.Increment(ref _statRxMessages);
-            Interlocked.Add(ref _statRxBytes, (uint)message.GetByteSize());
-            _internalRxMessage.OnNext(message);
+
+            StatisticHandler.IncrementRxMessage();
+            await _rxChannel.WriteAsync(message);
         }
-        catch (Exception ex)
+        catch (ProtocolException ex)
         {
             InternalPublishRxError(ex);
         }
+        catch (Exception ex)
+        {
+            InternalPublishRxError(new ProtocolException($"Error at publish rx message:{ex.Message}", ex));
+        }
     }
-    protected void InternalPublishRxError(Exception ex)
+   
+    protected void InternalPublishRxError(ProtocolException ex)
     {
-        Interlocked.Increment(ref _statRxError);
-        _internalRxMessage.OnErrorResume(ex);
+        StatisticHandler.IncrementRxError();
+        _errorChannel.TryWrite(ex);
     }
-    protected void InternalPublishTxMessage(IProtocolMessage message)
+   
+    protected void InternalOnTxError(ProtocolException ex)
     {
-        Interlocked.Increment(ref _statTxMessages);
-        Interlocked.Add(ref _statTxBytes, (uint)message.GetByteSize());
-        
-        _internalRxMessage.OnNext(message);
-    }
-    protected void InternalOnTxError(Exception ex)
-    {
-        Interlocked.Increment(ref _statTxError);
-        _internalTxMessage.OnErrorResume(ex);
+        StatisticHandler.IncrementTxError();
+        _errorChannel.TryWrite(ex);
     }
     public ref ProtocolTags Tags => ref _internalTags;
     
@@ -110,8 +113,6 @@ public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolC
             {
                 feature.Unregister(this);
             }
-            _internalRxMessage.Dispose();
-            _internalTxMessage.Dispose();
         }
 
         base.Dispose(disposing);
@@ -123,9 +124,6 @@ public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolC
         {
             feature.Unregister(this);
         }
-        await CastAndDispose(_internalRxMessage);
-        await CastAndDispose(_internalTxMessage);
-
         await base.DisposeAsyncCore();
 
         return;

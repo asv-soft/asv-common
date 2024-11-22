@@ -1,4 +1,5 @@
 using System.Buffers;
+using System.Reflection;
 using Asv.IO;
 using BenchmarkDotNet.Running;
 using ConsoleAppFramework;
@@ -15,62 +16,47 @@ public class TcpTest
     public void Benchmark()
     {
         BenchmarkRunner.Run<SwitchVsDictionary>();
+        
     }
 
     /// <summary>
     /// Command test tcp connection
-    /// <param name="logLevel">-v, Logging level </param>
+    /// <param name="server">-s, Server connection string </param>
+    /// <param name="client">-c, Client connection string </param>
     /// </summary>
     [Command("tcp-test")]
     public async Task<int> Run(
-#if DEBUG
-        LogLevel logLevel = LogLevel.Trace
-#else
-        LogLevel logLevel = LogLevel.Information
-#endif
+        /*string server = "tcps://127.0.0.1:7341?max_clients=10#protocols=example",
+        string client = "tcp://127.0.0.1:7341#protocols=example"*/
+        string server = "serial:COM11?br=57600",
+        string client = "serial:COM44?br=57600"
     )
     {
-        var loggerFactory = LoggerFactory.Create(builder =>
-        {
-            builder.ClearProviders();
-            builder.SetMinimumLevel(logLevel);
-            builder.AddZLoggerConsole(options =>
-            {
-                options.IncludeScopes = true;
-
-                options.UsePlainTextFormatter(formatter =>
-                {
-                    formatter.SetPrefixFormatter($"{0:HH:mm:ss.fff} | ={1:short}= | {2,-40} ",
-                        (in MessageTemplate template, in LogInfo info) =>
-                            template.Format(info.Timestamp, info.LogLevel, info.Category));
-                    formatter.SetExceptionFormatter((writer, ex) =>
-                        Utf8StringInterpolation.Utf8String.Format(writer, $"{ex.Message}"));
-                });
-            });
-        });
-        
+        var loggerFactory = ConsoleAppHelper.CreateDefaultLog();
+        var logger = loggerFactory.CreateLogger<TcpTest>();
+        Assembly.GetExecutingAssembly().PrintWelcomeToLog(logger);
+        const int messagesCount = 1_000;
         var protocol = Protocol.Create(builder =>
         {
             builder.SetLog(loggerFactory);
             builder.RegisterExampleProtocol();
             builder.EnableBroadcastFeature();
+            builder.AddPrinterJson();
         });
 
-        var server = protocol.CreatePort("tcps://127.0.0.1:7341?max_clients=10#protocols=example");
-        server.Enable();
-        
-        var client = protocol.CreatePort("tcp://127.0.0.1:7341#protocols=example");
-        client.Enable();
+        var serverPort = protocol.AddPort(server);
+        var clientPort = protocol.AddPort(client);
 
-        await client.Status.FirstAsync(x => x == ProtocolPortStatus.Connected);
+        await clientPort.Status.FirstAsync(x => x == ProtocolPortStatus.Connected);
+        await serverPort.Status.FirstAsync(x => x == ProtocolPortStatus.Connected);
         
         var tcs = new TaskCompletionSource();
         var cnt = 0;
-        server.OnRxMessage.Subscribe(x =>
+        serverPort.OnRxMessage.Subscribe(x =>
         {
             cnt++;
             Console.WriteLine($"RECV=>{cnt}");
-            if (cnt == 10_000) tcs.SetResult();
+            if (cnt == messagesCount) tcs.SetResult();
         });
 
         new Thread(async void () =>
@@ -81,8 +67,10 @@ public class TcpTest
                 while (true)
                 {
                     index++;
-                    await client.Send(new ExampleMessage1{ Value1 = index}); 
-                    Console.WriteLine($"SEND=>{index}");
+                    await clientPort.Send(new ExampleMessage1{ Value1 = 0});
+                    await Task.Delay(10);
+                    if (index % 100 == 0) logger.LogInformation($"SEND=>{index}");
+                    if (index == messagesCount) return;
                 }
             }
             catch (Exception e)

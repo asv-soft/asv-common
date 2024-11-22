@@ -6,6 +6,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using ZLogger;
@@ -43,20 +44,27 @@ public class TcpServerProtocolPort:ProtocolPort
     private Thread? _listenThread;
     private readonly ILogger<TcpServerProtocolPort> _logger;
     private readonly ImmutableArray<IProtocolFeature> _features;
+    private readonly ChannelWriter<IProtocolMessage> _rxChannel;
+    private readonly ChannelWriter<ProtocolException> _errorChannel;
 
     public TcpServerProtocolPort(
         TcpServerProtocolPortConfig config, 
         ImmutableArray<IProtocolFeature> features, 
+        ChannelWriter<IProtocolMessage> rxChannel, 
+        ChannelWriter<ProtocolException> errorChannel,
         ImmutableDictionary<string, ParserFactoryDelegate> parsers,
         ImmutableArray<ProtocolInfo> protocols,
-        IProtocolCore core) 
-        : base(ProtocolHelper.NormalizeId($"{Scheme}_{config.Host}_{config.Port}"), config, features, parsers, protocols, core)
+        IProtocolCore core,
+        IStatisticHandler statistic) 
+        : base(ProtocolHelper.NormalizeId($"{Scheme}_{config.Host}_{config.Port}"), config, features,rxChannel,errorChannel, parsers, protocols, core,statistic)
     {
         ArgumentNullException.ThrowIfNull(config);
         ArgumentNullException.ThrowIfNull(features);
         ArgumentNullException.ThrowIfNull(core);
         _config = config;
         _features = features;
+        _rxChannel = rxChannel;
+        _errorChannel = errorChannel;
         _core = core;
         _logger = core.LoggerFactory.CreateLogger<TcpServerProtocolPort>();
     }
@@ -89,7 +97,7 @@ public class TcpServerProtocolPort:ProtocolPort
                     InternalAddConnection(new SocketProtocolEndpoint( 
                         socket,
                         ProtocolHelper.NormalizeId($"{Id}_{_socket.RemoteEndPoint}"),
-                        _config,InternalCreateParsers(),_features,_core));
+                        _config,InternalCreateParsers(),_features,_rxChannel,_errorChannel,_core,StatisticHandler));
                 }
                 catch (Exception ex)
                 {
@@ -145,8 +153,7 @@ public class TcpServerProtocolPort:ProtocolPort
     }
 
     #endregion
-    
-    
+
 }
 
 public static class TcpServerProtocolPortHelper
@@ -154,7 +161,7 @@ public static class TcpServerProtocolPortHelper
     public static void RegisterTcpServerPort(this IProtocolBuilder builder)
     {
         builder.RegisterPortType(TcpServerProtocolPort.Info, 
-            (args, features, parsers,protocols,core) 
-                => new TcpServerProtocolPort(TcpServerProtocolPortConfig.Parse(args), features, parsers, protocols, core));
+            (args, features, rx, error, parsers,protocols,core,stat) 
+                => new TcpServerProtocolPort(TcpServerProtocolPortConfig.Parse(args), features, rx, error, parsers, protocols, core,stat));
     }
 }

@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 using System.IO.Ports;
 using System.Linq;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 
 namespace Asv.IO;
@@ -41,19 +42,26 @@ public sealed class SerialProtocolPort:ProtocolPort
     private readonly IProtocolCore _core;
     private SerialPort? _serial;
     private readonly ImmutableArray<IProtocolFeature> _features;
+    private readonly ChannelWriter<IProtocolMessage> _rxChannel;
+    private readonly ChannelWriter<ProtocolException> _errorChannel;
 
 
     public SerialProtocolPort(
         SerialProtocolPortConfig config, 
         ImmutableArray<IProtocolFeature> features, 
+        ChannelWriter<IProtocolMessage> rxChannel, 
+        ChannelWriter<ProtocolException> errorChannel,
         ImmutableDictionary<string, ParserFactoryDelegate> parsers,
         ImmutableArray<ProtocolInfo> protocols,
-        IProtocolCore core) 
-        : base($"{Scheme}_{config.PortName}", config, features, parsers, protocols, core)
+        IProtocolCore core,
+        IStatisticHandler statistic) 
+        : base($"{Scheme}_{config.PortName}", config, features, rxChannel,errorChannel, parsers, protocols, core,statistic)
     {
         _config = config;
         _core = core;
         _features = features;
+        _rxChannel = rxChannel;
+        _errorChannel = errorChannel;
     }
 
     public override PortTypeInfo TypeInfo => Info;
@@ -82,7 +90,7 @@ public sealed class SerialProtocolPort:ProtocolPort
         InternalAddConnection(new SerialProtocolEndpoint(
             _serial,
             ProtocolHelper.NormalizeId($"{Id}_{_config.BoundRate}_{_config.DataBits}_{_config.Parity}_{_config.StopBits}"),
-            _config,InternalCreateParsers(), _features, _core));
+            _config,InternalCreateParsers(), _features,_rxChannel,_errorChannel, _core, StatisticHandler));
         
     }
 
@@ -122,7 +130,7 @@ public static class SerialProtocolPortHelper
     public static void RegisterSerialPort(this IProtocolBuilder builder)
     {
         builder.RegisterPortType(SerialProtocolPort.Info, 
-            (args, features, parsers,protocols,core) 
-                => new SerialProtocolPort(SerialProtocolPortConfig.Parse(args), features, parsers,protocols,core));
+            (args, features, rx, error, parsers,protocols,core,stat) 
+                => new SerialProtocolPort(SerialProtocolPortConfig.Parse(args), features, rx, error, parsers,protocols,core,stat));
     }
 }

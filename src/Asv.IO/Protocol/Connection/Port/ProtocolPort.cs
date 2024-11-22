@@ -4,12 +4,15 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using Asv.Common;
+using DotNext.Threading;
 using Microsoft.Extensions.Logging;
 using ObservableCollections;
 using R3;
 using ZLogger;
+using Timeout = System.Threading.Timeout;
 
 namespace Asv.IO;
 
@@ -30,20 +33,24 @@ public abstract class ProtocolPort : ProtocolConnection, IProtocolPort
     private readonly ImmutableArray<ProtocolInfo> _protocols;
     private readonly IProtocolCore _core;
     private readonly ILogger<ProtocolPort> _logger;
-    private readonly ObservableList<IProtocolEndpoint> _connections = new();
-    private readonly ReaderWriterLockSlim _connectionsLock = new();
+    private ImmutableArray<IProtocolEndpoint> _endpoints = [];
     private readonly ReactiveProperty<ProtocolException?> _error = new();
     private readonly ReactiveProperty<ProtocolPortStatus> _status = new();
     private readonly ReactiveProperty<bool> _isEnabled = new();
     private CancellationTokenSource? _startStopCancel;
     private ITimer? _reconnectTimer;
+    private readonly Subject<IProtocolEndpoint> _endpointAdded = new();
+    private readonly Subject<IProtocolEndpoint> _endpointRemoved = new();
 
     protected ProtocolPort(string id,
         ProtocolPortConfig config,
         ImmutableArray<IProtocolFeature> features,
+        ChannelWriter<IProtocolMessage> rxChannel, 
+        ChannelWriter<ProtocolException> errorChannel,
         ImmutableDictionary<string, ParserFactoryDelegate> parsers,
         ImmutableArray<ProtocolInfo> protocols,
-        IProtocolCore core):base(id, features, core)
+        IProtocolCore core,
+        IStatisticHandler? statistic = null):base(id, features, rxChannel, errorChannel, core,statistic)
     {
         if (string.IsNullOrWhiteSpace(id))
             throw new ArgumentException("Value cannot be null or whitespace.", nameof(id));
@@ -60,63 +67,65 @@ public abstract class ProtocolPort : ProtocolConnection, IProtocolPort
     protected void InternalRemoveConnection(IProtocolEndpoint endpoint)
     {
         if (IsDisposed) return;
-        _logger.ZLogInformation($"{this} remove connection {endpoint}");
-        _connectionsLock.EnterWriteLock();
+        _logger.ZLogInformation($"{this} remove endpoint {endpoint}");
+
+        ImmutableArray<IProtocolEndpoint> after, before;
+        do
+        {
+            before = _endpoints;
+            after = before.Remove(endpoint);    
+        }
+        // check if the value is changed by another thread while we are removing the endpoint
+        while (ImmutableInterlocked.InterlockedCompareExchange(ref _endpoints, after, before) != before);
+        
         try
         {
-            _connections.Remove(endpoint);
             endpoint.Dispose();
         }
         catch (Exception e)
         {
-            _logger.ZLogError($"Error on dispose connection {endpoint}: {e.Message}");
-            Debug.Fail("Error on dispose connection");
+            _logger.ZLogError($"Error on dispose endpoint {endpoint}: {e.Message}");
+            Debug.Fail("Error on dispose endpoint");
         }
-        finally
-        {
-            _connectionsLock.ExitWriteLock();
-        }
-        
     }
     
-    protected void InternalAddConnection(IProtocolEndpoint pipe)
+    protected void InternalAddConnection(IProtocolEndpoint endpoint)
     {
         if (IsDisposed) return;
-        _logger.ZLogInformation($"{this} add pipe endpoint {pipe}");
-        _connectionsLock.EnterWriteLock();
-        try
+        _logger.ZLogInformation($"{this} add endpoint {endpoint}");
+        ImmutableArray<IProtocolEndpoint> after, before;
+        do
         {
-            _connections.Add(pipe);
-            // we don't need to dispose subscriptions here, because it will be disposed by connection itself
-            pipe.IsConnected.Where(x => x == false).Subscribe(pipe, (x, p) => InternalRemoveConnection(p));
-            pipe.OnRxMessage.Subscribe(InternalPublishRxMessage,InternalPublishRxError, _ => { });
+            before = _endpoints;
+            after = before.Add(endpoint);    
         }
-        catch (Exception e)
-        {
-            _logger.ZLogError($"Error on dispose pipe {pipe}: {e.Message}");
-            Debug.Fail("Error on dispose pipe");
-        }
-        finally
-        {
-            _connectionsLock.ExitWriteLock();
-        }
+        // check if the value is changed by another thread while we are removing the endpoint
+        while (ImmutableInterlocked.InterlockedCompareExchange(ref _endpoints, after, before) != before);
+        
+        // we don't need to dispose subscriptions here, because it will be complete by endpoint itself
+        endpoint.IsConnected.Where(x => x == false).Subscribe(endpoint, (x, p) => InternalRemoveConnection(p));
     }
     protected ImmutableArray<IProtocolParser> InternalCreateParsers()
     {
-        return [.._protocols.Select(x => _parsers[x.Id](_core))];
+        return [.._protocols.Select(x => _parsers[x.Id](_core, StatisticHandler))];
     }
     public abstract PortTypeInfo TypeInfo { get; }
     public IEnumerable<ProtocolInfo> Protocols => _protocols;
     public ReadOnlyReactiveProperty<ProtocolException?> Error => _error;
     public ReadOnlyReactiveProperty<ProtocolPortStatus> Status => _status;
     public ReadOnlyReactiveProperty<bool> IsEnabled => _isEnabled;
-    public IReadOnlyObservableList<IProtocolEndpoint> Connections => _connections;
+    public ImmutableArray<IProtocolEndpoint> Endpoints => _endpoints;
+
+    public Observable<IProtocolEndpoint> EndpointAdded => _endpointAdded;
+
+    public Observable<IProtocolEndpoint> EndpointRemoved => _endpointRemoved;
+
     public void Enable()
     {
         if (IsDisposed) return;
         if (Interlocked.CompareExchange(ref _isBusy, 1, 0) == 1)
         {
-            _logger.ZLogTrace($"{this} skip duplicate enable");
+            _logger.ZLogTrace($"Port {this} skip duplicate enable ");
             return;
         }
         _logger.ZLogInformation($"Enable {this} port");
@@ -176,7 +185,7 @@ public abstract class ProtocolPort : ProtocolConnection, IProtocolPort
     protected void InternalPublishError(Exception ex)
     {
         if (IsDisposed) return;
-        _logger.ZLogError(ex,$"Port '{this}' error occured. Reconnect after {_config.ReconnectTimeoutMs} ms. Error message:{ex.Message}");
+        _logger.ZLogError(ex,$"Port {this} error occured. Reconnect after {_config.ReconnectTimeoutMs} ms. Error message:{ex.Message}");
         _error.OnNext(new ProtocolPortException(this,$"Port {this} error:{ex.Message}",ex));
         _status.OnNext(ProtocolPortStatus.Error);
         _reconnectTimer = _core.TimeProvider.CreateTimer(ReconnectAfterError, null, TimeSpan.FromMilliseconds(_config.ReconnectTimeoutMs),
@@ -198,46 +207,38 @@ public abstract class ProtocolPort : ProtocolConnection, IProtocolPort
         if (IsDisposed) return;
         var newMessage = await InternalFilterTxMessage(message);
         if (newMessage == null) return;
-        try
+        var endpoints = _endpoints;
+        foreach (var connection in endpoints)
         {
-            _connectionsLock.EnterReadLock();
-            foreach (var connection in _connections)
-            {
-                await connection.Send(newMessage, cancel);
-            }
-        }
-        finally
-        {
-            _connectionsLock.ExitReadLock();   
+            await connection.Send(newMessage, cancel);
         }
     }
 
     public override string ToString()
     {
-        return $"{TypeInfo}[{Id}]";
+        return $"[PORT]({Id})";
     }
 
     #region Dispose
 
-    protected override void Dispose(bool disposing)
+    protected override async void Dispose(bool disposing)
     {
         if (disposing)
         {
-            _connectionsLock.EnterWriteLock();
-            try
+            ImmutableArray<IProtocolEndpoint> after, before;
+            do
             {
-                foreach (var connection in _connections)
-                {
-                    connection.Dispose();
-                }
-                _connections.Clear();
+                before = _endpoints;
+                after = [];    
             }
-            finally
+            // check if the value is changed by another thread while we are removing the endpoint
+            while (ImmutableInterlocked.InterlockedCompareExchange(ref _endpoints, after, before) != before);
+            foreach (var connection in before)
             {
-                _connectionsLock.ExitWriteLock();
+                connection.Dispose();
             }
-
-            _connectionsLock.Dispose();
+            _endpointAdded.Dispose();
+            _endpointRemoved.Dispose();
             _error.Dispose();
             _status.Dispose();
             _isEnabled.Dispose();
@@ -248,21 +249,21 @@ public abstract class ProtocolPort : ProtocolConnection, IProtocolPort
 
     protected override async ValueTask DisposeAsyncCore()
     {
-        _logger.ZLogTrace($"{nameof(DisposeAsync)} {Id}");
-        _connectionsLock.EnterWriteLock();
-        try
+        _logger.ZLogTrace($"{nameof(DisposeAsync)} {this}");
+        ImmutableArray<IProtocolEndpoint> after, before;
+        do
         {
-            foreach (var connection in _connections)
-            {
-                await connection.DisposeAsync();
-            }
-            _connections.Clear();
+            before = _endpoints;
+            after = [];    
         }
-        finally
+        // check if the value is changed by another thread while we are removing the endpoint
+        while (ImmutableInterlocked.InterlockedCompareExchange(ref _endpoints, after, before) != before);
+        foreach (var connection in before)
         {
-            _connectionsLock.ExitWriteLock();
+            connection.Dispose();
         }
-        await CastAndDispose(_connectionsLock);
+        await CastAndDispose(_endpointAdded);
+        await CastAndDispose(_endpointRemoved);
         await CastAndDispose(_error);
         await CastAndDispose(_status);
         await CastAndDispose(_isEnabled);

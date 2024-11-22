@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO.Ports;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 
 namespace Asv.IO;
@@ -13,8 +14,11 @@ public class SerialProtocolEndpoint(
     ProtocolEndpointConfig config,
     ImmutableArray<IProtocolParser> parsers,
     ImmutableArray<IProtocolFeature> features,
-    IProtocolCore core)
-    : ProtocolEndpoint(id, config, parsers, features, core)
+    ChannelWriter<IProtocolMessage> rxChannel, 
+    ChannelWriter<ProtocolException> errorChannel,
+    IProtocolCore core,
+    IStatisticHandler statisticHandler)
+    : ProtocolEndpoint(id, config, parsers, features,rxChannel,errorChannel,core)
 {
     protected override int GetAvailableBytesToRead() => port.BytesToRead;
 
