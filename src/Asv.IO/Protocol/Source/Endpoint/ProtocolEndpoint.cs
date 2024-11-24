@@ -42,14 +42,14 @@ public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
         ImmutableArray<IProtocolFeature> features,
         ChannelWriter<IProtocolMessage> rxChannel, 
         ChannelWriter<ProtocolException> errorChannel,
-        IProtocolCore core,
+        IProtocolContext context,
         IStatisticHandler? statistic = null)
-        :base(id, features, rxChannel, errorChannel,core,statistic)
+        :base(id, features, rxChannel, errorChannel,context,statistic)
     {
         ArgumentNullException.ThrowIfNull(config);
-        ArgumentNullException.ThrowIfNull(core);
+        ArgumentNullException.ThrowIfNull(context);
         _readEmptyLoopDelay = TimeSpan.FromMilliseconds(config.ReadEmptyLoopDelayMs);
-        _logger = core.LoggerFactory.CreateLogger<ProtocolEndpoint>();
+        _logger = context.LoggerFactory.CreateLogger<ProtocolEndpoint>();
         _parsers = parsers;
         _parserAvailable = _parsers.Select(x=>x.Info.Id).ToImmutableHashSet();
         var disposableBuilder = Disposable.CreateBuilder();
@@ -91,7 +91,7 @@ public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
                 if (bufferSize == 0)
                 {
                     // if no bytes received - wait some time
-                    await Task.Delay(_readEmptyLoopDelay, Core.TimeProvider, DisposeCancel);
+                    await Task.Delay(_readEmptyLoopDelay, Context.TimeProvider, DisposeCancel);
                     continue;
                 }
 

@@ -18,14 +18,13 @@ public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolC
     private ProtocolTags _internalTags = [];
     private readonly ILogger<ProtocolConnection> _logger;
 
-    protected ProtocolConnection(string id, ImmutableArray<IProtocolFeature> features,
-        ChannelWriter<IProtocolMessage> rxChannel, ChannelWriter<ProtocolException> errorChannel, IProtocolCore core, IStatisticHandler? statistic = null)
+    protected ProtocolConnection(string id, IProtocolContext context, IStatisticHandler? statistic = null)
     {
         ArgumentNullException.ThrowIfNull(id);
         ArgumentNullException.ThrowIfNull(rxChannel);
         ArgumentNullException.ThrowIfNull(errorChannel);
-        ArgumentNullException.ThrowIfNull(core);
-        _logger = core.LoggerFactory.CreateLogger<ProtocolConnection>();
+        ArgumentNullException.ThrowIfNull(context);
+        _logger = context.LoggerFactory.CreateLogger<ProtocolConnection>();
         _features = features;
         _rxChannel = rxChannel;
         _errorChannel = errorChannel;
@@ -42,7 +41,7 @@ public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolC
             StatisticHandler = value;
         }
         Id = id;
-        Core = core;
+        Context = context;
         foreach (var feature in _features)
         {
             feature.Register(this);
@@ -52,7 +51,7 @@ public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolC
     public string Id { get; }
     public IStatistic Statistic { get; }
     protected IStatisticHandler StatisticHandler { get; }
-    protected IProtocolCore Core { get; }
+    protected IProtocolContext Context { get; }
     public abstract ValueTask Send(IProtocolMessage message, CancellationToken cancel = default);
     
     protected async ValueTask<IProtocolMessage?> InternalFilterTxMessage(IProtocolMessage message)

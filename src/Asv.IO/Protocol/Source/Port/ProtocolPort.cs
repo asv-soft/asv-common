@@ -31,7 +31,7 @@ public abstract class ProtocolPort : ProtocolConnection, IProtocolPort
     private readonly ProtocolPortConfig _config;
     private readonly ImmutableDictionary<string, ParserFactoryDelegate> _parsers;
     private readonly ImmutableArray<ProtocolInfo> _protocols;
-    private readonly IProtocolCore _core;
+    private readonly IProtocolContext _context;
     private readonly ILogger<ProtocolPort> _logger;
     private ImmutableArray<IProtocolEndpoint> _endpoints = [];
     private readonly ReactiveProperty<ProtocolException?> _error = new();
@@ -44,23 +44,22 @@ public abstract class ProtocolPort : ProtocolConnection, IProtocolPort
 
     protected ProtocolPort(string id,
         ProtocolPortConfig config,
-        ImmutableArray<IProtocolFeature> features,
         ChannelWriter<IProtocolMessage> rxChannel, 
         ChannelWriter<ProtocolException> errorChannel,
         ImmutableDictionary<string, ParserFactoryDelegate> parsers,
         ImmutableArray<ProtocolInfo> protocols,
-        IProtocolCore core,
-        IStatisticHandler? statistic = null):base(id, features, rxChannel, errorChannel, core,statistic)
+        IProtocolContext context,
+        IStatisticHandler? statistic = null):base(id, features, rxChannel, errorChannel, context,statistic)
     {
         if (string.IsNullOrWhiteSpace(id))
             throw new ArgumentException("Value cannot be null or whitespace.", nameof(id));
         ArgumentNullException.ThrowIfNull(config);
-        ArgumentNullException.ThrowIfNull(core);
+        ArgumentNullException.ThrowIfNull(context);
         _config = config;
         _parsers = parsers;
         _protocols = protocols;
-        _core = core;
-        _logger = core.LoggerFactory.CreateLogger<ProtocolPort>();
+        _context = context;
+        _logger = context.LoggerFactory.CreateLogger<ProtocolPort>();
         _logger.ZLogInformation($"Create port {this} {config}");
     }
     
@@ -107,7 +106,7 @@ public abstract class ProtocolPort : ProtocolConnection, IProtocolPort
     }
     protected ImmutableArray<IProtocolParser> InternalCreateParsers()
     {
-        return [.._protocols.Select(x => _parsers[x.Id](_core, StatisticHandler))];
+        return [.._protocols.Select(x => _parsers[x.Id](_context, StatisticHandler))];
     }
     public abstract PortTypeInfo TypeInfo { get; }
     public IEnumerable<ProtocolInfo> Protocols => _protocols;
@@ -188,7 +187,7 @@ public abstract class ProtocolPort : ProtocolConnection, IProtocolPort
         _logger.ZLogError(ex,$"Port {this} error occured. Reconnect after {_config.ReconnectTimeoutMs} ms. Error message:{ex.Message}");
         _error.OnNext(new ProtocolPortException(this,$"Port {this} error:{ex.Message}",ex));
         _status.OnNext(ProtocolPortStatus.Error);
-        _reconnectTimer = _core.TimeProvider.CreateTimer(ReconnectAfterError, null, TimeSpan.FromMilliseconds(_config.ReconnectTimeoutMs),
+        _reconnectTimer = _context.TimeProvider.CreateTimer(ReconnectAfterError, null, TimeSpan.FromMilliseconds(_config.ReconnectTimeoutMs),
             Timeout.InfiniteTimeSpan);
     }
     

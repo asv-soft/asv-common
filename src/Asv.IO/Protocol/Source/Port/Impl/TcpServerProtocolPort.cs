@@ -39,7 +39,7 @@ public class TcpServerProtocolPort:ProtocolPort
     public static PortTypeInfo Info => new(Scheme, "Tcp server port");
     
     private readonly TcpServerProtocolPortConfig _config;
-    private readonly IProtocolCore _core;
+    private readonly IProtocolContext _context;
     private Socket? _socket;
     private Thread? _listenThread;
     private readonly ILogger<TcpServerProtocolPort> _logger;
@@ -54,19 +54,19 @@ public class TcpServerProtocolPort:ProtocolPort
         ChannelWriter<ProtocolException> errorChannel,
         ImmutableDictionary<string, ParserFactoryDelegate> parsers,
         ImmutableArray<ProtocolInfo> protocols,
-        IProtocolCore core,
+        IProtocolContext context,
         IStatisticHandler statistic) 
-        : base(ProtocolHelper.NormalizeId($"{Scheme}_{config.Host}_{config.Port}"), config, features,rxChannel,errorChannel, parsers, protocols, core,statistic)
+        : base(ProtocolHelper.NormalizeId($"{Scheme}_{config.Host}_{config.Port}"), config, features,rxChannel,errorChannel, parsers, protocols, context,statistic)
     {
         ArgumentNullException.ThrowIfNull(config);
         ArgumentNullException.ThrowIfNull(features);
-        ArgumentNullException.ThrowIfNull(core);
+        ArgumentNullException.ThrowIfNull(context);
         _config = config;
         _features = features;
         _rxChannel = rxChannel;
         _errorChannel = errorChannel;
-        _core = core;
-        _logger = core.LoggerFactory.CreateLogger<TcpServerProtocolPort>();
+        _context = context;
+        _logger = context.LoggerFactory.CreateLogger<TcpServerProtocolPort>();
     }
 
     public override PortTypeInfo TypeInfo => Info;
@@ -97,7 +97,7 @@ public class TcpServerProtocolPort:ProtocolPort
                     InternalAddConnection(new SocketProtocolEndpoint( 
                         socket,
                         ProtocolHelper.NormalizeId($"{Id}_{_socket.RemoteEndPoint}"),
-                        _config,InternalCreateParsers(),_features,_rxChannel,_errorChannel,_core,StatisticHandler));
+                        _config,InternalCreateParsers(),_features,_rxChannel,_errorChannel,_context,StatisticHandler));
                 }
                 catch (Exception ex)
                 {

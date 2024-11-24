@@ -39,7 +39,7 @@ public sealed class SerialProtocolPort:ProtocolPort
     public const string Scheme = "serial";
     public static readonly PortTypeInfo Info = new(Scheme, "Serial port");
     private readonly SerialProtocolPortConfig _config;
-    private readonly IProtocolCore _core;
+    private readonly IProtocolContext _context;
     private SerialPort? _serial;
     private readonly ImmutableArray<IProtocolFeature> _features;
     private readonly ChannelWriter<IProtocolMessage> _rxChannel;
@@ -53,12 +53,12 @@ public sealed class SerialProtocolPort:ProtocolPort
         ChannelWriter<ProtocolException> errorChannel,
         ImmutableDictionary<string, ParserFactoryDelegate> parsers,
         ImmutableArray<ProtocolInfo> protocols,
-        IProtocolCore core,
+        IProtocolContext context,
         IStatisticHandler statistic) 
-        : base($"{Scheme}_{config.PortName}", config, features, rxChannel,errorChannel, parsers, protocols, core,statistic)
+        : base($"{Scheme}_{config.PortName}", config, features, rxChannel,errorChannel, parsers, protocols, context,statistic)
     {
         _config = config;
-        _core = core;
+        _context = context;
         _features = features;
         _rxChannel = rxChannel;
         _errorChannel = errorChannel;
@@ -90,7 +90,7 @@ public sealed class SerialProtocolPort:ProtocolPort
         InternalAddConnection(new SerialProtocolEndpoint(
             _serial,
             ProtocolHelper.NormalizeId($"{Id}_{_config.BoundRate}_{_config.DataBits}_{_config.Parity}_{_config.StopBits}"),
-            _config,InternalCreateParsers(), _features,_rxChannel,_errorChannel, _core, StatisticHandler));
+            _config,InternalCreateParsers(), _features,_rxChannel,_errorChannel, _context, StatisticHandler));
         
     }
 

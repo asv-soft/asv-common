@@ -20,11 +20,11 @@ public sealed class ProtocolRouter: ProtocolConnection, IProtocolRouter
     private readonly List<PortConfig> _portConfig = new();
 
     public ProtocolRouter(string id, IProtocol protocol, IStatisticHandler? statistic = null)
-        :base(ProtocolHelper.NormalizeId(id),protocol.Features, TODO, TODO,protocol.Core,statistic)
+        :base(ProtocolHelper.NormalizeId(id),protocol.Features, TODO, TODO,protocol.Context,statistic)
     {
         ArgumentNullException.ThrowIfNull(protocol);
         _protocol = protocol;
-        _logger = protocol.Core.LoggerFactory.CreateLogger<ProtocolRouter>();
+        _logger = protocol.Context.LoggerFactory.CreateLogger<ProtocolRouter>();
     }
     
     public override async ValueTask Send(IProtocolMessage message, CancellationToken cancel = default)

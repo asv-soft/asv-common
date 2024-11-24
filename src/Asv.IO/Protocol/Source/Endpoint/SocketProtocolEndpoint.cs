@@ -16,9 +16,9 @@ public class SocketProtocolEndpoint(
     ImmutableArray<IProtocolFeature> features,
     ChannelWriter<IProtocolMessage> rxChannel, 
     ChannelWriter<ProtocolException> errorChannel,
-    IProtocolCore core,
+    IProtocolContext context,
     IStatisticHandler statisticHandler)
-    : ProtocolEndpoint(id, config, parsers, features,rxChannel,errorChannel, core)
+    : ProtocolEndpoint(id, config, parsers, features,rxChannel,errorChannel, context)
 {
     
     protected override int GetAvailableBytesToRead() => socket.Available;

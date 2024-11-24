@@ -12,7 +12,7 @@ public abstract class ProtocolParser<TMessage,TMessageId> : AsyncDisposableOnce,
     private readonly IProtocolMessageFactory<TMessage,TMessageId> _messageFactory;
     private readonly Subject<IProtocolMessage> _onMessage = new();
 
-    protected ProtocolParser(IProtocolMessageFactory<TMessage,TMessageId> messageFactory, IProtocolCore core, IStatisticHandler? statisticHandler)
+    protected ProtocolParser(IProtocolMessageFactory<TMessage,TMessageId> messageFactory, IProtocolContext context, IStatisticHandler? statisticHandler)
     {
         ArgumentNullException.ThrowIfNull(messageFactory);
         _messageFactory = messageFactory;

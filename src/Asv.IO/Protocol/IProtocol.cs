@@ -1,15 +1,31 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics.Metrics;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using R3;
 
 namespace Asv.IO;
 
 
-
+public interface IProtocolContext
+{
+    ILoggerFactory LoggerFactory { get; }
+    TimeProvider TimeProvider { get; }
+    IMeterFactory MeterFactory { get; }
+    ImmutableDictionary<string, ParserFactoryDelegate> ParserFactory { get; }
+    ImmutableArray<IProtocolFeature> Features { get; }
+    ImmutableArray<ProtocolInfo> AvailableProtocols { get; }
+    ImmutableDictionary<string, PortFactoryDelegate> PortFactory { get; }
+    ImmutableArray<PortTypeInfo> AvailablePortTypes { get; }
+    ImmutableArray<IProtocolMessageFormatter> Formatters { get; }
+    ChannelWriter<IProtocolMessage> RxChannel { get; }
+    ChannelWriter<ProtocolException> ErrorChannel { get; }
+}
 
 public enum PacketFormatting
 {
@@ -20,11 +36,8 @@ public enum PacketFormatting
 public interface IProtocol:IDisposable, IAsyncDisposable
 {
     IStatistic Statistic { get; }
-    IProtocolCore Core { get; }
-    ImmutableArray<IProtocolFeature> Features { get; }
     ImmutableArray<PortTypeInfo> AvailablePortTypes { get; }
     ImmutableArray<ProtocolInfo> AvailableProtocols { get; }
-    ImmutableArray<IProtocolMessageFormatter> Formatters { get; }
     string? PrintMessage(IProtocolMessage message, PacketFormatting formatting = PacketFormatting.Inline);
     /// <summary>
     ///          userinfo       host      port
@@ -39,11 +52,10 @@ public interface IProtocol:IDisposable, IAsyncDisposable
     void RemovePort(IProtocolPort port);
     ImmutableArray<IProtocolPort> Ports { get; }
     Observable<ImmutableArray<IProtocolPort>> PortsChanged { get; }
-    
+    Observable<IProtocolMessage> OnTxMessage { get; }
     Observable<IProtocolMessage> OnRxMessage { get; }
     ValueTask Send(IProtocolMessage message, CancellationToken cancel = default);
 }
-
 
 
 public static partial class ProtocolHelper

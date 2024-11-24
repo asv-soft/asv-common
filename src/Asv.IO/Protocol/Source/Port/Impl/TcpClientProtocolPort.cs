@@ -32,7 +32,7 @@ public class TcpClientProtocolPort:ProtocolPort
     public static readonly PortTypeInfo Info  = new(Scheme, "Tcp client port");
     
     private readonly TcpClientProtocolPortConfig _config;
-    private readonly IProtocolCore _core;
+    private readonly IProtocolContext _context;
     private Socket? _socket;
     private readonly ImmutableArray<IProtocolFeature> _features;
     private readonly ChannelWriter<IProtocolMessage> _rxChannel;
@@ -45,12 +45,12 @@ public class TcpClientProtocolPort:ProtocolPort
         ChannelWriter<ProtocolException> errorChannel,
         ImmutableDictionary<string, ParserFactoryDelegate> parsers,
         ImmutableArray<ProtocolInfo> protocols,
-        IProtocolCore core,
+        IProtocolContext context,
         IStatisticHandler statistic) 
-        : base(ProtocolHelper.NormalizeId($"{Scheme}_{config.Host}_{config.Port}"), config, features, rxChannel,errorChannel, parsers, protocols, core,statistic)
+        : base(ProtocolHelper.NormalizeId($"{Scheme}_{config.Host}_{config.Port}"), config, features, rxChannel,errorChannel, parsers, protocols, context,statistic)
     {
         _config = config;
-        _core = core;
+        _context = context;
         _features = features;
         _rxChannel = rxChannel;
         _errorChannel = errorChannel;
@@ -76,7 +76,7 @@ public class TcpClientProtocolPort:ProtocolPort
         InternalAddConnection(new SocketProtocolEndpoint(
             _socket,
             ProtocolHelper.NormalizeId($"{Id}_{_socket.RemoteEndPoint}"),
-            _config,InternalCreateParsers(), _features, _rxChannel,_errorChannel,  _core,StatisticHandler));
+            _config,InternalCreateParsers(), _features, _rxChannel,_errorChannel,  _context,StatisticHandler));
     }
 
     #region Dispose
