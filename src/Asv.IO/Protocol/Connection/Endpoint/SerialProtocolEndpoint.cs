@@ -11,14 +11,11 @@ namespace Asv.IO;
 public class SerialProtocolEndpoint(
     SerialPort port,
     string id,
-    ProtocolEndpointConfig config,
+    ProtocolPortConfig config,
     ImmutableArray<IProtocolParser> parsers,
-    ImmutableArray<IProtocolFeature> features,
-    ChannelWriter<IProtocolMessage> rxChannel, 
-    ChannelWriter<ProtocolException> errorChannel,
     IProtocolContext context,
     IStatisticHandler statisticHandler)
-    : ProtocolEndpoint(id, config, parsers, features,rxChannel,errorChannel,context)
+    : ProtocolEndpoint(id, config, parsers, context, statisticHandler)
 {
     protected override int GetAvailableBytesToRead() => port.BytesToRead;
 

@@ -3,6 +3,8 @@ using R3;
 
 namespace Asv.IO;
 
+public delegate IProtocolParser ParserFactoryDelegate(IProtocolContext context, IStatisticHandler statistic);
+
 public interface IProtocolParser:IDisposable,IAsyncDisposable
 {
     IStatistic Statistic { get; }

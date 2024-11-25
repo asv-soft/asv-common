@@ -13,60 +13,57 @@ using ZLogger;
 
 namespace Asv.IO;
 
-
-public class TcpServerProtocolPortConfig:ProtocolPortConfig
+public class TcpServerProtocolPortConfig(Uri connectionString) : ProtocolPortConfig(connectionString)
 {
-    public const string Scheme = "tcp_s";
-    
-    public string Host { get; set; } = "127.0.0.1";
-    public int Port { get; set; } = 7341;
-    public int MaxConnection { get; set; } = 100;
-
-    public static TcpServerProtocolPortConfig Parse(PortArgs args)
+    public const string MaxConnectionKey = "maxConnection";
+    public int? MaxConnection
     {
-        return new TcpServerProtocolPortConfig()
+        get
         {
-            Host = args.Host ?? "127.0.0.1",
-            Port = args.Port ?? 7341,
-            
-        };
+            var maxConnection = Query.Get(MaxConnectionKey);
+            if (string.IsNullOrWhiteSpace(maxConnection) || !int.TryParse(maxConnection, out var port))
+            {
+                return null;
+            }
+            return port;
+        }
+        set
+        {
+            if (value.HasValue)
+            {
+                Query.Set(MaxConnectionKey, value.Value.ToString());
+            }
+            else
+            {
+                Query.Remove(MaxConnectionKey);
+            }
+        }
     }
 }
 
-public class TcpServerProtocolPort:ProtocolPort
+public class TcpServerProtocolPort:ProtocolPort<TcpServerProtocolPortConfig>
 {
     public const string Scheme = "tcps";
     public static PortTypeInfo Info => new(Scheme, "Tcp server port");
-    
+
     private readonly TcpServerProtocolPortConfig _config;
     private readonly IProtocolContext _context;
     private Socket? _socket;
-    private Thread? _listenThread;
     private readonly ILogger<TcpServerProtocolPort> _logger;
-    private readonly ImmutableArray<IProtocolFeature> _features;
-    private readonly ChannelWriter<IProtocolMessage> _rxChannel;
-    private readonly ChannelWriter<ProtocolException> _errorChannel;
+    private readonly IPEndPoint _bindEndpoint;
 
     public TcpServerProtocolPort(
         TcpServerProtocolPortConfig config, 
-        ImmutableArray<IProtocolFeature> features, 
-        ChannelWriter<IProtocolMessage> rxChannel, 
-        ChannelWriter<ProtocolException> errorChannel,
-        ImmutableDictionary<string, ParserFactoryDelegate> parsers,
-        ImmutableArray<ProtocolInfo> protocols,
         IProtocolContext context,
         IStatisticHandler statistic) 
-        : base(ProtocolHelper.NormalizeId($"{Scheme}_{config.Host}_{config.Port}"), config, features,rxChannel,errorChannel, parsers, protocols, context,statistic)
+        : base(ProtocolHelper.NormalizeId($"{Scheme}_{config.Host}_{config.Port}"), config, context,statistic)
     {
         ArgumentNullException.ThrowIfNull(config);
-        ArgumentNullException.ThrowIfNull(features);
         ArgumentNullException.ThrowIfNull(context);
         _config = config;
-        _features = features;
-        _rxChannel = rxChannel;
-        _errorChannel = errorChannel;
         _context = context;
         _logger = context.LoggerFactory.CreateLogger<TcpServerProtocolPort>();
+        _bindEndpoint = config.CheckAndGetLocalHost();
     }
 
     public override PortTypeInfo TypeInfo => Info;
@@ -78,15 +75,21 @@ public class TcpServerProtocolPort:ProtocolPort
         _socket?.Dispose();
         
         _socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
-        _socket.Bind(new IPEndPoint(IPAddress.Parse(_config.Host), _config.Port));
-        _socket.Listen(_config.MaxConnection);
-        _listenThread = new Thread(AcceptNewEndpoint) { IsBackground = true, Name = $"WAIT_CLIENTS_{Id}" };
-        _listenThread.Start(token);
-        
+        _socket.Bind(_bindEndpoint);
+        if (_config.MaxConnection == null)
+        {
+            _socket.Listen();
+        }
+        else
+        {
+            _socket.Listen(_config.MaxConnection.Value);
+        }
+        Task.Factory.StartNew(AcceptNewEndpoint,token,token, TaskCreationOptions.LongRunning,TaskScheduler.Default);
     }
     private void AcceptNewEndpoint(object? state)
     {
-        var cancel = (CancellationToken)(state ?? throw new ArgumentNullException(nameof(state)));
+        // ReSharper disable once NullableWarningSuppressionIsUsed
+        var cancel = (CancellationToken) state!;
         try
         {
             while (_socket != null && cancel is { IsCancellationRequested: false })
@@ -97,7 +100,7 @@ public class TcpServerProtocolPort:ProtocolPort
                     InternalAddConnection(new SocketProtocolEndpoint( 
                         socket,
                         ProtocolHelper.NormalizeId($"{Id}_{_socket.RemoteEndPoint}"),
-                        _config,InternalCreateParsers(),_features,_rxChannel,_errorChannel,_context,StatisticHandler));
+                        _config,InternalCreateParsers(),_context,StatisticHandler));
                 }
                 catch (Exception ex)
                 {
@@ -107,9 +110,9 @@ public class TcpServerProtocolPort:ProtocolPort
                 }
             }
         }
-        catch (ThreadAbortException ex)
+        catch (Exception ex)
         {
-            _logger.ZLogDebug(ex, $"Thread abort exception:{ex.Message}");
+            _logger.ZLogDebug(ex, $"Unhandled exception on {nameof(AcceptNewEndpoint)}:{ex.Message}");
             InternalPublishError(ex);
         }
     }
@@ -161,7 +164,7 @@ public static class TcpServerProtocolPortHelper
     public static void RegisterTcpServerPort(this IProtocolBuilder builder)
     {
         builder.RegisterPortType(TcpServerProtocolPort.Info, 
-            (args, features, rx, error, parsers,protocols,core,stat) 
-                => new TcpServerProtocolPort(TcpServerProtocolPortConfig.Parse(args), features, rx, error, parsers, protocols, core,stat));
+            (cs, context,stat) 
+                => new TcpServerProtocolPort(new TcpServerProtocolPortConfig(cs), context,stat));
     }
 }

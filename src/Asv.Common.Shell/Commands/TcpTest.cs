@@ -29,13 +29,13 @@ public class TcpTest
         /*string server = "tcps://127.0.0.1:7341?max_clients=10#protocols=example",
         string client = "tcp://127.0.0.1:7341#protocols=example"*/
         string server = "serial:COM11?br=57600",
-        string client = "serial:COM44?br=57600"
+        string client = "serial:COM45?br=57600"
     )
     {
         var loggerFactory = ConsoleAppHelper.CreateDefaultLog();
         var logger = loggerFactory.CreateLogger<TcpTest>();
         Assembly.GetExecutingAssembly().PrintWelcomeToLog(logger);
-        const int messagesCount = 1_000;
+        const int messagesCount = 100;
         var protocol = Protocol.Create(builder =>
         {
             builder.SetLog(loggerFactory);
@@ -44,8 +44,12 @@ public class TcpTest
             builder.AddPrinterJson();
         });
 
-        var serverPort = protocol.AddPort(server);
-        var clientPort = protocol.AddPort(client);
+        var serverRouter = protocol.CreateRouter("Server");
+        var serverPort = serverRouter.AddPort(server);
+        
+        var clientRouter = protocol.CreateRouter("Client");
+        var clientPort = clientRouter.AddPort(client);
+        var config = clientPort.Config.AsUri();
 
         await clientPort.Status.FirstAsync(x => x == ProtocolPortStatus.Connected);
         await serverPort.Status.FirstAsync(x => x == ProtocolPortStatus.Connected);
@@ -55,8 +59,10 @@ public class TcpTest
         serverPort.OnRxMessage.Subscribe(x =>
         {
             cnt++;
-            Console.WriteLine($"RECV=>{cnt}");
-            if (cnt == messagesCount) tcs.SetResult();
+            if (cnt % messagesCount == 0)
+            {
+                logger.LogInformation($"Received {cnt} messages");
+            }
         });
 
         new Thread(async void () =>
@@ -68,9 +74,11 @@ public class TcpTest
                 {
                     index++;
                     await clientPort.Send(new ExampleMessage1{ Value1 = 0});
-                    await Task.Delay(10);
-                    if (index % 100 == 0) logger.LogInformation($"SEND=>{index}");
-                    if (index == messagesCount) return;
+                    if (index % messagesCount == 0)
+                    {
+                        logger.LogInformation($"Send {index} messages");
+                        
+                    }
                 }
             }
             catch (Exception e)
@@ -79,8 +87,10 @@ public class TcpTest
             }
         }).Start();
         
-
+        
         await tcs.Task;
+
+        Console.ReadLine();
         
         return 0;
 

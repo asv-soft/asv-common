@@ -1,11 +1,15 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics;
-using ObservableCollections;
+using System.Collections.Specialized;
 using R3;
 
 namespace Asv.IO;
+
+public delegate IProtocolPort PortFactoryDelegate(
+    Uri connectionString,
+    IProtocolContext context, 
+    IStatisticHandler statistic);
 
 public enum ProtocolPortStatus
 {
@@ -14,10 +18,11 @@ public enum ProtocolPortStatus
     Connected,
     Error
 }
-public interface IProtocolPort:IDisposable,IAsyncDisposable,IProtocolConnection
+public interface IProtocolPort:IProtocolConnection
 {
+    ProtocolPortConfig Config { get; }
     PortTypeInfo TypeInfo { get; }
-    IEnumerable<ProtocolInfo> Protocols { get; }
+    IEnumerable<ProtocolInfo> EnabledProtocols { get; }
     ReadOnlyReactiveProperty<ProtocolException?> Error { get; }
     ReadOnlyReactiveProperty<ProtocolPortStatus> Status { get; }
     ReadOnlyReactiveProperty<bool> IsEnabled { get; }

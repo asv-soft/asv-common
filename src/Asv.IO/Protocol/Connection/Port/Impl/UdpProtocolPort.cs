@@ -1,90 +1,59 @@
 using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
-using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using ZLogger;
 
 namespace Asv.IO;
 
-public class UdpProtocolPortConfig:ProtocolPortConfig
+public class UdpProtocolPortConfig(Uri connectionString) : ProtocolPortConfig(connectionString)
 {
-    public string LocalHost { get; set; } = "127.0.0.1";
-    public int LocalPort { get; set; } = 8080;
-    public string? RemoteHost { get; set; }
-    public int? RemotePort { get; set; }
+    public const string RemoteHostKey = "rhost";
+    public const string RemotePortKey = "rport";
 
-    public static UdpProtocolPortConfig Parse(PortArgs args)
+    
+    public IPEndPoint? GetRemoteEndpoint()
     {
-        var rport = args.Query["rport"];
-        if (int.TryParse(rport, out var port))
+        var remoteHost = Query.Get(RemoteHostKey);
+        var remotePort = Query.Get(RemotePortKey);
+        if (string.IsNullOrWhiteSpace(remoteHost) || !int.TryParse(remotePort, out var port))
         {
-            return new UdpProtocolPortConfig
-            {
-                LocalHost = args.Host ?? "127.0.0.1",
-                LocalPort = args.Port ?? 7342,
-                RemoteHost = args.Query["rhost"],
-                RemotePort = port 
-            };
+            return null;
         }
-
-        return new UdpProtocolPortConfig
-        {
-            LocalHost = args.Host ?? "127.0.0.1",
-            LocalPort = args.Port ?? 7342,
-            RemoteHost = args.Query["rhost"],
-        };
-
+        return CheckIpEndpoint(remoteHost, port);
     }
+    
+   
 }
 
-public class UdpProtocolPort:ProtocolPort
+public class UdpProtocolPort:ProtocolPort<UdpProtocolPortConfig>
 {
     public const string Scheme = "udp";
     public static PortTypeInfo Info => new(Scheme, "Udp protocol port");
-    
     private readonly UdpProtocolPortConfig _config;
-    
     private readonly IProtocolContext _context;
     private readonly IPEndPoint _receiveEndPoint;
     private readonly IPEndPoint? _sendEndPoint;
     private Socket? _socket;
     private readonly ILogger<UdpProtocolPort> _logger;
-    private readonly ImmutableArray<IProtocolFeature> _features;
-    private readonly ChannelWriter<IProtocolMessage> _rxChannel;
-    private readonly ChannelWriter<ProtocolException> _errorChannel;
 
     public UdpProtocolPort(
         UdpProtocolPortConfig config,
-        ImmutableArray<IProtocolFeature> features, 
-        ChannelWriter<IProtocolMessage> rxChannel, 
-        ChannelWriter<ProtocolException> errorChannel,
-        ImmutableDictionary<string, ParserFactoryDelegate> parsers,
-        ImmutableArray<ProtocolInfo> protocols,
         IProtocolContext context,
         IStatisticHandler statistic) 
-        : base(ProtocolHelper.NormalizeId($"{Scheme}_{config.LocalHost}_{config.LocalPort}"), config, features,rxChannel,errorChannel, parsers, protocols, context,statistic)
+        : base(ProtocolHelper.NormalizeId($"{Scheme}_{config.Host}_{config.Port}"), config, context,statistic)
     {
         ArgumentNullException.ThrowIfNull(config);
-        ArgumentNullException.ThrowIfNull(features);
         ArgumentNullException.ThrowIfNull(context);
         _config = config;
-        _features = features;
-        _rxChannel = rxChannel;
-        _errorChannel = errorChannel;
         _context = context;
         _logger = context.LoggerFactory.CreateLogger<UdpProtocolPort>();
-        _receiveEndPoint = new IPEndPoint(IPAddress.Parse(config.LocalHost), config.LocalPort);
-        if (!string.IsNullOrWhiteSpace(config.RemoteHost) && config.RemotePort.HasValue)
-        {
-            _sendEndPoint = new IPEndPoint(IPAddress.Parse(config.RemoteHost), config.RemotePort.Value);
-        }
+
+        _receiveEndPoint = config.CheckAndGetLocalHost();
+        _sendEndPoint = config.GetRemoteEndpoint();
     }
 
     public override PortTypeInfo TypeInfo => Info;
@@ -111,7 +80,7 @@ public class UdpProtocolPort:ProtocolPort
         {
             _socket.Connect(_sendEndPoint);
             InternalAddConnection(new SocketProtocolEndpoint(
-                _socket,ProtocolHelper.NormalizeId($"{Id}_{_sendEndPoint}"), _config, InternalCreateParsers(),_features, _rxChannel,_errorChannel, _context,StatisticHandler));
+                _socket,ProtocolHelper.NormalizeId($"{Id}_{_sendEndPoint}"), _config, InternalCreateParsers(), _context,StatisticHandler));
         }
     }
     
@@ -128,7 +97,7 @@ public class UdpProtocolPort:ProtocolPort
             _socket.ReceiveFrom(span, ref val);
             _socket.Connect(val);
             InternalAddConnection(new SocketProtocolEndpoint(
-                _socket, ProtocolHelper.NormalizeId($"{Id}_{val}"), _config, InternalCreateParsers(),_features,_rxChannel,_errorChannel, _context,StatisticHandler));
+                _socket, ProtocolHelper.NormalizeId($"{Id}_{val}"), _config, InternalCreateParsers(), _context,StatisticHandler));
         }
         catch (ThreadAbortException ex)
         {
@@ -143,7 +112,8 @@ public static class UdpProtocolPortHelper
     public static void RegisterUdpPort(this IProtocolBuilder builder)
     {
         builder.RegisterPortType(UdpProtocolPort.Info, 
-            (args, features, rx, error, parsers,protocols,core,stat) 
-                => new UdpProtocolPort(UdpProtocolPortConfig.Parse(args), features,rx,error, parsers, protocols, core,stat));
+            (cs, context,stat) 
+                => new UdpProtocolPort(new UdpProtocolPortConfig(cs), context,stat));
     }
 }
+

@@ -15,5 +15,7 @@ public interface IStatisticHandler:IStatistic
     void IncrementParsedMessage();
     void IncrementParserReadNotAllDataError();
     void IncrementParserPublishError();
-    
+
+    void IncrementDropRxMessage();
+    void IncrementDropTxMessage();
 }

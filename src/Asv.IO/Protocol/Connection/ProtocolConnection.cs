@@ -1,7 +1,6 @@
 using System;
-using System.Collections.Immutable;
+using System.Linq;
 using System.Threading;
-using System.Threading.Channels;
 using System.Threading.Tasks;
 using Asv.Common;
 using Microsoft.Extensions.Logging;
@@ -12,22 +11,16 @@ namespace Asv.IO;
 
 public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolConnection
 {
-    private readonly ImmutableArray<IProtocolFeature> _features;
-    private readonly ChannelWriter<IProtocolMessage> _rxChannel;
-    private readonly ChannelWriter<ProtocolException> _errorChannel;
     private ProtocolTags _internalTags = [];
     private readonly ILogger<ProtocolConnection> _logger;
+    private readonly Subject<IProtocolMessage> _onTxMessage = new();
+    private readonly Subject<IProtocolMessage> _onRxMessage = new();
 
     protected ProtocolConnection(string id, IProtocolContext context, IStatisticHandler? statistic = null)
     {
         ArgumentNullException.ThrowIfNull(id);
-        ArgumentNullException.ThrowIfNull(rxChannel);
-        ArgumentNullException.ThrowIfNull(errorChannel);
         ArgumentNullException.ThrowIfNull(context);
         _logger = context.LoggerFactory.CreateLogger<ProtocolConnection>();
-        _features = features;
-        _rxChannel = rxChannel;
-        _errorChannel = errorChannel;
         if (statistic == null)
         {
             var value = new Statistic();
@@ -42,7 +35,7 @@ public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolC
         }
         Id = id;
         Context = context;
-        foreach (var feature in _features)
+        foreach (var feature in Context.Features)
         {
             feature.Register(this);
         }
@@ -50,13 +43,22 @@ public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolC
 
     public string Id { get; }
     public IStatistic Statistic { get; }
+    public Observable<IProtocolMessage> OnTxMessage => _onTxMessage;
+    public Observable<IProtocolMessage> OnRxMessage => _onRxMessage;
     protected IStatisticHandler StatisticHandler { get; }
     protected IProtocolContext Context { get; }
     public abstract ValueTask Send(IProtocolMessage message, CancellationToken cancel = default);
-    
+    public string? PrintMessage(IProtocolMessage message, PacketFormatting formatting = PacketFormatting.Inline)
+    {
+        return Context.Formatters
+            .Where(x => x.CanPrint(message))
+            .Select(x => x.Print(message, formatting))
+            .FirstOrDefault();
+    }
+
     protected async ValueTask<IProtocolMessage?> InternalFilterTxMessage(IProtocolMessage message)
     {
-        foreach (var item in _features)
+        foreach (var item in Context.Features)
         {
             var newMsg = await item.ProcessTx(message, this, DisposeCancel);
             if (newMsg == null) return null;
@@ -68,7 +70,7 @@ public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolC
     {
         try
         {
-            foreach (var item in _features)
+            foreach (var item in Context.Features)
             {
                 var newMsg = await item.ProcessRx(message, this, DisposeCancel);
                 if (newMsg == null) return;
@@ -76,28 +78,28 @@ public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolC
             }
 
             StatisticHandler.IncrementRxMessage();
-            await _rxChannel.WriteAsync(message);
+            _onRxMessage.OnNext(message);
         }
         catch (ProtocolException ex)
         {
-            InternalPublishRxError(ex);
+             await InternalPublishRxError(ex);
         }
         catch (Exception ex)
         {
-            InternalPublishRxError(new ProtocolException($"Error at publish rx message:{ex.Message}", ex));
+            await InternalPublishRxError(new ProtocolException($"Error at publish rx message:{ex.Message}", ex));
         }
     }
    
-    protected void InternalPublishRxError(ProtocolException ex)
+    protected async ValueTask InternalPublishRxError(ProtocolException ex)
     {
         StatisticHandler.IncrementRxError();
-        _errorChannel.TryWrite(ex);
+        _onRxMessage.OnErrorResume(ex);
     }
    
-    protected void InternalOnTxError(ProtocolException ex)
+    protected async ValueTask InternalOnTxError(ProtocolException ex)
     {
         StatisticHandler.IncrementTxError();
-        _errorChannel.TryWrite(ex);
+        _onTxMessage.OnErrorResume(ex);
     }
     public ref ProtocolTags Tags => ref _internalTags;
     
@@ -107,8 +109,8 @@ public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolC
     {
         if (disposing)
         {
-            _logger.ZLogTrace($"Dispose port {this}");
-            foreach (var feature in _features)
+            _logger.ZLogTrace($"{nameof(Dispose)} port {this}");
+            foreach (var feature in Context.Features)
             {
                 feature.Unregister(this);
             }
@@ -119,10 +121,13 @@ public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolC
 
     protected override async ValueTask DisposeAsyncCore()
     {
-        foreach (var feature in _features)
+        _logger.ZLogTrace($"{nameof(DisposeAsyncCore)} port {this}");
+        foreach (var feature in Context.Features)
         {
             feature.Unregister(this);
         }
+        await CastAndDispose(_onTxMessage);
+        await CastAndDispose(_onRxMessage);
         await base.DisposeAsyncCore();
 
         return;

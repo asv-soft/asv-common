@@ -1,5 +1,12 @@
 namespace Asv.IO;
 
+
+public enum PacketFormatting
+{
+    Inline,
+    Indented,
+}
+
 public interface IProtocolMessageFormatter
 {
     string Name { get; }

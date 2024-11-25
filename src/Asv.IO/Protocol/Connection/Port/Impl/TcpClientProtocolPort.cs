@@ -10,23 +10,12 @@ using System.Threading.Tasks;
 
 namespace Asv.IO;
 
-public class TcpClientProtocolPortConfig:ProtocolPortConfig
+public class TcpClientProtocolPortConfig(Uri connectionString) : ProtocolPortConfig(connectionString)
 {
-    public string Host { get; set; } = "127.0.0.1";
-    public int Port { get; set; } = 7341;
-
-    public static TcpClientProtocolPortConfig Parse(PortArgs args)
-    {
-        var config = new TcpClientProtocolPortConfig
-        {
-            Host = args.Host ?? "127.0.0.1",
-            Port = args.Port ?? 7341
-        };
-        return config;
-    }
+   
 }
 
-public class TcpClientProtocolPort:ProtocolPort
+public class TcpClientProtocolPort:ProtocolPort<TcpClientProtocolPortConfig>
 {
     public const string Scheme = "tcp";
     public static readonly PortTypeInfo Info  = new(Scheme, "Tcp client port");
@@ -34,26 +23,17 @@ public class TcpClientProtocolPort:ProtocolPort
     private readonly TcpClientProtocolPortConfig _config;
     private readonly IProtocolContext _context;
     private Socket? _socket;
-    private readonly ImmutableArray<IProtocolFeature> _features;
-    private readonly ChannelWriter<IProtocolMessage> _rxChannel;
-    private readonly ChannelWriter<ProtocolException> _errorChannel;
+    private readonly IPEndPoint _remoteEndpoint;
 
     public TcpClientProtocolPort(
         TcpClientProtocolPortConfig config, 
-        ImmutableArray<IProtocolFeature> features, 
-        ChannelWriter<IProtocolMessage> rxChannel, 
-        ChannelWriter<ProtocolException> errorChannel,
-        ImmutableDictionary<string, ParserFactoryDelegate> parsers,
-        ImmutableArray<ProtocolInfo> protocols,
         IProtocolContext context,
         IStatisticHandler statistic) 
-        : base(ProtocolHelper.NormalizeId($"{Scheme}_{config.Host}_{config.Port}"), config, features, rxChannel,errorChannel, parsers, protocols, context,statistic)
+        : base(ProtocolHelper.NormalizeId($"{Scheme}_{config.Host}_{config.Port}"), config, context,statistic)
     {
         _config = config;
         _context = context;
-        _features = features;
-        _rxChannel = rxChannel;
-        _errorChannel = errorChannel;
+        _remoteEndpoint = _config.CheckAndGetLocalHost();
         ArgumentNullException.ThrowIfNull(config);
     }
     public override PortTypeInfo TypeInfo => Info;
@@ -72,11 +52,15 @@ public class TcpClientProtocolPort:ProtocolPort
         _socket?.Close();
         _socket?.Dispose();
         _socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
-        _socket.Connect(_config.Host,_config.Port);
+        _socket.Connect(_remoteEndpoint);
+        _socket.SendBufferSize = _config.SendBufferSize;
+        _socket.SendTimeout = _config.SendTimeout;
+        _socket.ReceiveBufferSize = _config.ReadBufferSize;
+        _socket.ReceiveTimeout = _config.ReadTimeout;
         InternalAddConnection(new SocketProtocolEndpoint(
             _socket,
             ProtocolHelper.NormalizeId($"{Id}_{_socket.RemoteEndPoint}"),
-            _config,InternalCreateParsers(), _features, _rxChannel,_errorChannel,  _context,StatisticHandler));
+            _config,InternalCreateParsers(), _context,StatisticHandler));
     }
 
     #region Dispose
@@ -109,7 +93,7 @@ public static class TcpClientProtocolPortHelper
     public static void RegisterTcpClientPort(this IProtocolBuilder builder)
     {
         builder.RegisterPortType(TcpClientProtocolPort.Info, 
-            (args, features, rx, error, parsers,protocols,core,stat) 
-                => new TcpClientProtocolPort(TcpClientProtocolPortConfig.Parse(args), features, rx, error, parsers, protocols, core,stat));
+            (cs,  context,stat) 
+                => new TcpClientProtocolPort(new TcpClientProtocolPortConfig(cs), context,stat));
     }
 }

@@ -19,13 +19,17 @@ public class Statistic : IStatisticHandler
     private uint _badCrc;
     private uint _deserializeError;
     private uint _messageReadNotAllData;
-    
+    private uint _dropedRxMessages;
+    private uint _dropedTxMessages;
+
     public uint RxBytes => _rxBytes;
     public uint TxBytes => _txBytes;
     public uint RxMessages => _rxMessages;
     public uint TxMessages => _txMessages;
     public uint RxError => _rxError;
     public uint TxError => _txError;
+    public uint DroppedRxMessages => _dropedRxMessages;
+    public uint DroppedTxMessages => _dropedTxMessages;
     public uint ParsedBytes => _parsedBytes;
     public uint ParsedMessages => _parsedMessages;
     public uint UnknownMessages => _unknownMessages;
@@ -65,6 +69,14 @@ public class Statistic : IStatisticHandler
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void IncrementParserPublishError() => Interlocked.Increment(ref _messagePublishError);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void IncrementDropRxMessage() => Interlocked.Increment(ref _dropedRxMessages);
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void IncrementDropTxMessage() => Interlocked.Increment(ref _dropedTxMessages);
+
+    
 }
 
 public class InheritedStatistic(IStatisticHandler parent) : IStatisticHandler
@@ -82,13 +94,17 @@ public class InheritedStatistic(IStatisticHandler parent) : IStatisticHandler
     private uint _badCrc;
     private uint _deserializeError;
     private uint _messageReadNotAllData;
-    
+    private uint _dropedRxMessages;
+    private uint _dropedTxMessages;
+
     public uint RxBytes => _rxBytes;
     public uint TxBytes => _txBytes;
     public uint RxMessages => _rxMessages;
     public uint TxMessages => _txMessages;
     public uint RxError => _rxError;
     public uint TxError => _txError;
+    public uint DroppedRxMessages => _dropedRxMessages;
+    public uint DroppedTxMessages => _dropedTxMessages;
     public uint ParsedBytes => _parsedBytes;
     public uint ParsedMessages => _parsedMessages;
     public uint UnknownMessages => _unknownMessages;
@@ -173,6 +189,18 @@ public class InheritedStatistic(IStatisticHandler parent) : IStatisticHandler
     {
         Interlocked.Increment(ref _messagePublishError);
         parent.IncrementParserPublishError();
+    }
+
+    public void IncrementDropRxMessage()
+    {
+        Interlocked.Increment(ref _dropedRxMessages);
+        parent.IncrementDropRxMessage();
+    }
+
+    public void IncrementDropTxMessage()
+    {
+        Interlocked.Increment(ref _dropedTxMessages);
+        parent.IncrementDropTxMessage();
     }
 }
 

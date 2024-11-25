@@ -11,32 +11,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Asv.IO;
 
-public class PortArgs
-{
-    public PortArgs()
-    {
-    }
 
-    public PortArgs(string? path, NameValueCollection query)
-    {
-        Path = path;
-        Query = query;
-    }
-
-    public string? UserInfo { get; set; }
-    public string? Host { get; set; }
-    public int? Port { get; set; }
-    public string? Path { get; set; }
-    public NameValueCollection Query { get; set; }
-}
-
-public delegate IProtocolPort PortFactoryDelegate(
-    PortArgs args,
-    ImmutableArray<ProtocolInfo> selectedProtocols,
-    IProtocolContext context, 
-    IStatisticHandler statistic);
-
-public delegate IProtocolParser ParserFactoryDelegate(IProtocolContext context, IStatisticHandler statistic);
 
 public interface IProtocolBuilder
 {
@@ -49,9 +24,8 @@ public interface IProtocolBuilder
     void AddPrinter(IProtocolMessageFormatter formatter);
     void ClearProtocols();
     void RegisterProtocol(ProtocolInfo info, ParserFactoryDelegate factory);
-    void ClearPorts();
+    void ClearPortType();
     void RegisterPortType(PortTypeInfo type, PortFactoryDelegate factory);
-    void SetRxQueueOptions(int rxQueueSize, bool dropMessageWhenFullRxQueue);
 }
 
 public sealed class ProtocolBuilder : IProtocolBuilder
@@ -65,8 +39,6 @@ public sealed class ProtocolBuilder : IProtocolBuilder
     private readonly ImmutableDictionary<string, PortFactoryDelegate>.Builder _portBuilder = ImmutableDictionary.CreateBuilder<string, PortFactoryDelegate>();
     private readonly ImmutableArray<PortTypeInfo>.Builder _portTypeInfoBuilder = ImmutableArray.CreateBuilder<PortTypeInfo>();
     private readonly List<IProtocolMessageFormatter> _printers = new();
-    private int _rxQueueSize;
-    private bool _dropMessageWhenFullRxQueue;
 
     internal ProtocolBuilder()
     {
@@ -125,7 +97,7 @@ public sealed class ProtocolBuilder : IProtocolBuilder
         _protocolInfoBuilder.Add(info);
     }
 
-    public void ClearPorts()
+    public void ClearPortType()
     {
         _portBuilder.Clear();
         _portTypeInfoBuilder.Clear();
@@ -136,37 +108,10 @@ public sealed class ProtocolBuilder : IProtocolBuilder
         _portBuilder.Add(type.Scheme, factory);
         _portTypeInfoBuilder.Add(type);
     }
-
-    public void SetRxQueueOptions(int rxQueueSize, bool dropMessageWhenFullRxQueue)
-    {
-        _rxQueueSize = rxQueueSize;
-        _dropMessageWhenFullRxQueue = dropMessageWhenFullRxQueue;
-    }
     
-    public IProtocol Build()
+    public IProtocolFactory Build()
     {
-        var rxChannel = _rxQueueSize <= 0 
-            ? Channel.CreateUnbounded<IProtocolMessage>() 
-            : Channel.CreateBounded<IProtocolMessage>(new BoundedChannelOptions(_rxQueueSize)
-            {
-                AllowSynchronousContinuations = false,
-                SingleReader = true,
-                SingleWriter = false,
-                FullMode = _dropMessageWhenFullRxQueue ? BoundedChannelFullMode.DropOldest: BoundedChannelFullMode.Wait
-            });
-        var errorChannel = _rxQueueSize <= 0 
-            ? Channel.CreateUnbounded<ProtocolException>() 
-            : Channel.CreateBounded<ProtocolException>(new BoundedChannelOptions(_rxQueueSize)
-            {
-                AllowSynchronousContinuations = false,
-                SingleReader = true,
-                SingleWriter = false,
-                FullMode = _dropMessageWhenFullRxQueue ? BoundedChannelFullMode.DropOldest: BoundedChannelFullMode.Wait
-            });
-        
         return new Protocol(
-            rxChannel,
-            errorChannel,
             _featureBuilder.ToImmutable(),
             _parserBuilder.ToImmutable(),
             _protocolInfoBuilder.ToImmutable(),

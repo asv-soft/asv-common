@@ -4,35 +4,23 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
-using System.Threading.Channels;
 using System.Threading.Tasks;
-using Asv.Common;
-using DotNext.Threading;
 using Microsoft.Extensions.Logging;
-using ObservableCollections;
 using R3;
 using ZLogger;
 using Timeout = System.Threading.Timeout;
 
 namespace Asv.IO;
 
-public class ProtocolPortConfig : ProtocolEndpointConfig
-{
-    public int ReconnectTimeoutMs { get; set; } = 5_000;
-    public override string ToString()
-    {
-        return $"{base.ToString()}, ReconnectTimeoutMs:{ReconnectTimeoutMs}";
-    }
-}
 
-public abstract class ProtocolPort : ProtocolConnection, IProtocolPort
+
+public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
+    where TConfig:ProtocolPortConfig
 {
     private int _isBusy;
-    private readonly ProtocolPortConfig _config;
-    private readonly ImmutableDictionary<string, ParserFactoryDelegate> _parsers;
     private readonly ImmutableArray<ProtocolInfo> _protocols;
     private readonly IProtocolContext _context;
-    private readonly ILogger<ProtocolPort> _logger;
+    private readonly ILogger _logger;
     private ImmutableArray<IProtocolEndpoint> _endpoints = [];
     private readonly ReactiveProperty<ProtocolException?> _error = new();
     private readonly ReactiveProperty<ProtocolPortStatus> _status = new();
@@ -41,26 +29,37 @@ public abstract class ProtocolPort : ProtocolConnection, IProtocolPort
     private ITimer? _reconnectTimer;
     private readonly Subject<IProtocolEndpoint> _endpointAdded = new();
     private readonly Subject<IProtocolEndpoint> _endpointRemoved = new();
+    private readonly TConfig _config;
 
     protected ProtocolPort(string id,
-        ProtocolPortConfig config,
-        ChannelWriter<IProtocolMessage> rxChannel, 
-        ChannelWriter<ProtocolException> errorChannel,
-        ImmutableDictionary<string, ParserFactoryDelegate> parsers,
-        ImmutableArray<ProtocolInfo> protocols,
+        TConfig config,
         IProtocolContext context,
-        IStatisticHandler? statistic = null):base(id, features, rxChannel, errorChannel, context,statistic)
+        IStatisticHandler? statistic = null):base(id, context, statistic)
     {
         if (string.IsNullOrWhiteSpace(id))
             throw new ArgumentException("Value cannot be null or whitespace.", nameof(id));
         ArgumentNullException.ThrowIfNull(config);
         ArgumentNullException.ThrowIfNull(context);
-        _config = config;
-        _parsers = parsers;
-        _protocols = protocols;
         _context = context;
-        _logger = context.LoggerFactory.CreateLogger<ProtocolPort>();
-        _logger.ZLogInformation($"Create port {this} {config}");
+        _config = config;
+        if (config.EnabledProtocols == null)
+        {
+            _protocols = context.AvailableProtocols;
+        }
+        else
+        {
+            var hash = new HashSet<string>(config.EnabledProtocols);
+            _protocols = [..Context.AvailableProtocols.Where(x => hash.Contains(x.Id))];
+        }
+        
+        foreach (var protocol in _protocols)
+        {
+            if (context.ParserFactory.ContainsKey(protocol.Id) == false)
+                throw new ArgumentException($"Parser for protocol {protocol} not found");
+        }
+        _logger = context.LoggerFactory.CreateLogger<ProtocolPort<TConfig>>();
+        _logger.ZLogInformation($"Create port {this} with config {config}");
+        
     }
     
     protected void InternalRemoveConnection(IProtocolEndpoint endpoint)
@@ -86,6 +85,7 @@ public abstract class ProtocolPort : ProtocolConnection, IProtocolPort
             _logger.ZLogError($"Error on dispose endpoint {endpoint}: {e.Message}");
             Debug.Fail("Error on dispose endpoint");
         }
+        
     }
     
     protected void InternalAddConnection(IProtocolEndpoint endpoint)
@@ -98,18 +98,21 @@ public abstract class ProtocolPort : ProtocolConnection, IProtocolPort
             before = _endpoints;
             after = before.Add(endpoint);    
         }
-        // check if the value is changed by another thread while we are removing the endpoint
+        // check if the value is changed by another thread while we are adding the endpoint
         while (ImmutableInterlocked.InterlockedCompareExchange(ref _endpoints, after, before) != before);
         
         // we don't need to dispose subscriptions here, because it will be complete by endpoint itself
         endpoint.IsConnected.Where(x => x == false).Subscribe(endpoint, (x, p) => InternalRemoveConnection(p));
+        endpoint.OnRxMessage.Subscribe(InternalPublishRxMessage);
     }
     protected ImmutableArray<IProtocolParser> InternalCreateParsers()
     {
-        return [.._protocols.Select(x => _parsers[x.Id](_context, StatisticHandler))];
+        return [.._protocols.Select(x => Context.ParserFactory[x.Id](_context, StatisticHandler))];
     }
+
+    public ProtocolPortConfig Config => _config;
     public abstract PortTypeInfo TypeInfo { get; }
-    public IEnumerable<ProtocolInfo> Protocols => _protocols;
+    public IEnumerable<ProtocolInfo> EnabledProtocols => _protocols;
     public ReadOnlyReactiveProperty<ProtocolException?> Error => _error;
     public ReadOnlyReactiveProperty<ProtocolPortStatus> Status => _status;
     public ReadOnlyReactiveProperty<bool> IsEnabled => _isEnabled;
@@ -129,6 +132,7 @@ public abstract class ProtocolPort : ProtocolConnection, IProtocolPort
         }
         _logger.ZLogInformation($"Enable {this} port");
         _isEnabled.OnNext(true);
+        _config.IsEnabled = true;
         try
         {
             _status.OnNext(ProtocolPortStatus.InProgress);
@@ -158,6 +162,7 @@ public abstract class ProtocolPort : ProtocolConnection, IProtocolPort
         }
         _logger.ZLogInformation($"Disable {this} port");
         _isEnabled.OnNext(false);
+        _config.IsEnabled = false;
         try
         {
             _status.OnNext(ProtocolPortStatus.InProgress);
