@@ -62,6 +62,9 @@ public class TcpTest
             if (cnt % messagesCount == 0)
             {
                 logger.LogInformation($"Received {cnt} messages");
+                serverRouter.Statistic.PrintRx(logger);
+                serverRouter.Statistic.PrintTx(logger);
+                serverRouter.Statistic.PrintParsed(logger);
             }
         });
 
@@ -77,7 +80,9 @@ public class TcpTest
                     if (index % messagesCount == 0)
                     {
                         logger.LogInformation($"Send {index} messages");
-                        
+                        clientRouter.Statistic.PrintRx(logger);
+                        clientRouter.Statistic.PrintTx(logger);
+                        clientRouter.Statistic.PrintParsed(logger);
                     }
                 }
             }

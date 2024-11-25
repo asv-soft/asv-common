@@ -76,8 +76,6 @@ public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolC
                 if (newMsg == null) return;
                 message = newMsg;
             }
-
-            StatisticHandler.IncrementRxMessage();
             _onRxMessage.OnNext(message);
         }
         catch (ProtocolException ex)
@@ -92,13 +90,11 @@ public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolC
    
     protected async ValueTask InternalPublishRxError(ProtocolException ex)
     {
-        StatisticHandler.IncrementRxError();
         _onRxMessage.OnErrorResume(ex);
     }
    
     protected async ValueTask InternalOnTxError(ProtocolException ex)
     {
-        StatisticHandler.IncrementTxError();
         _onTxMessage.OnErrorResume(ex);
     }
     public ref ProtocolTags Tags => ref _internalTags;

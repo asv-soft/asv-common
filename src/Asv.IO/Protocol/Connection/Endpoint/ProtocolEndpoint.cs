@@ -96,16 +96,19 @@ public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
                 try
                 {
                     var message = await _rxChannel.Reader.ReadAsync(DisposeCancel);
+                    StatisticHandler.IncrementRxMessage();
                     InternalPublishRxMessage(message);
                 }
                 catch (ProtocolException e)
                 {
                     _logger.ZLogError(e, $"Error in '{nameof(PublishRxLoop)}':{e.Message}");
+                    StatisticHandler.IncrementRxError();
                     await InternalPublishRxError(e);
                 }
                 catch (Exception e)
                 {
                     _logger.ZLogError(e, $"Error in '{nameof(PublishRxLoop)}':{e.Message}");
+                    StatisticHandler.IncrementRxError();
                     await InternalPublishRxError(new ProtocolException($"Error in '{nameof(PublishRxLoop)}':{e.Message}",e));
                 }
             }
@@ -113,6 +116,7 @@ public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
         catch (Exception e)
         {
             _logger.LogCritical(e, "Error in publish loop");
+            StatisticHandler.IncrementRxError();
             Debug.Assert(false);
             Debugger.Break();
         }
