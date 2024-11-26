@@ -117,9 +117,7 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
     public ReadOnlyReactiveProperty<ProtocolPortStatus> Status => _status;
     public ReadOnlyReactiveProperty<bool> IsEnabled => _isEnabled;
     public ImmutableArray<IProtocolEndpoint> Endpoints => _endpoints;
-
     public Observable<IProtocolEndpoint> EndpointAdded => _endpointAdded;
-
     public Observable<IProtocolEndpoint> EndpointRemoved => _endpointRemoved;
 
     public void Enable()
@@ -139,12 +137,13 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
             _startStopCancel?.Cancel(false);
             _startStopCancel?.Dispose();
             _startStopCancel = new CancellationTokenSource();
+            InternalSafeDisable();
             InternalSafeEnable(_startStopCancel.Token);
             _status.OnNext(ProtocolPortStatus.Connected);
         }
         catch (Exception e)
         {
-            InternalPublishError(e);
+            InternalRisePortErrorAndReconnect(e);
         }
         finally
         {
@@ -178,7 +177,7 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
         }
         catch (Exception e)
         {
-            InternalPublishError(e);     
+            InternalRisePortErrorAndReconnect(e);     
         }   
         finally
         {
@@ -186,7 +185,7 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
         }
     }
 
-    protected void InternalPublishError(Exception ex)
+    protected void InternalRisePortErrorAndReconnect(Exception ex)
     {
         if (IsDisposed) return;
         _logger.ZLogError(ex,$"Port {this} error occured. Reconnect after {_config.ReconnectTimeoutMs} ms. Error message:{ex.Message}");

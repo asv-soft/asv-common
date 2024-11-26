@@ -102,7 +102,7 @@ public class UdpProtocolPort:ProtocolPort<UdpProtocolPortConfig>
         catch (ThreadAbortException ex)
         {
             _logger.ZLogDebug(ex, $"Thread abort exception:{ex.Message}");
-            InternalPublishError(ex);
+            InternalRisePortErrorAndReconnect(ex);
         }
     }
 }

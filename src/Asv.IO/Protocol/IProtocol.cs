@@ -24,4 +24,6 @@ public interface IProtocolContext
 public interface IProtocolFactory
 {
     IProtocolRouter CreateRouter(string id);
+    IVirtualConnection CreateVirtualConnection(Func<IProtocolMessage, bool>? clientToServerFilter = null,
+        Func<IProtocolMessage, bool>? serverToClientFilter = null);
 }

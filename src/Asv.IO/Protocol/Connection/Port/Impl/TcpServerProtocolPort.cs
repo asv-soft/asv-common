@@ -106,14 +106,14 @@ public class TcpServerProtocolPort:ProtocolPort<TcpServerProtocolPortConfig>
                 {
                     _logger.ZLogError(ex, $"Unhandled exception:{ex.Message}");
                     Debug.Assert(false);
-                    InternalPublishError(ex);
+                    InternalRisePortErrorAndReconnect(ex);
                 }
             }
         }
         catch (Exception ex)
         {
             _logger.ZLogDebug(ex, $"Unhandled exception on {nameof(AcceptNewEndpoint)}:{ex.Message}");
-            InternalPublishError(ex);
+            InternalRisePortErrorAndReconnect(ex);
         }
     }
     protected override void InternalSafeDisable()

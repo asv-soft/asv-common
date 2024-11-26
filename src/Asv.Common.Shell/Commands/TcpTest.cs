@@ -29,13 +29,13 @@ public class TcpTest
         /*string server = "tcps://127.0.0.1:7341?max_clients=10#protocols=example",
         string client = "tcp://127.0.0.1:7341#protocols=example"*/
         string server = "serial:COM11?br=57600",
-        string client = "serial:COM45?br=57600"
+        string client = "serial:COM44?br=57600"
     )
     {
         var loggerFactory = ConsoleAppHelper.CreateDefaultLog();
         var logger = loggerFactory.CreateLogger<TcpTest>();
         Assembly.GetExecutingAssembly().PrintWelcomeToLog(logger);
-        const int messagesCount = 100;
+        const int messagesCount = 1000;
         var protocol = Protocol.Create(builder =>
         {
             builder.SetLog(loggerFactory);
@@ -59,12 +59,16 @@ public class TcpTest
         serverPort.OnRxMessage.Subscribe(x =>
         {
             cnt++;
-            if (cnt % messagesCount == 0)
+            if (cnt % 100 == 0)
             {
-                logger.LogInformation($"Received {cnt} messages");
+                logger.LogInformation($"Server received {cnt} messages");
                 serverRouter.Statistic.PrintRx(logger);
                 serverRouter.Statistic.PrintTx(logger);
                 serverRouter.Statistic.PrintParsed(logger);
+            }
+            if (cnt >= messagesCount)
+            {
+                tcs.SetResult();
             }
         });
 
@@ -77,12 +81,18 @@ public class TcpTest
                 {
                     index++;
                     await clientPort.Send(new ExampleMessage1{ Value1 = 0});
-                    if (index % messagesCount == 0)
+                    Thread.Sleep(1);
+                    if (index % 100 == 0)
                     {
-                        logger.LogInformation($"Send {index} messages");
+                        logger.LogInformation($"Client send {index} messages");
                         clientRouter.Statistic.PrintRx(logger);
                         clientRouter.Statistic.PrintTx(logger);
                         clientRouter.Statistic.PrintParsed(logger);
+                    }
+                    if (index >= messagesCount)
+                    {
+                        
+                        return;
                     }
                 }
             }

@@ -54,4 +54,9 @@ public class Protocol: IProtocolFactory, IProtocolContext
     {
         return new ProtocolRouter(ProtocolHelper.NormalizeId(id), this);
     }
+    
+    public IVirtualConnection CreateVirtualConnection(Func<IProtocolMessage, bool>? clientToServerFilter = null,Func<IProtocolMessage, bool>? serverToClientFilter = null)
+    {
+        return new VirtualConnection(clientToServerFilter,serverToClientFilter,this);
+    }
 }
