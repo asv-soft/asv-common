@@ -6,7 +6,7 @@ namespace Asv.IO;
 public interface IProtocolEndpoint: IProtocolConnection
 {
     IEnumerable<IProtocolParser> Parsers { get; }
-    ReadOnlyReactiveProperty<bool> IsConnected { get; }
+    ReadOnlyReactiveProperty<ProtocolConnectionException?> LastError { get; }
     bool IsDisposed { get; }
     
 }

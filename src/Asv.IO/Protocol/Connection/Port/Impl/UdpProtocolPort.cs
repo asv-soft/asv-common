@@ -11,6 +11,8 @@ namespace Asv.IO;
 
 public class UdpProtocolPortConfig(Uri connectionString) : ProtocolPortConfig(connectionString)
 {
+    public static UdpProtocolPortConfig CreateDefault() => new(new Uri($"{UdpProtocolPort.Scheme}://127.0.0.1:8080"));
+
     public const string RemoteHostKey = "rhost";
     public const string RemotePortKey = "rport";
 
@@ -25,7 +27,8 @@ public class UdpProtocolPortConfig(Uri connectionString) : ProtocolPortConfig(co
         }
         return CheckIpEndpoint(remoteHost, port);
     }
-    
+
+
    
 }
 
@@ -44,7 +47,7 @@ public class UdpProtocolPort:ProtocolPort<UdpProtocolPortConfig>
         UdpProtocolPortConfig config,
         IProtocolContext context,
         IStatisticHandler statistic) 
-        : base(ProtocolHelper.NormalizeId($"{Scheme}_{config.Host}_{config.Port}"), config, context,statistic)
+        : base(ProtocolHelper.NormalizeId($"{Scheme}_{config.Host}_{config.Port}"), config, context, true,statistic)
     {
         ArgumentNullException.ThrowIfNull(config);
         ArgumentNullException.ThrowIfNull(context);
@@ -109,6 +112,12 @@ public class UdpProtocolPort:ProtocolPort<UdpProtocolPortConfig>
 
 public static class UdpProtocolPortHelper
 {
+    public static IProtocolPort AddUdpPort(this IProtocolRouter src, Action<UdpProtocolPortConfig> edit)
+    {
+        var cfg = UdpProtocolPortConfig.CreateDefault();
+        edit(cfg);
+        return src.AddPort(cfg.AsUri());
+    }
     public static void RegisterUdpPort(this IProtocolBuilder builder)
     {
         builder.RegisterPortType(UdpProtocolPort.Info, 

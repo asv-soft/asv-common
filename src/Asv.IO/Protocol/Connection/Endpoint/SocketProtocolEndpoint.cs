@@ -35,6 +35,7 @@ public class SocketProtocolEndpoint(
     {
         if (disposing)
         {
+            if (socket.Connected) socket.Close();
             socket.Dispose();
         }
 
@@ -43,11 +44,8 @@ public class SocketProtocolEndpoint(
 
     protected override async ValueTask DisposeAsyncCore()
     {
-        if (socket is IAsyncDisposable socketAsyncDisposable)
-            await socketAsyncDisposable.DisposeAsync();
-        else
-            socket.Dispose();
-
+        if (socket.Connected) socket.Close();
+        socket.Dispose();
         await base.DisposeAsyncCore();
     }
     

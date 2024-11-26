@@ -23,9 +23,8 @@ public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
     private readonly Channel<IProtocolMessage> _rxChannel;
     private readonly ILogger<ProtocolEndpoint> _logger;
     private readonly IDisposable _parserSub;
-    private readonly ReactiveProperty<bool> _isConnected = new (true);
+    private readonly ReactiveProperty<ProtocolConnectionException?> _lastError = new (null);
     private readonly ImmutableHashSet<string> _parserAvailable;
-    
 
     protected ProtocolEndpoint(
         string id, 
@@ -103,13 +102,13 @@ public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
                 {
                     _logger.ZLogError(e, $"Error in '{nameof(PublishRxLoop)}':{e.Message}");
                     StatisticHandler.IncrementRxError();
-                    InternalPublishError(e);
+                    InternalPublishRxError(e);
                 }
                 catch (Exception e)
                 {
                     _logger.ZLogError(e, $"Error in '{nameof(PublishRxLoop)}':{e.Message}");
                     StatisticHandler.IncrementRxError();
-                    InternalPublishError(new ProtocolConnectionException(this,$"Error in '{nameof(PublishRxLoop)}':{e.Message}",e));
+                    InternalPublishRxError(new ProtocolConnectionException(this,$"Error in '{nameof(PublishRxLoop)}': {e.Message}",e));
                 }
             }
         }
@@ -117,7 +116,7 @@ public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
         {
             _logger.LogCritical(e, "Error in publish loop");
             StatisticHandler.IncrementRxError();
-            InternalPublishError(new ProtocolConnectionException(this,$"Error in '{nameof(PublishRxLoop)}':{e.Message}",e));
+            InternalPublishRxError(new ProtocolConnectionException(this,$"Error in '{nameof(PublishRxLoop)}': {e.Message}",e));
             Debug.Assert(false);
             Debugger.Break();
         }
@@ -156,9 +155,9 @@ public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
         }
         catch (Exception e)
         {
-            _isConnected.OnNext(false);
+            _lastError.OnNext(new ProtocolConnectionException(this, $"Error at read loop: {e.Message}",e));
             _logger.ZLogError(e, $"Error while reading loop {Id}");
-            InternalPublishError(new ProtocolConnectionException(this, $"Error at read loop:{e.Message}",e));
+            InternalPublishRxError(new ProtocolConnectionException(this, $"Error at read loop: {e.Message}",e));
         }
     }
     
@@ -169,7 +168,7 @@ public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
     {
         try
         {
-            while (IsDisposed == false && _isConnected.CurrentValue)
+            while (IsDisposed == false && _lastError.CurrentValue == null)
             {
                 var msg = await _txChannel.Reader.ReadAsync(DisposeCancel);
                 // skip not supported messages
@@ -188,20 +187,20 @@ public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
         catch (Exception e)
         {
             _logger.ZLogError(e, $"Error while writing loop {Id}");
-            InternalPublishError(new ProtocolConnectionException(this, $"Error at write loop:{e.Message}",e));
-            _isConnected.OnNext(false);
+            InternalPublishTxError(new ProtocolConnectionException(this, $"Error at write loop: {e.Message}",e));
+            _lastError.OnNext(new ProtocolConnectionException(this, $"Error at write loop: {e.Message}",e));
         }
     }
   
     public override ValueTask Send(IProtocolMessage message, CancellationToken cancel = default)
     {
         if (IsDisposed) return ValueTask.CompletedTask;
-        if (_isConnected.CurrentValue == false) return ValueTask.CompletedTask;
+        if (_lastError.CurrentValue != null) return ValueTask.CompletedTask;
         return _txChannel.Writer.WriteAsync(message, cancel);
     }
 
     public IEnumerable<IProtocolParser> Parsers => _parsers;
-    public ReadOnlyReactiveProperty<bool> IsConnected => _isConnected;
+    public ReadOnlyReactiveProperty<ProtocolConnectionException?> LastError => _lastError;
 
     #region Dispose
 
@@ -214,8 +213,7 @@ public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
             {
                 parser.Dispose();
             }
-            _isConnected.OnNext(false);
-            _isConnected.Dispose();
+            _lastError.Dispose();
             _parserSub.Dispose();
         }
     }
@@ -224,8 +222,7 @@ public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
     protected override async ValueTask DisposeAsyncCore()
     {
         _logger.ZLogTrace($"{nameof(DisposeAsync)} {Id}");
-        _isConnected.OnNext(false);
-        await CastAndDispose(_isConnected);
+        await CastAndDispose(_lastError);
         await CastAndDispose(_parserSub);
         foreach (var parser in _parsers)
         {

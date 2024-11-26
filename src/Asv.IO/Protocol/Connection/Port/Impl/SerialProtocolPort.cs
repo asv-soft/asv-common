@@ -7,6 +7,8 @@ namespace Asv.IO;
 
 public class SerialProtocolPortConfig(Uri cs):ProtocolPortConfig(cs)
 {
+    public static SerialProtocolPortConfig CreateDefault() => new(new Uri($"{SerialProtocolPort.Scheme}:COM1?br=115200"));
+    
     public const string DataBitsKey = "data_bits";
     public const int DataBitsDefault = 8;
     public int DataBits
@@ -89,13 +91,10 @@ public class SerialProtocolPortConfig(Uri cs):ProtocolPortConfig(cs)
         set => Query["wb"] = value.ToString();
     }
 
-    public static SerialProtocolPortConfig CreateDefault()
-    {
-        return new SerialProtocolPortConfig(new Uri($"{SerialProtocolPort.Scheme}:COM1?br=115200"));
-    }
+    
 }
 
-public sealed class SerialProtocolPort:ProtocolPort<SerialProtocolPortConfig>
+public sealed class SerialProtocolPort : ProtocolPort<SerialProtocolPortConfig>
 {
     public const string Scheme = "serial";
     public static readonly PortTypeInfo Info = new(Scheme, "Serial port");
@@ -104,32 +103,32 @@ public sealed class SerialProtocolPort:ProtocolPort<SerialProtocolPortConfig>
     private SerialPort? _serial;
     private SerialProtocolEndpoint? _pipe;
 
-
-    public SerialProtocolPort(
-        SerialProtocolPortConfig config, 
+    public SerialProtocolPort(SerialProtocolPortConfig config,
         IProtocolContext context,
-        IStatisticHandler statistic) 
-        : base($"{Scheme}_{config.PortName}", config, context,statistic)
+        IStatisticHandler statistic) : base($"{Scheme}_{config.PortName}", config, context, true, statistic)
     {
+        ArgumentNullException.ThrowIfNull(config);
+        ArgumentNullException.ThrowIfNull(context);
         _config = config;
         _context = context;
     }
+
 
     public override PortTypeInfo TypeInfo => Info;
 
     protected override void InternalSafeDisable()
     {
-        if (_pipe != null)
-        {
-            InternalRemoveConnection(_pipe);
-            _pipe = null;
-        }
         if (_serial != null)
         {
             var serial = _serial;
             if (serial.IsOpen) serial.Close();
             serial.Dispose();
             serial = null;
+        }
+        if (_pipe != null)
+        {
+            _pipe.Dispose();
+            _pipe = null;
         }
         
     }
@@ -149,8 +148,8 @@ public sealed class SerialProtocolPort:ProtocolPort<SerialProtocolPortConfig>
             ProtocolHelper.NormalizeId(
                 $"{Id}_{_config.BoundRate}_{_config.DataBits}_{_config.Parity}_{_config.StopBits}"),
             _config, InternalCreateParsers(), _context, StatisticHandler);
-        
         InternalAddConnection(_pipe);
+        
     }
 
     
@@ -167,6 +166,11 @@ public sealed class SerialProtocolPort:ProtocolPort<SerialProtocolPortConfig>
                 _serial.Dispose();
                 _serial = null;
             }
+            if (_pipe != null)
+            {
+                _pipe.Dispose();
+                _pipe = null;
+            }
         }
 
         base.Dispose(disposing);
@@ -180,6 +184,11 @@ public sealed class SerialProtocolPort:ProtocolPort<SerialProtocolPortConfig>
             _serial.Dispose();
             _serial = null;
         }
+        if (_pipe != null)
+        {
+            await _pipe.DisposeAsync();
+            _pipe = null;
+        }
         await base.DisposeAsyncCore();
     }
 
@@ -189,11 +198,11 @@ public sealed class SerialProtocolPort:ProtocolPort<SerialProtocolPortConfig>
 public static class SerialProtocolPortHelper
 {
 
-    public static void AddSerialPort(this IProtocolRouter src, Action<SerialProtocolPortConfig> edit)
+    public static IProtocolPort AddSerialPort(this IProtocolRouter src, Action<SerialProtocolPortConfig> edit)
     {
         var cfg = SerialProtocolPortConfig.CreateDefault();
         edit(cfg);
-        src.AddPort(cfg.AsUri());
+        return src.AddPort(cfg.AsUri());
     }
     public static void RegisterSerialPort(this IProtocolBuilder builder)
     {

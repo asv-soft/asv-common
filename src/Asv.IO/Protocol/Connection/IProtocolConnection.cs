@@ -10,7 +10,6 @@ public interface IProtocolConnection:ISupportTag,ISupportStatistic, IDisposable,
     string Id { get; }
     Observable<IProtocolMessage> OnTxMessage { get; }
     Observable<IProtocolMessage> OnRxMessage { get; }
-    Observable<ProtocolConnectionException> OnError { get; }
     ValueTask Send(IProtocolMessage message, CancellationToken cancel = default);
     string? PrintMessage(IProtocolMessage message, PacketFormatting formatting = PacketFormatting.Inline);
 }
@@ -46,4 +45,29 @@ public static class ProtocolConnectionHelper
 
         }).Cast<IProtocolMessage,TMessage>();
     }
+
+    public static async Task<TResult> SendAndWaitAnswer<TResult,TMessage,TMessageId>(this IProtocolConnection connection, 
+        IProtocolMessage send, 
+        FilterDelegate<TResult, TMessage,TMessageId> filterAndGetResult,
+        CancellationToken cancel = default)
+        where TMessage: IProtocolMessage<TMessageId>, new()
+    {
+        cancel.ThrowIfCancellationRequested();
+        var tcs = new TaskCompletionSource<TResult>();
+        await using var c1 = cancel.Register(() => tcs.TrySetCanceled());
+        using var c2 = connection.RxFilter<TMessage, TMessageId>().Subscribe(filterAndGetResult, (res, f) =>
+        {
+            if (filterAndGetResult(res, out var result))
+            {
+                tcs.TrySetResult(result);
+            }
+        });
+        await connection.Send(send, cancel);
+        return await tcs.Task.ConfigureAwait(false);
+    }
+    
+    
 }
+
+public delegate bool FilterDelegate<TResult, in TMessage,TMessageId>(TMessage input, out TResult result)
+    where TMessage: IProtocolMessage<TMessageId>;

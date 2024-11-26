@@ -20,6 +20,7 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
     private int _isBusy;
     private readonly ImmutableArray<ProtocolInfo> _protocols;
     private readonly IProtocolContext _context;
+    private readonly bool _reconnectWhenEndpointError;
     private readonly ILogger _logger;
     private ImmutableArray<IProtocolEndpoint> _endpoints = [];
     private readonly ReactiveProperty<ProtocolException?> _error = new();
@@ -33,7 +34,7 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
 
     protected ProtocolPort(string id,
         TConfig config,
-        IProtocolContext context,
+        IProtocolContext context, bool reconnectWhenEndpointError,
         IStatisticHandler? statistic = null):base(id, context, statistic)
     {
         if (string.IsNullOrWhiteSpace(id))
@@ -41,6 +42,7 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
         ArgumentNullException.ThrowIfNull(config);
         ArgumentNullException.ThrowIfNull(context);
         _context = context;
+        _reconnectWhenEndpointError = reconnectWhenEndpointError;
         _config = config;
         if (config.EnabledProtocols == null)
         {
@@ -61,12 +63,38 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
         _logger.ZLogInformation($"Create port {this} with config {config}");
         
     }
-    
-    protected void InternalRemoveConnection(IProtocolEndpoint endpoint)
+
+    private void ClearAndDisposeAllEndpoints()
+    {
+        if (_endpoints.Length == 0) return;
+        _logger.ZLogTrace($"{this} clear all endpoints '{_endpoints.Length}'");
+        ImmutableArray<IProtocolEndpoint> after, before;
+        do
+        {
+            before = _endpoints;
+            after = [];    
+        }
+        // check if the value is changed by another thread while we are removing the endpoint
+        while (ImmutableInterlocked.InterlockedCompareExchange(ref _endpoints, after, before) != before);
+        foreach (var endpoint in before)
+        {
+            try
+            {
+                endpoint.Dispose();
+                _endpointRemoved.OnNext(endpoint);
+            }
+            catch (Exception e)
+            {
+                _logger.ZLogError($"Error on dispose endpoint {endpoint}: {e.Message}");
+                Debug.Fail("Error on dispose endpoint");
+            }
+        }
+    }
+
+    protected void RemoveAndDisposeEndpoint(IProtocolEndpoint endpoint, ProtocolConnectionException? err)
     {
         if (IsDisposed) return;
         _logger.ZLogInformation($"{this} remove endpoint {endpoint}");
-
         ImmutableArray<IProtocolEndpoint> after, before;
         do
         {
@@ -85,7 +113,11 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
             _logger.ZLogError($"Error on dispose endpoint {endpoint}: {e.Message}");
             Debug.Fail("Error on dispose endpoint");
         }
-        
+        _endpointRemoved.OnNext(endpoint);
+        if (err != null && _reconnectWhenEndpointError)
+        {
+            InternalRisePortErrorAndReconnect(err);
+        }
     }
     
     protected void InternalAddConnection(IProtocolEndpoint endpoint)
@@ -102,8 +134,9 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
         while (ImmutableInterlocked.InterlockedCompareExchange(ref _endpoints, after, before) != before);
         
         // we don't need to dispose subscriptions here, because it will be complete by endpoint itself
-        endpoint.IsConnected.Where(x => x == false).Subscribe(endpoint, (x, p) => InternalRemoveConnection(p));
-        endpoint.OnRxMessage.Subscribe(InternalPublishRxMessage);
+        endpoint.LastError.Where(x => x != null).Subscribe(endpoint, (x, p) => RemoveAndDisposeEndpoint(p,x));
+        endpoint.OnRxMessage.Subscribe(InternalPublishRxMessage,InternalPublishRxError, _ => { });
+        _endpointAdded.OnNext(endpoint);
     }
     protected ImmutableArray<IProtocolParser> InternalCreateParsers()
     {
@@ -138,6 +171,7 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
             _startStopCancel?.Dispose();
             _startStopCancel = new CancellationTokenSource();
             InternalSafeDisable();
+            ClearAndDisposeAllEndpoints();
             InternalSafeEnable(_startStopCancel.Token);
             _status.OnNext(ProtocolPortStatus.Connected);
         }
@@ -173,6 +207,7 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
                 _startStopCancel = null;
             }
             InternalSafeDisable();
+            ClearAndDisposeAllEndpoints();
             _status.OnNext(ProtocolPortStatus.Disconnected);
         }
         catch (Exception e)
@@ -188,6 +223,7 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
     protected void InternalRisePortErrorAndReconnect(Exception ex)
     {
         if (IsDisposed) return;
+        ClearAndDisposeAllEndpoints();
         _logger.ZLogError(ex,$"Port {this} error occured. Reconnect after {_config.ReconnectTimeoutMs} ms. Error message:{ex.Message}");
         _error.OnNext(new ProtocolPortException(this,$"Port {this} error:{ex.Message}",ex));
         _status.OnNext(ProtocolPortStatus.Error);
@@ -224,22 +260,11 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
 
     #region Dispose
 
-    protected override async void Dispose(bool disposing)
+    protected override void Dispose(bool disposing)
     {
         if (disposing)
         {
-            ImmutableArray<IProtocolEndpoint> after, before;
-            do
-            {
-                before = _endpoints;
-                after = [];    
-            }
-            // check if the value is changed by another thread while we are removing the endpoint
-            while (ImmutableInterlocked.InterlockedCompareExchange(ref _endpoints, after, before) != before);
-            foreach (var connection in before)
-            {
-                connection.Dispose();
-            }
+            ClearAndDisposeAllEndpoints();
             _endpointAdded.Dispose();
             _endpointRemoved.Dispose();
             _error.Dispose();
@@ -253,18 +278,7 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
     protected override async ValueTask DisposeAsyncCore()
     {
         _logger.ZLogTrace($"{nameof(DisposeAsync)} {this}");
-        ImmutableArray<IProtocolEndpoint> after, before;
-        do
-        {
-            before = _endpoints;
-            after = [];    
-        }
-        // check if the value is changed by another thread while we are removing the endpoint
-        while (ImmutableInterlocked.InterlockedCompareExchange(ref _endpoints, after, before) != before);
-        foreach (var connection in before)
-        {
-            connection.Dispose();
-        }
+        ClearAndDisposeAllEndpoints();
         await CastAndDispose(_endpointAdded);
         await CastAndDispose(_endpointRemoved);
         await CastAndDispose(_error);

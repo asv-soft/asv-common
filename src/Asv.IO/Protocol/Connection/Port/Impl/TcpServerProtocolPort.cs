@@ -15,6 +15,8 @@ namespace Asv.IO;
 
 public class TcpServerProtocolPortConfig(Uri connectionString) : ProtocolPortConfig(connectionString)
 {
+    public static TcpServerProtocolPortConfig CreateDefault() => new(new Uri($"{TcpServerProtocolPort.Scheme}://127.0.0.1:7341"));
+
     public const string MaxConnectionKey = "maxConnection";
     public int? MaxConnection
     {
@@ -56,7 +58,7 @@ public class TcpServerProtocolPort:ProtocolPort<TcpServerProtocolPortConfig>
         TcpServerProtocolPortConfig config, 
         IProtocolContext context,
         IStatisticHandler statistic) 
-        : base(ProtocolHelper.NormalizeId($"{Scheme}_{config.Host}_{config.Port}"), config, context,statistic)
+        : base(ProtocolHelper.NormalizeId($"{Scheme}_{config.Host}_{config.Port}"), config, context, false, statistic)
     {
         ArgumentNullException.ThrowIfNull(config);
         ArgumentNullException.ThrowIfNull(context);
@@ -161,6 +163,12 @@ public class TcpServerProtocolPort:ProtocolPort<TcpServerProtocolPortConfig>
 
 public static class TcpServerProtocolPortHelper
 {
+    public static IProtocolPort AddTcpServerPort(this IProtocolRouter src, Action<TcpServerProtocolPortConfig> edit)
+    {
+        var cfg = TcpServerProtocolPortConfig.CreateDefault();
+        edit(cfg);
+        return src.AddPort(cfg.AsUri());
+    }
     public static void RegisterTcpServerPort(this IProtocolBuilder builder)
     {
         builder.RegisterPortType(TcpServerProtocolPort.Info, 

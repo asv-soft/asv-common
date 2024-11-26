@@ -15,7 +15,6 @@ public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolC
     private readonly ILogger<ProtocolConnection> _logger;
     private readonly Subject<IProtocolMessage> _onTxMessage = new();
     private readonly Subject<IProtocolMessage> _onRxMessage = new();
-    private readonly Subject<ProtocolConnectionException> _onError = new();
 
     protected ProtocolConnection(string id, IProtocolContext context, IStatisticHandler? statistic = null)
     {
@@ -46,9 +45,6 @@ public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolC
     public IStatistic Statistic { get; }
     public Observable<IProtocolMessage> OnTxMessage => _onTxMessage;
     public Observable<IProtocolMessage> OnRxMessage => _onRxMessage;
-
-    public Observable<ProtocolConnectionException> OnError => _onError;
-
     protected IStatisticHandler StatisticHandler { get; }
     protected IProtocolContext Context { get; }
     public abstract ValueTask Send(IProtocolMessage message, CancellationToken cancel = default);
@@ -84,18 +80,20 @@ public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolC
         }
         catch (ProtocolConnectionException ex)
         {
-             InternalPublishError(ex);
+            InternalPublishRxError(ex);
         }
         catch (Exception ex)
         {
-            InternalPublishError(new ProtocolConnectionException(this,$"Error at publish rx message:{ex.Message}", ex));
+            InternalPublishRxError(new ProtocolConnectionException(this,$"Error at publish rx message:{ex.Message}", ex));
         }
     }
-   
-   
-    protected void InternalPublishError(ProtocolConnectionException ex)
+    protected void InternalPublishRxError(Exception ex)
     {
-        _onError.OnNext(ex);
+        _onRxMessage.OnErrorResume(ex);
+    }
+    protected void InternalPublishTxError(ProtocolConnectionException ex)
+    {
+        _onTxMessage.OnErrorResume(ex);
     }
     public ref ProtocolTags Tags => ref _internalTags;
     
@@ -112,7 +110,6 @@ public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolC
             }
             _onTxMessage.Dispose();
             _onRxMessage.Dispose();
-            _onError.Dispose();
         }
 
         base.Dispose(disposing);
@@ -127,7 +124,6 @@ public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolC
         }
         await CastAndDispose(_onTxMessage);
         await CastAndDispose(_onRxMessage);
-        await CastAndDispose(_onError);
         await base.DisposeAsyncCore();
 
         return;

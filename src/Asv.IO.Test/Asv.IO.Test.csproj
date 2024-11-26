@@ -8,10 +8,11 @@
     <LangVersion>10</LangVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="DeepEqual" Version="2.0.0" />
+    <PackageReference Include="DeepEqual" Version="$(DeepEqualVersion)" />
     <PackageReference Include="FluentAssertions" Version="6.6.0" />
     <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" Version="9.0.0-preview.9.24507.7" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.9.4" />
+    <PackageReference Include="TimeProviderExtensions" Version="1.0.0" />
     <PackageReference Include="xunit" Version="2.4.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -23,6 +24,7 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Asv.Cfg.Test\Asv.Cfg.Test.csproj" />
     <ProjectReference Include="..\Asv.IO\Asv.IO.csproj" />
   </ItemGroup>
   <ItemGroup>
@@ -40,8 +42,5 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>SpanBitHelperExtTest.tt</DependentUpon>
     </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Protocols\" />
   </ItemGroup>
 </Project>

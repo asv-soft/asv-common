@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Asv.IO;
 
-public class SerialProtocolEndpoint(
+public sealed class SerialProtocolEndpoint(
     SerialPort port,
     string id,
     ProtocolPortConfig config,
@@ -27,4 +27,26 @@ public class SerialProtocolEndpoint(
         await port.BaseStream.WriteAsync(memory, cancel);
         return memory.Length;
     }
+    
+    #region Dispose
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            if (port.IsOpen) port.Close();
+            port.Dispose();
+        }
+
+        base.Dispose(disposing);
+    }
+
+    protected override async ValueTask DisposeAsyncCore()
+    {
+        if (port.IsOpen) port.Close();
+        port.Dispose();
+        await base.DisposeAsyncCore();
+    }
+    
+    #endregion
 }
