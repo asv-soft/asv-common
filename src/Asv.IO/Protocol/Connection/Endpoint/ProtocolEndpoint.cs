@@ -99,17 +99,17 @@ public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
                     StatisticHandler.IncrementRxMessage();
                     InternalPublishRxMessage(message);
                 }
-                catch (ProtocolException e)
+                catch (ProtocolConnectionException e)
                 {
                     _logger.ZLogError(e, $"Error in '{nameof(PublishRxLoop)}':{e.Message}");
                     StatisticHandler.IncrementRxError();
-                    await InternalPublishRxError(e);
+                    InternalPublishError(e);
                 }
                 catch (Exception e)
                 {
                     _logger.ZLogError(e, $"Error in '{nameof(PublishRxLoop)}':{e.Message}");
                     StatisticHandler.IncrementRxError();
-                    await InternalPublishRxError(new ProtocolException($"Error in '{nameof(PublishRxLoop)}':{e.Message}",e));
+                    InternalPublishError(new ProtocolConnectionException(this,$"Error in '{nameof(PublishRxLoop)}':{e.Message}",e));
                 }
             }
         }
@@ -117,6 +117,7 @@ public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
         {
             _logger.LogCritical(e, "Error in publish loop");
             StatisticHandler.IncrementRxError();
+            InternalPublishError(new ProtocolConnectionException(this,$"Error in '{nameof(PublishRxLoop)}':{e.Message}",e));
             Debug.Assert(false);
             Debugger.Break();
         }
@@ -155,9 +156,9 @@ public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
         }
         catch (Exception e)
         {
-            _logger.ZLogError(e, $"Error while reading loop {Id}");
-            await InternalOnTxError(new ProtocolConnectionException(this, $"Error at read loop:{e.Message}",e));
             _isConnected.OnNext(false);
+            _logger.ZLogError(e, $"Error while reading loop {Id}");
+            InternalPublishError(new ProtocolConnectionException(this, $"Error at read loop:{e.Message}",e));
         }
     }
     
@@ -187,7 +188,7 @@ public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
         catch (Exception e)
         {
             _logger.ZLogError(e, $"Error while writing loop {Id}");
-            await InternalOnTxError(new ProtocolConnectionException(this, $"Error at write loop:{e.Message}",e));
+            InternalPublishError(new ProtocolConnectionException(this, $"Error at write loop:{e.Message}",e));
             _isConnected.OnNext(false);
         }
     }
@@ -213,6 +214,7 @@ public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
             {
                 parser.Dispose();
             }
+            _isConnected.OnNext(false);
             _isConnected.Dispose();
             _parserSub.Dispose();
         }
@@ -222,6 +224,7 @@ public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
     protected override async ValueTask DisposeAsyncCore()
     {
         _logger.ZLogTrace($"{nameof(DisposeAsync)} {Id}");
+        _isConnected.OnNext(false);
         await CastAndDispose(_isConnected);
         await CastAndDispose(_parserSub);
         foreach (var parser in _parsers)

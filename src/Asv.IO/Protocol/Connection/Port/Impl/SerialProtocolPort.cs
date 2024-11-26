@@ -1,10 +1,6 @@
 using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.IO.Ports;
-using System.Linq;
 using System.Threading;
-using System.Threading.Channels;
 using System.Threading.Tasks;
 
 namespace Asv.IO;
@@ -93,6 +89,10 @@ public class SerialProtocolPortConfig(Uri cs):ProtocolPortConfig(cs)
         set => Query["wb"] = value.ToString();
     }
 
+    public static SerialProtocolPortConfig CreateDefault()
+    {
+        return new SerialProtocolPortConfig(new Uri($"{SerialProtocolPort.Scheme}:COM1?br=115200"));
+    }
 }
 
 public sealed class SerialProtocolPort:ProtocolPort<SerialProtocolPortConfig>
@@ -102,6 +102,7 @@ public sealed class SerialProtocolPort:ProtocolPort<SerialProtocolPortConfig>
     private readonly SerialProtocolPortConfig _config;
     private readonly IProtocolContext _context;
     private SerialPort? _serial;
+    private SerialProtocolEndpoint? _pipe;
 
 
     public SerialProtocolPort(
@@ -118,19 +119,23 @@ public sealed class SerialProtocolPort:ProtocolPort<SerialProtocolPortConfig>
 
     protected override void InternalSafeDisable()
     {
+        if (_pipe != null)
+        {
+            InternalRemoveConnection(_pipe);
+            _pipe = null;
+        }
         if (_serial != null)
         {
             var serial = _serial;
-            serial.Close();
+            if (serial.IsOpen) serial.Close();
             serial.Dispose();
             serial = null;
         }
+        
     }
 
     protected override void InternalSafeEnable(CancellationToken token)
     {
-        _serial?.Close();
-        _serial?.Dispose();
         _serial = new SerialPort(_config.PortName, _config.BoundRate, _config.Parity, _config.DataBits, _config.StopBits)
         {
             WriteBufferSize = _config.WriteBufferSize,
@@ -139,12 +144,16 @@ public sealed class SerialProtocolPort:ProtocolPort<SerialProtocolPortConfig>
             ReadTimeout = _config.ReadTimeout,
         };
         _serial.Open();
-        InternalAddConnection(new SerialProtocolEndpoint(
+        _pipe = new SerialProtocolEndpoint(
             _serial,
-            ProtocolHelper.NormalizeId($"{Id}_{_config.BoundRate}_{_config.DataBits}_{_config.Parity}_{_config.StopBits}"),
-            _config,InternalCreateParsers(), _context, StatisticHandler));
+            ProtocolHelper.NormalizeId(
+                $"{Id}_{_config.BoundRate}_{_config.DataBits}_{_config.Parity}_{_config.StopBits}"),
+            _config, InternalCreateParsers(), _context, StatisticHandler);
         
+        InternalAddConnection(_pipe);
     }
+
+    
 
     #region Dispose
 
@@ -180,9 +189,11 @@ public sealed class SerialProtocolPort:ProtocolPort<SerialProtocolPortConfig>
 public static class SerialProtocolPortHelper
 {
 
-    public static void RegisterSerialPort(this IProtocolRouter src, SerialProtocolPortConfig config)
+    public static void AddSerialPort(this IProtocolRouter src, Action<SerialProtocolPortConfig> edit)
     {
-        src.AddPort(config.AsUri());
+        var cfg = SerialProtocolPortConfig.CreateDefault();
+        edit(cfg);
+        src.AddPort(cfg.AsUri());
     }
     public static void RegisterSerialPort(this IProtocolBuilder builder)
     {

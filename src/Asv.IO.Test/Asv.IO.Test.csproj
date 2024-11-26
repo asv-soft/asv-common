@@ -41,4 +41,7 @@
       <DependentUpon>SpanBitHelperExtTest.tt</DependentUpon>
     </Compile>
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Protocols\" />
+  </ItemGroup>
 </Project>

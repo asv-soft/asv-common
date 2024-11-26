@@ -10,6 +10,7 @@ public interface IProtocolConnection:ISupportTag,ISupportStatistic, IDisposable,
     string Id { get; }
     Observable<IProtocolMessage> OnTxMessage { get; }
     Observable<IProtocolMessage> OnRxMessage { get; }
+    Observable<ProtocolConnectionException> OnError { get; }
     ValueTask Send(IProtocolMessage message, CancellationToken cancel = default);
     string? PrintMessage(IProtocolMessage message, PacketFormatting formatting = PacketFormatting.Inline);
 }
