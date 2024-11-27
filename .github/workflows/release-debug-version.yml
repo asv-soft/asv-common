@@ -86,7 +86,7 @@ jobs:
       - name: Pack projects to Nuget
         run: |
           cd src
-          dotnet pack -c Release --no-build --no-restore -p:PackageVersion=${{ steps.version.outputs.version-without-v }} --output ${{ env.PACKAGE_OUTPUT_DIRECTORY }}
+          dotnet pack -c Release --no-build --no-restore -p:PackageVersion=${{ env.VERSION }} --output ${{ env.PACKAGE_OUTPUT_DIRECTORY }}
 
       - name: Push packages to Github
         run: |
