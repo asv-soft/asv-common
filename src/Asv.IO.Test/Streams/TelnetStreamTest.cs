@@ -17,7 +17,7 @@ namespace Asv.IO.Test
         {
             _output = output;
         }
-        [Fact]
+        [Fact(Skip = "Manual test")]
         public async Task ReadWriteMessageTest()
         {
             var message1 = "Ping";

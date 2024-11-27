@@ -11,7 +11,7 @@ namespace Asv.Cfg.Test
 {
     [TestSubject(typeof(ZipJsonConfiguration))]
     public class ZipJsonConfigurationTest(ITestOutputHelper log)
-        : ConfigurationBaseTest<ZipJsonConfiguration>
+        : ConfigurationBaseTest<ZipJsonConfiguration>(log)
     {
         private readonly IFileSystem _fileSystem = new MockFileSystem();
 
@@ -33,7 +33,7 @@ namespace Asv.Cfg.Test
                 _fileSystem.Directory.CreateDirectory(dir ?? throw new InvalidOperationException());
             }
             var file = _fileSystem.File.Open(filePath, FileMode.OpenOrCreate);
-            configuration = new ZipJsonConfiguration(file, true, new TestLogger(log,TimeProvider.System, "ZIP_JSON"));
+            configuration = new ZipJsonConfiguration(file, true, logger:LogFactory.CreateLogger("ZIP_JSON"));
             var cfg = configuration;
             return Disposable.Create(() =>
             {

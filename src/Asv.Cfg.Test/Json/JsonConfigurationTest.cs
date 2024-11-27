@@ -58,7 +58,8 @@ namespace Asv.Cfg.Test
     
     
     [TestSubject(typeof(JsonConfiguration))]
-    public class JsonConfigurationTest(ITestOutputHelper log) : ConfigurationBaseTest<JsonConfiguration>
+    public class JsonConfigurationTest(ITestOutputHelper log) 
+        : ConfigurationBaseTest<JsonConfiguration>(log)
     {
         private readonly IFileSystem _fileSystem = new MockFileSystem();
 
@@ -75,8 +76,7 @@ namespace Asv.Cfg.Test
                 _fileSystem.Directory.Delete(workingDir);
             }
             
-            log.WriteLine($"Working directory: {workingDir}");
-            configuration = new JsonConfiguration(workingDir, logger:new TestLogger(log,TimeProvider.System, "JSON"),  fileSystem: _fileSystem);
+            configuration = new JsonConfiguration(workingDir, logger:LogFactory.CreateLogger("JSON_CONFIG"),  fileSystem: _fileSystem);
             var cfg = configuration;
             return Disposable.Create(() =>
             {

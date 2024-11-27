@@ -62,6 +62,7 @@ namespace Asv.Cfg
     
     public interface IConfiguration:IDisposable
     {
+        IEnumerable<string> ReservedParts { get; }
         IEnumerable<string> AvailableParts { get; }
         bool Exist(string key);
         TPocoType Get<TPocoType>(string key, Lazy<TPocoType> defaultValue);

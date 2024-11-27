@@ -46,7 +46,9 @@ namespace Asv.Cfg
         {
             return _fileSystem.Path.Combine(_folderPath, $"{key}.json");
         }
-        
+
+        public IEnumerable<string> ReservedParts => Array.Empty<string>();
+
         public IEnumerable<string> AvailableParts
         {
             get

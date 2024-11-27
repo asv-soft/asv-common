@@ -27,6 +27,7 @@ namespace Asv.Cfg
             _onError.Dispose();
         }
 
+        public IEnumerable<string> ReservedParts => Array.Empty<string>();
         public IEnumerable<string> AvailableParts => GetParts();
 
         private IEnumerable<string> GetParts()

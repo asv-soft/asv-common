@@ -13,7 +13,8 @@ using Xunit.Abstractions;
 namespace Asv.Cfg.Test
 {
     [TestSubject(typeof(JsonOneFileConfiguration))]
-    public class JsonOneFileConfigurationTest(ITestOutputHelper log) : ConfigurationBaseTest<JsonOneFileConfiguration>
+    public class JsonOneFileConfigurationTest(ITestOutputHelper log) 
+        : ConfigurationBaseTest<JsonOneFileConfiguration>(log)
     {
         private readonly IFileSystem _fileSystem = new MockFileSystem();
 
@@ -24,7 +25,7 @@ namespace Asv.Cfg.Test
                 filePath,
                 true,
                 null,
-                logger:new TestLogger(log,TimeProvider.System, "JSON_ONE_FILE"),
+                logger:LogFactory.CreateLogger("JSON_ONE_FILE"),
                 fileSystem: _fileSystem
             );
             

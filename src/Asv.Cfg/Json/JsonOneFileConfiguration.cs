@@ -142,6 +142,7 @@ namespace Asv.Cfg
             }
         }
 
+        public IEnumerable<string> ReservedParts => Array.Empty<string>();
         public IEnumerable<string> AvailableParts => _values.Keys;
 
         public bool Exist(string key)

@@ -2,16 +2,19 @@ using System;
 using System.Linq;
 using System.Threading;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Asv.Cfg.Test;
 
 
 
-public abstract class ConfigurationBaseTest<T>
-    where T:IConfiguration
+public abstract class ConfigurationBaseTest<T>(ITestOutputHelper log)
+    where T : IConfiguration
 {
     protected abstract IDisposable CreateForTest(out T configuration);
-    
+
+    public TestLoggerFactory LogFactory { get; set; } = new(log, TimeProvider.System, "Test");
+
     [Fact]
     public void Check_If_Saved_Setting_Exists()
     {
@@ -65,7 +68,8 @@ public abstract class ConfigurationBaseTest<T>
          Thread.Sleep(50);
             
          var expectedResult = new string[] { "test1", "test2", "test3", "test4" };
-         var actualResult = cfg.AvailableParts.OrderBy(x=>x).ToArray(); // items can be reordered in any way, so we need to sort them 
+         var exclude = cfg.ReservedParts.ToHashSet();
+         var actualResult = cfg.AvailableParts.OrderBy(x=>x).Where(x=>exclude.Contains(x) == false).ToArray(); // items can be reordered in any way, so we need to sort them 
             
          Assert.Equal(expectedResult, actualResult);
      }

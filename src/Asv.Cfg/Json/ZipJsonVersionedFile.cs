@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using Asv.Common;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
 namespace Asv.Cfg
@@ -43,11 +45,19 @@ namespace Asv.Cfg
         SemVersion FileVersion { get; }
     }
 
-    public abstract class ZipJsonVersionedFile: ZipJsonConfiguration,IVersionedFile
+    public class ZipJsonVersionedFile: ZipJsonConfiguration,IVersionedFile
     {
         private readonly SemVersion _version;
         private const string InfoKey = "FileInfo";
-        protected ZipJsonVersionedFile(Stream zipStream,SemVersion lastVersion, string fileType, bool createIfNotExist):base(zipStream)
+
+        public ZipJsonVersionedFile(
+            Stream zipStream,
+            SemVersion lastVersion, 
+            string fileType, 
+            bool createIfNotExist,
+            bool leaveOpen = false, 
+            ILogger? logger = null )
+            :base(zipStream, leaveOpen,logger)
         {
             var info = Get(InfoKey, new Lazy<ZipJsonFileInfo>(ZipJsonFileInfo.Empty));
             string type;
@@ -82,7 +92,8 @@ namespace Asv.Cfg
                 throw new Exception($"Unsupported file type. (Want '{fileType}', got '{type}')");
             }
         }
-    
+
+        public override IEnumerable<string> ReservedParts => [InfoKey];
         public SemVersion FileVersion => _version;
     }
 }

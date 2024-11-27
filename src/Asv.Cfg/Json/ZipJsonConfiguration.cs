@@ -67,6 +67,7 @@ namespace Asv.Cfg
             }
         }
         
+        public virtual IEnumerable<string> ReservedParts => Array.Empty<string>();
 
         public bool Exist(string key)
         {
