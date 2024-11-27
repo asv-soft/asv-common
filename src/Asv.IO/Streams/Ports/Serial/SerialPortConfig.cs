@@ -6,12 +6,19 @@ namespace Asv.IO
     public class SerialPortConfig
     {
         public int DataBits { get; set; } = 8;
+        
         public int BoundRate { get; set; } = 115200;
+        
         public Parity Parity { get; set; } = Parity.None;
+        
         public StopBits StopBits { get; set; } = StopBits.One;
+        
         public string PortName { get; set; }
+        
         public int WriteTimeout { get; set; } = 200;
+        
         public int WriteBufferSize { get; set; } = 40960;
+        
 
         public static bool TryParseFromUri(Uri uri, out SerialPortConfig opt)
         {
