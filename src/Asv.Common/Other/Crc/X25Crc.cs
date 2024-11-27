@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Text;
 
@@ -13,6 +14,26 @@ namespace Asv.Common
             var bytes = Encoding.GetEncoding(28591).GetBytes(s);
 
             return bytes.Aggregate(crc, (current, b) => Accumulate(b, current));
+        }
+
+        public static ushort Accumulate(ref ReadOnlySpan<byte> bytes, ushort crc)
+        {
+            foreach (var t in bytes)
+            {
+                crc = Accumulate(t, crc);
+            }
+
+            return crc;
+        }
+
+        public static ushort Accumulate(ref Span<byte> bytes, ushort crc)
+        {
+            foreach (var t in bytes)
+            {
+                crc = Accumulate(t, crc);
+            }
+
+            return crc;
         }
 
         public static ushort Accumulate(byte[] bytes, ushort crc, int start, int cnt)
