@@ -26,10 +26,10 @@ public class TcpTest
     /// </summary>
     [Command("tcp-test")]
     public async Task<int> Run(
-        string server = "tcps://127.0.0.1:7341",
-        string client = "tcp://127.0.0.1:7341"
-        /*string server = "serial:COM11?br=57600",
-        string client = "serial:COM44?br=57600"*/
+        /*string server = "tcps://127.0.0.1:7341",
+        string client = "tcp://127.0.0.1:7341"*/
+        string server = "serial:COM11?br=57600",
+        string client = "serial:COM45?br=57600"
     )
     {
         var loggerFactory = ConsoleAppHelper.CreateDefaultLog();
