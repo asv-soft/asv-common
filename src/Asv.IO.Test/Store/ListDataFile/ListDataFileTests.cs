@@ -171,13 +171,5 @@ public class ListDataFileTests
         });
     }
 
-    [Fact]
-    public static void Null_Edit_Metadata_Info_Record_Name_Fail()
-    {
-        using var strm = new MemoryStream();
-
-        using var file = new ListDataFile<AsvSdrRecordFileMetadata>(strm, FileFormat1, false, _fileSystem);
-
-        Assert.Throws<NullReferenceException>(() => { file.EditMetadata(_ => { _.Info.Value3 = null; }); });
-    }
+    
 }

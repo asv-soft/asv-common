@@ -15,7 +15,7 @@ public interface IProtocolMessageFormatter
     string Print(IProtocolMessage packet, PacketFormatting formatting);
 }
 
-public static class ProtocolMessagePrinter
+public static class ProtocolMessageFormatterHelper
 {
     public static void AddPrinterJson(this IProtocolBuilder builder)
     {
