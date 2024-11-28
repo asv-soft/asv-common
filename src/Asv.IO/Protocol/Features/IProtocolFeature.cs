@@ -18,8 +18,12 @@ public interface IProtocolFeature
 
 public static class ProtocolProcessingFeatureHelper
 {
-    public static void EnableBroadcastFeature(this IProtocolBuilder builder)
+    public static void EnableBroadcastFeature<TMessage>(this IProtocolBuilder builder)
     {
-        builder.RegisterFeature(new BroadcastingFeature());
+        builder.RegisterFeature(new BroadcastingFeature<TMessage>());
+    }
+    public static void EnableBroadcastAllMessages(this IProtocolBuilder builder)
+    {
+        builder.RegisterFeature(new BroadcastingFeature<IProtocolMessage>());
     }
 }

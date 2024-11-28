@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace Asv.IO;
 
-public class BroadcastingFeature : IProtocolFeature
+public class BroadcastingFeature<TMessage> : IProtocolFeature
 {
     public const string FeatureId = "Broadcasting";
     
@@ -13,6 +13,7 @@ public class BroadcastingFeature : IProtocolFeature
     public int Priority { get; } = 0;
     public async ValueTask<IProtocolMessage?> ProcessRx(IProtocolMessage message, IProtocolConnection connection, CancellationToken cancel)
     {
+        if (message is not TMessage) return message;
         if (connection is IProtocolEndpoint endpoint)
         {
             // mark message with connection id
@@ -29,7 +30,7 @@ public class BroadcastingFeature : IProtocolFeature
 
     public ValueTask<IProtocolMessage?> ProcessTx(IProtocolMessage message, IProtocolConnection connection, CancellationToken cancel)
     {
-        if (connection is IProtocolEndpoint endpoint)
+        if (connection is IProtocolEndpoint endpoint && message is TMessage)
         {
             // check if message was received by this connection => skip it
             return message.GetConnectionId() == endpoint.Id ? default : ValueTask.FromResult<IProtocolMessage?>(message);

@@ -42,7 +42,7 @@ public class TcpTest
         {
             builder.SetLog(loggerFactory);
             builder.RegisterExampleProtocol();
-            builder.EnableBroadcastFeature();
+            builder.EnableBroadcastAllMessages();
             builder.AddPrinterJson();
         });
 
