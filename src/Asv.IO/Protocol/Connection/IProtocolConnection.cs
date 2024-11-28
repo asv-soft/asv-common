@@ -9,13 +9,12 @@ using ZLogger;
 
 namespace Asv.IO;
 
-public interface IProtocolConnection:ISupportTag,ISupportStatistic, IDisposable, IAsyncDisposable
+public interface IProtocolConnection:ISupportTag,ISupportStatistic, IMessageFormatter, IDisposable, IAsyncDisposable
 {
     string Id { get; }
     Observable<IProtocolMessage> OnTxMessage { get; }
     Observable<IProtocolMessage> OnRxMessage { get; }
     ValueTask Send(IProtocolMessage message, CancellationToken cancel = default);
-    string? PrintMessage(IProtocolMessage message, PacketFormatting formatting = PacketFormatting.Inline);
 }
 
 public static class ProtocolConnectionHelper

@@ -5,7 +5,7 @@ public interface IStatisticHandler:IStatistic
     void AddRxBytes(int size);
     void AddTxBytes(int size);
     void IncrementRxMessage();
-    void IncrementTxMessages();
+    void IncrementTxMessage();
     void IncrementRxError();
     void IncrementTxError();
     void AddParserBytes(int size);

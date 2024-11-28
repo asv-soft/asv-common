@@ -46,7 +46,7 @@ public class Statistic : IStatisticHandler
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void IncrementRxMessage() => Interlocked.Increment(ref _rxMessages);
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void IncrementTxMessages() => Interlocked.Increment(ref _txMessages);
+    public void IncrementTxMessage() => Interlocked.Increment(ref _txMessages);
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void IncrementRxError() => Interlocked.Increment(ref _rxError);
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -131,10 +131,10 @@ public class InheritedStatistic(IStatisticHandler parent) : IStatisticHandler
         parent.IncrementRxMessage();
     }
 
-    public void IncrementTxMessages()
+    public void IncrementTxMessage()
     {
         Interlocked.Increment(ref _txMessages);
-        parent.IncrementTxMessages();
+        parent.IncrementTxMessage();
     }
 
     public void IncrementRxError()

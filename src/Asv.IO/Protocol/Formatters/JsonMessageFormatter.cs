@@ -5,7 +5,7 @@ namespace Asv.IO;
 
 public class JsonMessageFormatter:IProtocolMessageFormatter
 {
-    public const string PrinterName = "Default JSON formatter";
+    public const string PrinterName = "JSON formatter";
 
     public string Name => PrinterName;
     public int Order => int.MaxValue;

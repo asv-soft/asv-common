@@ -17,8 +17,12 @@ public interface IProtocolMessageFormatter
 
 public static class ProtocolMessageFormatterHelper
 {
-    public static void AddPrinterJson(this IProtocolBuilder builder)
+    public static void RegisterJsonFormatter(this IProtocolBuilder builder)
     {
         builder.RegisterFormatter(new JsonMessageFormatter());
+    }
+    public static void RegisterSimpleFormatter(this IProtocolBuilder builder)
+    {
+        builder.RegisterFormatter(new SimpleMessageToStringFormatter());
     }
 }

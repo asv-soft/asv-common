@@ -39,6 +39,8 @@ public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolC
         {
             feature.Register(this);
         }
+        
+        
     }
 
     public string Id { get; }
@@ -48,13 +50,7 @@ public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolC
     protected IStatisticHandler StatisticHandler { get; }
     protected IProtocolContext Context { get; }
     public abstract ValueTask Send(IProtocolMessage message, CancellationToken cancel = default);
-    public string? PrintMessage(IProtocolMessage message, PacketFormatting formatting = PacketFormatting.Inline)
-    {
-        return Context.Formatters
-            .Where(x => x.CanPrint(message))
-            .Select(x => x.Print(message, formatting))
-            .FirstOrDefault();
-    }
+    public string? PrintMessage(IProtocolMessage message, PacketFormatting formatting = PacketFormatting.Inline) => Context.PrintMessage(message, formatting);
 
     protected async ValueTask<IProtocolMessage?> InternalFilterTxMessage(IProtocolMessage message)
     {

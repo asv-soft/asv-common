@@ -8,7 +8,7 @@ using R3;
 using TimeProviderExtensions;
 using Xunit;
 using Xunit.Abstractions;
-using Xunit.Sdk;
+using Asv.IO;
 
 namespace Asv.IO.Test;
 
@@ -29,12 +29,12 @@ public class TcpPortComplexTest
         _timer = new ManualTimeProvider();
         _logFactory = new TestLoggerFactory(logger,TimeProvider.System, "ROUTER");
         _logger = _logFactory.CreateLogger("Test");
-        _protocol = Protocol.Create(builder =>
+        _protocol = IO.Protocol.Create(builder =>
         {
             builder.SetLog(_logFactory);
             builder.RegisterExampleProtocol();
             builder.EnableBroadcastAllMessages();
-            builder.AddPrinterJson();
+            builder.RegisterJsonFormatter();
         });
         _serverRouter = _protocol.CreateRouter("Server");
         _clientRouter = _protocol.CreateRouter("Client");

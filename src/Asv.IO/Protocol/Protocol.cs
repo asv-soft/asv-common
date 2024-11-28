@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Immutable;
 using System.Diagnostics.Metrics;
+using System.Linq;
 using Microsoft.Extensions.Logging;
 
 namespace Asv.IO;
@@ -56,9 +57,18 @@ public class Protocol: IProtocolFactory, IProtocolContext
     {
         return new ProtocolRouter(ProtocolHelper.NormalizeId(id), this);
     }
-    
-    public IVirtualConnection CreateVirtualConnection(Func<IProtocolMessage, bool>? clientToServerFilter = null,Func<IProtocolMessage, bool>? serverToClientFilter = null)
+
+    public IVirtualConnection CreateVirtualConnection(Func<IProtocolMessage, bool>? clientToServerFilter = null, Func<IProtocolMessage, bool>? serverToClientFilter = null,
+        bool printMessagesToLog = true)
     {
-        return new VirtualConnection(clientToServerFilter,serverToClientFilter,this);
+        return new VirtualConnection(clientToServerFilter,serverToClientFilter,this,printMessagesToLog);
+    }
+
+    public string? PrintMessage(IProtocolMessage message, PacketFormatting formatting = PacketFormatting.Inline)
+    {
+        return Formatters
+            .Where(x => x.CanPrint(message))
+            .Select(x => x.Print(message, formatting))
+            .FirstOrDefault();
     }
 }

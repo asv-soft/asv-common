@@ -33,5 +33,9 @@ public class ExampleMessage1: ExampleMessageBase
     public int Value1 { get; set; }
     public ushort Value2 { get; set; }
     public string? Value3 { get; set; }
-    
+
+    public override string ToString()
+    {
+        return $"{Name}({Value1},{Value2},{Value3})";
+    }
 }

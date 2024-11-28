@@ -181,7 +181,7 @@ public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
                 var sendBytes = await InternalWrite(mem.Memory[..writeBytes], DisposeCancel);
                 Debug.Assert(writeBytes == sendBytes);
                 StatisticHandler.AddTxBytes(sendBytes);
-                StatisticHandler.IncrementTxMessages();
+                StatisticHandler.IncrementTxMessage();
             }
         }
         catch (Exception e)

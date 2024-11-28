@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 namespace Asv.IO;
 
 
-public interface IProtocolContext
+public interface IProtocolContext: IMessageFormatter
 {
     ILoggerFactory LoggerFactory { get; }
     TimeProvider TimeProvider { get; }
@@ -21,7 +21,7 @@ public interface IProtocolContext
 
 
 
-public interface IProtocolFactory
+public interface IProtocolFactory: IMessageFormatter
 {
     ILoggerFactory LoggerFactory { get; }
     TimeProvider TimeProvider { get; }
@@ -33,7 +33,6 @@ public interface IProtocolFactory
     IProtocolParser CreateParser(string protocolId);
     IProtocolRouter CreateRouter(string id);
     IVirtualConnection CreateVirtualConnection(Func<IProtocolMessage, bool>? clientToServerFilter = null,
-        Func<IProtocolMessage, bool>? serverToClientFilter = null);
-    
+        Func<IProtocolMessage, bool>? serverToClientFilter = null, bool printMessagesToLog = true);
     
 }

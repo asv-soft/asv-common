@@ -16,7 +16,9 @@ public static partial class ProtocolHelper
     private static partial Regex MyRegex();
     private static readonly Regex IdNormalizeRegex = MyRegex();
 
-    
+
+    public static IProtocolParser CreateParser(this IProtocolFactory src, ProtocolInfo info) => src.CreateParser(info.Id);
+
     public static Observable<TMessage> RxFilterByType<TMessage>(this IProtocolConnection connection)
         where TMessage : IProtocolMessage => connection.OnRxMessage.RxFilterByType<TMessage>();
     
