@@ -33,7 +33,7 @@ public class TcpPortComplexTest
         {
             builder.SetLog(_logFactory);
             builder.RegisterExampleProtocol();
-            builder.EnableBroadcastFeature();
+            builder.EnableBroadcastAllMessages();
             builder.AddPrinterJson();
         });
         _serverRouter = _protocol.CreateRouter("Server");
