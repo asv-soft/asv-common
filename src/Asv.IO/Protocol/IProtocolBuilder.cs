@@ -16,16 +16,27 @@ namespace Asv.IO;
 public interface IProtocolBuilder
 {
     void SetLog(ILoggerFactory loggerFactory);
+    void SetDefaultLog();
     void SetTimeProvider(TimeProvider timeProvider);
+    void SetDefaultTimeProvider();
     void SetMetrics(IMeterFactory meterFactory);
+    void SetDefaultMetrics();
     void ClearFeatures();
-    void EnableFeature(IProtocolFeature feature);
+    void RegisterFeature(IProtocolFeature feature);
     void ClearPrinters();
-    void AddPrinter(IProtocolMessageFormatter formatter);
+    void RegisterFormatter(IProtocolMessageFormatter formatter);
     void ClearProtocols();
     void RegisterProtocol(ProtocolInfo info, ParserFactoryDelegate factory);
     void ClearPortType();
     void RegisterPortType(PortTypeInfo type, PortFactoryDelegate factory);
+    
+    public void ClearAll()
+    {
+        ClearFeatures();
+        ClearPrinters();
+        ClearProtocols();
+        ClearPortType();
+    }
 }
 
 public sealed class ProtocolBuilder : IProtocolBuilder
@@ -49,8 +60,6 @@ public sealed class ProtocolBuilder : IProtocolBuilder
         this.RegisterTcpClientPort();
         this.RegisterUdpPort();
         
-        this.EnableBroadcastFeature();
-        
     }
 
     public void SetLog(ILoggerFactory loggerFactory)
@@ -58,9 +67,19 @@ public sealed class ProtocolBuilder : IProtocolBuilder
         _loggerFactory = loggerFactory;
     }
 
+    public void SetDefaultLog()
+    {
+        _loggerFactory = NullLoggerFactory.Instance;
+    }
+
     public void SetTimeProvider(TimeProvider timeProvider)
     {
         _timeProvider = timeProvider;
+    }
+
+    public void SetDefaultTimeProvider()
+    {
+        _timeProvider = TimeProvider.System;
     }
 
     public void SetMetrics(IMeterFactory meterFactory)
@@ -68,12 +87,17 @@ public sealed class ProtocolBuilder : IProtocolBuilder
         _meterFactory = meterFactory;
     }
 
+    public void SetDefaultMetrics()
+    {
+        throw new NotImplementedException();
+    }
+
     public void ClearFeatures()
     {
         _featureBuilder.Clear();
     }
     
-    public void EnableFeature(IProtocolFeature feature)
+    public void RegisterFeature(IProtocolFeature feature)
     {
         _featureBuilder.Add(feature);        
     }
@@ -81,7 +105,7 @@ public sealed class ProtocolBuilder : IProtocolBuilder
     {
         _printers.Clear();
     }
-    public void AddPrinter(IProtocolMessageFormatter formatter)
+    public void RegisterFormatter(IProtocolMessageFormatter formatter)
     {
         _printers.Add(formatter);        
     }

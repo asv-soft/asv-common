@@ -19,6 +19,6 @@ public static class ProtocolMessageFormatterHelper
 {
     public static void AddPrinterJson(this IProtocolBuilder builder)
     {
-        builder.AddPrinter(new JsonMessageFormatter());
+        builder.RegisterFormatter(new JsonMessageFormatter());
     }
 }

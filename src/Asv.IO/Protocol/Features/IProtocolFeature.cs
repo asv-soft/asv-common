@@ -20,6 +20,6 @@ public static class ProtocolProcessingFeatureHelper
 {
     public static void EnableBroadcastFeature(this IProtocolBuilder builder)
     {
-        builder.EnableFeature(new BroadcastingFeature());
+        builder.RegisterFeature(new BroadcastingFeature());
     }
 }
