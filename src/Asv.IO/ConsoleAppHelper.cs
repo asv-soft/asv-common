@@ -96,7 +96,7 @@ public static class ConsoleAppHelper
     /// <returns>The version of the assembly.</returns>
     public static Version GetVersion(this Assembly src)
     {
-        return src.GetName().Version;
+        return src.GetName().Version ?? new Version(0, 0, 0, 0);
     }
 
     /// <summary>
@@ -117,7 +117,7 @@ public static class ConsoleAppHelper
     /// </summary>
     /// <param name="src">The assembly to retrieve the title from.</param>
     /// <returns>The title of the assembly. If the title is not specified, it returns the filename of the assembly without extension.</returns>
-    public static string GetTitle(this Assembly src)
+    public static string? GetTitle(this Assembly src)
     {
         var attributes = src.GetCustomAttributes(typeof(AssemblyTitleAttribute), false);
         if (attributes.Length > 0)
@@ -125,8 +125,7 @@ public static class ConsoleAppHelper
             var titleAttribute = (AssemblyTitleAttribute)attributes[0];
             if (titleAttribute.Title.Length > 0) return titleAttribute.Title;
         }
-
-        return System.IO.Path.GetFileNameWithoutExtension(src.CodeBase);
+        return src.GetName().Name;
     }
 
     /// <summary>
@@ -137,7 +136,7 @@ public static class ConsoleAppHelper
     public static string GetProductName(this Assembly src)
     {
         var attributes = src.GetCustomAttributes(typeof(AssemblyProductAttribute), false);
-        return attributes.Length == 0 ? "" : ((AssemblyProductAttribute)attributes[0]).Product;
+        return attributes.Length == 0 ? string.Empty : ((AssemblyProductAttribute)attributes[0]).Product;
     }
 
     /// <summary>
@@ -148,7 +147,7 @@ public static class ConsoleAppHelper
     public static string GetDescription(this Assembly src)
     {
         var attributes = src.GetCustomAttributes(typeof(AssemblyDescriptionAttribute), false);
-        return attributes.Length == 0 ? "" : ((AssemblyDescriptionAttribute)attributes[0]).Description;
+        return attributes.Length == 0 ? string.Empty : ((AssemblyDescriptionAttribute)attributes[0]).Description;
     }
 
     /// <summary>
@@ -159,7 +158,7 @@ public static class ConsoleAppHelper
     public static string GetCopyrightHolder(this Assembly src)
     {
         var attributes = src.GetCustomAttributes(typeof(AssemblyCopyrightAttribute), false);
-        return attributes.Length == 0 ? "" : ((AssemblyCopyrightAttribute)attributes[0]).Copyright;
+        return attributes.Length == 0 ? string.Empty : ((AssemblyCopyrightAttribute)attributes[0]).Copyright;
     }
 
     /// <summary>
@@ -170,7 +169,7 @@ public static class ConsoleAppHelper
     public static string GetCompanyName(this Assembly src)
     {
         var attributes = src.GetCustomAttributes(typeof(AssemblyCompanyAttribute), false);
-        return attributes.Length == 0 ? "" : ((AssemblyCompanyAttribute)attributes[0]).Company;
+        return attributes.Length == 0 ? string.Empty : ((AssemblyCompanyAttribute)attributes[0]).Company;
     }
 
     /// <summary>

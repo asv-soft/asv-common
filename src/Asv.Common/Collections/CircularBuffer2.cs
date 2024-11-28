@@ -347,7 +347,9 @@ namespace Asv.Common
             {
                 for (var i = 0; i < segment.Count; i++)
                 {
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
                     yield return segment.Array[segment.Offset + i];
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
                 }
             }
         }

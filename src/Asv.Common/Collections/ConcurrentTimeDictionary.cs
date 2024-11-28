@@ -6,7 +6,7 @@ using System.Threading;
 namespace Asv.Common
 {
     public class ConcurrentTimeDictionary<TKey,TValue> : IDisposable
-        where TValue:class
+        where TValue:class where TKey : notnull
     {
         private readonly TimeSpan _maxAge;
         private readonly Func<TValue, DateTime> _getTimeCallback;

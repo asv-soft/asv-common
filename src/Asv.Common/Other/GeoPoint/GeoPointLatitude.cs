@@ -76,17 +76,17 @@ namespace Asv.Common
             if (s1Group.Success)
             {
                 var s1 = s1Group.Value;
-                sign1 = MinusChars.Contains(s1) && s1 != "" ? -1 : 1;
+                sign1 = MinusChars.Contains(s1) && s1 != string.Empty ? -1 : 1;
             }
 
             var sign2 = 1;
             if (s2Group.Success)
             {
                 var s2 = s2Group.Value;
-                sign2 = MinusChars.Contains(s2) && s2 != "" ? -1 : 1;
+                sign2 = MinusChars.Contains(s2) && s2 != string.Empty ? -1 : 1;
             }
 
-            if (s1Group.Value != "" && s2Group.Value != "" && sign1 != sign2)
+            if (s1Group.Value != string.Empty && s2Group.Value != string.Empty && sign1 != sign2)
             {
                 return false;
             }

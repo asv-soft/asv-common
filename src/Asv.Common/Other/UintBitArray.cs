@@ -130,14 +130,14 @@ namespace Asv.Common
             return Convert.ToString(Value, 2).PadLeft(Size, '0');
         }
 
-        public bool Equals(UintBitArray other)
+        public bool Equals(UintBitArray? other)
         {
             if (ReferenceEquals(null, other)) return false;
             if (ReferenceEquals(this, other)) return true;
             return _value == other._value && Size == other.Size;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (ReferenceEquals(null, obj)) return false;
             if (ReferenceEquals(this, obj)) return true;

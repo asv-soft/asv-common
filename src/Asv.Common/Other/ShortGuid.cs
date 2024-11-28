@@ -312,9 +312,6 @@ namespace Asv.Common
         /// </summary>
         public static bool operator ==(ShortGuid x, ShortGuid y)
         {
-            if (ReferenceEquals(x, null))
-                return ReferenceEquals(y, null);
-
             return x.underlyingGuid == y.underlyingGuid;
         }
 
@@ -323,9 +320,6 @@ namespace Asv.Common
         /// </summary>
         public static bool operator ==(ShortGuid x, Guid y)
         {
-            if (ReferenceEquals(x, null))
-                return ReferenceEquals(y, null);
-
             return x.underlyingGuid == y;
         }
 

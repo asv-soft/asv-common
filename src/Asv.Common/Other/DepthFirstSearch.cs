@@ -13,7 +13,7 @@ namespace Asv.Common
         {
             var gray = new HashSet<T>();
             var black = new HashSet<T>();
-            return edges.SelectMany(_=>InternalCalc(_.Key, edges, gray, black));
+            return edges.SelectMany(p=>InternalCalc(p.Key, edges, gray, black));
         }
 
         private static IEnumerable<T> InternalCalc<T>(T key, IReadOnlyDictionary<T, T[]> edges, ISet<T> gray, ISet<T> black)
@@ -26,7 +26,7 @@ namespace Asv.Common
             
             var subitems = edges[key];
             
-            foreach (var subitem in subitems.SelectMany(_ => InternalCalc(_, edges, gray, black)))
+            foreach (var subitem in subitems.SelectMany(i => InternalCalc(i, edges, gray, black)))
             {
                 yield return subitem;
             }

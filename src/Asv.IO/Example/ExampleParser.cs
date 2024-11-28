@@ -3,7 +3,7 @@ using System.Buffers;
 
 namespace Asv.IO;
 
-public class ExampleParser(IProtocolMessageFactory<ExampleMessageBase,byte> messageFactory, IProtocolContext context, IStatisticHandler statisticHandler)
+public class ExampleParser(IProtocolMessageFactory<ExampleMessageBase,byte> messageFactory, IProtocolContext context, IStatisticHandler? statisticHandler)
     : ProtocolParser<ExampleMessageBase, byte>(messageFactory,context,statisticHandler)
 {
     private const int MaxMessageSize = 255;

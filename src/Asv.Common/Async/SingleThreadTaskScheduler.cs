@@ -13,7 +13,7 @@ namespace Asv.Common
         private const int Disposed = 1;
         private const int NotDisposed = 0;
         private int _disposeFlag;
-        private BlockingCollection<Task> _tasks;
+        private readonly BlockingCollection<Task> _tasks;
         private readonly Thread _workThread;
 
         public SingleThreadTaskScheduler([Localizable(false)] string threadName, int boundedCapacity = 256, ThreadPriority priority = ThreadPriority.Normal, ApartmentState apartmentState = ApartmentState.MTA)
@@ -47,7 +47,7 @@ namespace Asv.Common
 
         protected override void QueueTask(Task task)
         {
-            if (_tasks == null) return;
+            Debug.Assert(task != null);
             Debug.Assert(_tasks.Count < _tasks.BoundedCapacity, "Too many tasks");
             if (!_tasks.IsAddingCompleted)
             {
@@ -75,14 +75,11 @@ namespace Asv.Common
         public void Dispose()
         {
             if (Interlocked.CompareExchange(ref _disposeFlag, Disposed, NotDisposed) != NotDisposed) return;
-            if (_tasks == null) return;
-
             _tasks.CompleteAdding();
             _workThread.Join();
 
             // Cleanup
             _tasks.Dispose();
-            _tasks = null;
         }
 
         public bool IsDisposed => Thread.VolatileRead(ref _disposeFlag) > 0;
@@ -116,7 +113,7 @@ namespace Asv.Common
 
         #region Exceptions
 
-        public event EventHandler<Exception> OnTaskUnhandledException;
+        public event EventHandler<Exception>? OnTaskUnhandledException;
 
         private void RiseUnhandledTaskException(Exception e)
         {

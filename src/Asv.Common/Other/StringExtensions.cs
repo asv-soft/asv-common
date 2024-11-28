@@ -183,7 +183,7 @@ namespace Asv.Common
         {
             try
             {
-                return String.Format(format, arg0, arg1, arg2);
+                return string.Format(format, arg0, arg1, arg2);
             }
             catch
             {
@@ -200,9 +200,9 @@ namespace Asv.Common
         /// <param name="maxLength">Maximum length.</param>
         /// <returns></returns>
         /// <remarks>Proposed by Rene Schulte</remarks>
-        public static string TrimToMaxLength(this string value, int maxLength)
+        public static string? TrimToMaxLength(this string? value, int maxLength)
         {
-            return (value == null || value.Length <= maxLength ? value : value.Substring(0, maxLength));
+            return (value == null || value.Length <= maxLength ? value : value[..maxLength]);
         }
 
         /// <summary>
@@ -213,11 +213,11 @@ namespace Asv.Common
         /// <param name="suffix">The suffix.</param>
         /// <returns></returns>
         /// <remarks>Proposed by Rene Schulte</remarks>
-        public static string TrimToMaxLength(this string value, int maxLength, string suffix)
+        public static string? TrimToMaxLength(this string? value, int maxLength, string suffix)
         {
             return (value == null || value.Length <= maxLength
                         ? value
-                        : String.Concat(value.Substring(0, maxLength), suffix));
+                        : string.Concat(value[..maxLength], suffix));
         }
 
         /// <summary>
@@ -565,7 +565,7 @@ namespace Asv.Common
         /// var ansiBytes = value.ToBytes(Encoding.GetEncoding(1252)); // 1252 = ANSI
         /// var utf8Bytes = value.ToBytes(Encoding.UTF8);
         /// </code></example>
-        public static byte[] ToBytes(this string value, Encoding encoding)
+        public static byte[] ToBytes(this string value, Encoding? encoding)
         {
             encoding = (encoding ?? Encoding.Default);
             return encoding.GetBytes(value);
@@ -587,7 +587,7 @@ namespace Asv.Common
         /// <param name="value">The input value.</param>
         /// <param name="encoding">The encoding.</param>
         /// <returns>The Base 64 encoded string</returns>
-        public static string EncodeBase64(this string value, Encoding encoding)
+        public static string EncodeBase64(this string value, Encoding? encoding)
         {
             encoding = (encoding ?? Encoding.UTF8);
             var bytes = encoding.GetBytes(value);
@@ -610,7 +610,7 @@ namespace Asv.Common
         /// <param name="encodedValue">The Base 64 encoded value.</param>
         /// <param name="encoding">The encoding.</param>
         /// <returns>The decoded string</returns>
-        public static string DecodeBase64(this string encodedValue, Encoding encoding)
+        public static string DecodeBase64(this string encodedValue, Encoding? encoding)
         {
             encoding = (encoding ?? Encoding.UTF8);
             var bytes = Convert.FromBase64String(encodedValue);
@@ -627,22 +627,22 @@ namespace Asv.Common
             var bytes = Encoding.Unicode.GetBytes(s);
 
             //создаем объект для получения средст шифрования  
-            var csp = MD5.Create();
+            using var csp = MD5.Create();
 
             //вычисляем хеш-представление в байтах  
             var byteHash = csp.ComputeHash(bytes);
 
-            var hash = byteHash.Aggregate(String.Empty, (current, b) => current + $"{b:x2}");
+            var hash = byteHash.Aggregate(string.Empty, (current, b) => current + $"{b:x2}");
 
             //формируем одну цельную строку из массива  
 
             return new Guid(hash);
         }
 
-        public static string EncryptAES(this string plainText, string password)
+        public static string EncryptAes(this string plainText, string password)
         {
             byte[] Results;
-            var utf8 = new System.Text.UTF8Encoding();
+            var utf8 = Encoding.UTF8;
 
             // Step 1. We hash the passphrase using MD5
             // We use the MD5 hash generator as the result is a 128 bit byte array
@@ -679,7 +679,7 @@ namespace Asv.Common
             return Convert.ToBase64String(Results);
         }
 
-        public static string DecryptAES(this string plainText, string password)
+        public static string DecryptAes(this string plainText, string password)
         {
             byte[] results;
             var utf8 = new System.Text.UTF8Encoding();
@@ -705,7 +705,7 @@ namespace Asv.Common
             // Step 5. Attempt to decrypt the string
             try
             {
-                var decryptor = tdesAlgorithm.CreateDecryptor();
+                using var decryptor = tdesAlgorithm.CreateDecryptor();
                 results = decryptor.TransformFinalBlock(dataToDecrypt, 0, dataToDecrypt.Length);
             }
             finally

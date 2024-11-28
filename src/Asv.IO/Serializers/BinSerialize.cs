@@ -172,9 +172,9 @@ namespace Asv.IO
         /// </remarks>
         /// <param name="val">Value to get the size for.</param>
         /// <returns>Number of bytes it will take.</returns>
-        public static int GetSizeForString(string val)
+        public static int GetSizeForString(string? val)
         {
-            if (val.IsEmpty()) return GetSizeForPackedUnsignedInteger(0);
+            if (string.IsNullOrWhiteSpace(val)) return GetSizeForPackedUnsignedInteger(0);
             fixed (char* charPointer = val)
             {
                 return GetSizeForString(charPointer, val.Length);
@@ -225,8 +225,13 @@ namespace Asv.IO
         /// </remarks>
         /// <param name="span">Span to write to.</param>
         /// <param name="val">Value to write.</param>
-        public static void WriteString(ref Span<byte> span, string val)
+        public static void WriteString(ref Span<byte> span, string? val)
         {
+            if (string.IsNullOrWhiteSpace(val))
+            {
+                WritePackedUnsignedInteger(ref span, 0);
+                return;
+            }
             fixed (char* charPointer = val)
             {
                 WriteString(ref span, charPointer, val.Length);

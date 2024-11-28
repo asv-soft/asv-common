@@ -20,6 +20,12 @@ public class ExampleMessageFactory:IProtocolMessageFactory<ExampleMessageBase,by
         };
     }
 
+    public IEnumerable<byte> GetSupportedIds()
+    {
+        yield return ExampleMessage1.MessageId;
+        yield return ExampleMessage2.MessageId;
+    }
+
     public ProtocolInfo Info => ExampleProtocol.Info;
    
 }

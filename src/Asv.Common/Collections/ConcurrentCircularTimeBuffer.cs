@@ -14,7 +14,7 @@ namespace Asv.Common
         private readonly LinkedList<T> _items = new();
         private readonly ReaderWriterLockSlim _lock = new(LockRecursionPolicy.NoRecursion);
 
-        public ConcurrentCircularTimeBuffer(TimeSpan maxAge, Func<T,DateTime> getTimeCallback, int maxCount = int.MaxValue , ITimeService timeService = default)
+        public ConcurrentCircularTimeBuffer(TimeSpan maxAge, Func<T,DateTime> getTimeCallback, int maxCount = int.MaxValue , ITimeService? timeService = default)
         {
             _maxAge = maxAge;
             _getTimeCallback = getTimeCallback;
@@ -24,7 +24,7 @@ namespace Asv.Common
 
         public int Count => _items.Count;
 
-        public object Tag { get; set; }
+        public object? Tag { get; set; }
 
         public List<T> GetItemsWithTimeMoreThen(DateTime beginTime)
         {
@@ -127,7 +127,7 @@ namespace Asv.Common
 
         public List<T> ClearOldAndGetRemaining()
         {
-            if (_items.Count == 0) return null;
+            if (_items.Count == 0) return [];
             var now = _timeService.Now;
             _lock.EnterUpgradeableReadLock();
             var current = _items.First;
@@ -164,7 +164,7 @@ namespace Asv.Common
 
         public void Dispose()
         {
-            _lock?.Dispose();
+            _lock.Dispose();
         }
 
 

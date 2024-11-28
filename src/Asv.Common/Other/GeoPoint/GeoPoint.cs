@@ -46,7 +46,7 @@ namespace Asv.Common
             return Longitude.Equals(other.Longitude) && Latitude.Equals(other.Latitude) && Nullable.Equals(Altitude, other.Altitude);
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is GeoPoint other && Equals(other);
         }

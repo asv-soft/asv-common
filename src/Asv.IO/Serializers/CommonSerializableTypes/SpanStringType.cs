@@ -14,7 +14,7 @@ namespace Asv.IO
             Value = value;
         }
 
-        public string Value { get; set; }
+        public string? Value { get; set; }
 
         public void Deserialize(ref ReadOnlySpan<byte> buffer)
         {

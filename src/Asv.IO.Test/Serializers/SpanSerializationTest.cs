@@ -37,23 +37,23 @@ namespace Asv.IO.Test
         }
 
         [Fact]
-        public void StandartTypes()
+        public void Serializable_TypesSerializeAndDeserialize_Success()
         {
-            SpanTestHelper.SerializeDeserializeTestBegin(_output.WriteLine);
+            SpanSerializeTestHelper.SerializeDeserializeTestBegin(_output.WriteLine);
             var data = new byte[256];
             new Random().NextBytes(data);
-            SpanTestHelper.TestType(new SpanVoidType(), _output.WriteLine);
-            SpanTestHelper.TestType(new SpanBoolType(true), _output.WriteLine);
-            SpanTestHelper.TestType(new SpanBoolType(false), _output.WriteLine);
-            SpanTestHelper.TestType(new SpanByteArrayType(data), _output.WriteLine);
-            SpanTestHelper.TestType(new SpanByteType(byte.MaxValue), _output.WriteLine);
-            SpanTestHelper.TestType(new SpanByteType(byte.MinValue), _output.WriteLine);
-            SpanTestHelper.TestType(new SpanDoubleByteType(byte.MinValue, byte.MaxValue), _output.WriteLine);
-            SpanTestHelper.TestType(new SpanPacketUnsignedIntegerType(uint.MaxValue), _output.WriteLine);
-            SpanTestHelper.TestType(new SpanPacketIntegerType(int.MaxValue), _output.WriteLine);
-            SpanTestHelper.TestType(new SpanStringType("asdasd ASDSAD 984984"), _output.WriteLine);
-            SpanTestHelper.TestType(new SpanByteArrayType(data), _output.WriteLine);
-            SpanTestHelper.TestType(new TestType{Id = new Random().Next(),Name = "asdasd"}, _output.WriteLine);
+            SpanSerializeTestHelper.TestType(new SpanVoidType(), _output.WriteLine);
+            SpanSerializeTestHelper.TestType(new SpanBoolType(true), _output.WriteLine);
+            SpanSerializeTestHelper.TestType(new SpanBoolType(false), _output.WriteLine);
+            SpanSerializeTestHelper.TestType(new SpanByteArrayType(data), _output.WriteLine);
+            SpanSerializeTestHelper.TestType(new SpanByteType(byte.MaxValue), _output.WriteLine);
+            SpanSerializeTestHelper.TestType(new SpanByteType(byte.MinValue), _output.WriteLine);
+            SpanSerializeTestHelper.TestType(new SpanDoubleByteType(byte.MinValue, byte.MaxValue), _output.WriteLine);
+            SpanSerializeTestHelper.TestType(new SpanPacketUnsignedIntegerType(uint.MaxValue), _output.WriteLine);
+            SpanSerializeTestHelper.TestType(new SpanPacketIntegerType(int.MaxValue), _output.WriteLine);
+            SpanSerializeTestHelper.TestType(new SpanStringType("asdasd ASDSAD 984984"), _output.WriteLine);
+            SpanSerializeTestHelper.TestType(new SpanByteArrayType(data), _output.WriteLine);
+            SpanSerializeTestHelper.TestType(new TestType{Id = new Random().Next(),Name = "asdasd"}, _output.WriteLine);
 
 
         }

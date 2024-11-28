@@ -11,7 +11,7 @@ namespace Asv.Common
     {
         private Process? _process;
         private readonly BlockingCollection<string?> _output = new();
-        private StreamWriter _input;
+        private StreamWriter? _input;
         private readonly Subject<string> _inputSubject = new();
         private readonly Subject<string> _outputSubject = new();
         private readonly Subject<string> _errorSubject = new();
@@ -38,7 +38,7 @@ namespace Asv.Common
 
             _process.ErrorDataReceived += (sender, eventArgs) =>
             {
-                if (!_errorSubject.IsDisposed)
+                if (!_errorSubject.IsDisposed && eventArgs.Data!= null)
                 {
                     _errorSubject.OnNext(eventArgs.Data);
                 }

@@ -7,6 +7,7 @@
     <ApiCompatVersion>8.0.200</ApiCompatVersion>
     <ZLoggerVersion>2.5.5</ZLoggerVersion>
     <DeepEqualVersion>4.2.1</DeepEqualVersion>
+    <AutoFixtureVersion>4.18.1</AutoFixtureVersion>
     <SystemIOAbstractionsVersion>21.0.29</SystemIOAbstractionsVersion>
   </PropertyGroup>
 </Project>

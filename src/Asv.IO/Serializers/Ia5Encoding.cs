@@ -13,7 +13,7 @@ namespace Asv.IO
         /// <returns></returns>
         public static double Encode(string data)
         {
-            data ??= "";
+            data ??= string.Empty;
             if (data.Length > 4)
                 throw new ArgumentOutOfRangeException(
                     $"Param {nameof(data)} must be less than or equal to 4 letters. {nameof(data)} = {data.Length}");

@@ -8,6 +8,7 @@
     <LangVersion>10</LangVersion>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="AutoFixture" Version="$(AutoFixtureVersion)" />
     <PackageReference Include="DeepEqual" Version="$(DeepEqualVersion)" />
     <PackageReference Include="FluentAssertions" Version="6.6.0" />
     <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" Version="9.0.0-preview.9.24507.7" />

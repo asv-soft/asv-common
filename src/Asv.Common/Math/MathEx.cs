@@ -32,7 +32,7 @@ namespace Asv.Common
         
         public static string AngleToDegreeString(double angleValue,string formatStringForMinute = "00.00", string nanString = "-")
         {
-            if (double.IsNaN(angleValue)) return "";
+            if (double.IsNaN(angleValue)) return string.Empty;
             var deg = (int)angleValue;
             angleValue = Math.Abs(angleValue - deg);
             var min = angleValue * 60;

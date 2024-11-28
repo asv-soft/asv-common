@@ -45,15 +45,15 @@ namespace Asv.Common
         /// <param name="patch">The patch version.</param>
         /// <param name="prerelease">The prerelease version (eg. "alpha").</param>
         /// <param name="build">The build eg ("nightly.232").</param>
-        public SemVersion(int major, int minor = 0, int patch = 0, string prerelease = "", string build = "")
+        public SemVersion(int major, int minor = 0, int patch = 0, string? prerelease = null, string? build = null)
         {
             Major = major;
             Minor = minor;
             Patch = patch;
 
             // strings are interned to be able to compare by reference in equals method
-            Prerelease = String.Intern(prerelease ?? "");
-            Build = String.Intern(build ?? "");
+            Prerelease = string.Intern(prerelease ?? string.Empty);
+            Build = string.Intern(build ?? string.Empty);
         }
 
         /// <summary>
@@ -73,7 +73,7 @@ namespace Asv.Common
                 Patch = version.Revision;
             }
 
-            Prerelease = String.Intern("");
+            Prerelease = String.Intern(string.Empty);
 
             if (version.Build > 0)
             {
@@ -81,7 +81,7 @@ namespace Asv.Common
             }
             else
             {
-                Build = String.Intern("");
+                Build = String.Intern(string.Empty);
             }
         }
 
@@ -92,9 +92,9 @@ namespace Asv.Common
         /// <param name="strict">If set to <c>true</c> minor and patch version are required, else they default to 0.</param>
         /// <returns>The SemVersion object.</returns>
         /// <exception cref="System.InvalidOperationException">When a invalid version string is passed.</exception>
-        public static SemVersion Parse(string version, bool strict = false)
+        public static SemVersion Parse(string? version, bool strict = false)
         {
-            var match = parseEx.Match(version);
+            var match = parseEx.Match(version ?? throw new ArgumentNullException(nameof(version)));
             if (!match.Success)
                 throw new ArgumentException("Invalid version.", nameof(version));
 
@@ -129,7 +129,7 @@ namespace Asv.Common
         /// version string was not valid.</param>
         /// <param name="strict">If set to <c>true</c> minor and patch version are required, else they default to 0.</param>
         /// <returns><c>False</c> when a invalid version string is passed, otherwise <c>true</c>.</returns>
-        public static bool TryParse(string version, out SemVersion semver, bool strict = false)
+        public static bool TryParse(string version, out SemVersion? semver, bool strict = false)
         {
             try
             {
@@ -180,7 +180,7 @@ namespace Asv.Common
         /// <param name="build">The build text.</param>
         /// <returns>The new version object.</returns>
         public SemVersion Change(int? major = null, int? minor = null, int? patch = null,
-            string prerelease = null, string build = null)
+            string? prerelease = null, string? build = null)
         {
             return new SemVersion(
                 major ?? Major,
@@ -238,7 +238,7 @@ namespace Asv.Common
         /// </returns>
         public override string ToString()
         {
-            var version = "" + Major + "." + Minor + "." + Patch;
+            var version = string.Empty + Major + "." + Minor + "." + Patch;
             if (!String.IsNullOrEmpty(Prerelease))
                 version += "-" + Prerelease;
             if (!String.IsNullOrEmpty(Build))
@@ -259,9 +259,9 @@ namespace Asv.Common
         ///  Zero This instance occurs in the same position in the sort order as <paramref name="obj" />. i
         ///  Greater than zero This instance follows <paramref name="obj" /> in the sort order.
         /// </returns>
-        public int CompareTo(object obj)
+        public int CompareTo(object? obj)
         {
-            return CompareTo((SemVersion)obj);
+            return CompareTo(obj as SemVersion);
         }
 
         /// <summary>
@@ -277,7 +277,7 @@ namespace Asv.Common
         ///  Zero This instance occurs in the same position in the sort order as <paramref name="other" />. i
         ///  Greater than zero This instance follows <paramref name="other" /> in the sort order.
         /// </returns>
-        public int CompareTo(SemVersion other)
+        public int CompareTo(SemVersion? other)
         {
             if (ReferenceEquals(other, null))
                 return 1;
@@ -380,7 +380,7 @@ namespace Asv.Common
         /// <returns>
         ///   <c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.
         /// </returns>
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (ReferenceEquals(obj, null))
                 return false;

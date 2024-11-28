@@ -4,15 +4,15 @@ namespace Asv.Common
 {
     public class DefaultTimeService : ITimeService
     {
-        private static readonly object _sync = new();
-        private static DefaultTimeService _default;
+        private static readonly object Sync = new();
+        private static DefaultTimeService? _default;
 
         public static DefaultTimeService Default
         {
             get
             {
                 if (_default != null) return _default;
-                lock (_sync)
+                lock (Sync)
                 {
                     _default ??= new DefaultTimeService();
                 }

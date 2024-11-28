@@ -114,7 +114,7 @@ namespace Asv.Common
                 degrees++;
                 minutes -= 60;
             }
-            return $"{(Math.Sign(decimalDegrees) > 0 ? "" : "-")}{degrees:00}°{minutes:00.00}′";  
+            return $"{(Math.Sign(decimalDegrees) > 0 ? string.Empty : "-")}{degrees:00}°{minutes:00.00}′";  
         }
     }
 }

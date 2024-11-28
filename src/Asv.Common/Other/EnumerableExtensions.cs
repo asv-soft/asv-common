@@ -187,8 +187,8 @@ namespace Asv.Common
             where TItem : class
             where TValue : IComparable
         {
-            TItem maxItem = null;
-            maxValue = default(TValue);
+            TItem? maxItem = null;
+            maxValue = default;
 
             foreach (var item in items)
             {
@@ -242,28 +242,25 @@ namespace Asv.Common
         /// var youngestPerson = persons.MinItem(p =&gt; p.Age, out age);
         /// </code>
         /// </example>
-        public static TItem MinItem<TItem, TValue>(this IEnumerable<TItem> items, Func<TItem, TValue> selector, out TValue minValue)
+        public static TItem MinItem<TItem, TValue>(this IEnumerable<TItem> items, Func<TItem, TValue> selector, out TValue? minValue)
             where TItem : class
             where TValue : IComparable
         {
-            TItem minItem = null;
-            minValue = default(TValue);
+            TItem? minItem = null;
+            minValue = default; 
 
             foreach (var item in items)
             {
-                if (item != null)
-                {
-                    var itemValue = selector(item);
+                var itemValue = selector(item);
 
-                    if ((minItem == null) || (itemValue.CompareTo(minValue) < 0))
-                    {
-                        minValue = itemValue;
-                        minItem = item;
-                    }
+                if (minItem == null || itemValue.CompareTo(minValue) < 0)
+                {
+                    minValue = itemValue;
+                    minItem = item;
                 }
             }
 
-            return minItem;
+            return minItem ?? throw new InvalidOperationException("Sequence contains no elements");
         }
 
         /// <summary>

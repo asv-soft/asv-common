@@ -4,7 +4,7 @@ namespace Asv.IO
 {
     public abstract class SpanKeyWithNameAndDescriptionType<TKey> : SpanKeyWithNameType<TKey>
     {
-        private string _description;
+        private string? _description;
 
         protected abstract void InternalValidateDescription(string description);
 
@@ -14,7 +14,7 @@ namespace Asv.IO
             Description = BinSerialize.ReadString(ref buffer);
         }
 
-        public string Description
+        public required string Description
         {
             get => _description;
             set

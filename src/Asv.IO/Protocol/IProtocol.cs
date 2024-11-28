@@ -30,9 +30,7 @@ public interface IProtocolFactory
     ImmutableArray<PortTypeInfo> AvailablePortTypes { get; }
     ImmutableArray<IProtocolMessageFormatter> Formatters { get; }
     ImmutableArray<IProtocolFeature> Features { get; }
-    IStatistic Statistic { get; }
-    IProtocolPort CreatePort(string id);
-    IProtocolParser CreateParser(string id);
+    IProtocolParser CreateParser(string protocolId);
     IProtocolRouter CreateRouter(string id);
     IVirtualConnection CreateVirtualConnection(Func<IProtocolMessage, bool>? clientToServerFilter = null,
         Func<IProtocolMessage, bool>? serverToClientFilter = null);

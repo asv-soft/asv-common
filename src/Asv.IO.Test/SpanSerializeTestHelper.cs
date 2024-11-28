@@ -4,7 +4,7 @@ using Xunit;
 
 namespace Asv.IO.Test
 {
-    public class SpanTestHelper
+    public static class SpanSerializeTestHelper
     {
 
         public static void SerializeDeserializeTestBegin(Action<string> output = null)
@@ -16,10 +16,10 @@ namespace Asv.IO.Test
         public static void TestType<T>(T type, Action<string> output = null, string comment = null)
             where T : ISizedSpanSerializable, new()
         {
-            TestType(type,()=>new T(),output,comment);
+            TestSerializeDeserializeEquality(type,()=>new T(),output,comment);
         }
 
-        public static void TestType<T>(T type, Func<T> typeFactory, Action<string> output = null, string comment = null)
+        public static void TestSerializeDeserializeEquality<T>(T type, Func<T> typeFactory, Action<string> output = null, string comment = null)
             where T : ISizedSpanSerializable
         {
             var arr = new byte[type.GetByteSize()];

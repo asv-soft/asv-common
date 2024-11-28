@@ -49,10 +49,10 @@ public interface IProtocolMessageFactory
     ProtocolInfo Info { get; }
 }
 
-public interface IProtocolMessageFactory<out TMessage, in TMessageId> : IProtocolMessageFactory
-    where TMessage : IProtocolMessage<TMessageId>
+public interface IProtocolMessageFactory<out TProtocolMessageBase, TMessageId> : IProtocolMessageFactory
+    where TProtocolMessageBase : IProtocolMessage<TMessageId>
     where TMessageId : notnull
 {
-    TMessage? Create(TMessageId id);
-    
+    TProtocolMessageBase? Create(TMessageId id);
+    IEnumerable<TMessageId> GetSupportedIds();
 }

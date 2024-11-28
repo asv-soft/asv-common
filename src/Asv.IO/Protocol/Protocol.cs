@@ -46,6 +46,8 @@ public class Protocol: IProtocolFactory, IProtocolContext
     public IMeterFactory MeterFactory { get; }
     public ImmutableDictionary<string, ParserFactoryDelegate> ParserFactory { get; }
     public ImmutableArray<IProtocolFeature> Features { get; }
+    public IProtocolParser CreateParser(string protocolId) => ParserFactory[protocolId](this, null);
+
     public ImmutableArray<ProtocolInfo> AvailableProtocols { get; }
     public ImmutableDictionary<string, PortFactoryDelegate> PortFactory { get; }
     public ImmutableArray<IProtocolMessageFormatter> Formatters { get; }

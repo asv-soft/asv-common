@@ -63,7 +63,7 @@ namespace Asv.Common
                     sign1 = -1.0;
                     value = value.Replace("-", string.Empty);
                 }
-                value = CutOffZeroRegex.Replace(value, "");
+                value = CutOffZeroRegex.Replace(value, string.Empty);
                 var result = double.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out angle);
                 if (result)
                 {

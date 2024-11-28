@@ -4,16 +4,16 @@ namespace Asv.IO
 {
     public abstract class SpanKeyWithNameType<TKey>:ISizedSpanSerializable
     {
-        private string _name;
+        private string? _name;
 
-        protected abstract void InternalValidateName(string name);
+        protected abstract void InternalValidateName(string? name);
         protected abstract TKey InternalReadKey(ref ReadOnlySpan<byte> buffer);
         protected abstract void InternalWriteKey(ref Span<byte> buffer, TKey id);
         protected abstract int InternalGetSizeKey(TKey id);
 
-        public TKey Id { get; set; }
+        public TKey? Id { get; set; }
 
-        public string Name
+        public string? Name
         {
             get => _name;
             set
