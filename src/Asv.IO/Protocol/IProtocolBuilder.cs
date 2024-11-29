@@ -30,7 +30,7 @@ public interface IProtocolBuilder
     void ClearAll();
 }
 
-public class ProtocolBuilder : IProtocolBuilder
+internal class ProtocolBuilder : IProtocolBuilder
 {
     private ILoggerFactory _loggerFactory;
     private TimeProvider _timeProvider;
@@ -42,7 +42,7 @@ public class ProtocolBuilder : IProtocolBuilder
     private readonly ImmutableArray<PortTypeInfo>.Builder _portTypeInfoBuilder = ImmutableArray.CreateBuilder<PortTypeInfo>();
     private readonly List<IProtocolMessageFormatter> _printers = new();
 
-    public ProtocolBuilder()
+    internal ProtocolBuilder()
     {
         // default configuration
         _loggerFactory = NullLoggerFactory.Instance;
