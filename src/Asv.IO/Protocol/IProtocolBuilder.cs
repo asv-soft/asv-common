@@ -10,43 +10,31 @@ using Microsoft.Extensions.Logging.Abstractions;
 namespace Asv.IO;
 
 
-public interface IProtocolBuilderEx:IProtocolBuilder
-{
-    IProtocolFactory Create();
-}
 
 public interface IProtocolBuilder
 {
-    IProtocolBuilder SetLog(ILoggerFactory loggerFactory);
-    IProtocolBuilder SetDefaultLog();
-    IProtocolBuilder SetTimeProvider(TimeProvider timeProvider);
-    IProtocolBuilder SetDefaultTimeProvider();
-    IProtocolBuilder SetMetrics(IMeterFactory meterFactory);
-    IProtocolBuilder SetDefaultMetrics();
-    IProtocolBuilder ClearFeatures();
-    IProtocolBuilder RegisterFeature(IProtocolFeature feature);
-    IProtocolBuilder ClearFromatter();
-    IProtocolBuilder RegisterFormatter(IProtocolMessageFormatter formatter);
-    IProtocolBuilder ClearProtocols();
-    IProtocolBuilder RegisterProtocol(ProtocolInfo info, ParserFactoryDelegate factory);
-    IProtocolBuilder ClearPort();
-    IProtocolBuilder RegisterPort(PortTypeInfo type, PortFactoryDelegate factory);
-    
-    public IProtocolBuilder ClearAll()
-    {
-        ClearFeatures();
-        ClearFromatter();
-        ClearProtocols();
-        ClearPort();
-        return this;
-    }
+    void SetLog(ILoggerFactory loggerFactory);
+    void SetDefaultLog();
+    void SetTimeProvider(TimeProvider timeProvider);
+    void SetDefaultTimeProvider();
+    void SetMetrics(IMeterFactory meterFactory);
+    void SetDefaultMetrics();
+    void ClearFeatures();
+    void RegisterFeature(IProtocolFeature feature);
+    void ClearFormatter();
+    void RegisterFormatter(IProtocolMessageFormatter formatter);
+    void ClearProtocols();
+    void RegisterProtocol(ProtocolInfo info, ParserFactoryDelegate factory);
+    void ClearPort();
+    void RegisterPort(PortTypeInfo type, PortFactoryDelegate factory);
+    void ClearAll();
 }
 
-public sealed class ProtocolBuilder : IProtocolBuilderEx
+public class ProtocolBuilder : IProtocolBuilder
 {
-    private ILoggerFactory? _loggerFactory;
-    private TimeProvider? _timeProvider;
-    private IMeterFactory? _meterFactory;
+    private ILoggerFactory _loggerFactory;
+    private TimeProvider _timeProvider;
+    private IMeterFactory _meterFactory;
     private readonly ImmutableArray<IProtocolFeature>.Builder _featureBuilder = ImmutableArray.CreateBuilder<IProtocolFeature>();
     private readonly ImmutableDictionary<string, ParserFactoryDelegate>.Builder _parserBuilder = ImmutableDictionary.CreateBuilder<string, ParserFactoryDelegate>();
     private readonly ImmutableArray<ProtocolInfo>.Builder _protocolInfoBuilder = ImmutableArray.CreateBuilder<ProtocolInfo>();
@@ -54,102 +42,109 @@ public sealed class ProtocolBuilder : IProtocolBuilderEx
     private readonly ImmutableArray<PortTypeInfo>.Builder _portTypeInfoBuilder = ImmutableArray.CreateBuilder<PortTypeInfo>();
     private readonly List<IProtocolMessageFormatter> _printers = new();
 
-    internal ProtocolBuilder()
+    public ProtocolBuilder()
     {
         // default configuration
-        
+        _loggerFactory = NullLoggerFactory.Instance;
+        _timeProvider = TimeProvider.System;
+        _meterFactory = new DefaultMeterFactory();
         this.RegisterSerialPort();
         this.RegisterTcpServerPort();
         this.RegisterTcpClientPort();
         this.RegisterUdpPort();
-        
     }
 
-    public IProtocolBuilder SetLog(ILoggerFactory loggerFactory)
+    public void SetLog(ILoggerFactory loggerFactory)
     {
+        ArgumentNullException.ThrowIfNull(loggerFactory);
         _loggerFactory = loggerFactory;
-        return this;
     }
 
-    public IProtocolBuilder SetDefaultLog()
+    public void SetDefaultLog()
     {
         _loggerFactory = NullLoggerFactory.Instance;
-        return this;
     }
 
-    public IProtocolBuilder SetTimeProvider(TimeProvider timeProvider)
+    public void SetTimeProvider(TimeProvider timeProvider)
     {
+        ArgumentNullException.ThrowIfNull(timeProvider);
         _timeProvider = timeProvider;
-        return this;
     }
 
-    public IProtocolBuilder SetDefaultTimeProvider()
+    public void SetDefaultTimeProvider()
     {
         _timeProvider = TimeProvider.System;
-        return this;
     }
 
-    public IProtocolBuilder SetMetrics(IMeterFactory meterFactory)
+    public void SetMetrics(IMeterFactory meterFactory)
     {
+        ArgumentNullException.ThrowIfNull(meterFactory);
         _meterFactory = meterFactory;
-        return this;
     }
 
-    public IProtocolBuilder SetDefaultMetrics()
+    public void SetDefaultMetrics()
     {
         _meterFactory = new DefaultMeterFactory();
-        return this;
     }
 
-    public IProtocolBuilder ClearFeatures()
+    public void ClearFeatures()
     {
         _featureBuilder.Clear();
-        return this;
     }
     
-    public IProtocolBuilder RegisterFeature(IProtocolFeature feature)
+    public void RegisterFeature(IProtocolFeature feature)
     {
-        _featureBuilder.Add(feature); 
-        return this;
+        ArgumentNullException.ThrowIfNull(feature);
+        _featureBuilder.Add(feature);
     }
-    public IProtocolBuilder ClearFromatter()
+    public void ClearFormatter()
     {
         _printers.Clear();
-        return this;
     }
-    public IProtocolBuilder RegisterFormatter(IProtocolMessageFormatter formatter)
+    public void RegisterFormatter(IProtocolMessageFormatter formatter)
     {
-        _printers.Add(formatter);    
-        return this;
+        ArgumentNullException.ThrowIfNull(formatter);
+        _printers.Add(formatter);
     }
 
-    public IProtocolBuilder ClearProtocols()
+    public void ClearProtocols()
     {
         _parserBuilder.Clear();
         _protocolInfoBuilder.Clear();
-        return this;
     }
-    public IProtocolBuilder RegisterProtocol(ProtocolInfo info, ParserFactoryDelegate factory)
+    public void RegisterProtocol(ProtocolInfo info, ParserFactoryDelegate factory)
     {
+        ArgumentNullException.ThrowIfNull(info);
+        ArgumentNullException.ThrowIfNull(factory);
         _parserBuilder.Add(info.Id, factory);
         _protocolInfoBuilder.Add(info);
-        return this;
     }
 
-    public IProtocolBuilder ClearPort()
+    public void ClearPort()
     {
         _portBuilder.Clear();
         _portTypeInfoBuilder.Clear();
-        return this;
     }
 
-    public IProtocolBuilder RegisterPort(PortTypeInfo type, PortFactoryDelegate factory)
+    public void RegisterPort(PortTypeInfo type, PortFactoryDelegate factory)
     {
+        ArgumentNullException.ThrowIfNull(type);
+        ArgumentNullException.ThrowIfNull(factory);
         _portBuilder.Add(type.Scheme, factory);
         _portTypeInfoBuilder.Add(type);
-        return this;
     }
-    
+
+    public void ClearAll()
+    {
+        ClearFeatures();
+        ClearFormatter();
+        ClearProtocols();
+        ClearPort();
+        SetDefaultLog();
+        SetDefaultMetrics();
+        SetDefaultTimeProvider();
+    }
+
     public IProtocolFactory Create()
     {
         return new Protocol(
@@ -159,8 +154,8 @@ public sealed class ProtocolBuilder : IProtocolBuilderEx
             _portBuilder.ToImmutable(),
             _portTypeInfoBuilder.ToImmutable(),
             [.._printers.OrderBy(x => x.Order)],
-            _loggerFactory ?? NullLoggerFactory.Instance,
-            _timeProvider ?? TimeProvider.System,
-            _meterFactory ?? new DefaultMeterFactory());
+            _loggerFactory,
+            _timeProvider,
+            _meterFactory);
     }
 }

@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Asv.IO;
 
-public class Protocol: IProtocolFactory, IProtocolContext
+public sealed class Protocol: IProtocolFactory, IProtocolContext
 {
     #region Static
 
@@ -16,8 +16,6 @@ public class Protocol: IProtocolFactory, IProtocolContext
         configure(builder);
         return builder.Create();
     }
-    
-    public static IProtocolBuilderEx Builder() => new ProtocolBuilder();
 
     #endregion
 
