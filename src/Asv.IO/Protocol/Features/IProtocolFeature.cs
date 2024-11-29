@@ -17,11 +17,11 @@ public interface IProtocolFeature
 
 public static class ProtocolProcessingFeatureHelper
 {
-    public static void EnableBroadcastFeature<TMessage>(this IProtocolBuilder builder)
+    public static void RegisterBroadcastFeature<TMessage>(this IProtocolBuilder builder)
     {
         builder.RegisterFeature(new BroadcastingFeature<TMessage>());
     }
-    public static void EnableBroadcastAllMessages(this IProtocolBuilder builder)
+    public static void RegisterBroadcastAllMessagesFeature(this IProtocolBuilder builder)
     {
         builder.RegisterFeature(new BroadcastingFeature<IProtocolMessage>());
     }
