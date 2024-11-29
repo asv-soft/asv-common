@@ -1,12 +1,8 @@
 using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
-using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using ZLogger;
@@ -171,7 +167,7 @@ public static class TcpServerProtocolPortHelper
     }
     public static void RegisterTcpServerPort(this IProtocolBuilder builder)
     {
-        builder.RegisterPortType(TcpServerProtocolPort.Info, 
+        builder.RegisterPort(TcpServerProtocolPort.Info, 
             (cs, context,stat) 
                 => new TcpServerProtocolPort(new TcpServerProtocolPortConfig(cs), context,stat));
     }

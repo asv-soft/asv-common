@@ -206,7 +206,7 @@ public static class SerialProtocolPortHelper
     }
     public static void RegisterSerialPort(this IProtocolBuilder builder)
     {
-        builder.RegisterPortType(SerialProtocolPort.Info, 
+        builder.RegisterPort(SerialProtocolPort.Info, 
             (cs,  context,stat) 
                 => new SerialProtocolPort(new SerialProtocolPortConfig(cs),context,stat));
     }

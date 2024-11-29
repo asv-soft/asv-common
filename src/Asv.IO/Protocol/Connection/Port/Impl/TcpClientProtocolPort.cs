@@ -94,7 +94,7 @@ public static class TcpClientProtocolPortHelper
     }
     public static void RegisterTcpClientPort(this IProtocolBuilder builder)
     {
-        builder.RegisterPortType(TcpClientProtocolPort.Info, 
+        builder.RegisterPort(TcpClientProtocolPort.Info, 
             (cs,  context,stat) 
                 => new TcpClientProtocolPort(new TcpClientProtocolPortConfig(cs), context,stat));
     }

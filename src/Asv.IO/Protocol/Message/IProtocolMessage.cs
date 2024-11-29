@@ -1,5 +1,3 @@
-using System;
-
 namespace Asv.IO;
 
 public interface IProtocolMessage:ISizedSpanSerializable, ISupportTag

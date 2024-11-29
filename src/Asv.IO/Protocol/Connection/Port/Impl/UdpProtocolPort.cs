@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Immutable;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -120,7 +119,7 @@ public static class UdpProtocolPortHelper
     }
     public static void RegisterUdpPort(this IProtocolBuilder builder)
     {
-        builder.RegisterPortType(UdpProtocolPort.Info, 
+        builder.RegisterPort(UdpProtocolPort.Info, 
             (cs, context,stat) 
                 => new UdpProtocolPort(new UdpProtocolPortConfig(cs), context,stat));
     }

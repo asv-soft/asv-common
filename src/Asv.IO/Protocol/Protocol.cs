@@ -14,9 +14,11 @@ public class Protocol: IProtocolFactory, IProtocolContext
     {
         var builder = new ProtocolBuilder();
         configure(builder);
-        return builder.Build();
+        return builder.Create();
     }
     
+    public static IProtocolBuilderEx Builder() => new ProtocolBuilder();
+
     #endregion
 
     internal Protocol(
