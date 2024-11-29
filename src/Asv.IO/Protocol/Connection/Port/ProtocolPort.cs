@@ -251,6 +251,7 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
         {
             await connection.Send(newMessage, cancel);
         }
+        InternalPublishTxMessage(newMessage);
     }
 
     public override string ToString()

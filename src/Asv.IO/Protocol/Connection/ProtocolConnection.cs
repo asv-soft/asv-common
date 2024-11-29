@@ -90,6 +90,10 @@ public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolC
     {
         _onTxMessage.OnErrorResume(ex);
     }
+    protected void InternalPublishTxMessage(IProtocolMessage msg)
+    {
+        _onTxMessage.OnNext(msg);
+    }
     public ref ProtocolTags Tags => ref _internalTags;
     
     #region Dispose
@@ -106,7 +110,6 @@ public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolC
             _onTxMessage.Dispose();
             _onRxMessage.Dispose();
         }
-
         base.Dispose(disposing);
     }
 

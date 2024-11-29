@@ -182,6 +182,7 @@ public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
                 Debug.Assert(writeBytes == sendBytes);
                 StatisticHandler.AddTxBytes(sendBytes);
                 StatisticHandler.IncrementTxMessage();
+                InternalPublishTxMessage(newMessage);
             }
         }
         catch (Exception e)

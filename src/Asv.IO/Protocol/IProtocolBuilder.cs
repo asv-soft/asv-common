@@ -52,6 +52,7 @@ internal class ProtocolBuilder : IProtocolBuilder
         this.RegisterTcpServerPort();
         this.RegisterTcpClientPort();
         this.RegisterUdpPort();
+        this.RegisterSimpleFormatter();
     }
 
     public void SetLog(ILoggerFactory loggerFactory)

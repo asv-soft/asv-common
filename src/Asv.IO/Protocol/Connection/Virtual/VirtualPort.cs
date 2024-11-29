@@ -57,6 +57,7 @@ public class VirtualPort:ProtocolConnection
             message.Serialize(ref span);
             _tx.OnNext(buffer);
             StatisticHandler.IncrementTxMessage();
+            InternalPublishTxMessage(message);
         }
         catch (Exception e)
         {
