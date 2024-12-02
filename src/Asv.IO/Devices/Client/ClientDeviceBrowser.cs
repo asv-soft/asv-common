@@ -2,34 +2,17 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics.Metrics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Asv.Common;
-using DotNext.Collections.Generic;
-using DotNext.Threading;
 using Microsoft.Extensions.Logging;
 using ObservableCollections;
 using R3;
 using ZLogger;
 
 namespace Asv.IO;
-
-
-public interface IClientDeviceProvider
-{
-    int Order { get; }
-    DeviceClass DeviceClass { get; }
-    bool TryIdentify(IProtocolMessage message, out DeviceId? deviceId);
-    void UpdateDevice(IClientDevice device, IProtocolMessage message);
-    IClientDevice CreateDevice(IProtocolMessage message, DeviceId deviceId);
-}
-
-
-public interface IClientDeviceBrowser
-{
-    
-}
 
 public class ClientDeviceBrowserConfig
 {
@@ -39,26 +22,40 @@ public class ClientDeviceBrowserConfig
 
 public class ClientDeviceBrowser : AsyncDisposableOnce, IClientDeviceBrowser
 {
-    private readonly IServiceContext _context;
-    private readonly ImmutableArray<IClientDeviceProvider> _providers;
+    #region Static
+
+    public IClientDeviceBrowser Create(IProtocolConnection connection, Action<IClientDeviceBrowserBuilder> configure)
+    {
+        var builder = new ClientDeviceBrowserBuilder(connection);
+        configure(builder);
+        return builder.Build();
+    }
+    
+    #endregion
+    
+    private readonly IDeviceContext _context;
+    private readonly ImmutableArray<IClientDeviceFactory> _providers;
     private readonly IDisposable _sub1;
     private readonly ReaderWriterLockSlim _lock = new();
-    private readonly ObservableDictionary<DeviceId, IClientDevice> _devices = new();
-    private readonly ConcurrentDictionary<DeviceId,long> _lastSeen = new();
+    private readonly ObservableDictionary<string, IClientDevice> _devices = new();
+    private readonly ConcurrentDictionary<string,long> _lastSeen = new();
     private readonly ILogger<ClientDeviceBrowser> _logger;
     private readonly ITimer _timer;
     private readonly TimeSpan _deviceTimeout;
 
-    public ClientDeviceBrowser(ClientDeviceBrowserConfig config, IEnumerable<IClientDeviceProvider> providers, IServiceContext context)
+    internal ClientDeviceBrowser(ClientDeviceBrowserConfig config, IEnumerable<IClientDeviceFactory> providers, ImmutableArray<IClientDeviceExtender> extenders, IDeviceContext context)
     {
+        ArgumentNullException.ThrowIfNull(config);
+        ArgumentNullException.ThrowIfNull(providers);
+        ArgumentNullException.ThrowIfNull(context);
         _context = context;
-        _logger = _context.Log.CreateLogger<ClientDeviceBrowser>();
+        _logger = _context.LoggerFactory.CreateLogger<ClientDeviceBrowser>();
         _providers = [..providers.OrderBy(x=>x.Order)];
         _sub1 = context.Connection.OnRxMessage.Subscribe(CheckNewDevice);
         _deviceTimeout = TimeSpan.FromMilliseconds(config.DeviceTimeoutMs);
         _timer = context.TimeProvider.CreateTimer(RemoveOldDevices, null, TimeSpan.FromMilliseconds(config.DeviceCheckIntervalMs), TimeSpan.FromMilliseconds(config.DeviceCheckIntervalMs));
     }
-
+    public IReadOnlyObservableDictionary<string, IClientDevice> Devices => _devices;
     private void RemoveOldDevices(object? state)
     {
         var itemsToDelete = _lastSeen
@@ -92,8 +89,8 @@ public class ClientDeviceBrowser : AsyncDisposableOnce, IClientDeviceBrowser
     private void CheckNewDevice(IProtocolMessage msg)
     {
         var providers = _providers;
-        DeviceId? deviceId = null;
-        IClientDeviceProvider? currentProvider = null;
+        string? deviceId = null;
+        IClientDeviceFactory? currentProvider = null;
         foreach (var provider in providers)
         {
             if (provider.TryIdentify(msg, out deviceId))
@@ -109,7 +106,7 @@ public class ClientDeviceBrowser : AsyncDisposableOnce, IClientDeviceBrowser
         {
             if (_devices.TryGetValue(deviceId, out var device1))
             {
-                device1.Provider.UpdateDevice(device1, msg);
+                currentProvider.UpdateDevice(device1, msg);
                 return;
             }
             _lock.EnterWriteLock();
@@ -182,4 +179,6 @@ public class ClientDeviceBrowser : AsyncDisposableOnce, IClientDeviceBrowser
     }
 
     #endregion
+
+
 }

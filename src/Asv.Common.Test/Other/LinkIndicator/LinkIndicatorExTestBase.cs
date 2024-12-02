@@ -21,7 +21,7 @@ public abstract class LinkIndicatorExTestBase<T>
         var linkIndicator = CreateLinkIndicator();
 
         // Assert
-        Assert.Equal(LinkState.Disconnected, linkIndicator.State.Value);
+        Assert.Equal(LinkState.Disconnected, linkIndicator.State.CurrentValue);
         Assert.NotNull(linkIndicator.OnFound);
         Assert.NotNull(linkIndicator.OnLost);
     }

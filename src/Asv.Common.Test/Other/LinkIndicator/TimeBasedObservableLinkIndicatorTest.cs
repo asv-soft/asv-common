@@ -22,21 +22,21 @@ public class TimeBasedObservableLinkIndicatorTest:LinkIndicatorExTestBase<TimeBa
     {
         var linkIndicator = CreateLinkIndicator();
         // start in disconnected state
-        Assert.Equal(LinkState.Disconnected, linkIndicator.State.Value);
+        Assert.Equal(LinkState.Disconnected, linkIndicator.State.CurrentValue);
         // upgrade to connected state
         _input.OnNext(Unit.Default);
-        Assert.Equal(LinkState.Connected, linkIndicator.State.Value);
+        Assert.Equal(LinkState.Connected, linkIndicator.State.CurrentValue);
         // advance time by 500 ms
         _fakeTime.Advance(TimeSpan.FromMilliseconds(500));
         // connection still active
-        Assert.Equal(LinkState.Connected, linkIndicator.State.Value);
+        Assert.Equal(LinkState.Connected, linkIndicator.State.CurrentValue);
         // advance time by 501 ms
         _fakeTime.Advance(TimeSpan.FromMilliseconds(520));
-        Assert.Equal(LinkState.Downgrade, linkIndicator.State.Value);
+        Assert.Equal(LinkState.Downgrade, linkIndicator.State.CurrentValue);
         _fakeTime.Advance(TimeSpan.FromMilliseconds(1000));
-        Assert.Equal(LinkState.Downgrade, linkIndicator.State.Value);
+        Assert.Equal(LinkState.Downgrade, linkIndicator.State.CurrentValue);
         _fakeTime.Advance(TimeSpan.FromMilliseconds(1000));
-        Assert.Equal(LinkState.Disconnected, linkIndicator.State.Value);
+        Assert.Equal(LinkState.Disconnected, linkIndicator.State.CurrentValue);
     
         
     }

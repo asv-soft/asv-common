@@ -1,14 +1,18 @@
 using System;
+using System.Collections.Immutable;
+using Asv.Common;
 using R3;
 
 namespace Asv.IO;
 
 public interface IClientDevice:IDisposable, IAsyncDisposable
 {
-    DeviceId Id { get; }
+    string Id { get; }
+    string Class { get; }
     ReadOnlyReactiveProperty<string> Name { get; }
-    ReadOnlyReactiveProperty<ClientDeviceState> InitState { get; }
-    IClientDeviceProvider Provider { get; }
+    ReadOnlyReactiveProperty<ClientDeviceState> State { get; }
+    ILinkIndicator Link { get; }
+    ImmutableArray<IMicroserviceClient> Microservices { get; }
 }
 
 public enum ClientDeviceState

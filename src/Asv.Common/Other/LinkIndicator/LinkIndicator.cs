@@ -4,7 +4,7 @@ namespace Asv.Common
 {
     public interface ILinkIndicator
     {
-        ReactiveProperty<LinkState> State { get; }
+        ReadOnlyReactiveProperty<LinkState> State { get; }
         /// <summary>
         /// Represents an event that is triggered when the link is connected.
         /// This event happens when the last state was Disconnected and the new state is Connected (downgrade is not considered).

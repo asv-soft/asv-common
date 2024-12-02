@@ -43,7 +43,7 @@ public class LinkIndicatorBase : ILinkIndicator, IDisposable, IAsyncDisposable
         _state.OnNext(LinkState.Disconnected);
     }
 
-    public ReactiveProperty<LinkState> State => _state;
+    public ReadOnlyReactiveProperty<LinkState> State => _state;
     public Observable<Unit> OnFound { get; }
     public Observable<Unit> OnLost { get; }
 

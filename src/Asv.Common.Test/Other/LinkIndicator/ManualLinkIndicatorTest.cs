@@ -24,7 +24,7 @@ public class ManualLinkIndicatorTest:LinkIndicatorExTestBase<ManualLinkIndicator
         linkIndicator.Upgrade();
 
         // Assert
-        Assert.Equal(LinkState.Connected, linkIndicator.State.Value);
+        Assert.Equal(LinkState.Connected, linkIndicator.State.CurrentValue);
     }
     [Fact]
     public void InternalDowngrade_MovesThroughStatesCorrectly()
@@ -36,15 +36,15 @@ public class ManualLinkIndicatorTest:LinkIndicatorExTestBase<ManualLinkIndicator
         // Act & Assert
         // First downgrade - should move to Downgrade
         linkIndicator.Downgrade();
-        Assert.Equal(LinkState.Downgrade, linkIndicator.State.Value);
+        Assert.Equal(LinkState.Downgrade, linkIndicator.State.CurrentValue);
 
         // Second downgrade - should still be in Downgrade
         linkIndicator.Downgrade();
-        Assert.Equal(LinkState.Downgrade, linkIndicator.State.Value);
+        Assert.Equal(LinkState.Downgrade, linkIndicator.State.CurrentValue);
 
         // Third downgrade - should move to Disconnected
         linkIndicator.Downgrade();
-        Assert.Equal(LinkState.Disconnected, linkIndicator.State.Value);
+        Assert.Equal(LinkState.Disconnected, linkIndicator.State.CurrentValue);
     }
     
     [Fact]
@@ -58,7 +58,7 @@ public class ManualLinkIndicatorTest:LinkIndicatorExTestBase<ManualLinkIndicator
         linkIndicator.ForceDisconnected();
 
         // Assert
-        Assert.Equal(LinkState.Disconnected, linkIndicator.State.Value);
+        Assert.Equal(LinkState.Disconnected, linkIndicator.State.CurrentValue);
     }
     
     [Fact]
