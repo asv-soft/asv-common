@@ -67,6 +67,7 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Asv.Cfg\Asv.Cfg.csproj" />
     <ProjectReference Include="..\Asv.Common\Asv.Common.csproj" />
   </ItemGroup>
   <ItemGroup>
