@@ -165,9 +165,9 @@ public static class TcpServerProtocolPortHelper
         edit(cfg);
         return src.AddPort(cfg.AsUri());
     }
-    public static void RegisterTcpServerPort(this IProtocolBuilder builder)
+    public static void RegisterTcpServerPort(this IProtocolPortBuilder builder)
     {
-        builder.RegisterPort(TcpServerProtocolPort.Info, 
+        builder.Register(TcpServerProtocolPort.Info, 
             (cs, context,stat) 
                 => new TcpServerProtocolPort(new TcpServerProtocolPortConfig(cs), context,stat));
     }

@@ -117,9 +117,9 @@ public static class UdpProtocolPortHelper
         edit(cfg);
         return src.AddPort(cfg.AsUri());
     }
-    public static void RegisterUdpPort(this IProtocolBuilder builder)
+    public static void RegisterUdpPort(this IProtocolPortBuilder builder)
     {
-        builder.RegisterPort(UdpProtocolPort.Info, 
+        builder.Register(UdpProtocolPort.Info, 
             (cs, context,stat) 
                 => new UdpProtocolPort(new UdpProtocolPortConfig(cs), context,stat));
     }

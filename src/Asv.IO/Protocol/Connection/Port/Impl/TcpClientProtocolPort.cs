@@ -92,9 +92,9 @@ public static class TcpClientProtocolPortHelper
         edit(cfg);
         return src.AddPort(cfg.AsUri());
     }
-    public static void RegisterTcpClientPort(this IProtocolBuilder builder)
+    public static void RegisterTcpClientPort(this IProtocolPortBuilder builder)
     {
-        builder.RegisterPort(TcpClientProtocolPort.Info, 
+        builder.Register(TcpClientProtocolPort.Info, 
             (cs,  context,stat) 
                 => new TcpClientProtocolPort(new TcpClientProtocolPortConfig(cs), context,stat));
     }

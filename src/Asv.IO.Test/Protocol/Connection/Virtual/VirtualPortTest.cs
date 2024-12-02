@@ -35,8 +35,8 @@ public class VirtualPortTest
         var link = IO.Protocol.Create(builder =>
         {
             builder.SetLog(new TestLoggerFactory(_output, TimeProvider.System,"ROUTER"));
-            builder.RegisterExampleProtocol();
-            builder.RegisterSimpleFormatter();
+            builder.Protocols.RegisterExampleProtocol();
+            builder.Formatters.RegisterSimpleFormatter();
         }).CreateVirtualConnection();
 
         var sendArray1 = new ExampleMessage1[count];

@@ -15,14 +15,20 @@ public interface IProtocolFeature
     void Unregister(IProtocolConnection connection);
 }
 
+public interface IProtocolFeatureBuilder
+{
+    void Clear();
+    void Register(IProtocolFeature feature);
+}
+
 public static class ProtocolProcessingFeatureHelper
 {
-    public static void RegisterBroadcastFeature<TMessage>(this IProtocolBuilder builder)
+    public static void RegisterBroadcastFeature<TMessage>(this IProtocolFeatureBuilder builder)
     {
-        builder.RegisterFeature(new BroadcastingFeature<TMessage>());
+        builder.Register(new BroadcastingFeature<TMessage>());
     }
-    public static void RegisterBroadcastAllMessagesFeature(this IProtocolBuilder builder)
+    public static void RegisterBroadcastAllFeature(this IProtocolFeatureBuilder builder)
     {
-        builder.RegisterFeature(new BroadcastingFeature<IProtocolMessage>());
+        builder.Register(new BroadcastingFeature<IProtocolMessage>());
     }
 }

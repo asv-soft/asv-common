@@ -4,8 +4,8 @@ public static class ExampleProtocol
 {
     public static readonly ProtocolInfo Info = new("example","Example protocol");
 
-    public static void RegisterExampleProtocol(this IProtocolBuilder builder)
+    public static void RegisterExampleProtocol(this IProtocolParserBuilder builder)
     {
-        builder.RegisterProtocol(Info, (core,stat) => new ExampleParser(ExampleMessageFactory.Instance, core,stat));
+        builder.Register(Info, (core,stat) => new ExampleParser(ExampleMessageFactory.Instance, core,stat));
     }
 }

@@ -32,9 +32,9 @@ public class TcpPortComplexTest
         _protocol = IO.Protocol.Create(builder =>
         {
             builder.SetLog(_logFactory);
-            builder.RegisterExampleProtocol();
-            builder.RegisterBroadcastAllMessagesFeature();
-            builder.RegisterJsonFormatter();
+            builder.Protocols.RegisterExampleProtocol();
+            builder.Features.RegisterBroadcastAllFeature();
+            builder.Formatters.RegisterJsonFormatter();
         });
         _serverRouter = _protocol.CreateRouter("Server");
         _clientRouter = _protocol.CreateRouter("Client");

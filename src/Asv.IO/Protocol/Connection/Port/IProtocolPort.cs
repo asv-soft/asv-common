@@ -42,3 +42,9 @@ public class PortTypeInfo(string scheme, string name)
         return $"{Scheme}[{Name}]";
     }
 }
+
+public interface IProtocolPortBuilder
+{
+    void Clear();
+    void Register(PortTypeInfo type, PortFactoryDelegate factory);
+}

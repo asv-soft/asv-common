@@ -15,4 +15,10 @@ public interface IProtocolParser:IDisposable,IAsyncDisposable
     void Reset();
 }
 
+public interface IProtocolParserBuilder
+{
+    void Clear();
+    void Register(ProtocolInfo info, ParserFactoryDelegate factory);
+}
+
 

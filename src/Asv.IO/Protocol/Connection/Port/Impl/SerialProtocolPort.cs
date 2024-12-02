@@ -204,9 +204,9 @@ public static class SerialProtocolPortHelper
         edit(cfg);
         return src.AddPort(cfg.AsUri());
     }
-    public static void RegisterSerialPort(this IProtocolBuilder builder)
+    public static void RegisterSerialPort(this IProtocolPortBuilder builder)
     {
-        builder.RegisterPort(SerialProtocolPort.Info, 
+        builder.Register(SerialProtocolPort.Info, 
             (cs,  context,stat) 
                 => new SerialProtocolPort(new SerialProtocolPortConfig(cs),context,stat));
     }

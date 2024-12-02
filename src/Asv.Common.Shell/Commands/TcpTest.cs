@@ -41,9 +41,9 @@ public class TcpTest
         var protocol = Protocol.Create(builder =>
         {
             builder.SetLog(loggerFactory);
-            builder.RegisterExampleProtocol();
-            builder.RegisterBroadcastAllMessagesFeature();
-            builder.RegisterJsonFormatter();
+            builder.Protocols.RegisterExampleProtocol();
+            builder.Features.RegisterBroadcastAllFeature();
+            builder.Formatters.RegisterJsonFormatter();
         });
 
         var serverRouter = protocol.CreateRouter("Server");

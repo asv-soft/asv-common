@@ -15,14 +15,20 @@ public interface IProtocolMessageFormatter
     string Print(IProtocolMessage packet, PacketFormatting formatting);
 }
 
+public interface IProtocolMessageFormatterBuilder
+{
+    void Clear();
+    void Register(IProtocolMessageFormatter formatter);
+}
+
 public static class ProtocolMessageFormatterHelper
 {
-    public static void RegisterJsonFormatter(this IProtocolBuilder builder)
+    public static void RegisterJsonFormatter(this IProtocolMessageFormatterBuilder builder)
     {
-        builder.RegisterFormatter(new JsonMessageFormatter());
+        builder.Register(new JsonMessageFormatter());
     }
-    public static void RegisterSimpleFormatter(this IProtocolBuilder builder)
+    public static void RegisterSimpleFormatter(this IProtocolMessageFormatterBuilder builder)
     {
-        builder.RegisterFormatter(new SimpleMessageToStringFormatter());
+        builder.Register(new SimpleMessageToStringFormatter());
     }
 }
