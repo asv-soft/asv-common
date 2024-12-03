@@ -9,7 +9,8 @@ namespace Asv.IO;
 /// </summary>
 public interface IClientDeviceExtender
 {
-    Task Extend(string deviceId, string deviceClass, ImmutableArray<IMicroserviceClient>.Builder existMicroservices, CancellationToken cancel);
+    
+    Task Extend(DeviceId deviceId, ImmutableArray<IMicroserviceClient>.Builder existMicroservices, CancellationToken cancel);
 }
 
 public interface IClientDeviceExtenderBuilder

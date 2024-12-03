@@ -32,13 +32,14 @@ public class ClientDeviceBrowser : AsyncDisposableOnce, IClientDeviceBrowser
     }
     
     #endregion
-    
+
+    private readonly ImmutableArray<IClientDeviceExtender> _extenders;
     private readonly IDeviceContext _context;
     private readonly ImmutableArray<IClientDeviceFactory> _providers;
     private readonly IDisposable _sub1;
     private readonly ReaderWriterLockSlim _lock = new();
-    private readonly ObservableDictionary<string, IClientDevice> _devices = new();
-    private readonly ConcurrentDictionary<string,long> _lastSeen = new();
+    private readonly ObservableDictionary<DeviceId, IClientDevice> _devices = new();
+    private readonly ConcurrentDictionary<DeviceId,long> _lastSeen = new();
     private readonly ILogger<ClientDeviceBrowser> _logger;
     private readonly ITimer _timer;
     private readonly TimeSpan _deviceTimeout;
@@ -48,6 +49,7 @@ public class ClientDeviceBrowser : AsyncDisposableOnce, IClientDeviceBrowser
         ArgumentNullException.ThrowIfNull(config);
         ArgumentNullException.ThrowIfNull(providers);
         ArgumentNullException.ThrowIfNull(context);
+        _extenders = extenders;
         _context = context;
         _logger = _context.LoggerFactory.CreateLogger<ClientDeviceBrowser>();
         _providers = [..providers.OrderBy(x=>x.Order)];
@@ -55,7 +57,7 @@ public class ClientDeviceBrowser : AsyncDisposableOnce, IClientDeviceBrowser
         _deviceTimeout = TimeSpan.FromMilliseconds(config.DeviceTimeoutMs);
         _timer = context.TimeProvider.CreateTimer(RemoveOldDevices, null, TimeSpan.FromMilliseconds(config.DeviceCheckIntervalMs), TimeSpan.FromMilliseconds(config.DeviceCheckIntervalMs));
     }
-    public IReadOnlyObservableDictionary<string, IClientDevice> Devices => _devices;
+    public IReadOnlyObservableDictionary<DeviceId, IClientDevice> Devices => _devices;
     private void RemoveOldDevices(object? state)
     {
         var itemsToDelete = _lastSeen
@@ -89,7 +91,7 @@ public class ClientDeviceBrowser : AsyncDisposableOnce, IClientDeviceBrowser
     private void CheckNewDevice(IProtocolMessage msg)
     {
         var providers = _providers;
-        string? deviceId = null;
+        DeviceId? deviceId = null;
         IClientDeviceFactory? currentProvider = null;
         foreach (var provider in providers)
         {
@@ -117,7 +119,7 @@ public class ClientDeviceBrowser : AsyncDisposableOnce, IClientDeviceBrowser
                     currentProvider.UpdateDevice(device2, msg);
                     return;
                 }
-                var device = currentProvider.CreateDevice(msg, deviceId);
+                var device = currentProvider.CreateDevice(msg, deviceId, _context, _extenders );
                 _logger.ZLogInformation($"New device {deviceId} created by {currentProvider}");
                 _devices.Add(deviceId, device);
             }

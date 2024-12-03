@@ -32,9 +32,28 @@ public abstract class MicroserviceClient<TBaseMessage> : AsyncDisposableWithCanc
     }
 
     public string Id { get; }
+    public abstract string Type { get; }
+    
+    public bool IsInit { get; private set; }
     protected IDeviceContext Context { get; }
 
-    public virtual Task Init(CancellationToken cancel = default)
+    public async Task Init(CancellationToken cancel = default)
+    {
+        try
+        {
+            if (IsInit) return;
+            _loggerBase.ZLogTrace($"Init microservice {Type}[{Id}]");
+            await InternalInit(cancel);
+            IsInit = true;
+        }
+        catch (Exception ex)
+        {
+            _loggerBase.ZLogError(ex, $"Error on init microservice {Type}[{Id}]");
+            throw;
+        }
+    }
+
+    protected virtual Task InternalInit(CancellationToken cancel)
     {
         return Task.CompletedTask;
     }

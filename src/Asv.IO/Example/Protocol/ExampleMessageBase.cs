@@ -43,9 +43,10 @@ public abstract class ExampleMessageBase : IProtocolMessage<byte>
             throw new ProtocolDeserializeMessageException(Protocol, this, $"Invalid crc: want {calcCrc}, got {buffer[^1]}");
         }
         var size = buffer[2];
-        var internalBuffer = buffer[3..^1];
+        SenderId = buffer[3];
+        var internalBuffer = buffer[4..^1];
         InternalDeserialize(ref internalBuffer);
-        buffer = buffer[(4 + size)..];
+        buffer = buffer[(5 + size)..];
     }
     
     public void Serialize(ref Span<byte> buffer)
@@ -54,25 +55,27 @@ public abstract class ExampleMessageBase : IProtocolMessage<byte>
         BinSerialize.WriteByte(ref buffer, ExampleParser.SyncByte);
         BinSerialize.WriteByte(ref buffer, Id);
         var sizeRef = buffer;
+        BinSerialize.WriteByte(ref buffer, SenderId);
         buffer = buffer[1..];
         var payload = buffer;
         InternalSerialize(ref buffer);
         var size = (byte)(payload.Length - buffer.Length);
         BinSerialize.WriteByte(ref sizeRef, size);
-        var forCrc = origin[1..(size + 3)];
+        var forCrc = origin[1..(size + 4)];
         BinSerialize.WriteByte(ref buffer, CalcCrc(forCrc));
     }
     protected abstract void InternalDeserialize(ref ReadOnlySpan<byte> buffer);
     protected abstract void InternalSerialize(ref Span<byte> buffer);
     protected abstract int InternalGetByteSize();
     
-    public virtual int GetByteSize() => 4 /*SYNC + ID + SIZE + CRC*/ + InternalGetByteSize();
+    public virtual int GetByteSize() => 5 /*SYNC + ID + SIZE + SENDER_ID + CRC*/ + InternalGetByteSize();
     
     public ProtocolInfo Protocol => ExampleProtocol.Info;
     
     public abstract string Name { get; }
     public string GetIdAsString() => Id.ToString();
     public abstract byte Id { get; }
-
     public ref ProtocolTags Tags => ref _tags;
+    
+    public byte SenderId { get; set; }
 }

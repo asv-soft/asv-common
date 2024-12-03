@@ -4,5 +4,5 @@ namespace Asv.IO;
 
 public interface IClientDeviceBrowser
 {
-    IReadOnlyObservableDictionary<string,IClientDevice> Devices { get; }
+    IReadOnlyObservableDictionary<DeviceId,IClientDevice> Devices { get; }
 }

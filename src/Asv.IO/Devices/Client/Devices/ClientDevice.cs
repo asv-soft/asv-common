@@ -12,25 +12,27 @@ namespace Asv.IO;
 
 public class ClientDeviceConfig
 {
-    public int RequestInitDataDelayAfterFailMs { get; set; } = 1000;
+    public int RequestDelayAfterFailMs { get; set; } = 1000;
 }
 
-public abstract class ClientDevice : AsyncDisposableWithCancel, IClientDevice
+public abstract class ClientDevice<TDeviceId> : AsyncDisposableWithCancel, IClientDevice
+    where TDeviceId:DeviceId
 {
     private readonly ClientDeviceConfig _config;
     private readonly ImmutableArray<IClientDeviceExtender> _extenders;
-    private readonly ReactiveProperty<string> _name;
+    private readonly ReactiveProperty<string?> _name;
     private readonly ReactiveProperty<ClientDeviceState> _state = new(ClientDeviceState.Uninitialized);
     private ImmutableArray<IMicroserviceClient> _microservices;
     private int _isTryReconnectInProgress;
-    private readonly ILogger<ClientDevice> _logger;
+    private readonly ILogger _logger;
     private bool _needToRequestAgain;
     private ITimer? _reconnectionTimer;
     private IDisposable? _sub1;
     private IDisposable? _sub2;
+    
 
 
-    public ClientDevice(string id, ClientDeviceConfig config, ImmutableArray<IClientDeviceExtender> extenders, IDeviceContext context)
+    protected ClientDevice(TDeviceId id, ClientDeviceConfig config, ImmutableArray<IClientDeviceExtender> extenders, IDeviceContext context)
     {
         ArgumentNullException.ThrowIfNull(id);
         ArgumentNullException.ThrowIfNull(config);
@@ -39,8 +41,8 @@ public abstract class ClientDevice : AsyncDisposableWithCancel, IClientDevice
         _extenders = extenders;
         Context = context;
         Id = id;
-        _name = new ReactiveProperty<string>(id);
-        _logger = context.LoggerFactory.CreateLogger<ClientDevice>();
+        _name = new ReactiveProperty<string?>(id.ToString());
+        _logger = context.LoggerFactory.CreateLogger(id.AsString());
         Task.Factory.StartNew(InternalInitFirst);
     }
 
@@ -81,7 +83,7 @@ public abstract class ClientDevice : AsyncDisposableWithCancel, IClientDevice
 
             foreach (var extender in _extenders)
             {
-                await extender.Extend(Id,Class, builder, combine.Token);
+                await extender.Extend(Id, builder, combine.Token);
             }
             _microservices = builder.ToImmutable();
             await InitAfterMicroservices(combine.Token).ConfigureAwait(false);
@@ -96,7 +98,7 @@ public abstract class ClientDevice : AsyncDisposableWithCancel, IClientDevice
             _state.OnNext(ClientDeviceState.Failed);
             _needToRequestAgain = true;
             _reconnectionTimer = Context.TimeProvider.CreateTimer(TryReconnect, null,
-                TimeSpan.FromMilliseconds(_config.RequestInitDataDelayAfterFailMs),Timeout.InfiniteTimeSpan);
+                TimeSpan.FromMilliseconds(_config.RequestDelayAfterFailMs),Timeout.InfiniteTimeSpan);
         }
         finally
         {
@@ -119,17 +121,16 @@ public abstract class ClientDevice : AsyncDisposableWithCancel, IClientDevice
         }
     }
 
-    public string Id { get; }
-
-    public abstract string Class { get; }
+    public DeviceId Id { get; }
     
     protected IDeviceContext Context { get; }
 
-    protected void UpdateDeviceName(string name)
+    protected void UpdateDeviceName(string? name)
     {
         _name.OnNext(name);
     }
-    public ReadOnlyReactiveProperty<string> Name => _name;
+
+    public ReadOnlyReactiveProperty<string?> Name => _name;
 
     public ReadOnlyReactiveProperty<ClientDeviceState> State => _state;
     public abstract ILinkIndicator Link { get; }

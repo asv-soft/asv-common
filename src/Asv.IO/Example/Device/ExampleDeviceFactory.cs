@@ -1,0 +1,25 @@
+using System;
+using System.Collections.Immutable;
+
+namespace Asv.IO.Device;
+
+
+public class ExampleDeviceFactory(ExampleDeviceConfig config) : ClientDeviceFactory<ExampleMessageBase,ExampleDevice,ExampleDeviceId>
+{
+    public override int Order { get; } = 0;
+    protected override DeviceId InternalTryIdentify(ExampleMessageBase msg)
+    {
+        return new ExampleDeviceId(ExampleDevice.DeviceClass, msg.Id);
+    }
+
+    protected override void InternalUpdateDevice(ExampleDevice device, ExampleMessageBase msg)
+    {
+        // nothing to do
+    }
+
+    protected override ExampleDevice InternalCreateDevice(ExampleMessageBase msg, ExampleDeviceId deviceId, IDeviceContext context,
+        ImmutableArray<IClientDeviceExtender> extenders)
+    {
+        return new ExampleDevice(deviceId, config, extenders, context);
+    }
+}
