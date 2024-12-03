@@ -14,7 +14,7 @@ public class ExampleDeviceMicroservice:MicroserviceClient<ExampleMessageBase>
     }
 
 
-    public override string Type => MicroserviceType;
+    public override string TypeName => MicroserviceType;
     protected override void FillMessageBeforeSent(ExampleMessageBase message)
     {
         message.SenderId = _selfId;

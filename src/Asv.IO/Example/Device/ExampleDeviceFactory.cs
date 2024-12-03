@@ -7,9 +7,11 @@ namespace Asv.IO.Device;
 public class ExampleDeviceFactory(ExampleDeviceConfig config) : ClientDeviceFactory<ExampleMessageBase,ExampleDevice,ExampleDeviceId>
 {
     public override int Order { get; } = 0;
-    protected override DeviceId InternalTryIdentify(ExampleMessageBase msg)
+
+    protected override bool InternalTryIdentify(ExampleMessageBase msg, out ExampleDeviceId? deviceId)
     {
-        return new ExampleDeviceId(ExampleDevice.DeviceClass, msg.Id);
+        deviceId = new ExampleDeviceId(ExampleDevice.DeviceClass, msg.Id);
+        return true;
     }
 
     protected override void InternalUpdateDevice(ExampleDevice device, ExampleMessageBase msg)

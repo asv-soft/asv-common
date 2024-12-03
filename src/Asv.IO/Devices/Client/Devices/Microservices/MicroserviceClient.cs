@@ -32,7 +32,7 @@ public abstract class MicroserviceClient<TBaseMessage> : AsyncDisposableWithCanc
     }
 
     public string Id { get; }
-    public abstract string Type { get; }
+    public abstract string TypeName { get; }
     
     public bool IsInit { get; private set; }
     protected IDeviceContext Context { get; }
@@ -42,13 +42,13 @@ public abstract class MicroserviceClient<TBaseMessage> : AsyncDisposableWithCanc
         try
         {
             if (IsInit) return;
-            _loggerBase.ZLogTrace($"Init microservice {Type}[{Id}]");
+            _loggerBase.ZLogTrace($"Init microservice {TypeName}[{Id}]");
             await InternalInit(cancel);
             IsInit = true;
         }
         catch (Exception ex)
         {
-            _loggerBase.ZLogError(ex, $"Error on init microservice {Type}[{Id}]");
+            _loggerBase.ZLogError(ex, $"Error on init microservice {TypeName}[{Id}]");
             throw;
         }
     }

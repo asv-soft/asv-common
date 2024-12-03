@@ -23,6 +23,12 @@ public interface IClientDeviceFactory
     IClientDevice CreateDevice(IProtocolMessage message, DeviceId deviceId, IDeviceContext context, ImmutableArray<IClientDeviceExtender> extenders);
 }
 
+public static class ClientDeviceFactory
+{
+    public const int DefaultOrder = 0;
+    public const int MinimumOrder = int.MaxValue;
+}
+
 public abstract class ClientDeviceFactory<TMessageBase,TDeviceBase, TDeviceId> : IClientDeviceFactory
     where TDeviceId : DeviceId
     where TDeviceBase:IClientDevice
@@ -33,14 +39,18 @@ public abstract class ClientDeviceFactory<TMessageBase,TDeviceBase, TDeviceId> :
     {
         if (message is TMessageBase msg)
         {
-            deviceId = InternalTryIdentify(msg);
-            return true;
+            var res = InternalTryIdentify(msg, out var dev);
+            if (res)
+            {
+                deviceId = dev;
+                return true;
+            }
         }
         deviceId = null;
         return false;
     }
 
-    protected abstract DeviceId InternalTryIdentify(TMessageBase msg);
+    protected abstract bool InternalTryIdentify(TMessageBase msg, out TDeviceId? deviceId);
 
     public void UpdateDevice(IClientDevice device, IProtocolMessage message)
     {
