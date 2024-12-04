@@ -69,5 +69,16 @@ namespace Asv.Cfg
         void Set<TPocoType>(string key, TPocoType value);
         void Remove(string key);
         Observable<ConfigurationException> OnError { get; }
+        Observable<KeyValuePair<string, object?>> OnChanged { get; }
+    }
+
+    /// <summary>
+    /// If you want to save/load configuration from/to IConfiguration by custom way, you can implement this interface
+    /// IConfiguration will call Load/Save methods when it needs to save/load configuration
+    /// </summary>
+    public interface ICustomConfigurable
+    {
+        public void Load(IConfiguration configuration);
+        public void Save(IConfiguration configuration);
     }
 }

@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
 using System.IO.Abstractions;
 using System.IO.Compression;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using Asv.Common;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -14,13 +16,12 @@ using ZLogger;
 
 namespace Asv.Cfg
 {
-    public class ZipJsonConfiguration:DisposableOnce, IConfiguration
+    public class ZipJsonConfiguration:ConfigurationBase
     {
         private readonly ZipArchive _archive;
         private readonly object _sync = new();
         private readonly JsonSerializer _serializer;
         private readonly ILogger _logger;
-        private readonly Subject<ConfigurationException> _onError = new();
         private const string FixedFileExt = ".json";
 
         public ZipJsonConfiguration
@@ -35,16 +36,6 @@ namespace Asv.Cfg
             _archive = new ZipArchive(zipStream, ZipArchiveMode.Update, leaveOpen);
             _serializer = JsonHelper.CreateDefaultJsonSerializer();
         }
-        
-        protected override void InternalDisposeOnce()
-        {
-            _logger.ZLogTrace($"Dispose {this}");
-            _onError.Dispose();
-            lock (_sync)
-            {
-                _archive.Dispose();
-            }
-        }
 
         public override string ToString()
         {
@@ -55,127 +46,109 @@ namespace Asv.Cfg
             }
         }
 
-        public IEnumerable<string> AvailableParts
+        protected override IEnumerable<string> InternalSafeGetReservedParts()
         {
-            get
+            return Array.Empty<string>();
+        }
+
+        protected override IEnumerable<string> InternalSafeGetAvailableParts()
+        {
+            lock (_sync)
             {
-                lock (_sync)
-                {
-                    return _archive.Entries.Where(x => Path.GetExtension(x.Name) == FixedFileExt)
-                        .Select(x => Path.GetFileNameWithoutExtension(x.Name)).ToArray();
-                }
+                return _archive.Entries.Where(x => Path.GetExtension(x.Name) == FixedFileExt)
+                    .Select(x => Path.GetFileNameWithoutExtension(x.Name)).ToImmutableArray();
             }
         }
-        
-        public virtual IEnumerable<string> ReservedParts => Array.Empty<string>();
 
-        public bool Exist(string key)
+        protected override bool InternalSafeExist(string key)
         {
-            try
+            var fileName = GetFilePath(key);
+            lock (_sync)
             {
-                ConfigurationHelper.ValidateKey(key);
-                var fileName = GetFilePath(key);
-                lock (_sync)
-                {
-                    return _archive.Entries.Any(x => ConfigurationHelper.DefaultKeyComparer.Equals(x.Name, fileName));
-                }
-            }
-            catch (Exception e)
-            {
-                _logger.ZLogError(e,$"Error to check exist '{key}' part:{e.Message}");
-                var ex = new ConfigurationException($"Error to check exist '{key}' part",e);
-                _onError.OnNext(ex);
-                throw ex;
+                return _archive.Entries.Any(x => ConfigurationHelper.DefaultKeyComparer.Equals(x.Name, fileName));
             }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private string GetFilePath(string key) => $"{key}{FixedFileExt}";
 
-        public TPocoType Get<TPocoType>(string key, Lazy<TPocoType> defaultValue)
+        protected override TPocoType InternalSafeGet<TPocoType>(string key, Lazy<TPocoType> defaultValue)
         {
-            try
+            var fileName = GetFilePath(key);
+            lock (_sync)
             {
-                ConfigurationHelper.ValidateKey(key);
-                var fileName = GetFilePath(key);
-                lock (_sync)
+                var entry = _archive.Entries.FirstOrDefault(x => ConfigurationHelper.DefaultKeyComparer.Equals(x.Name, fileName));
+                if (entry == default)
                 {
-                    var entry = _archive.Entries.FirstOrDefault(x => ConfigurationHelper.DefaultKeyComparer.Equals(x.Name, fileName));
-                    if (entry == default)
-                    {
-                        _logger.ZLogTrace($"Configuration key [{key}] not found. Create new with default value");
-                        var inst = defaultValue.Value;
-                        var stream2 = _archive.CreateEntry(fileName);
-                        using var file = stream2.Open();
-                        using var writer = new StreamWriter(file);
-                        using var wrt = new JsonTextWriter(writer);
-                        _serializer.Serialize(wrt, inst);
-                        return inst;
-                    }
-                
-                    using var stream = entry.Open();
-                    using var streamReader = new StreamReader(stream);
-                    using var rdr = new JsonTextReader(streamReader);
-                    return _serializer.Deserialize<TPocoType>(rdr) ?? throw new InvalidOperationException();
-                }
-            }
-            catch (Exception e)
-            {
-                _logger.ZLogError(e,$"Error to get '{key}' part:{e.Message}");
-                var ex = new ConfigurationException($"Error to get '{key}' part",e);
-                _onError.OnNext(ex);
-                throw ex;
-            }
-        }
-
-        public void Set<TPocoType>(string key, TPocoType value)
-        {
-            try
-            {
-                ConfigurationHelper.ValidateKey(key);
-                var fileName = GetFilePath(key);
-                lock (_sync)
-                {
-                    _logger.ZLogTrace($"Set configuration key [{key}]");
-                    _archive.GetEntry(fileName)?.Delete();
-                    var entry = _archive.CreateEntry(fileName);
-                    using var file = entry.Open();
+                    _logger.ZLogTrace($"Configuration key [{key}] not found. Create new with default value");
+                    var inst = defaultValue.Value;
+                    var stream2 = _archive.CreateEntry(fileName);
+                    using var file = stream2.Open();
                     using var writer = new StreamWriter(file);
                     using var wrt = new JsonTextWriter(writer);
-                    _serializer.Serialize(wrt, value);
+                    _serializer.Serialize(wrt, inst);
+                    return inst;
                 }
-            }
-            catch (Exception e)
-            {
-                _logger.ZLogError(e,$"Error to set '{key}' part:{e.Message}");
-                var ex = new ConfigurationException($"Error to set '{key}' part",e);
-                _onError.OnNext(ex);
-                throw ex;
-            }
-        }
-        
-        public void Remove(string key)
-        {
-            try
-            {
-                ConfigurationHelper.ValidateKey(key);
-                var fileName = GetFilePath(key);
-                lock (_sync)
-                {
-                    _logger.ZLogTrace($"Remove configuration key [{key}]");
-                    var entry = _archive.GetEntry(fileName);
-                    entry?.Delete();
-                }
-            }
-            catch (Exception e)
-            {
-                _logger.ZLogError(e,$"Error to remove '{key}' part:{e.Message}");
-                var ex = new ConfigurationException($"Error to remove '{key}' part",e);
-                _onError.OnNext(ex);
-                throw ex;
+                
+                using var stream = entry.Open();
+                using var streamReader = new StreamReader(stream);
+                using var rdr = new JsonTextReader(streamReader);
+                return _serializer.Deserialize<TPocoType>(rdr) ?? throw new InvalidOperationException();
             }
         }
 
-        public Observable<ConfigurationException> OnError => _onError;
+
+        protected override void InternalSafeSave<TPocoType>(string key, TPocoType value)
+        {
+            var fileName = GetFilePath(key);
+            lock (_sync)
+            {
+                _archive.GetEntry(fileName)?.Delete();
+                var entry = _archive.CreateEntry(fileName);
+                using var file = entry.Open();
+                using var writer = new StreamWriter(file);
+                using var wrt = new JsonTextWriter(writer);
+                _serializer.Serialize(wrt, value);
+            }
+        }
+
+
+        protected override void InternalSafeRemove(string key)
+        {
+            var fileName = GetFilePath(key);
+            lock (_sync)
+            {
+                _logger.ZLogTrace($"Remove configuration key [{key}]");
+                var entry = _archive.GetEntry(fileName);
+                entry?.Delete();
+            }
+        }
+
+        #region Dispose
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                lock (_sync)
+                {
+                    _archive.Dispose();
+                }
+            }
+
+            base.Dispose(disposing);
+        }
+
+        protected override async ValueTask DisposeAsyncCore()
+        {
+            lock (_sync)
+            {
+                _archive.Dispose();
+            }
+
+            await base.DisposeAsyncCore();
+        }
+
+        #endregion
     }
 }

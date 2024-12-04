@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Abstractions;
+using System.Threading.Tasks;
 using Asv.Common;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -15,16 +16,18 @@ using ZLogger;
 namespace Asv.Cfg
 {
     
-    public class JsonOneFileConfiguration : DisposableOnce, IConfiguration
+    public class JsonOneFileConfiguration : ConfigurationBase
     {
+        
+
         private readonly string _fileName;
+        private readonly string _backupFileName;
         private readonly bool _sortKeysInFile;
         private readonly ConcurrentDictionary<string, JToken> _values;
         private readonly Subject<Unit> _onNeedToSave = new();
         private readonly IDisposable _saveSubscribe;
         private readonly object _sync = new();
         private readonly bool _deferredFlush;
-        private readonly Subject<ConfigurationException> _onError = new();
         private readonly JsonSerializer _serializer;
         private readonly ILogger _logger;
         private readonly IFileSystem _fileSystem;
@@ -42,6 +45,7 @@ namespace Asv.Cfg
         {
             _fileSystem= fileSystem ?? new FileSystem();
             _fileName = _fileSystem.Path.GetFullPath(fileName);
+            _backupFileName = _fileName + ".backup";
             _sortKeysInFile = sortKeysInFile;
             _logger = logger ?? NullLogger.Instance; 
             timeProvider ??= TimeProvider.System;
@@ -75,9 +79,15 @@ namespace Asv.Cfg
                 _logger.ZLogWarning($"Directory with config file not exist. Try to create it: {dir}");
                 _fileSystem.Directory.CreateDirectory(dir);
             }
+            if (_fileSystem.File.Exists(fileName) == false && _fileSystem.File.Exists(_backupFileName))
+            {
+                _logger.ZLogWarning($"Configuration file doesn't exist. Try to load from backup file: {_backupFileName} => {_fileName}");
+                _fileSystem.File.Replace(_backupFileName,_fileName,null,true);
+            }
             
             if (_fileSystem.File.Exists(fileName) == false)
             {
+               
                 if (createIfNotExist)
                 {
                     _logger.ZLogWarning($"Config file not exist. Try to create {fileName}");
@@ -86,8 +96,7 @@ namespace Asv.Cfg
                 }
                 else
                 {
-                    _logger.ZLogWarning($"Config file not exist.");
-                    throw new ConfigurationException($"Configuration file not exist {fileName}");
+                    throw InternalPublishError(new ConfigurationException($"Configuration file not exist {fileName}"));
                 }
             }
             else
@@ -100,8 +109,7 @@ namespace Asv.Cfg
                 }
                 catch (Exception e)
                 {
-                    _logger.ZLogError(e,$"Error to load JSON configuration from file. File content: {text}");
-                    throw new ConfigurationException($"Error to load JSON configuration from file. File content: {text}",e);
+                    throw InternalPublishError(new ConfigurationException($"Error to load JSON configuration from file. File content: {text}",e));
                 }
             }
         }
@@ -114,11 +122,11 @@ namespace Asv.Cfg
             {
                 try
                 {
-                    if (_fileSystem.File.Exists(_fileName))
+                    if (_fileSystem.File.Exists(_backupFileName))
                     {
-                        _fileSystem.File.Delete(_fileName);
+                        _fileSystem.File.Delete(_backupFileName);
                     }
-                    using (var file = _fileSystem.File.CreateText(_fileName))
+                    using (var file = _fileSystem.File.CreateText(_backupFileName))
                     {
                         //serialize object directly into file stream
                         if (_sortKeysInFile)
@@ -130,134 +138,94 @@ namespace Asv.Cfg
                             _serializer.Serialize(file, _values);     
                         }
                     }
-                    _logger.ZLogTrace($"Flush configuration to file [{_values.Count}] ");
+                    _fileSystem.File.Move(_backupFileName,_fileName,true);
+                    _logger.ZLogTrace($"Flush configuration to file '{_fileName}' [{_values.Count} items] ");
                 }
                 catch (Exception e)
                 {
-                    _logger.ZLogError(e,$"Error to serialize configuration and save it to file ({_fileName}):{e.Message}");
-                    var ex = new ConfigurationException($"Error to serialize configuration and save it to file ({_fileName})",e);
-                    _onError.OnNext(ex);
-                    if (_deferredFlush == false) throw;
+                    var ex = InternalPublishError(new ConfigurationException($"Error to serialize configuration and save it to file ({_fileName})",e));
+                    if (_deferredFlush == false) throw ex;
                 }
             }
         }
 
-        public IEnumerable<string> ReservedParts => Array.Empty<string>();
-        public IEnumerable<string> AvailableParts => _values.Keys;
+        protected override IEnumerable<string> InternalSafeGetReservedParts() => Array.Empty<string>();
 
-        public bool Exist(string key)
+        protected override IEnumerable<string> InternalSafeGetAvailableParts() => _values.Keys;
+
+        protected override bool InternalSafeExist(string key) => _values.ContainsKey(key);
+
+        protected override TPocoType InternalSafeGet<TPocoType>(string key, Lazy<TPocoType> defaultValue)
         {
-            ConfigurationHelper.ValidateKey(key);
-            return _values.ContainsKey(key);
+            if (_values.TryGetValue(key, out var value))
+            {
+                return value.ToObject<TPocoType>() ?? throw new InvalidOperationException();
+            }
+
+            var inst = defaultValue.Value;
+            Set(key,inst);
+            return inst;
         }
 
-        public TPocoType Get<TPocoType>(string key, Lazy<TPocoType> defaultValue)
+        protected override void InternalSafeSave<TPocoType>(string key, TPocoType value)
         {
-            try
-            {
-                ConfigurationHelper.ValidateKey(key);
-                if (_values.TryGetValue(key, out var value))
-                {
-                    return value.ToObject<TPocoType>() ?? throw new InvalidOperationException();
-                }
-
-                var inst = defaultValue.Value;
-                Set(key,inst);
-                return inst;
-            }
-            catch (ConfigurationException ex)
-            {
-                _logger.ZLogError(ex,$"Error to get '{key}' part:{ex.Message}");
-                _onError.OnNext(ex);
-                throw;
-            }
-            catch (Exception e)
-            {
-                _logger.ZLogError(e,$"Error to get '{key}' part:{e.Message}");
-                var ex = new ConfigurationException($"Error to get '{key}' part",e);
-                _onError.OnNext(ex);
-                throw ex;
-            }
+            using var stream = new MemoryStream();
+            using var writer = new StreamWriter(stream);
+            using var jsonTextWriter = new JsonTextWriter(writer);
+            jsonTextWriter.Formatting = _serializer.Formatting;
+            _serializer.Serialize(jsonTextWriter, value, typeof(TPocoType));
+            writer.Flush();          
+            stream.Position = 0;
+            using var jsonReader = new JsonTextReader(new StreamReader(stream));
+            var jValue = _serializer.Deserialize<JToken>(jsonReader) ?? throw new InvalidOperationException();
+            _values.AddOrUpdate(key,jValue , (_, _) => jValue);
+            _onNeedToSave.OnNext(Unit.Default);
         }
 
-       
-        public void Set<TPocoType>(string key, TPocoType value)
+        protected override void InternalSafeRemove(string key)
         {
-            try
+            if (_values.TryRemove(key, out _))
             {
-                ConfigurationHelper.ValidateKey(key);
-
-                using var stream = new MemoryStream();
-                using var writer = new StreamWriter(stream);
-                using var jsonTextWriter = new JsonTextWriter(writer);
-                jsonTextWriter.Formatting = _serializer.Formatting;
-                _serializer.Serialize(jsonTextWriter, value, typeof(TPocoType));
-                writer.Flush();          
-                stream.Position = 0;
-                using var jsonReader = new JsonTextReader(new StreamReader(stream));
-                var jValue = _serializer.Deserialize<JToken>(jsonReader) ?? throw new InvalidOperationException();
-                _logger.ZLogTrace($"Set configuration key [{key}]");
-                _values.AddOrUpdate(key,jValue , (_, _) => jValue);
                 _onNeedToSave.OnNext(Unit.Default);
             }
-            catch (ConfigurationException ex)
-            {
-                _logger.ZLogError(ex,$"Error to set '{key}' part:{ex.Message}");
-                _onError.OnNext(ex);
-            }
-            catch (Exception e)
-            {
-                _logger.ZLogError(e,$"Error to set '{key}' part:{e.Message}");
-                var ex = new ConfigurationException($"Error to set '{key}' part",e);
-                _onError.OnNext(ex);
-                throw ex;
-            }
-        }
-
-        public void Remove(string key)
-        {
-            try
-            {
-                ConfigurationHelper.ValidateKey(key);
-                if (_values.TryRemove(key, out _))
-                {
-                    _logger.ZLogTrace($"Remove configuration key [{key}]");
-                    _onNeedToSave.OnNext(Unit.Default);
-                }
-            }
-            catch (ConfigurationException ex)
-            {
-                _logger.ZLogError(ex,$"Error to remove '{key}' part:{ex.Message}");
-                _onError.OnNext(ex);
-            }
-            catch (Exception e)
-            {
-                _logger.ZLogError(e,$"Error to remove '{key}' part:{e.Message}");
-                var ex = new ConfigurationException($"Error to remove '{key}' part",e);
-                _onError.OnNext(ex);
-                throw ex;
-            }
-        }
-
-        public Observable<ConfigurationException> OnError => _onError;
-
-        protected override void InternalDisposeOnce()
-        {
-            _logger.ZLogTrace($"Dispose {this}");
-            _saveSubscribe.Dispose();
-            _onNeedToSave.Dispose();
-            _onError.Dispose();
-            if (_deferredFlush)
-            {
-                InternalSaveChanges(Unit.Default);    
-            }
-            _onError.Dispose();
-            _values.Clear();
         }
 
         public override string ToString()
         {
-            return $"{nameof(JsonOneFileConfiguration)}:{_fileName}";
+            return $"{nameof(JsonOneFileConfiguration)}[{_fileName}]";
         }
+
+        #region Dispose
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _onNeedToSave.Dispose();
+                _saveSubscribe.Dispose();
+            }
+
+            base.Dispose(disposing);
+        }
+
+        protected override async ValueTask DisposeAsyncCore()
+        {
+            await CastAndDispose(_onNeedToSave);
+            await CastAndDispose(_saveSubscribe);
+
+            await base.DisposeAsyncCore();
+
+            return;
+
+            static async ValueTask CastAndDispose(IDisposable resource)
+            {
+                if (resource is IAsyncDisposable resourceAsyncDisposable)
+                    await resourceAsyncDisposable.DisposeAsync();
+                else
+                    resource.Dispose();
+            }
+        }
+
+        #endregion
     }
 }

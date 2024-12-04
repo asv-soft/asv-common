@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using Asv.Common;
 using Microsoft.Extensions.Logging;
@@ -71,29 +72,34 @@ namespace Asv.Cfg
                 }
                 else
                 {
-                    // TODO: add localization
-                    throw new Exception("File version is empty.");
+                    throw new ConfigurationException("File version is empty.");
                 }
             }
             else
             {
-                if (SemVersion.TryParse(info.FileVersion, out _version) == false)
+                if (SemVersion.TryParse(info.FileVersion, out var version) == false)
                 {
-                    throw new Exception($"Can't read file version. (Want 'X.X.X', got '{info.FileVersion}')");
+                    throw new ConfigurationException($"Can't read file version. (Want 'X.X.X', got '{info.FileVersion}')");
                 }
+
+                _version = version ?? throw new InvalidOperationException();
                 if (_version > lastVersion)
                 {
-                    throw new Exception($"Unsupported file version. (Want '{lastVersion}', got '{_version}')");
+                    throw new ConfigurationException($"Unsupported file version. (Want '{lastVersion}', got '{_version}')");
                 }
                 type = info.FileType;
             }
             if (type.Equals(fileType, StringComparison.CurrentCultureIgnoreCase) == false)
             {
-                throw new Exception($"Unsupported file type. (Want '{fileType}', got '{type}')");
+                throw new ConfigurationException($"Unsupported file type. (Want '{fileType}', got '{type}')");
             }
         }
 
-        public override IEnumerable<string> ReservedParts => [InfoKey];
+        protected override IEnumerable<string> InternalSafeGetReservedParts()
+        {
+            yield return InfoKey;
+        }
+
         public SemVersion FileVersion => _version;
     }
 }
