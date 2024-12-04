@@ -69,11 +69,11 @@ public abstract class ConfigurationBase(ILogger? logger = null) : AsyncDisposabl
         try
         {
             ConfigurationHelper.ValidateKey(key);
-            if (typeof(TPocoType).IsAssignableFrom(typeof(ICustomConfigurable)))
+            if (typeof(TPocoType).IsAssignableTo(typeof(ICustomConfigurable)))
             {
                 if (defaultValue.Value is ICustomConfigurable cfg)
                 {
-                    cfg.Load(this);
+                    cfg.Load(key,this);
                     return defaultValue.Value;
                 }
             }
@@ -94,7 +94,7 @@ public abstract class ConfigurationBase(ILogger? logger = null) : AsyncDisposabl
             ConfigurationHelper.ValidateKey(key);
             if (value is ICustomConfigurable cfg)
             {
-                cfg.Save(this);
+                cfg.Save(key,this);
                 return;
             }
             InternalSafeSave(key,value);

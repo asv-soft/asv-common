@@ -1,12 +1,29 @@
 using System;
 using System.Linq;
 using System.Threading;
+using AutoFixture;
+using JetBrains.Annotations;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Asv.Cfg.Test;
 
+public class CustomTestClass()
+    : ICustomConfigurable
+{
+    [CanBeNull] 
+    public string Value { get; set; }
+    
+    public void Load(string key, IConfiguration configuration)
+    {
+        Value = configuration.Get("KEY",new Lazy<string>());
+    }
 
+    public void Save(string key, IConfiguration configuration)
+    {
+        configuration.Set("KEY",Value);
+    }
+}
 
 public abstract class ConfigurationBaseTest<T>(ITestOutputHelper log)
     where T : IConfiguration
@@ -26,6 +43,23 @@ public abstract class ConfigurationBaseTest<T>(ITestOutputHelper log)
         var actualResult = cfg.Get<TestClassWithEnums>("test");
         Assert.Equal(original.Name, actualResult.Name);
         Assert.Equal(original.Enum, actualResult.Enum);
+    }
+    
+    [Fact]
+    public void Check_CustomSaveInterface_Success()
+    {
+        using var cleanup = CreateForTest(out var cfg);
+
+        // Arrange
+        var fixture = new Fixture();
+        var origin = new CustomTestClass
+        {
+            Value = fixture.Create<string>(),
+        };
+        cfg.Set(origin);
+
+        var actualResult = cfg.Get<CustomTestClass>("test");
+        Assert.Equal(origin.Value, actualResult.Value);
     }
     
      [Fact]

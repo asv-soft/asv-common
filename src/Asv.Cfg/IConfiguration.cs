@@ -78,7 +78,7 @@ namespace Asv.Cfg
     /// </summary>
     public interface ICustomConfigurable
     {
-        public void Load(IConfiguration configuration);
-        public void Save(IConfiguration configuration);
+        public void Load(string key, IConfiguration configuration);
+        public void Save(string key, IConfiguration configuration);
     }
 }
