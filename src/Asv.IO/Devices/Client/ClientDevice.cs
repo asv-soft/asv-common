@@ -15,9 +15,19 @@ public class ClientDeviceConfig
     public int RequestDelayAfterFailMs { get; set; } = 1000;
 }
 
+public static class ClientDevice
+{
+    #region Static
+
+    
+
+    #endregion
+}
+
 public abstract class ClientDevice<TDeviceId> : AsyncDisposableWithCancel, IClientDevice
     where TDeviceId:DeviceId
 {
+    
     private readonly ClientDeviceConfig _config;
     private readonly ImmutableArray<IClientDeviceExtender> _extenders;
     private readonly ReactiveProperty<string?> _name;
@@ -32,7 +42,7 @@ public abstract class ClientDevice<TDeviceId> : AsyncDisposableWithCancel, IClie
     
 
 
-    protected ClientDevice(TDeviceId id, ClientDeviceConfig config, ImmutableArray<IClientDeviceExtender> extenders, IDeviceContext context)
+    protected ClientDevice(TDeviceId id, ClientDeviceConfig config, ImmutableArray<IClientDeviceExtender> extenders, IMicroserviceContext context)
     {
         ArgumentNullException.ThrowIfNull(id);
         ArgumentNullException.ThrowIfNull(config);
@@ -123,7 +133,7 @@ public abstract class ClientDevice<TDeviceId> : AsyncDisposableWithCancel, IClie
 
     public DeviceId Id { get; }
     
-    protected IDeviceContext Context { get; }
+    protected IMicroserviceContext Context { get; }
 
     protected void UpdateDeviceName(string? name)
     {

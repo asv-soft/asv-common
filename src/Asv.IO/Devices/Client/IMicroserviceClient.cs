@@ -5,11 +5,6 @@ public interface IMicroserviceClient : IMicroservice
     
 }
 
-public abstract class MicroserviceClient<TBaseMessage> : MicroserviceBase<TBaseMessage>, IMicroserviceClient
-    where TBaseMessage : IProtocolMessage
-{
-    protected MicroserviceClient(IDeviceContext context, string id) : base(context, id)
-    {
-        
-    }
-}
+public abstract class MicroserviceClient<TBaseMessage>(IMicroserviceContext context, string id)
+    : MicroserviceBase<TBaseMessage>(context, id), IMicroserviceClient
+    where TBaseMessage : IProtocolMessage;

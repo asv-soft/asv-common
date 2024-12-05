@@ -21,7 +21,7 @@ public abstract class MicroserviceBase<TBaseMessage> : AsyncDisposableWithCancel
     private readonly IDisposable _sub1;
     private readonly ILogger _loggerBase;
 
-    protected MicroserviceBase(IDeviceContext context, string id)
+    protected MicroserviceBase(IMicroserviceContext context, string id)
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(id);
@@ -36,7 +36,7 @@ public abstract class MicroserviceBase<TBaseMessage> : AsyncDisposableWithCancel
     public abstract string TypeName { get; }
     
     public bool IsInit { get; private set; }
-    protected IDeviceContext Context { get; }
+    protected IMicroserviceContext Context { get; }
 
     public async Task Init(CancellationToken cancel = default)
     {

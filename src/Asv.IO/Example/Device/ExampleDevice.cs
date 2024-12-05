@@ -18,7 +18,7 @@ public class ExampleDevice:ClientDevice<ExampleDeviceId>
     private readonly byte _selfId;
     private readonly TimeBasedLinkIndicator _link;
     public const string DeviceClass = "Example";
-    public ExampleDevice(ExampleDeviceId id, ExampleDeviceConfig config, ImmutableArray<IClientDeviceExtender> extenders, IDeviceContext context) 
+    public ExampleDevice(ExampleDeviceId id, ExampleDeviceConfig config, ImmutableArray<IClientDeviceExtender> extenders, IMicroserviceContext context) 
         : base(id, config, extenders, context)
     {
         _id = id;

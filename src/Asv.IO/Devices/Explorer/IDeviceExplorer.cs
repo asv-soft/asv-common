@@ -1,8 +1,9 @@
+using System;
 using ObservableCollections;
 
 namespace Asv.IO;
 
-public interface IClientDeviceBrowser
+public interface IDeviceExplorer:IDisposable,IAsyncDisposable
 {
     IReadOnlyObservableDictionary<DeviceId,IClientDevice> Devices { get; }
 }

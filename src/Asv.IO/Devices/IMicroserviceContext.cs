@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Asv.IO;
 
-public interface IDeviceContext
+public interface IMicroserviceContext
 {
     IProtocolConnection Connection { get; }
     ILoggerFactory LoggerFactory { get; }
@@ -14,9 +14,9 @@ public interface IDeviceContext
     IMeterFactory Metrics { get; }
 }
 
-public class DeviceContext : IDeviceContext
+public class MicroserviceContext : IMicroserviceContext
 {
-    public DeviceContext(IProtocolConnection connection,
+    public MicroserviceContext(IProtocolConnection connection,
         ILoggerFactory? loggerFactory = null,
         TimeProvider? timeProvider = null,
         IMeterFactory? metrics = null)
@@ -27,7 +27,7 @@ public class DeviceContext : IDeviceContext
         Metrics = metrics ?? new DefaultMeterFactory();
     }
 
-    public DeviceContext(IDeviceContext context)
+    public MicroserviceContext(IMicroserviceContext context)
     {
         Connection = context.Connection;
         LoggerFactory = context.LoggerFactory;

@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Asv.IO;
 
-public class ClientDeviceBrowserBuilder : IClientDeviceBrowserBuilder,IClientDeviceExtenderBuilder,IClientDeviceFactoryBuilder
+public class DeviceExplorerBuilder : IDeviceExplorerBuilder,IClientDeviceExtenderBuilder,IClientDeviceFactoryBuilder
 {
     private readonly IProtocolConnection _connection;
     private ILoggerFactory _loggerFactory;
@@ -18,7 +18,7 @@ public class ClientDeviceBrowserBuilder : IClientDeviceBrowserBuilder,IClientDev
     private readonly List<IClientDeviceFactory> _factories = new();
     private readonly ImmutableArray<IClientDeviceExtender>.Builder _extenders = ImmutableArray.CreateBuilder<IClientDeviceExtender>();
 
-    public ClientDeviceBrowserBuilder(IProtocolConnection connection)
+    public DeviceExplorerBuilder(IProtocolConnection connection)
     {
         _connection = connection;
         _loggerFactory = NullLoggerFactory.Instance;
@@ -72,9 +72,9 @@ public class ClientDeviceBrowserBuilder : IClientDeviceBrowserBuilder,IClientDev
         _meterFactory = new DefaultMeterFactory();
     }
     
-    public IClientDeviceBrowser Build()
+    public IDeviceExplorer Build()
     {
-        return new ClientDeviceBrowser(_config, _factories, _extenders.ToImmutable(), new DeviceContext(_connection, _loggerFactory, _timeProvider, _meterFactory));
+        return new DeviceExplorer(_config, _factories, _extenders.ToImmutable(), new MicroserviceContext(_connection, _loggerFactory, _timeProvider, _meterFactory));
     }
 
     public void Register(IClientDeviceExtender extender)

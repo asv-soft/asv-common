@@ -20,7 +20,7 @@ public interface IClientDeviceFactory
     
     void UpdateDevice(IClientDevice device, IProtocolMessage message);
     
-    IClientDevice CreateDevice(IProtocolMessage message, DeviceId deviceId, IDeviceContext context, ImmutableArray<IClientDeviceExtender> extenders);
+    IClientDevice CreateDevice(IProtocolMessage message, DeviceId deviceId, IMicroserviceContext context, ImmutableArray<IClientDeviceExtender> extenders);
 }
 
 public static class ClientDeviceFactory
@@ -64,7 +64,7 @@ public abstract class ClientDeviceFactory<TMessageBase,TDeviceBase, TDeviceId> :
 
     protected abstract void InternalUpdateDevice(TDeviceBase device, TMessageBase msg);
 
-    public IClientDevice CreateDevice(IProtocolMessage message, DeviceId deviceId, IDeviceContext context,
+    public IClientDevice CreateDevice(IProtocolMessage message, DeviceId deviceId, IMicroserviceContext context,
         ImmutableArray<IClientDeviceExtender> extenders)
     {
         if (message is TMessageBase msg)
@@ -74,7 +74,7 @@ public abstract class ClientDeviceFactory<TMessageBase,TDeviceBase, TDeviceId> :
         throw new InvalidOperationException($"Unknown message type {message.GetType().Name}");
     }
 
-    protected abstract TDeviceBase InternalCreateDevice(TMessageBase msg, TDeviceId deviceId, IDeviceContext context,
+    protected abstract TDeviceBase InternalCreateDevice(TMessageBase msg, TDeviceId deviceId, IMicroserviceContext context,
         ImmutableArray<IClientDeviceExtender> extenders);
 
 }

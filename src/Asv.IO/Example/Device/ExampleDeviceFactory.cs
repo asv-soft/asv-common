@@ -19,7 +19,7 @@ public class ExampleDeviceFactory(ExampleDeviceConfig config) : ClientDeviceFact
         // nothing to do
     }
 
-    protected override ExampleDevice InternalCreateDevice(ExampleMessageBase msg, ExampleDeviceId deviceId, IDeviceContext context,
+    protected override ExampleDevice InternalCreateDevice(ExampleMessageBase msg, ExampleDeviceId deviceId, IMicroserviceContext context,
         ImmutableArray<IClientDeviceExtender> extenders)
     {
         return new ExampleDevice(deviceId, config, extenders, context);

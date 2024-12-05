@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Asv.IO;
 
-public interface IClientDeviceBrowserBuilder
+public interface IDeviceExplorerBuilder
 {
     void SetLog(ILoggerFactory loggerFactory);
     void SetDefaultLog();

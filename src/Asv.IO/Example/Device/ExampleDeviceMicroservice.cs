@@ -6,7 +6,7 @@ public class ExampleDeviceMicroservice:MicroserviceClient<ExampleMessageBase>
     private readonly byte _targetId;
     public const string MicroserviceType = "ExampleMicroservice";
     
-    public ExampleDeviceMicroservice(string id, byte selfId, byte targetId, IDeviceContext context) 
+    public ExampleDeviceMicroservice(string id, byte selfId, byte targetId, IMicroserviceContext context) 
         : base(context, id)
     {
         _selfId = selfId;

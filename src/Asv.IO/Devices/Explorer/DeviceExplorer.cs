@@ -20,13 +20,13 @@ public class ClientDeviceBrowserConfig
     public int DeviceCheckIntervalMs { get; set; } = 1000;
 }
 
-public class ClientDeviceBrowser : AsyncDisposableOnce, IClientDeviceBrowser
+public class DeviceExplorer : AsyncDisposableOnce, IDeviceExplorer
 {
     #region Static
 
-    public IClientDeviceBrowser Create(IProtocolConnection connection, Action<IClientDeviceBrowserBuilder> configure)
+    public static IDeviceExplorer Create(IProtocolConnection connection, Action<IDeviceExplorerBuilder> configure)
     {
-        var builder = new ClientDeviceBrowserBuilder(connection);
+        var builder = new DeviceExplorerBuilder(connection);
         configure(builder);
         return builder.Build();
     }
@@ -34,24 +34,24 @@ public class ClientDeviceBrowser : AsyncDisposableOnce, IClientDeviceBrowser
     #endregion
 
     private readonly ImmutableArray<IClientDeviceExtender> _extenders;
-    private readonly IDeviceContext _context;
+    private readonly IMicroserviceContext _context;
     private readonly ImmutableArray<IClientDeviceFactory> _providers;
     private readonly IDisposable _sub1;
     private readonly ReaderWriterLockSlim _lock = new();
     private readonly ObservableDictionary<DeviceId, IClientDevice> _devices = new();
     private readonly ConcurrentDictionary<DeviceId,long> _lastSeen = new();
-    private readonly ILogger<ClientDeviceBrowser> _logger;
+    private readonly ILogger<DeviceExplorer> _logger;
     private readonly ITimer _timer;
     private readonly TimeSpan _deviceTimeout;
 
-    internal ClientDeviceBrowser(ClientDeviceBrowserConfig config, IEnumerable<IClientDeviceFactory> providers, ImmutableArray<IClientDeviceExtender> extenders, IDeviceContext context)
+    internal DeviceExplorer(ClientDeviceBrowserConfig config, IEnumerable<IClientDeviceFactory> providers, ImmutableArray<IClientDeviceExtender> extenders, IMicroserviceContext context)
     {
         ArgumentNullException.ThrowIfNull(config);
         ArgumentNullException.ThrowIfNull(providers);
         ArgumentNullException.ThrowIfNull(context);
         _extenders = extenders;
         _context = context;
-        _logger = _context.LoggerFactory.CreateLogger<ClientDeviceBrowser>();
+        _logger = _context.LoggerFactory.CreateLogger<DeviceExplorer>();
         _providers = [..providers.OrderBy(x=>x.Order)];
         _sub1 = context.Connection.OnRxMessage.Subscribe(CheckNewDevice);
         _deviceTimeout = TimeSpan.FromMilliseconds(config.DeviceTimeoutMs);
