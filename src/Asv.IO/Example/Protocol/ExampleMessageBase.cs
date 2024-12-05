@@ -1,7 +1,9 @@
 using System;
 
 namespace Asv.IO;
-
+/// <summary>
+/// Example message base class
+/// </summary>
 public abstract class ExampleMessageBase : IProtocolMessage<byte>
 {
     private ProtocolTags _tags = [];
@@ -25,15 +27,17 @@ public abstract class ExampleMessageBase : IProtocolMessage<byte>
     
     public void Deserialize(ref ReadOnlySpan<byte> buffer)
     { 
+        // [SYNC:1][SENDER_ID:1][MSG_ID:1][PAYLOAD_SIZE:1][PAYLOAD:SIZE][CRC:1, RANGE=1..^1]
         if (buffer[0] != ExampleParser.SyncByte)
         {
             throw new ProtocolDeserializeMessageException(Protocol, this, "Invalid sync byte");
         }
-        if (buffer[1] != Id)
+        SenderId = buffer[1];
+        if (buffer[2] != Id)
         {
             throw new ProtocolDeserializeMessageException(Protocol, this, $"Invalid message id: want {Id}, got {buffer[1]}");
         }
-        if (buffer.Length < 4)
+        if (buffer.Length < 5)
         {
             throw new ProtocolDeserializeMessageException(Protocol, this, $"Message too short");
         }
@@ -42,8 +46,7 @@ public abstract class ExampleMessageBase : IProtocolMessage<byte>
         {
             throw new ProtocolDeserializeMessageException(Protocol, this, $"Invalid crc: want {calcCrc}, got {buffer[^1]}");
         }
-        var size = buffer[2];
-        SenderId = buffer[3];
+        var size = buffer[3];
         var internalBuffer = buffer[4..^1];
         InternalDeserialize(ref internalBuffer);
         buffer = buffer[(5 + size)..];
@@ -51,17 +54,18 @@ public abstract class ExampleMessageBase : IProtocolMessage<byte>
     
     public void Serialize(ref Span<byte> buffer)
     {
+        // [SYNC:1][SENDER_ID:1][MSG_ID:1][PAYLOAD_SIZE:1][PAYLOAD:SIZE][CRC:1, RANGE=1..^1]
         var origin = buffer;
         BinSerialize.WriteByte(ref buffer, ExampleParser.SyncByte);
+        BinSerialize.WriteByte(ref buffer, SenderId);
         BinSerialize.WriteByte(ref buffer, Id);
         var sizeRef = buffer;
-        BinSerialize.WriteByte(ref buffer, SenderId);
         buffer = buffer[1..];
         var payload = buffer;
         InternalSerialize(ref buffer);
         var size = (byte)(payload.Length - buffer.Length);
         BinSerialize.WriteByte(ref sizeRef, size);
-        var forCrc = origin[1..(size + 4)];
+        var forCrc = origin[1..(size + 5)];
         BinSerialize.WriteByte(ref buffer, CalcCrc(forCrc));
     }
     protected abstract void InternalDeserialize(ref ReadOnlySpan<byte> buffer);
