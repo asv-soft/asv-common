@@ -76,13 +76,9 @@ public abstract class ConfigurationBaseTest<T>(ITestOutputHelper log)
      { 
          using var cleanup = CreateForTest(out var cfg); 
          cfg.Set(new TestClass(){ Name = "Test" });
-         Thread.Sleep(50);
          cfg.Set(new TestClass(){ Name = "Test1" });
-         Thread.Sleep(50);
          cfg.Set(new TestClass(){ Name = "Test2" });
-         Thread.Sleep(50);
          cfg.Set(new TestClass(){ Name = "Test3" });
-         Thread.Sleep(50);
 
          var actualResult = cfg.Get<TestClass>();
          Assert.Equal("Test3", actualResult.Name);
