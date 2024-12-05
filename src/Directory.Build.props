@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
-    <ProductVersion>3.0.0-dev.8</ProductVersion>
-    <ProductPrevVersion>3.0.0-rc.3</ProductPrevVersion>
+    <ProductVersion>3.0.0-dev.9</ProductVersion>
+    <ProductPrevVersion>3.0.0-dev.8</ProductPrevVersion>
     <R3Version>1.2.9</R3Version>
     <NewtonsoftJsonVersion>13.0.3</NewtonsoftJsonVersion>
     <ApiCompatVersion>8.0.200</ApiCompatVersion>
