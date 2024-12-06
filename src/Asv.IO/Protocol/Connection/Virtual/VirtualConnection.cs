@@ -36,6 +36,16 @@ public sealed class VirtualConnection: IVirtualConnection
         }
     }
 
+    public void SetClientToServerFilter(Func<IProtocolMessage, bool> filter)
+    {
+        _client.SetTxFilter(filter);
+    }
+
+    public void SetServerToClientFilter(Func<IProtocolMessage, bool> filter)
+    {
+        _server.SetTxFilter(filter);
+    }
+
     public IStatistic Statistic => _statistic;
     public IProtocolConnection Server => _server;
 

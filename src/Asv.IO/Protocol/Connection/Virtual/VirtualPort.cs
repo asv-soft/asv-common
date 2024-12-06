@@ -10,7 +10,7 @@ namespace Asv.IO;
 
 public class VirtualPort:ProtocolConnection
 {
-    private readonly Func<IProtocolMessage, bool> _sendFilter;
+    private Func<IProtocolMessage, bool> _sendFilter;
     private readonly Subject<byte[]> _tx = new();
     private readonly Subject<byte[]> _rx = new();
     private readonly ImmutableArray<IProtocolParser> _parsers;
@@ -30,7 +30,9 @@ public class VirtualPort:ProtocolConnection
         _rx.Subscribe(ReadLoop).AddTo(ref builder);
         _dispose = builder.Build();
     }
-
+    
+    
+    
     private void ReadLoop(byte[] bytes)
     {
         foreach (var b in bytes)
@@ -46,6 +48,12 @@ public class VirtualPort:ProtocolConnection
     }
     public Observer<byte[]> Rx => _rx.AsObserver();
     public Observable<byte[]> Tx => _tx;
+
+    public void SetTxFilter(Func<IProtocolMessage, bool> filter)
+    {
+        _sendFilter = filter;
+    }
+    
     public override ValueTask Send(IProtocolMessage message, CancellationToken cancel = default)
     {
         if (IsDisposed) return ValueTask.CompletedTask;
