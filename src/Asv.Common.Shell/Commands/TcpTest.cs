@@ -1,4 +1,3 @@
-using System.Buffers;
 using System.Reflection;
 using Asv.IO;
 using BenchmarkDotNet.Running;
@@ -16,8 +15,17 @@ public class TcpTest
     public void Benchmark()
     {
         BenchmarkRunner.Run<SwitchVsDictionary>();
-        
     }
+
+    // private readonly ManualTimeProvider _timer;
+    // private readonly TestLoggerFactory _logFactory;
+    private IProtocolFactory _protocol;
+    private IProtocolRouter _serverRouter;
+    private IProtocolRouter _clientRouter;
+    private ILogger _logger;
+    private ILoggerFactory _factory;
+    private string _server;
+    private string _client;
 
     /// <summary>
     /// Command test tcp connection
@@ -26,36 +34,48 @@ public class TcpTest
     /// </summary>
     [Command("tcp-test")]
     public async Task<int> Run(
-        /*string server = "tcps://127.0.0.1:7341",
-        string client = "tcp://127.0.0.1:7341"*/
-        string server = "serial:COM11?br=57600",
-        string client = "serial:COM45?br=57600"
+        string server = "tcps://127.0.0.1:7341",
+        string client = "tcp://127.0.0.1:7341"
+        /*string server = "serial:COM11?br=57600",
+        string client = "serial:COM45?br=57600"*/
     )
     {
         var loggerFactory = ConsoleAppHelper.CreateDefaultLog();
-        
-        
-        var logger = loggerFactory.CreateLogger<TcpTest>();
-        Assembly.GetExecutingAssembly().PrintWelcomeToLog(logger);
-        const int messagesCount = 1000;
-        var protocol = Protocol.Create(builder =>
+        _server = server;
+        _client = client;
+        _factory = loggerFactory;
+        _protocol = Protocol.Create(builder =>
         {
-            builder.SetLog(loggerFactory);
+            builder.SetLog(_factory);
             builder.Protocols.RegisterExampleProtocol();
             builder.Features.RegisterBroadcastAllFeature();
             builder.Formatters.RegisterJsonFormatter();
         });
+        _serverRouter = _protocol.CreateRouter("Server");
 
-        var serverRouter = protocol.CreateRouter("Server");
-        var serverPort = serverRouter.AddPort(server);
+        _clientRouter = _protocol.CreateRouter("Client");
+        _clientRouter.AddPort(_client);
         
-        var clientRouter = protocol.CreateRouter("Client");
-        var clientPort = clientRouter.AddPort(client);
+        var logger = loggerFactory.CreateLogger<TcpTest>();
+        _logger = logger;
+        Assembly.GetExecutingAssembly().PrintWelcomeToLog(logger);
+
+        var result = await CheckResult(Router_RecreatePortWithAddAndRemove_Success());
+        result = await CheckResult(Router_ServerAndClientExchangePackets_Success());
+        result = await CheckResult(Router_AddPortWithInValidConnStringInvalidOperationException_Failure());
+        return result;
+    }
+
+    private async Task<int> Router_ServerAndClientExchangePackets_Success()
+    {
+        const int messagesCount = 1000;
+        var serverPort = _serverRouter.AddPort(_server);
+        var clientPort = _clientRouter.AddPort(_client);
         var config = clientPort.Config.AsUri();
 
         await clientPort.Status.FirstAsync(x => x == ProtocolPortStatus.Connected);
         await serverPort.Status.FirstAsync(x => x == ProtocolPortStatus.Connected);
-        
+
         var tcs = new TaskCompletionSource();
         var cnt = 0;
         serverPort.OnRxMessage.Subscribe(x =>
@@ -63,37 +83,39 @@ public class TcpTest
             cnt++;
             if (cnt % 100 == 0)
             {
-                logger.LogInformation($"Server received {cnt} messages");
-                serverRouter.Statistic.PrintRx(logger);
-                serverRouter.Statistic.PrintTx(logger);
-                serverRouter.Statistic.PrintParsed(logger);
+                _logger.LogInformation($"Server received {cnt} messages");
+                _serverRouter.Statistic.PrintRx(_logger);
+                _serverRouter.Statistic.PrintTx(_logger);
+                _serverRouter.Statistic.PrintParsed(_logger);
             }
+
             if (cnt >= messagesCount)
             {
                 tcs.SetResult();
             }
         });
-
+        var result = 0;
         new Thread(async void () =>
         {
             try
             {
                 var index = 0;
-                while (true)
+                while (result == 0)
                 {
                     index++;
-                    await clientPort.Send(new ExampleMessage1{ Value1 = 0});
+                    await clientPort.Send(new ExampleMessage1 { Value1 = 0 });
                     Thread.Sleep(1);
                     if (index % 100 == 0)
                     {
-                        logger.LogInformation($"Client send {index} messages");
-                        clientRouter.Statistic.PrintRx(logger);
-                        clientRouter.Statistic.PrintTx(logger);
-                        clientRouter.Statistic.PrintParsed(logger);
+                        _logger.LogInformation($"Client send {index} messages");
+                        _clientRouter.Statistic.PrintRx(_logger);
+                        _clientRouter.Statistic.PrintTx(_logger);
+                        _clientRouter.Statistic.PrintParsed(_logger);
                     }
+
                     if (index >= messagesCount)
                     {
-                        
+                        result = 1;
                         return;
                     }
                 }
@@ -103,68 +125,64 @@ public class TcpTest
                 tcs.SetException(e);
             }
         }).Start();
-        
-        
+
+
         await tcs.Task;
-
-        Console.ReadLine();
         
+        serverPort.Dispose();
+        clientPort.Dispose();
         return 0;
+    }
 
-        //var portFactory = new ProtocolPortFactory(core, parserFactory);
-
-        /*var client = PipePort.Create("tcp://127.0.0.1:7341", new ProtocolCore());
-        var server = PipePort.Create("tcp://127.0.0.1:7341?srv=true", new ProtocolCore());
-        server.Enable();
-        client.Enable();
-
-        client.Status.Subscribe(x=>Console.WriteLine($"Client Status: {x:G}"));
-        server.Status.Subscribe(x=>Console.WriteLine($"Server Status: {x:G}"));
-
-        var data = new byte[4096*3];
-        Random.Shared.NextBytes(data);
-
-        await client.WaitConnected(TimeSpan.FromSeconds(10));
-        await server.WaitConnected(TimeSpan.FromSeconds(10));
-
-        new Thread(() =>
+    private async Task<int> CheckResult(Task<int> func)
+    {
+        var result = await func;
+        switch (result)
         {
-            while (true)
-            {
-                foreach (var pipe in client.Pipes)
-                {
-                    pipe.Output.Write(data);
-                    pipe.Output.FlushAsync();
-                }
-            }
-        }).Start();
+            case 1:
+                _logger.ZLogError($"Test is failed");
+                break;
+            case 0:
+                _logger.LogInformation($"Success");
+                break;
+        }
 
-        new Thread(() =>
+        return result;
+    }
+
+    private Task<int> Router_RecreatePortWithAddAndRemove_Success()
+    {
+        var AssertValue = 1;
+        const string validConnString = "tcp://127.0.0.1:5650";
+        _clientRouter.PortAdded.Subscribe(_ => AssertValue = 0);
+        var port = _clientRouter.AddPort(validConnString);
+        _clientRouter.PortRemoved.Subscribe(_ =>
         {
-            while (true)
+            if (port == _)
             {
-                foreach (var pipe in server.Pipes)
-                {
-                    while (true)
-                    {
-                        if (pipe.Input.TryRead(out var result))
-                        {
-
-                        }
-                        else
-                        {
-                            Thread.Sleep(100);
-                        }
-
-                    }
-
-                }
+                AssertValue = 0;
             }
-        }).Start();
+        });
+        _clientRouter.RemovePort(port);
+        var port1 = _clientRouter.AddPort(validConnString);
+        if (port1 is not null) AssertValue = 0;
+        return Task.FromResult(0);
+    }
 
+    private Task<int> Router_AddPortWithInValidConnStringInvalidOperationException_Failure()
+    {
+        var assertValue = 0;
+        var connectionString = "p://127.0.0:5651";
+        _clientRouter.PortAdded.Subscribe(_ => assertValue = 1);
+        try
+        {
+            _clientRouter.AddPort(connectionString);
+        }
+        catch (InvalidOperationException)
+        {
+            assertValue = 0;
+        }
 
-        ConsoleAppHelper.WaitCancelPressOrProcessExit();
-        return 0;*/
-
+        return Task.FromResult(assertValue);
     }
 }
