@@ -93,7 +93,6 @@ public abstract class MicroserviceBase<TBaseMessage> : AsyncDisposableWithCancel
     protected ValueTask InternalSend(TBaseMessage packet, CancellationToken cancel = default)
     {
         ArgumentNullException.ThrowIfNull(packet);
-        cancel.ThrowIfCancellationRequested();
         _loggerBase.ZLogTrace($"=> send {packet.Name}");
         FillMessageBeforeSent(packet);
         return Context.Connection.Send(packet, cancel);
@@ -138,8 +137,9 @@ public abstract class MicroserviceBase<TBaseMessage> : AsyncDisposableWithCancel
         var tcs = new TaskCompletionSource<TAnswerPacket>();
         await using var c1 = linkedCancel.Token.Register(() => tcs.TrySetCanceled(), false);
 
-        filter ??= (_ => true);
+        filter ??= _ => true;
         using var subscribe = InternalFilterFirstAsync(filter).Subscribe(v=>tcs.TrySetResult(v));
+        linkedCancel.Token.ThrowIfCancellationRequested();
         await InternalSend(packet, linkedCancel.Token);
         var result = await tcs.Task.ConfigureAwait(false);
         _loggerBase.ZLogTrace($"<= ok {packet.Name}<=={p.Name}");
