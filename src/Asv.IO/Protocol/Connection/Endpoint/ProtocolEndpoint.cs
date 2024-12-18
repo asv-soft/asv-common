@@ -195,6 +195,7 @@ public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
   
     public override ValueTask Send(IProtocolMessage message, CancellationToken cancel = default)
     {
+        if (cancel.IsCancellationRequested) return ValueTask.FromCanceled(cancel);
         if (IsDisposed) return ValueTask.CompletedTask;
         if (_lastError.CurrentValue != null) return ValueTask.CompletedTask;
         return _txChannel.Writer.WriteAsync(message, cancel);

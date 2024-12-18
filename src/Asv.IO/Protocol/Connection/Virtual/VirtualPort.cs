@@ -56,6 +56,7 @@ public class VirtualPort:ProtocolConnection
     
     public override ValueTask Send(IProtocolMessage message, CancellationToken cancel = default)
     {
+        if (cancel.IsCancellationRequested) return ValueTask.FromCanceled(cancel);
         if (IsDisposed) return ValueTask.CompletedTask;
         if (_sendFilter(message) == false) return ValueTask.CompletedTask;
         try
