@@ -25,7 +25,11 @@ public sealed class ProtocolRouter:ProtocolConnection, IProtocolRouter
 
     public override async ValueTask Send(IProtocolMessage message, CancellationToken cancel = default)
     {
-        if (IsDisposed) return;
+        if (IsDisposed)
+        {
+            return;
+        }
+        
         cancel.ThrowIfCancellationRequested();
         var newMessage = await InternalFilterTxMessage(message);
         if (newMessage == null) return;
