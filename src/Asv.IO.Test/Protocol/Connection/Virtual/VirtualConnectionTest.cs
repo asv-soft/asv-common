@@ -8,19 +8,158 @@ using R3;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Asv.IO.Test.Protocol.Connection.Virtual;
+namespace Asv.IO.Test;
 
 [TestSubject(typeof(VirtualPort))]
 [TestSubject(typeof(VirtualConnection))]
-public class VirtualPortTest
+public class VirtualConnectionTest
 {
     private readonly ITestOutputHelper _output;
 
-    public VirtualPortTest(ITestOutputHelper output)
+    public VirtualConnectionTest(ITestOutputHelper output)
     {
         _output = output;
     }
 
+    [Theory]
+    [InlineData(1)]
+    [InlineData(10)]
+    [InlineData(100)]
+    [InlineData(1000)]
+    public async Task VirtualConnection_SetClientToServerFilter_Success(int count)
+    {
+        // Arrange
+        var fixture = new Fixture();
+        var tcs = new TaskCompletionSource();
+        var link = Protocol.Create(builder =>
+        {
+            builder.SetLog(new TestLoggerFactory(_output, TimeProvider.System, "ROUTER"));
+            builder.Protocols.RegisterExampleProtocol();
+        }).CreateVirtualConnection();
+        
+        var sendArray1 = new ExampleMessage1[count];
+        for (var i = 0; i < count; i++)
+        {
+            sendArray1[i] = fixture.Create<ExampleMessage1>();
+        }
+
+        var sendArray2 = new ExampleMessage2[count];
+        for (var i = 0; i < count; i++)
+        {
+            sendArray2[i] = fixture.Create<ExampleMessage2>();
+        }
+
+        var all = 0;
+        link.SetClientToServerFilter(x=>
+        {
+            all++;
+            return x is ExampleMessage1;
+        });
+        var msg1 = 0;
+        var msg2 = 0;
+        link.Server.OnRxMessage.RxFilterByType<ExampleMessage1>().Subscribe(x =>
+        {
+            msg1++;
+            if (msg1 == count)
+            {
+                tcs.TrySetResult();
+            }
+        });
+        link.Server.OnRxMessage.RxFilterByType<ExampleMessage2>().Subscribe(x =>
+        {
+            msg2++;
+        });
+        
+        // Act
+        foreach (var message1 in sendArray1)
+        {
+            await link.Client.Send(message1, CancellationToken.None);
+        }
+        foreach (var message2 in sendArray2)
+        {
+            await link.Client.Send(message2, CancellationToken.None);
+        }
+
+        await tcs.Task;
+        
+        // Assert
+        
+        Assert.Equal(count*2,all);
+        Assert.Equal(count,msg1);
+        Assert.Equal(0,msg2);
+        
+    }
+    
+    [Theory]
+    [InlineData(1)]
+    [InlineData(10)]
+    [InlineData(100)]
+    [InlineData(1000)]
+    public async Task VirtualConnection_SetServerToClientFilter_Success(int count)
+    {
+        // Arrange
+        var fixture = new Fixture();
+        var tcs = new TaskCompletionSource();
+        var link = Protocol.Create(builder =>
+        {
+            builder.SetLog(new TestLoggerFactory(_output, TimeProvider.System, "ROUTER"));
+            builder.Protocols.RegisterExampleProtocol();
+        }).CreateVirtualConnection();
+        
+        var sendArray1 = new ExampleMessage1[count];
+        for (var i = 0; i < count; i++)
+        {
+            sendArray1[i] = fixture.Create<ExampleMessage1>();
+        }
+
+        var sendArray2 = new ExampleMessage2[count];
+        for (var i = 0; i < count; i++)
+        {
+            sendArray2[i] = fixture.Create<ExampleMessage2>();
+        }
+
+        var all = 0;
+        link.SetServerToClientFilter(x=>
+        {
+            all++;
+            return x is ExampleMessage1;
+        });
+        var msg1 = 0;
+        var msg2 = 0;
+        link.Client.OnRxMessage.RxFilterByType<ExampleMessage1>().Subscribe(x =>
+        {
+            msg1++;
+            if (msg1 == count)
+            {
+                tcs.TrySetResult();
+            }
+        });
+        link.Client.OnRxMessage.RxFilterByType<ExampleMessage2>().Subscribe(x =>
+        {
+            msg2++;
+        });
+        
+        // Act
+        foreach (var message1 in sendArray1)
+        {
+            await link.Server.Send(message1, CancellationToken.None);
+        }
+        foreach (var message2 in sendArray2)
+        {
+            await link.Server.Send(message2, CancellationToken.None);
+        }
+
+        
+        
+        // Assert
+        
+        Assert.Equal(count*2,all);
+        Assert.Equal(count,msg1);
+        Assert.Equal(0,msg2);
+        
+    }
+    
+    
     [Theory]
     [InlineData(1)]
     [InlineData(10)]
@@ -31,7 +170,7 @@ public class VirtualPortTest
         // Arrange
 
         var fixture = new Fixture();
-        var link = IO.Protocol.Create(builder =>
+        var link = Protocol.Create(builder =>
         {
             builder.SetLog(new TestLoggerFactory(_output, TimeProvider.System, "ROUTER"));
             builder.Protocols.RegisterExampleProtocol();
@@ -105,7 +244,7 @@ public class VirtualPortTest
         // Arrange
 
         var fixture = new Fixture();
-        var link = IO.Protocol.Create(builder =>
+        var link = Protocol.Create(builder =>
         {
             builder.SetLog(new TestLoggerFactory(_output, TimeProvider.System, "ROUTER"));
             builder.Protocols.RegisterExampleProtocol();
@@ -175,7 +314,7 @@ public class VirtualPortTest
     {
         //Arrange
         uint count = 10;
-        var link = IO.Protocol.Create(builder =>
+        var link = Protocol.Create(builder =>
         {
             builder.SetLog(new TestLoggerFactory(_output, TimeProvider.System, "ROUTER"));
             builder.Protocols.RegisterExampleProtocol();
@@ -217,7 +356,7 @@ public class VirtualPortTest
     {
         //Arrange
         uint count = 10;
-        var link = IO.Protocol.Create(builder =>
+        var link = Protocol.Create(builder =>
         {
             builder.SetLog(new TestLoggerFactory(_output, TimeProvider.System, "ROUTER"));
             builder.Protocols.RegisterExampleProtocol();
@@ -259,7 +398,7 @@ public class VirtualPortTest
     {
         //Arrange
         uint count = 10;
-        var link = IO.Protocol.Create(builder =>
+        var link = Protocol.Create(builder =>
         {
             builder.SetLog(new TestLoggerFactory(_output, TimeProvider.System, "ROUTER"));
             builder.Protocols.RegisterExampleProtocol();
@@ -295,7 +434,7 @@ public class VirtualPortTest
     {
         //Arrange
         uint count = 10;
-        var link = IO.Protocol.Create(builder =>
+        var link = Protocol.Create(builder =>
         {
             builder.SetLog(new TestLoggerFactory(_output, TimeProvider.System, "ROUTER"));
             builder.Protocols.RegisterExampleProtocol();
