@@ -22,10 +22,8 @@ public class ZipJsonVersionedFileTest : ConfigurationBaseTest<ZipJsonVersionedFi
     {
         _log = log;
         _fileSystem = new MockFileSystem();
-        _logger = LogFactory.CreateLogger("ZIP_JSON_VERSIONED");
     }
 
-    // Вспомогательный метод для создания тестового файла
     private string GenerateTempFilePath()
     {
         return _fileSystem.Path.Join(
@@ -38,111 +36,68 @@ public class ZipJsonVersionedFileTest : ConfigurationBaseTest<ZipJsonVersionedFi
     [Fact]
     public void Constructor_NullStream_ThrowsArgumentNullException()
     {
-        // Arrange
-        var version = new SemVersion(1, 0, 0);
-        const string fileType = "TestType";
-
-        // Act & Assert
         Assert.Throws<ArgumentNullException>(() =>
-        {
-            var config = new ZipJsonVersionedFile(null!, version, fileType, true, true, _logger);
-        });
+            new ZipJsonVersionedFile(null!, new SemVersion(1, 0),
+                "test", true, false, _logger));
     }
 
     [Fact]
     public void Constructor_CreateIfNotExistTrue_CreatesNewFile()
     {
-        // Arrange
-        var filePath = GenerateTempFilePath();
-        var dir = _fileSystem.Path.GetDirectoryName(filePath);
-        _fileSystem.Directory.CreateDirectory(dir);
-        var file = _fileSystem.File.Open(filePath, FileMode.OpenOrCreate);
-        var version = new SemVersion(1, 0, 0);
-        const string fileType = "TestType";
-
         // Act
-        var config = new ZipJsonVersionedFile(file, version, fileType, true, true, _logger);
+        using var disp = CreateForTest(out var config);
 
         // Assert
-        Assert.Equal(version, config.FileVersion);
-        config.Dispose();
+        Assert.Equal(new SemVersion(1, 0), config.FileVersion);
     }
 
     [Fact]
     public void Constructor_CreateIfNotExistFalse_ThrowsConfigurationException()
     {
-        // Arrange
-        var filePath = GenerateTempFilePath();
-        var dir = _fileSystem.Path.GetDirectoryName(filePath);
-        _fileSystem.Directory.CreateDirectory(dir);
-        var file = _fileSystem.File.Open(filePath, FileMode.OpenOrCreate);
-        var version = new SemVersion(1, 0, 0);
-        const string fileType = "TestType";
-
-        // Act & Assert
-        Assert.Throws<ConfigurationException>(() => new ZipJsonVersionedFile(file, version, fileType, false, true, _logger));
+        Assert.Throws<ConfigurationException>(() =>
+            new ZipJsonVersionedFile(new MemoryStream(), new SemVersion(1, 0),
+                "test", false, false, _logger));
     }
 
     [Fact]
     public void Constructor_VersionGreaterThanSupported_ThrowsConfigurationException()
     {
         // Arrange
-        var filePath = GenerateTempFilePath();
-        var dir = _fileSystem.Path.GetDirectoryName(filePath);
-        _fileSystem.Directory.CreateDirectory(dir);
-        var file = _fileSystem.File.Open(filePath, FileMode.OpenOrCreate);
-
-        var newVersion = new SemVersion(2, 0, 0);
-        const string fileType = "TestType";
-        var config = new ZipJsonVersionedFile(file, newVersion, fileType, true, true, _logger);
+        var stream = new MemoryStream();
+        var config = new ZipJsonVersionedFile(stream, new SemVersion(2, 0), "test", true, true, _logger);
         config.Dispose();
 
-        file = _fileSystem.File.Open(filePath, FileMode.Open);
-        var oldVersion = new SemVersion(1, 0, 0);
-
         // Act & Assert
-        Assert.Throws<ConfigurationException>(() => new ZipJsonVersionedFile(file, oldVersion, fileType, false, true, _logger));
+        Assert.Throws<ConfigurationException>(() =>
+            new ZipJsonVersionedFile(stream, new SemVersion(1, 0), "test", false, true, _logger));
     }
 
     [Fact]
     public void Constructor_DifferentFileType_ThrowsConfigurationException()
     {
         // Arrange
-        var filePath = GenerateTempFilePath();
-        var dir = _fileSystem.Path.GetDirectoryName(filePath);
-        _fileSystem.Directory.CreateDirectory(dir);
-        var file = _fileSystem.File.Open(filePath, FileMode.OpenOrCreate);
-
-        var version = new SemVersion(1, 0, 0);
-        const string fileType1 = "TestType1";
-        var config = new ZipJsonVersionedFile(file, version, fileType1, true, true, _logger);
+        var stream = new MemoryStream();
+        var config = new ZipJsonVersionedFile(stream, new SemVersion(1, 0), "test1", true, true, _logger);
         config.Dispose();
 
-        file = _fileSystem.File.Open(filePath, FileMode.Open);
-        const string fileType2 = "TestType2";
-
         // Act & Assert
-        Assert.Throws<ConfigurationException>(() => new ZipJsonVersionedFile(file, version, fileType2, false, true, _logger));
+        Assert.Throws<ConfigurationException>(() =>
+            new ZipJsonVersionedFile(stream, new SemVersion(1, 0), "test2", false, true, _logger));
     }
 
     [Fact]
     public void Constructor_ValidVersionAndType_OpensExistingFile()
     {
         // Arrange
-        var filePath = GenerateTempFilePath();
-        var dir = _fileSystem.Path.GetDirectoryName(filePath);
-        _fileSystem.Directory.CreateDirectory(dir);
-        var file = _fileSystem.File.Open(filePath, FileMode.OpenOrCreate);
+        var stream = new MemoryStream();
+        var version = new SemVersion(1, 0);
+        var fileType = "test";
 
-        var version = new SemVersion(1, 0, 0);
-        const string fileType = "TestType";
-
-        var config = new ZipJsonVersionedFile(file, version, fileType, true, true, _logger);
+        var config = new ZipJsonVersionedFile(stream, version, fileType, true, true, _logger);
         config.Dispose();
 
         // Act
-        file = _fileSystem.File.Open(filePath, FileMode.Open);
-        var openedConfig = new ZipJsonVersionedFile(file, version, fileType, false, true, _logger);
+        var openedConfig = new ZipJsonVersionedFile(stream, version, fileType, false, true, _logger);
 
         // Assert
         Assert.Equal(version, openedConfig.FileVersion);
