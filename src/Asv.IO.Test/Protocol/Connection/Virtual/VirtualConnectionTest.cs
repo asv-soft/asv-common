@@ -57,7 +57,7 @@ public class VirtualConnectionTest
         });
         var msg1 = 0;
         var msg2 = 0;
-        link.Server.OnRxMessage.RxFilterByType<ExampleMessage1>().Subscribe(x =>
+        link.Server.RxFilterByType<ExampleMessage1>().Subscribe(x =>
         {
             msg1++;
             if (msg1 == count)
@@ -65,7 +65,7 @@ public class VirtualConnectionTest
                 tcs.TrySetResult();
             }
         });
-        link.Server.OnRxMessage.RxFilterByType<ExampleMessage2>().Subscribe(x =>
+        link.Server.RxFilterByType<ExampleMessage2>().Subscribe(x =>
         {
             msg2++;
         });
@@ -126,7 +126,7 @@ public class VirtualConnectionTest
         });
         var msg1 = 0;
         var msg2 = 0;
-        link.Client.OnRxMessage.RxFilterByType<ExampleMessage1>().Subscribe(x =>
+        link.Client.OnRxMessage.FilterByType<ExampleMessage1>().Subscribe(x =>
         {
             msg1++;
             if (msg1 == count)
@@ -134,7 +134,7 @@ public class VirtualConnectionTest
                 tcs.TrySetResult();
             }
         });
-        link.Client.OnRxMessage.RxFilterByType<ExampleMessage2>().Subscribe(x =>
+        link.Client.OnRxMessage.FilterByType<ExampleMessage2>().Subscribe(x =>
         {
             msg2++;
         });

@@ -20,18 +20,23 @@ public static partial class ProtocolHelper
     public static IProtocolParser CreateParser(this IProtocolFactory src, ProtocolInfo info) => src.CreateParser(info.Id);
 
     public static Observable<TMessage> RxFilterByType<TMessage>(this IProtocolConnection connection)
-        where TMessage : IProtocolMessage => connection.OnRxMessage.RxFilterByType<TMessage>();
+        where TMessage : IProtocolMessage => connection.OnRxMessage.FilterByType<TMessage>();
     
+    public static Observable<TMessage> TxFilterByType<TMessage>(this IProtocolConnection connection)
+        where TMessage : IProtocolMessage => connection.OnTxMessage.FilterByType<TMessage>();
     public static Observable<TMessage> RxFilterByType<TMessage>(this IProtocolConnection connection, Func<TMessage, bool> filter)
-        where TMessage : IProtocolMessage => connection.OnRxMessage.RxFilterByType(filter);
+        where TMessage : IProtocolMessage => connection.OnRxMessage.FilterByType(filter);
+    
+    public static Observable<TMessage> TxFilterByType<TMessage>(this IProtocolConnection connection, Func<TMessage, bool> filter)
+        where TMessage : IProtocolMessage => connection.OnTxMessage.FilterByType(filter);
 
-    public static Observable<TMessage> RxFilterByType<TMessage>(this Observable<IProtocolMessage> src)
+    public static Observable<TMessage> FilterByType<TMessage>(this Observable<IProtocolMessage> src)
         where TMessage : IProtocolMessage
     {
         return src.Where(raw => raw is TMessage).Cast<IProtocolMessage, TMessage>();
     }
     
-    public static Observable<TMessage> RxFilterByType<TMessage>(this Observable<IProtocolMessage> src, Func<TMessage, bool> filter)
+    public static Observable<TMessage> FilterByType<TMessage>(this Observable<IProtocolMessage> src, Func<TMessage, bool> filter)
         where TMessage : IProtocolMessage
     {
         return src.Where(raw => raw is TMessage)
@@ -39,7 +44,7 @@ public static partial class ProtocolHelper
             .Where(filter);
     }
 
-    public static Observable<TMessage> RxFilterByMsgId<TMessage, TMessageId>(this Observable<IProtocolMessage> src)
+    public static Observable<TMessage> FilterByMsgId<TMessage, TMessageId>(this Observable<IProtocolMessage> src)
         where TMessage : IProtocolMessage<TMessageId>, new()
     {
         var messageId = new TMessage().Id;
@@ -53,22 +58,29 @@ public static partial class ProtocolHelper
 
         }).Cast<IProtocolMessage, TMessage>();
     }
-    public static Observable<TMessage> RxFilterByMsgId<TMessage, TMessageId>(this Observable<IProtocolMessage> src,
+    public static Observable<TMessage> FilterByMsgId<TMessage, TMessageId>(this Observable<IProtocolMessage> src,
         Func<TMessage, bool> filter)
         where TMessage : IProtocolMessage<TMessageId>, new()
     {
-        return src.RxFilterByMsgId<TMessage, TMessageId>().Where(filter);
+        return src.FilterByMsgId<TMessage, TMessageId>().Where(filter);
     }
     
     public static Observable<TMessage> RxFilterByMsgId<TMessage, TMessageId>(this IProtocolConnection connection)
         where TMessage : IProtocolMessage<TMessageId>, new() 
-        => connection.OnRxMessage.RxFilterByMsgId<TMessage, TMessageId>();
+        => connection.OnRxMessage.FilterByMsgId<TMessage, TMessageId>();
+    
+    public static Observable<TMessage> TxFilterByMsgId<TMessage, TMessageId>(this IProtocolConnection connection)
+        where TMessage : IProtocolMessage<TMessageId>, new() 
+        => connection.OnTxMessage.FilterByMsgId<TMessage, TMessageId>();
 
     public static Observable<TMessage> RxFilterById<TMessage, TMessageId>(this IProtocolConnection connection,
         Func<TMessage, bool> filter)
         where TMessage : IProtocolMessage<TMessageId>, new() 
-        => connection.OnRxMessage.RxFilterByMsgId<TMessage, TMessageId>(filter);
-
+        => connection.OnRxMessage.FilterByMsgId<TMessage, TMessageId>(filter);
+    public static Observable<TMessage> TxFilterById<TMessage, TMessageId>(this IProtocolConnection connection,
+        Func<TMessage, bool> filter)
+        where TMessage : IProtocolMessage<TMessageId>, new() 
+        => connection.OnTxMessage.FilterByMsgId<TMessage, TMessageId>(filter);
     public static async Task<TResult> SendAndWaitAnswer<TResult, TMessage, TMessageId>(
         this IProtocolConnection connection,
         IProtocolMessage request,
@@ -111,7 +123,7 @@ public static partial class ProtocolHelper
         TRequestMessage request,
         FilterDelegate<TResult, TResultMessage, TMessageId> filterAndGetResult,
         TimeSpan timeout,
-        int maxAttemptCount,
+        int attemptCount,
         ResendMessageModifyDelegate<TRequestMessage, TMessageId>? modifyRequestOnResend = null,
         CancellationToken cancel = default,
         TimeProvider? timeProvider = null,
@@ -149,9 +161,9 @@ public static partial class ProtocolHelper
             }
         }
         if (result != null) return result;
-        throw new TimeoutException($"Timeout to execute '{request}' with {maxAttemptCount} x {timeout}'");
+        throw new TimeoutException($"Timeout to execute '{request}' with {attemptCount} x {timeout}'");
         
-        bool IsRetryCondition() => currentAttempt < maxAttemptCount;
+        bool IsRetryCondition() => currentAttempt < attemptCount;
     }
     
 }
