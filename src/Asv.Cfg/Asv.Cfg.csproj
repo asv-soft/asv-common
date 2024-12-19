@@ -1,20 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
-    
     <FileVersion>$(ProductVersion)</FileVersion>
     <Version>$(ProductVersion)</Version>
     <PackageVersion>$(ProductVersion)</PackageVersion>
-    <ApiCompatGenerateSuppressionFile>true</ApiCompatGenerateSuppressionFile>
-    <PackageValidationBaselineVersion>$(ProductPrevVersion)</PackageValidationBaselineVersion>
-    
     <Authors>https://github.com/asv-soft</Authors>
     <Company>https://github.com/asv-soft</Company>
     <Copyright>https://github.com/asv-soft</Copyright>
     <PackageProjectUrl>https://github.com/asv-soft/asv-common</PackageProjectUrl>
     <RepositoryUrl>https://github.com/asv-soft/asv-common</RepositoryUrl>
     <PackageTags />
-    
     <Description>Provides simple configuration interface</Description>
     <PackageIcon>asv-cfg-128.png</PackageIcon>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
@@ -34,11 +29,6 @@
     <PackageReference Include="System.IO.Abstractions" Version="$(SystemIOAbstractionsVersion)" />
     <PackageReference Include="ZLogger" Version="$(ZLoggerVersion)" />
     <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
-    <PackageReference Include="Microsoft.DotNet.ApiCompat.Task" Version="$(ApiCompatVersion)" >
-      <!--using api compatibility purely as a development harness-->
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
-    
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Asv.Common\Asv.Common.csproj" />

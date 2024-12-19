@@ -18,8 +18,6 @@ namespace Asv.Cfg
     
     public class JsonOneFileConfiguration : ConfigurationBase
     {
-        
-
         private readonly string _fileName;
         private readonly string _backupFileName;
         private readonly bool _sortKeysInFile;

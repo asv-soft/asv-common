@@ -5,16 +5,12 @@
     <FileVersion>$(ProductVersion)</FileVersion>
     <Version>$(ProductVersion)</Version>
     <PackageVersion>$(ProductVersion)</PackageVersion>
-    <ApiCompatGenerateSuppressionFile>true</ApiCompatGenerateSuppressionFile>
-    <PackageValidationBaselineVersion>$(ProductPrevVersion)</PackageValidationBaselineVersion>
-    
     <Authors>https://github.com/asv-soft</Authors>
     <Company>https://github.com/asv-soft</Company>
     <Copyright>https://github.com/asv-soft</Copyright>
     <PackageProjectUrl>https://github.com/asv-soft/asv-common</PackageProjectUrl>
     <RepositoryUrl>https://github.com/asv-soft/asv-common</RepositoryUrl>
     <PackageTags />
-    
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageIcon>asv-io-128.png</PackageIcon>
     <LangVersion>preview</LangVersion>
@@ -61,16 +57,9 @@
     <PackageReference Include="ZLogger" Version="$(ZLoggerVersion)" />
     <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
     <PackageReference Include="System.IO.Ports" Version="8.0.0" />
-    <PackageReference Include="Microsoft.DotNet.ApiCompat.Task" Version="$(ApiCompatVersion)" >
-      <!--using api compatibility purely as a development harness-->
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Asv.Common\Asv.Common.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
   </ItemGroup>
   <ItemGroup>
     <Compile Update="Serializers\SpanBitHelperExt.cs">
