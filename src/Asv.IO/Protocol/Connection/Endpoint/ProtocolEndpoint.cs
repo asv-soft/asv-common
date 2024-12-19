@@ -197,6 +197,7 @@ public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
     {
         if (IsDisposed) return ValueTask.CompletedTask;
         if (_lastError.CurrentValue != null) return ValueTask.CompletedTask;
+        cancel.ThrowIfCancellationRequested();
         return _txChannel.Writer.WriteAsync(message, cancel);
     }
 
