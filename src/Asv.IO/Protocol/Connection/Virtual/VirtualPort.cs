@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Asv.Common;
 using R3;
+using OperationCanceledException = System.OperationCanceledException;
 
 namespace Asv.IO;
 
@@ -56,9 +57,21 @@ public class VirtualPort:ProtocolConnection
     
     public override ValueTask Send(IProtocolMessage message, CancellationToken cancel = default)
     {
-        if (IsDisposed) return ValueTask.CompletedTask;
-        cancel.ThrowIfCancellationRequested();
-        if (_sendFilter(message) == false) return ValueTask.CompletedTask;
+        if (cancel.IsCancellationRequested)
+        {
+            return ValueTask.FromException(new OperationCanceledException());
+        }
+
+        if (IsDisposed)
+        {
+            return ValueTask.CompletedTask;
+        }
+
+        if (_sendFilter(message) == false)
+        {
+            return ValueTask.CompletedTask;
+        }
+        
         try
         {
             var size = message.GetByteSize();

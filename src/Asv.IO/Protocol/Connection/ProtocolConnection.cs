@@ -38,8 +38,6 @@ public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolC
         {
             feature.Register(this);
         }
-        
-        
     }
 
     public string Id { get; }
@@ -136,6 +134,4 @@ public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolC
     }
 
     #endregion
-
-    
 }

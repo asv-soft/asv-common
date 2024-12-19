@@ -202,7 +202,11 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
             if (_startStopCancel != null)
             {
                 var cancel = _startStopCancel;
-                if (cancel.IsCancellationRequested == false) cancel.Cancel(false);
+                if (cancel.IsCancellationRequested == false)
+                {
+                    cancel.Cancel(false);
+                }
+                
                 cancel.Dispose();
                 _startStopCancel = null;
             }
@@ -243,7 +247,11 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
     protected abstract void InternalSafeEnable(CancellationToken token);
     public override async ValueTask Send(IProtocolMessage message, CancellationToken cancel = default)
     {
-        if (IsDisposed) return;
+        if (IsDisposed)
+        {
+            return;
+        }
+        
         cancel.ThrowIfCancellationRequested();
         var newMessage = await InternalFilterTxMessage(message);
         if (newMessage == null) return;
