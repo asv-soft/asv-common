@@ -1,10 +1,8 @@
 <Project>
   <PropertyGroup>
-    <ProductVersion>3.0.0-dev.13</ProductVersion>
-    <ProductPrevVersion>3.0.0</ProductPrevVersion>
+    <ProductVersion>3.0.1</ProductVersion>
     <R3Version>1.2.9</R3Version>
     <NewtonsoftJsonVersion>13.0.3</NewtonsoftJsonVersion>
-    <ApiCompatVersion>8.0.200</ApiCompatVersion>
     <ZLoggerVersion>2.5.5</ZLoggerVersion>
     <DeepEqualVersion>4.2.1</DeepEqualVersion>
     <AutoFixtureVersion>4.18.1</AutoFixtureVersion>

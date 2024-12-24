@@ -23,7 +23,6 @@ namespace Asv.Cfg
         
         public static IEqualityComparer<string> DefaultKeyComparer { get; } = StringComparer.InvariantCultureIgnoreCase;
         
-        [Obsolete("Use Get<TPocoType>(string key, Lazy<TPocoType> defaultValue)")]
         public static TPocoType Get<TPocoType>(this IConfiguration src, string key, TPocoType defaultValue)
         {
             return src.Get(key, new Lazy<TPocoType>(() => defaultValue));
