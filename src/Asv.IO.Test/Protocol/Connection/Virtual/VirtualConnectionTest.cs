@@ -193,7 +193,7 @@ public class VirtualConnectionTest
         var actualRx2 = 0;
 
         var tcs = new TaskCompletionSource();
-        var cancel = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var cancel = new CancellationTokenSource();
         cancel.Token.Register(() => tcs.TrySetException(new TimeoutException()));
 
         // Act
@@ -267,7 +267,7 @@ public class VirtualConnectionTest
         var actualRx2 = 0;
 
         var tcs = new TaskCompletionSource();
-        var cancel = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var cancel = new CancellationTokenSource();
         cancel.Token.Register(() => tcs.TrySetException(new TimeoutException()));
 
         // Act
@@ -323,7 +323,7 @@ public class VirtualConnectionTest
         var fixture = new Fixture();
         var sendArray1 = new ExampleMessage1[10];
         var tcs = new TaskCompletionSource();
-        var cancel = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var cancel = new CancellationTokenSource();
         cancel.Token.Register(() => tcs.TrySetException(new TimeoutException()));
         for (int i = 0; i < 10; i++)
         {
@@ -365,7 +365,7 @@ public class VirtualConnectionTest
         var fixture = new Fixture();
         var sendArray1 = new ExampleMessage1[10];
         var tcs = new TaskCompletionSource();
-        var cancel = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var cancel = new CancellationTokenSource();
         cancel.Token.Register(() => tcs.TrySetException(new TimeoutException()));
         for (int i = 0; i < 10; i++)
         {
@@ -406,7 +406,7 @@ public class VirtualConnectionTest
         }).CreateVirtualConnection();
         var sendArray1 = new ExampleMessage1?[count];
         var tcs = new TaskCompletionSource();
-        var cancel = new CancellationTokenSource(TimeSpan.FromSeconds(count));
+        var cancel = new CancellationTokenSource();
         cancel.Token.Register(() => tcs.TrySetException(new TimeoutException()));
         for (var i = 0; i < count; i++)
         {
@@ -443,7 +443,7 @@ public class VirtualConnectionTest
         var fixture = new Fixture();
         var sendArray1 = new ExampleMessage1?[count];
         var tcs = new TaskCompletionSource();
-        var cancel = new CancellationTokenSource(TimeSpan.FromSeconds(count));
+        var cancel = new CancellationTokenSource();
         cancel.Token.Register(() => tcs.TrySetException(new TimeoutException()));
         for (var i = 0; i < count; i++)
         {
