@@ -25,6 +25,7 @@ public sealed class ProtocolRouter:ProtocolConnection, IProtocolRouter
 
     public override async ValueTask Send(IProtocolMessage message, CancellationToken cancel = default)
     {
+        ArgumentNullException.ThrowIfNull(message);
         if (IsDisposed)
         {
             return;

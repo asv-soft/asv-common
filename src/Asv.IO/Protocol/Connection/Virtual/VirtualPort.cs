@@ -59,38 +59,39 @@ public class VirtualPort:ProtocolConnection, IProtocolEndpoint
         _sendFilter = filter;
     }
     
-    public override ValueTask Send(IProtocolMessage message, CancellationToken cancel = default)
+    public override async ValueTask Send(IProtocolMessage message, CancellationToken cancel = default)
     {
-        if (cancel.IsCancellationRequested)
-        {
-            return ValueTask.FromException(new OperationCanceledException());
-        }
+        ArgumentNullException.ThrowIfNull(message);
+        cancel.ThrowIfCancellationRequested();
 
         if (IsDisposed)
         {
-            return ValueTask.CompletedTask;
+            return;
         }
 
         if (_sendFilter(message) == false)
         {
-            return ValueTask.CompletedTask;
+            return;
         }
-        
+
+        var newMessage = await InternalFilterTxMessage(message);
+        if (newMessage == null)
+        {
+            return;
+        }
         try
         {
-            var size = message.GetByteSize();
+            var size = newMessage.GetByteSize();
             var buffer = new byte[size];
-            var span = buffer.AsSpan();
-            message.Serialize(ref span);
+            newMessage.Serialize(buffer);
             _tx.OnNext(buffer);
             StatisticHandler.IncrementTxMessage();
-            InternalPublishTxMessage(message);
+            InternalPublishTxMessage(newMessage);
         }
-        catch (Exception e)
+        catch (Exception)
         {
             StatisticHandler.IncrementTxError();
         }
-        return ValueTask.CompletedTask;
     }
     
     #region Dispose
