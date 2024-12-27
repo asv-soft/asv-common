@@ -51,7 +51,7 @@ namespace Asv.IO
             _counter++;
             InternalStop();
             _tcp = new TcpClient();
-            _tcp.Connect(_cfg.Host,_cfg.Port);
+            _tcp.Connect(_cfg.Host ?? throw new InvalidOperationException(),_cfg.Port);
             _stop = new CancellationTokenSource();
             var recvThread = new Thread(ListenAsync) { Name = "TCP_C"+_counter,IsBackground = true};
             _stop.Token.Register(() =>

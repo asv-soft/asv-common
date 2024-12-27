@@ -183,7 +183,7 @@ namespace Asv.Common
         /// var oldestPerson = persons.MaxItem(p =&gt; p.Age, out age);
         /// </code>
         /// </example>
-        public static TItem MaxItem<TItem, TValue>(this IEnumerable<TItem> items, Func<TItem, TValue> selector, out TValue maxValue)
+        public static TItem? MaxItem<TItem, TValue>(this IEnumerable<TItem?> items, Func<TItem, TValue> selector, out TValue? maxValue)
             where TItem : class
             where TValue : IComparable
         {
@@ -279,7 +279,7 @@ namespace Asv.Common
             where TItem : class
             where TValue : IComparable
         {
-            TValue minValue;
+            TValue? minValue;
 
             return items.MinItem(selector, out minValue);
         }

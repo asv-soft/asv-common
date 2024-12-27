@@ -422,7 +422,7 @@ public class VirtualConnectionTest
             builder.Formatters.RegisterSimpleFormatter();
         }).CreateVirtualConnection();
         var fixture = new Fixture();
-        var sendArray1 = new ExampleMessage1?[count];
+        var sendArray1 = new ExampleMessage1[count];
         var tcs = new TaskCompletionSource();
         var cancel = new CancellationTokenSource();
         cancel.Token.Register(() => tcs.TrySetException(new TimeoutException()));

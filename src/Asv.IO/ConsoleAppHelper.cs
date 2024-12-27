@@ -208,7 +208,7 @@ public static class ConsoleAppHelper
     {
         var header = new[]
         {
-            src.GetTitle(),
+            src.GetTitle() ?? string.Empty,
             src.GetDescription(),
             src.GetCopyrightHolder(),
         };

@@ -4,7 +4,7 @@ namespace Asv.IO
 {
     public abstract class SpanKeyWithNameAndDescriptionType<TKey> : SpanKeyWithNameType<TKey>
     {
-        private string? _description;
+        private string _description = string.Empty;
 
         protected abstract void InternalValidateDescription(string description);
 

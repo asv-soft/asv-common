@@ -172,7 +172,7 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
                 _logger.ZLogWarning($"Skip store folder '{folderInfo.FullName}'");
                 continue;
             }
-            Debug.Assert(displayName.IsNullOrWhiteSpace() == false);
+            Debug.Assert(displayName != null && displayName.IsNullOrWhiteSpace() == false);
             var entry = new FileSystemHierarchicalStoreEntry<TKey>(id, displayName, FolderStoreEntryType.Folder,
                 parentFolder == null ? _format.RootFolderId : parentFolder.Id, folderInfo.FullName);
             yield return entry;
@@ -507,9 +507,9 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
         }
     }
 
-    public bool TryGetFile(TKey id, out IHierarchicalStoreEntry<TKey> entry)
+    public bool TryGetFile(TKey id, out IHierarchicalStoreEntry<TKey>? entry)
     {
-        entry = default;
+        entry = null;
         lock (_sync)
         {
             if (!_entries.TryGetValue(id, out var commonEntry)) return false;

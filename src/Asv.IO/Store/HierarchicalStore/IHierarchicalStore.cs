@@ -128,7 +128,7 @@ public interface IHierarchicalStore<TKey, out TFile>: IDisposable
     /// <typeparam name="TKey">The type of the key used to identify the files.</typeparam>
     /// <returns>A read-only list of hierarchical store entries representing the files.</returns>
     IReadOnlyList<IHierarchicalStoreEntry<TKey>> GetFiles();
-    bool TryGetFile(TKey id, out IHierarchicalStoreEntry<TKey> entry);
+    bool TryGetFile(TKey id, out IHierarchicalStoreEntry<TKey>? entry);
 
     /// <summary>
     /// Deletes a file with the specified ID.

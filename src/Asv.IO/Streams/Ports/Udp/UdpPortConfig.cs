@@ -6,12 +6,12 @@ namespace Asv.IO
 {
     public class UdpPortConfig
     {
-        public string LocalHost { get; set; }
+        public string? LocalHost { get; set; }
         public int LocalPort { get; set; }
-        public string RemoteHost { get; set; }
+        public string? RemoteHost { get; set; }
         public int RemotePort { get; set; }
 
-        public static bool TryParseFromUri(Uri uri, out UdpPortConfig opt)
+        public static bool TryParseFromUri(Uri uri, out UdpPortConfig? opt)
         {
             if (!"udp".Equals(uri.Scheme, StringComparison.InvariantCultureIgnoreCase))
             {
@@ -28,13 +28,13 @@ namespace Asv.IO
             };
 
             var rhost = coll["rhost"];
-            if (!rhost.IsNullOrWhiteSpace())
+            if (rhost != null && !rhost.IsNullOrWhiteSpace())
             {
                 opt.RemoteHost = IPAddress.Parse(rhost).ToString();
             }
 
             var rport = coll["rport"];
-            if (!rport.IsNullOrWhiteSpace())
+            if (rport != null && !rport.IsNullOrWhiteSpace())
             {
                 opt.RemotePort = int.Parse(rport);
             }
@@ -43,7 +43,7 @@ namespace Asv.IO
 
         public override string ToString()
         {
-            if (RemoteHost.IsNullOrWhiteSpace())
+            if (RemoteHost != null && RemoteHost.IsNullOrWhiteSpace())
             {
                 return $"UDP {LocalHost}:{LocalPort}";
             }

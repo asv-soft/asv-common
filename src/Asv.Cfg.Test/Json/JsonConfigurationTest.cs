@@ -21,38 +21,38 @@ namespace Asv.Cfg.Test
     #region Test Classes
     public class TestNotSaved
     {
-        public string Name { get; set; }
+        public string? Name { get; set; }
     }
     
     public class TestClass
     {
-        public string Name { get; set; }
+        public string? Name { get; set; }
     }
     
     public class TestClassWithEnums
     {
-        public string Name { get; set; }
+        public string? Name { get; set; }
         public EnumTest Enum { get; set; }
     }
     
     public class TestMultiThreadClassOne
     {
-        public string Name { get; set; }
+        public string? Name { get; set; }
     }
     
     public class TestMultiThreadClassTwo
     {
-        public string Name { get; set; }
+        public string? Name { get; set; }
     }
     
     public class TestMultiThreadClassThree
     {
-        public string Name { get; set; }
+        public string? Name { get; set; }
     }
     
     public class TestMultiThreadClassFour
     {
-        public string Name { get; set; }
+        public string? Name { get; set; }
     }
     #endregion
     

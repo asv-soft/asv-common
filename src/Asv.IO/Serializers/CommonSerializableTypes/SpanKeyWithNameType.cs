@@ -31,13 +31,13 @@ namespace Asv.IO
 
         public virtual void Serialize(ref Span<byte> buffer)
         {
-            InternalWriteKey(ref buffer, Id);
+            InternalWriteKey(ref buffer, Id ?? throw new InvalidOperationException());
             BinSerialize.WriteString(ref buffer, _name);
         }
 
         public virtual int GetByteSize()
         {
-            return BinSerialize.GetSizeForString(_name) + InternalGetSizeKey(Id);
+            return BinSerialize.GetSizeForString(_name) + InternalGetSizeKey(Id ?? throw new InvalidOperationException());
         }
 
         public override string ToString()

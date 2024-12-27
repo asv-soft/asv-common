@@ -8,7 +8,6 @@ namespace Asv.Cfg.Test;
 public class TestLoggerFactory(ITestOutputHelper testOutputHelper, TimeProvider time, string prefix) : ILoggerFactory
 {
     public TimeProvider Time { get; } = time;
-    private readonly string _prefix = prefix;
 
     public void Dispose()
     {

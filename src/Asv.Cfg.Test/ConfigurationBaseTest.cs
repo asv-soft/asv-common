@@ -11,8 +11,7 @@ namespace Asv.Cfg.Test;
 public class CustomTestClass()
     : ICustomConfigurable
 {
-    [CanBeNull] 
-    public string Value { get; set; }
+    public string? Value { get; set; }
     
     public void Load(string key, IConfiguration configuration)
     {
