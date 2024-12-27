@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
@@ -9,15 +10,17 @@ using OperationCanceledException = System.OperationCanceledException;
 
 namespace Asv.IO;
 
-public class VirtualPort:ProtocolConnection
+public class VirtualPort:ProtocolConnection, IProtocolEndpoint
 {
     private Func<IProtocolMessage, bool> _sendFilter;
     private readonly Subject<byte[]> _tx = new();
     private readonly Subject<byte[]> _rx = new();
     private readonly ImmutableArray<IProtocolParser> _parsers;
     private readonly IDisposable _dispose;
+    private readonly ReactiveProperty<ProtocolConnectionException?> _lastError = new();
 
-    public VirtualPort(string id, IProtocolContext context, Func<IProtocolMessage, bool> sendFilter, IStatisticHandler parent) : base(id, context,parent)
+    public VirtualPort(string id, IProtocolContext context, Func<IProtocolMessage, bool> sendFilter, IStatisticHandler parent)
+        : base(id, context,parent)
     {
         _sendFilter = sendFilter;
         _parsers = [..context.ParserFactory.Values.Select(x => x(context,StatisticHandler))];
@@ -32,7 +35,8 @@ public class VirtualPort:ProtocolConnection
         _dispose = builder.Build();
     }
     
-    
+    public ReadOnlyReactiveProperty<ProtocolConnectionException?> LastError => _lastError;
+    public IEnumerable<IProtocolParser> Parsers => _parsers;
     
     private void ReadLoop(byte[] bytes)
     {
@@ -97,9 +101,9 @@ public class VirtualPort:ProtocolConnection
         {
             _tx.Dispose();
             _rx.Dispose();
+            _lastError.Dispose();
             _dispose.Dispose();
         }
-
         base.Dispose(disposing);
     }
 
@@ -107,8 +111,8 @@ public class VirtualPort:ProtocolConnection
     {
         await CastAndDispose(_tx);
         await CastAndDispose(_rx);
+        await CastAndDispose(_lastError);
         await CastAndDispose(_dispose);
-
         await base.DisposeAsyncCore();
 
         return;
@@ -123,4 +127,7 @@ public class VirtualPort:ProtocolConnection
     }
 
     #endregion
+
+    
+    
 }
