@@ -5,12 +5,13 @@ namespace Asv.IO;
 
 public class BroadcastingFeature<TMessage> : IProtocolFeature
 {
-    public const string FeatureId = "Broadcasting";
+    public const string FeatureId = $"Broadcasting {nameof(TMessage)}";
     
-    public string Name => "Message Broadcasting";
-    public string Description => "Allows retransmission of incoming messages to all other connections.";
+    public string Name => $"Message Broadcasting {nameof(TMessage)}";
+    public string Description => "Allows retransmission of incoming messages to all other connections";
     public string Id => FeatureId;
-    public int Priority { get; } = 0;
+    public int Priority => 0;
+
     public async ValueTask<IProtocolMessage?> ProcessRx(IProtocolMessage message, IProtocolConnection connection, CancellationToken cancel)
     {
         if (message is not TMessage) return message;
