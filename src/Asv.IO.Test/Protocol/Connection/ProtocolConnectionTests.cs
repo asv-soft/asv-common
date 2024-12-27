@@ -7,7 +7,7 @@ using Microsoft.Extensions.Time.Testing;
 using R3;
 using Xunit;
 
-namespace Asv.IO.Test;
+namespace Asv.IO.Test.Connection;
 
 [TestSubject(typeof(ProtocolConnection))]
 public class ProtocolConnectionTests

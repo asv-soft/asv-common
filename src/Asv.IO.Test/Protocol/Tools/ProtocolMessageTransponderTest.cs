@@ -37,39 +37,6 @@ public class ProtocolMessageTransponderTest
        
     }
     
-    
-    [Theory]
-    [InlineData(10000, 1)]
-    [InlineData(1000, 5)]
-    [InlineData(100, 10)]
-    public async Task EverySendCallback_ChangeMessage_Success(int timeSpanMs, int count)
-    {
-        ExampleMessage1? lastMessage = null;
-        await using var transponder = new ProtocolMessageTransponder<ExampleMessage1>(
-            _originMessage,
-            x =>
-            {
-                x.Value1++;
-            },
-            _virtualConnection.Client,
-            _protocol.TimeProvider,
-            _protocol.LoggerFactory);
-        
-        _virtualConnection.Server.RxFilterByType<ExampleMessage1>().Subscribe(p =>
-        {
-            lastMessage = p;
-        });
-        
-        transponder.Start(TimeSpan.FromMilliseconds(timeSpanMs), TimeSpan.FromMilliseconds(timeSpanMs));
-        _time.Advance(TimeSpan.FromMilliseconds(timeSpanMs * count));
-        
-        Assert.NotNull(lastMessage);
-#pragma warning disable CS8602 // Dereference of a possibly null reference.
-        Assert.Equal(count,lastMessage.Value1);
-#pragma warning restore CS8602 // Dereference of a possibly null reference.
-        
-    }
-    
     [Theory]
     [InlineData(10000, 1)]
     [InlineData(1000, 5)]
@@ -93,8 +60,10 @@ public class ProtocolMessageTransponderTest
         {
             lastMessage = p;
         });
-        
+        Assert.False(transponder.IsStarted);
         transponder.Start(TimeSpan.FromMilliseconds(timeSpanMs), TimeSpan.FromMilliseconds(timeSpanMs));
+        Assert.True(transponder.IsStarted);
+        
         _time.Advance(TimeSpan.FromMilliseconds(timeSpanMs * count));
         
         Assert.NotNull(lastMessage);
@@ -104,6 +73,11 @@ public class ProtocolMessageTransponderTest
 #pragma warning restore CS8602 // Dereference of a possibly null reference.
         
         transponder.Set(x=>x.Value2 = 5 );
+        _time.Advance(TimeSpan.FromMilliseconds(timeSpanMs * count));
+        Assert.Equal(count * 2, lastMessage.Value1);
+        Assert.Equal(5,lastMessage.Value2);
+        
+        transponder.Stop();
         _time.Advance(TimeSpan.FromMilliseconds(timeSpanMs * count));
         Assert.Equal(count * 2, lastMessage.Value1);
         Assert.Equal(5,lastMessage.Value2);

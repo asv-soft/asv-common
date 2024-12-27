@@ -1,10 +1,10 @@
 using System;
 using System.IO;
 using System.IO.Abstractions.TestingHelpers;
-using Asv.IO;
+using Asv.IO.Test.HierarchicalStore;
 using Xunit;
 
-namespace Asv.Mavlink.Test;
+namespace Asv.IO.Test.ListDataFile;
 
 public class ListDataFileTests
 {

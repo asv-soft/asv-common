@@ -8,7 +8,7 @@ using R3;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Asv.IO.Test;
+namespace Asv.IO.Test.Connection.Virtual;
 
 [TestSubject(typeof(VirtualPort))]
 [TestSubject(typeof(VirtualConnection))]
