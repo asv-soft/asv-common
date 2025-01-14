@@ -61,7 +61,7 @@ public class DeviceExplorer : AsyncDisposableOnce, IDeviceExplorer
     private void RemoveOldDevices(object? state)
     {
         var itemsToDelete = _lastSeen
-            .Where(x => _context.TimeProvider.GetElapsedTime(x.Value) > _deviceTimeout).ToImmutableArray();
+            .Where(x => _context.TimeProvider.GetElapsedTime(x.Value) >= _deviceTimeout).ToImmutableArray();
         if (itemsToDelete.Length == 0) return;
         _lock.EnterWriteLock();
         try
@@ -73,6 +73,7 @@ public class DeviceExplorer : AsyncDisposableOnce, IDeviceExplorer
                     device.Dispose();
                 }
                 _lastSeen.TryRemove(item.Key, out _);
+                _devices.Remove(item.Key);
                 _logger.ZLogInformation($"Remove device {item.Key}");
             }
         }
@@ -121,6 +122,7 @@ public class DeviceExplorer : AsyncDisposableOnce, IDeviceExplorer
                 }
                 var device = currentProvider.CreateDevice(msg, deviceId, _context, _extenders );
                 _logger.ZLogInformation($"New device {deviceId} created by {currentProvider}");
+                device.Initialize();
                 _devices.Add(deviceId, device);
             }
             finally

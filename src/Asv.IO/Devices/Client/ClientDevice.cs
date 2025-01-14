@@ -15,15 +15,6 @@ public class ClientDeviceConfig
     public int RequestDelayAfterFailMs { get; set; } = 1000;
 }
 
-public static class ClientDevice
-{
-    #region Static
-
-    
-
-    #endregion
-}
-
 public abstract class ClientDevice<TDeviceId> : AsyncDisposableWithCancel, IClientDevice
     where TDeviceId:DeviceId
 {
@@ -35,11 +26,11 @@ public abstract class ClientDevice<TDeviceId> : AsyncDisposableWithCancel, IClie
     private ImmutableArray<IMicroserviceClient> _microservices;
     private int _isTryReconnectInProgress;
     private readonly ILogger _logger;
-    private bool _needToRequestAgain;
+    private bool _needToRequestAgain = true; // first request must be done
     private ITimer? _reconnectionTimer;
     private IDisposable? _sub1;
     private IDisposable? _sub2;
-    
+    private int _isInitialized;
 
 
     protected ClientDevice(TDeviceId id, ClientDeviceConfig config, ImmutableArray<IClientDeviceExtender> extenders, IMicroserviceContext context)
@@ -53,11 +44,16 @@ public abstract class ClientDevice<TDeviceId> : AsyncDisposableWithCancel, IClie
         Id = id;
         _name = new ReactiveProperty<string?>(id.ToString());
         _logger = context.LoggerFactory.CreateLogger(id.AsString());
-        Task.Factory.StartNew(InternalInitFirst);
     }
-
-    private void InternalInitFirst()
-    {
+    
+    public void Initialize()
+    {   
+        if (Interlocked.CompareExchange(ref _isInitialized, 0, 1) == 1)
+        {
+            _logger.ZLogTrace($"Skip double initialization [{Id}]");
+            return;
+        }
+        
         _sub1 = Link.State.DistinctUntilChanged()
             .Where(s => s == LinkState.Disconnected)
             .Subscribe(_ => _needToRequestAgain = true);
@@ -66,6 +62,24 @@ public abstract class ClientDevice<TDeviceId> : AsyncDisposableWithCancel, IClie
             .Where(_ => _needToRequestAgain)
             .Where(s => s == LinkState.Connected)
             .Subscribe(_ => TryReconnect(null));
+        try
+        {
+            InternalInitializeOnce();
+        }
+        catch (Exception e)
+        {
+            _logger.ZLogError(e, $"Error on initialize device [{Id}]: {e.Message}");
+            throw;
+        }
+        
+    }
+
+    /// <summary>
+    /// This method is called only once, right after ctor
+    /// </summary>
+    protected virtual void InternalInitializeOnce()
+    {
+        // do nothing
     }
 
     // ReSharper disable once AsyncVoidMethod
@@ -150,9 +164,9 @@ public abstract class ClientDevice<TDeviceId> : AsyncDisposableWithCancel, IClie
     /// This method is called before the microservices are created
     /// Can be called multiple times, if initialization fails.
     /// </summary>
-    protected virtual Task InitBeforeMicroservices(CancellationToken cancel)
+    protected virtual ValueTask InitBeforeMicroservices(CancellationToken cancel)
     {
-        return Task.CompletedTask;
+        return ValueTask.CompletedTask;
     }
     protected abstract IAsyncEnumerable<IMicroserviceClient> InternalCreateMicroservices(CancellationToken cancel);
     /// <summary>
@@ -160,9 +174,9 @@ public abstract class ClientDevice<TDeviceId> : AsyncDisposableWithCancel, IClie
     /// Can be called multiple times, if initialization fails.
     /// </summary>
     /// <returns>A Task representing the asynchronous operation.</returns>
-    protected virtual Task InitAfterMicroservices(CancellationToken cancel)
+    protected virtual ValueTask InitAfterMicroservices(CancellationToken cancel)
     {
-        return Task.CompletedTask;
+        return ValueTask.CompletedTask;
     }
     
     public ImmutableArray<IMicroserviceClient> Microservices => _microservices;

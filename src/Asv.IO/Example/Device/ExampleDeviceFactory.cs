@@ -10,7 +10,7 @@ public class ExampleDeviceFactory(ExampleDeviceConfig config) : ClientDeviceFact
 
     protected override bool InternalTryIdentify(ExampleMessageBase msg, out ExampleDeviceId? deviceId)
     {
-        deviceId = new ExampleDeviceId(ExampleDevice.DeviceClass, msg.Id);
+        deviceId = new ExampleDeviceId(ExampleDevice.DeviceClass, msg.SenderId);
         return true;
     }
 
