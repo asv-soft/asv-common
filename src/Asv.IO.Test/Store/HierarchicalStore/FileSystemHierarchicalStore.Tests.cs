@@ -2,10 +2,9 @@ using System;
 using System.IO;
 using System.IO.Abstractions.TestingHelpers;
 using Asv.Common;
-using Asv.IO;
 using Xunit;
 
-namespace Asv.Mavlink.Test;
+namespace Asv.IO.Test.HierarchicalStore;
 
 public class FileSystemHierarchicalStoreTest
 {

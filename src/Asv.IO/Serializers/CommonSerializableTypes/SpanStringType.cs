@@ -35,6 +35,6 @@ namespace Asv.IO
         }
 
         public static explicit operator SpanStringType(string value) => new(value);
-        public static implicit operator string(SpanStringType value) => value.Value;
+        public static implicit operator string(SpanStringType value) => value.Value ?? string.Empty;
     }
 }

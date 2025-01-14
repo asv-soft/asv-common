@@ -247,6 +247,7 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
     protected abstract void InternalSafeEnable(CancellationToken token);
     public override async ValueTask Send(IProtocolMessage message, CancellationToken cancel = default)
     {
+        ArgumentNullException.ThrowIfNull(message);
         if (IsDisposed)
         {
             return;

@@ -8,7 +8,7 @@ using R3;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Asv.IO.Test;
+namespace Asv.IO.Test.Connection.Virtual;
 
 [TestSubject(typeof(VirtualPort))]
 [TestSubject(typeof(VirtualConnection))]
@@ -394,39 +394,20 @@ public class VirtualConnectionTest
     }
 
     [Fact]
-    public async Task Statistic_IncrementTXErrorOnTransactNullPacket_Success()
+    public async Task Statistic_SendNullMessage_Fail()
     {
         //Arrange
-        uint count = 10;
         var link = Protocol.Create(builder =>
         {
             builder.SetLog(new TestLoggerFactory(_output, TimeProvider.System, "ROUTER"));
             builder.Protocols.RegisterExampleProtocol();
             builder.Formatters.RegisterSimpleFormatter();
         }).CreateVirtualConnection();
-        var sendArray1 = new ExampleMessage1?[count];
-        var tcs = new TaskCompletionSource();
-        var cancel = new CancellationTokenSource();
-        cancel.Token.Register(() => tcs.TrySetException(new TimeoutException()));
-        for (var i = 0; i < count; i++)
-        {
-            sendArray1[i] = null;
-        }
-
-        //Act
-        foreach (var message1 in sendArray1)
-        {
-            await link.Server.Send(message1, cancel.Token);
-        }
-
-        foreach (var message1 in sendArray1)
-        {
-            await link.Client.Send(message1, cancel.Token);
-        }
-
+        
         //Assert
-        Assert.Equal((uint)0, link.Statistic.ParsedMessages);
-        Assert.Equal(count * 2, link.Statistic.TxError);
+        // ReSharper disable once AssignNullToNotNullAttribute
+        await Assert.ThrowsAsync<ArgumentNullException>(async () => await link.Server.Send(null));
+
     }
 
     [Fact]
@@ -441,7 +422,7 @@ public class VirtualConnectionTest
             builder.Formatters.RegisterSimpleFormatter();
         }).CreateVirtualConnection();
         var fixture = new Fixture();
-        var sendArray1 = new ExampleMessage1?[count];
+        var sendArray1 = new ExampleMessage1[count];
         var tcs = new TaskCompletionSource();
         var cancel = new CancellationTokenSource();
         cancel.Token.Register(() => tcs.TrySetException(new TimeoutException()));

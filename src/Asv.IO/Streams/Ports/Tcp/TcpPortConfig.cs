@@ -5,12 +5,12 @@ namespace Asv.IO
 {
     public class TcpPortConfig
     {
-        public string Host { get; set; }
+        public string? Host { get; set; }
         public int Port { get; set; }
         public bool IsServer { get; set; }
         public int ReconnectTimeout { get; set; } = 10_000;
 
-        public static bool TryParseFromUri(Uri uri, out TcpPortConfig opt)
+        public static bool TryParseFromUri(Uri uri, out TcpPortConfig? opt)
         {
             if (!"tcp".Equals(uri.Scheme, StringComparison.InvariantCultureIgnoreCase))
             {

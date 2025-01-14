@@ -11,7 +11,8 @@ namespace Asv.Common
     {
         private Process? _process;
         private readonly BlockingCollection<string?> _output = new();
-        private StreamWriter? _input;
+        // ReSharper disable once NullableWarningSuppressionIsUsed
+        private StreamWriter _input = null!;
         private readonly Subject<string> _inputSubject = new();
         private readonly Subject<string> _outputSubject = new();
         private readonly Subject<string> _errorSubject = new();
@@ -34,7 +35,7 @@ namespace Asv.Common
                 UseShellExecute = false,
             });
             if (_process == null)
-                throw new Exception(string.Format("Error to run '{0}'", filePath));
+                throw new Exception($"Error to run '{filePath}'");
 
             _process.ErrorDataReceived += (sender, eventArgs) =>
             {

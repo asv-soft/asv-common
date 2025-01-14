@@ -7,7 +7,7 @@ namespace Asv.Common
     /// <summary>
     /// https://en.wikipedia.org/wiki/Depth-first_search
     /// </summary>
-    public class DepthFirstSearch
+    public static class DepthFirstSearch
     {
         public static IEnumerable<T> Sort<T>(IReadOnlyDictionary<T,T[]> edges)
         {

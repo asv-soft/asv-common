@@ -18,6 +18,17 @@ namespace Asv.IO
 
     public static class SpanSerializableHelper
     {
+        public static int Serialize(this ISpanSerializable src,byte[] destination, int start = 0, int length = -1)
+        {
+            if (length < 0)
+            {
+                length = destination.Length - start;
+            }
+            var span = new Span<byte>(destination, start, length);
+            src.Serialize(ref span);
+            return length - span.Length;
+        }
+       
         public static ValueTask<int> Serialize(this ISpanSerializable src,Memory<byte> destination)
         {
             var span = destination.Span;
@@ -30,6 +41,18 @@ namespace Asv.IO
             src.Deserialize(ref span);
             return ValueTask.FromResult(destination.Length - span.Length);
         }
+
+        public static int Deserialize(this ISpanSerializable src, byte[] destination, int start = 0, int length = -1)
+        {
+            if (length < 0)
+            {
+                length = destination.Length - start;
+            }
+            var span = new ReadOnlySpan<byte>(destination, start, length);
+            src.Deserialize(ref span);
+            return length - span.Length;
+        }
+        
         public static T Deserialize<T>(ref ReadOnlySpan<byte> data) where T : ISizedSpanSerializable, new()
         {
             var result = new T();

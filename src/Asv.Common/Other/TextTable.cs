@@ -200,12 +200,12 @@ namespace Asv.Common
                 .Select(i => i + padding*2).ToArray();
 
             write(TableBegin(border, width));
-            write(TableRow(border, headerWithRows.First().Select((s, i) => string.Empty.PadLeft(padding)+s.TrimToMaxLength(maxLength).PadRight(width[i]- padding))));
+            write(TableRow(border, headerWithRows.First().Select((s, i) => string.Empty.PadLeft(padding)+s.TrimToMaxLength(maxLength)?.PadRight(width[i]- padding))));
             write(TableEndRow(border, width));
 
             foreach (var item in headerWithRows.Skip(1))
             {
-                write(TableRow(border, item.Select((s, i) => string.Empty.PadLeft(padding) + (s??string.Empty).TrimToMaxLength(maxLength).PadRight(width[i]-padding))));
+                write(TableRow(border, item.Select((s, i) => string.Empty.PadLeft(padding) + (s??string.Empty).TrimToMaxLength(maxLength)?.PadRight(width[i]-padding))));
             }
             write(TableEnd(border, width));
         }

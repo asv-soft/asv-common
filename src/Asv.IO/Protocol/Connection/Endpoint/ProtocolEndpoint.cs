@@ -195,6 +195,7 @@ public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
   
     public override ValueTask Send(IProtocolMessage message, CancellationToken cancel = default)
     {
+        ArgumentNullException.ThrowIfNull(message);
         if (cancel.IsCancellationRequested)
         {
             return ValueTask.FromException(new OperationCanceledException());

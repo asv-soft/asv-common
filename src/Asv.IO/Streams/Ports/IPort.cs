@@ -49,28 +49,28 @@ namespace Asv.IO
         }
 
 
-        public static IPort Create(string connectionString, bool enabled = false, TimeProvider? timeProvider = null, ILogger? logger = null)
+        public static IPort? Create(string connectionString, bool enabled = false, TimeProvider? timeProvider = null, ILogger? logger = null)
         {
             var uri = new Uri(connectionString);
-            IPort result = null;
+            IPort? result = null;
             if (TcpPortConfig.TryParseFromUri(uri, out var tcp))
             {
-                if (tcp.IsServer)
+                if (tcp is { IsServer: true })
                 {
                     result = new TcpServerPort(tcp, timeProvider, logger);
                 }
                 else
                 {
-                    result = new TcpClientPort(tcp, timeProvider, logger);
+                    if (tcp != null) result = new TcpClientPort(tcp, timeProvider, logger);
                 }
             }
             else if (UdpPortConfig.TryParseFromUri(uri, out var udp))
             {
-                result = new UdpPort(udp);
+                if (udp != null) result = new UdpPort(udp);
             }
             else if (SerialPortConfig.TryParseFromUri(uri, out var ser))
             {
-                result = new CustomSerialPort(ser, timeProvider, logger);
+                if (ser != null) result = new CustomSerialPort(ser, timeProvider, logger);
             }
             else
             {
@@ -78,7 +78,7 @@ namespace Asv.IO
             }
             if (enabled)
             {
-                result.Enable();
+                result?.Enable();
             }
             return result;
         }

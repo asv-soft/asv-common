@@ -23,7 +23,8 @@ namespace Asv.IO
             : base(timeProvider, logger)
         {
             _config = config;
-            _receiveEndPoint = new IPEndPoint(IPAddress.Parse(config.LocalHost), config.LocalPort);
+            _receiveEndPoint = new IPEndPoint(IPAddress.Parse(config.LocalHost ?? throw new InvalidOperationException()), config.LocalPort);
+                
             if (!string.IsNullOrWhiteSpace(config.RemoteHost) && config.RemotePort != 0)
             {
                 _sendEndPoint = new IPEndPoint(IPAddress.Parse(config.RemoteHost), config.RemotePort);

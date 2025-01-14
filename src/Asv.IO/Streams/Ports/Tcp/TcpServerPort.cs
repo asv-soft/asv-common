@@ -125,7 +125,7 @@ namespace Asv.IO
 
         protected override void InternalStart()
         {
-            _tcp = new TcpListener(IPAddress.Parse(_cfg.Host), _cfg.Port);
+            _tcp = new TcpListener(IPAddress.Parse(_cfg.Host ?? throw new InvalidOperationException()), _cfg.Port);
             _tcp.Start();
             _stop = new CancellationTokenSource();
             var recvConnectionThread = new Thread(RecvConnectionCallback) { IsBackground = true };

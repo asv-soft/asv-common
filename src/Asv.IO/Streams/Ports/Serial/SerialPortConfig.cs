@@ -13,14 +13,14 @@ namespace Asv.IO
         
         public StopBits StopBits { get; set; } = StopBits.One;
         
-        public string PortName { get; set; }
+        public string? PortName { get; set; }
         
         public int WriteTimeout { get; set; } = 200;
         
         public int WriteBufferSize { get; set; } = 40960;
         
 
-        public static bool TryParseFromUri(Uri uri, out SerialPortConfig opt)
+        public static bool TryParseFromUri(Uri uri, out SerialPortConfig? opt)
         {
             if (!"serial".Equals(uri.Scheme, StringComparison.InvariantCultureIgnoreCase))
             {
