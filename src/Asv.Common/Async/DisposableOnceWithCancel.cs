@@ -6,8 +6,8 @@ namespace Asv.Common
 {
     public abstract class DisposableOnceWithCancel : DisposableOnce
     {
-        private CancellationTokenSource? _cancel;
-        private CompositeDisposable? _dispose;
+        private volatile CancellationTokenSource? _cancel;
+        private volatile CompositeDisposable? _dispose;
         private readonly object _sync1 = new();
         private readonly object _sync2 = new();
 
@@ -46,7 +46,10 @@ namespace Asv.Common
                 if (_dispose != null) return _dispose;
                 lock (_sync1)
                 {
-                    return _dispose ??= new CompositeDisposable();
+                    if (_dispose != null) return _dispose;
+                    var dispose = new CompositeDisposable();
+                    _dispose = dispose;
+                    return dispose;
                 }
             }
         }
