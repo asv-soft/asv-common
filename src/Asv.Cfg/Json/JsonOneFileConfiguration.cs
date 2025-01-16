@@ -48,6 +48,8 @@ namespace Asv.Cfg
             _logger = logger ?? NullLogger.Instance; 
             timeProvider ??= TimeProvider.System;
             _serializer = JsonHelper.CreateDefaultJsonSerializer();
+            _serializer.Converters.Add(new StringEnumConverter());
+            
 
             if (flushToFileDelayMs == null)
             {
@@ -99,11 +101,12 @@ namespace Asv.Cfg
             }
             else
             {
-                var text = _fileSystem.File.ReadAllText(_fileName);
+                using var text = _fileSystem.File.OpenRead(_fileName);
                 try
                 {
-                    var dict = JsonConvert.DeserializeObject<Dictionary<string, JToken>>(text, new StringEnumConverter()) ?? new Dictionary<string, JToken>();
-                    _values = new ConcurrentDictionary<string, JToken>(dict, ConfigurationHelper.DefaultKeyComparer);
+                    using var reader = new JsonTextReader(new StreamReader(text));
+                    _values = new ConcurrentDictionary<string, JToken>(ConfigurationHelper.DefaultKeyComparer);
+                    _serializer.Populate(reader, _values);
                 }
                 catch (Exception e)
                 {
