@@ -6,6 +6,7 @@ using System.IO.Abstractions.TestingHelpers;
 using System.Linq;
 using JetBrains.Annotations;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using R3;
 using Xunit;
 using Xunit.Abstractions;
@@ -141,6 +142,30 @@ namespace Asv.Cfg.Test
                 var dict = new Dictionary<string, TestClassWithEnums>();
                 dict.Add("test", new TestClassWithEnums { Enum = EnumTest.Test3, Name = "Test" });
                 var stringWithEnumAsDigit = JsonConvert.SerializeObject(dict, Formatting.Indented);
+                _fileSystem.File.WriteAllText(file, stringWithEnumAsDigit);
+                var cfg = new JsonOneFileConfiguration(file, false,
+                    null, fileSystem: _fileSystem);
+                var result = cfg.Get<TestClassWithEnums>("test");
+                Assert.Equal(EnumTest.Test3, result.Enum);
+            }
+            finally
+            {
+                _fileSystem.Directory.Delete(dir, true);
+            }
+        }
+        
+        [Fact]
+        public void Json_Enum_Should_Deserialized_With_Names_Success()
+        {
+            var file = GenerateTempFilePath();
+            var dir = _fileSystem.Path.GetDirectoryName(file);
+            _fileSystem.Directory.CreateDirectory(dir ?? throw new InvalidOperationException());
+
+            try
+            {
+                var dict = new Dictionary<string, TestClassWithEnums>();
+                dict.Add("test", new TestClassWithEnums { Enum = EnumTest.Test3, Name = "Test" });
+                var stringWithEnumAsDigit = JsonConvert.SerializeObject(dict, Formatting.Indented, new StringEnumConverter());
                 _fileSystem.File.WriteAllText(file, stringWithEnumAsDigit);
                 var cfg = new JsonOneFileConfiguration(file, false,
                     null, fileSystem: _fileSystem);
