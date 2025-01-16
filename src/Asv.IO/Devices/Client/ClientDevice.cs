@@ -85,38 +85,37 @@ public abstract class ClientDevice<TDeviceId> : AsyncDisposableWithCancel, IClie
     // ReSharper disable once AsyncVoidMethod
     private async void TryReconnect(object? state)
     {
+        if (IsDisposed) return; // do not reconnect if disposed
+        
         if (Interlocked.CompareExchange(ref _isTryReconnectInProgress, 0, 1) == 1)
         {
             _logger.ZLogTrace($"Skip double reconnect [{Id}]");
             return;
         }
         _reconnectionTimer?.Dispose();
-        using var reconnectCancel = new CancellationTokenSource();
-        using var combine = CancellationTokenSource.CreateLinkedTokenSource(DisposeCancel, reconnectCancel.Token);
         var builder = ImmutableArray.CreateBuilder<IMicroserviceClient>();
         try
         {
             _state.OnNext(ClientDeviceState.InProgress);
-            await InitBeforeMicroservices(combine.Token).ConfigureAwait(false);
+            await InitBeforeMicroservices(DisposeCancel).ConfigureAwait(false);
             
-            await foreach (var item in InternalCreateMicroservices(combine.Token))
+            await foreach (var item in InternalCreateMicroservices(DisposeCancel))
             {
                 builder.Add(item);
-                await item.Init(combine.Token);
+                await item.Init(DisposeCancel);
             }
 
             foreach (var extender in _extenders)
             {
-                await extender.Extend(Id, builder, combine.Token);
+                await extender.Extend(Id, builder, DisposeCancel);
             }
             _microservices = builder.ToImmutable();
-            await InitAfterMicroservices(combine.Token).ConfigureAwait(false);
+            await InitAfterMicroservices(DisposeCancel).ConfigureAwait(false);
             _state.OnNext(ClientDeviceState.Complete);
             _needToRequestAgain = false;
         }
         catch (Exception ex)
         {
-            combine.Cancel(false);
             _logger.ZLogError(ex, $"Error on connect/reconnect device [{Id}]: {ex.Message}");
             SafeDisposeMicroservices(builder.ToImmutable());
             _state.OnNext(ClientDeviceState.Failed);
@@ -187,9 +186,9 @@ public abstract class ClientDevice<TDeviceId> : AsyncDisposableWithCancel, IClie
     {
         if (disposing)
         {
+            _reconnectionTimer?.Dispose();
             _name.Dispose();
             _state.Dispose();
-            _reconnectionTimer?.Dispose();
             _sub1?.Dispose();
             _sub2?.Dispose();
         }
@@ -199,9 +198,9 @@ public abstract class ClientDevice<TDeviceId> : AsyncDisposableWithCancel, IClie
 
     protected override async ValueTask DisposeAsyncCore()
     {
+        if (_reconnectionTimer != null) await _reconnectionTimer.DisposeAsync();
         await CastAndDispose(_name);
         await CastAndDispose(_state);
-        if (_reconnectionTimer != null) await _reconnectionTimer.DisposeAsync();
         if (_sub1 != null) await CastAndDispose(_sub1);
         if (_sub2 != null) await CastAndDispose(_sub2);
         SafeDisposeMicroservices(_microservices);
