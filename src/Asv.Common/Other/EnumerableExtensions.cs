@@ -196,7 +196,7 @@ namespace Asv.Common
                 {
                     var itemValue = selector(item);
 
-                    if ((maxItem == null) || (itemValue.CompareTo(maxValue) > 0))
+                    if (maxItem == null || itemValue.CompareTo(maxValue) > 0)
                     {
                         maxValue = itemValue;
                         maxItem = item;

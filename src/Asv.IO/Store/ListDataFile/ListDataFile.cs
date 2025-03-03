@@ -129,7 +129,7 @@ public class ListDataFile<TMetadata> : DisposableOnce, IListDataFile<TMetadata>
         _rowDataSize = header.ItemMaxSize;
         _rowSize = (ushort)(1U /*StartRowMagicByte*/ + _rowDataSize /*MAX DATA SIZE*/ + 1U /*StopRowMagicByte*/ + 2U) /*CRC*/;
         _startRowByteIndex = 0;
-        _stopRowByteIndex = (_rowSize - 3);
+        _stopRowByteIndex = _rowSize - 3;
 
         var data = ArrayPool<byte>.Shared.Rent(ListDataFileFormat.MaxSize);
         for (var i = 0; i < ListDataFileFormat.MaxSize; i++)

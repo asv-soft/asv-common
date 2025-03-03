@@ -162,7 +162,7 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
             return;
         }
         _logger.ZLogInformation($"Enable {this} port");
-        _isEnabled.OnNext(true);
+        _isEnabled.Value = true;
         _config.IsEnabled = true;
         try
         {
@@ -194,11 +194,11 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
             return;
         }
         _logger.ZLogInformation($"Disable {this} port");
-        _isEnabled.OnNext(false);
+        _isEnabled.Value = false;
         _config.IsEnabled = false;
         try
         {
-            _status.OnNext(ProtocolPortStatus.InProgress);
+            _status.Value = ProtocolPortStatus.InProgress;
             if (_startStopCancel != null)
             {
                 var cancel = _startStopCancel;
@@ -212,7 +212,7 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
             }
             InternalSafeDisable();
             ClearAndDisposeAllEndpoints();
-            _status.OnNext(ProtocolPortStatus.Disconnected);
+            _status.Value = ProtocolPortStatus.Disconnected;
         }
         catch (Exception e)
         {
@@ -230,7 +230,7 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
         ClearAndDisposeAllEndpoints();
         _logger.ZLogError(ex,$"Port {this} error occured. Reconnect after {_config.ReconnectTimeoutMs} ms. Error message:{ex.Message}");
         _error.OnNext(new ProtocolPortException(this,$"Port {this} error:{ex.Message}",ex));
-        _status.OnNext(ProtocolPortStatus.Error);
+        _status.Value = ProtocolPortStatus.Error;
         _reconnectTimer = _context.TimeProvider.CreateTimer(ReconnectAfterError, null, TimeSpan.FromMilliseconds(_config.ReconnectTimeoutMs),
             Timeout.InfiniteTimeSpan);
     }

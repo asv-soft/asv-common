@@ -116,7 +116,7 @@ namespace Asv.Common
         /// <param name="value">The string value to check.</param>
         public static bool IsNotEmpty(this string value)
         {
-            return (value.IsEmpty() == false);
+            return value.IsEmpty() == false;
         }
 
         /// <summary>
@@ -127,7 +127,7 @@ namespace Asv.Common
         /// <returns>Either the string or the default value.</returns>
         public static string IfEmpty(this string value, string defaultValue)
         {
-            return (value.IsNotEmpty() ? value : defaultValue);
+            return value.IsNotEmpty() ? value : defaultValue;
         }
 
         /// <summary>
@@ -202,7 +202,7 @@ namespace Asv.Common
         /// <remarks>Proposed by Rene Schulte</remarks>
         public static string? TrimToMaxLength(this string? value, int maxLength)
         {
-            return (value == null || value.Length <= maxLength ? value : value[..maxLength]);
+            return value == null || value.Length <= maxLength ? value : value[..maxLength];
         }
 
         /// <summary>
@@ -215,9 +215,9 @@ namespace Asv.Common
         /// <remarks>Proposed by Rene Schulte</remarks>
         public static string? TrimToMaxLength(this string? value, int maxLength, string suffix)
         {
-            return (value == null || value.Length <= maxLength
-                        ? value
-                        : string.Concat(value[..maxLength], suffix));
+            return value == null || value.Length <= maxLength
+                ? value
+                : string.Concat(value[..maxLength], suffix);
         }
 
         /// <summary>
@@ -231,7 +231,7 @@ namespace Asv.Common
         /// </returns>
         public static bool Contains(this string inputValue, string comparisonValue, StringComparison comparisonType)
         {
-            return (inputValue.IndexOf(comparisonValue, comparisonType) != -1);
+            return inputValue.IndexOf(comparisonValue, comparisonType) != -1;
         }
 
       
@@ -254,7 +254,7 @@ namespace Asv.Common
         /// <returns>The reversed string</returns>
         public static string Reverse(this string value)
         {
-            if (value.IsEmpty() || (value.Length == 1)) return value;
+            if (value.IsEmpty() || value.Length == 1) return value;
 
             var chars = value.ToCharArray();
             Array.Reverse(chars);
@@ -530,7 +530,7 @@ namespace Asv.Common
         {
             var words = value.GetWords();
 
-            if ((index < 0) || (index > words.Length - 1))
+            if (index < 0 || index > words.Length - 1)
             {
                 throw new IndexOutOfRangeException("The word number is out of range.");
             }
@@ -567,7 +567,7 @@ namespace Asv.Common
         /// </code></example>
         public static byte[] ToBytes(this string value, Encoding? encoding)
         {
-            encoding = (encoding ?? Encoding.Default);
+            encoding = encoding ?? Encoding.Default;
             return encoding.GetBytes(value);
         }
 
@@ -589,7 +589,7 @@ namespace Asv.Common
         /// <returns>The Base 64 encoded string</returns>
         public static string EncodeBase64(this string value, Encoding? encoding)
         {
-            encoding = (encoding ?? Encoding.UTF8);
+            encoding = encoding ?? Encoding.UTF8;
             var bytes = encoding.GetBytes(value);
             return Convert.ToBase64String(bytes);
         }
@@ -612,7 +612,7 @@ namespace Asv.Common
         /// <returns>The decoded string</returns>
         public static string DecodeBase64(this string encodedValue, Encoding? encoding)
         {
-            encoding = (encoding ?? Encoding.UTF8);
+            encoding = encoding ?? Encoding.UTF8;
             var bytes = Convert.FromBase64String(encodedValue);
             return encoding.GetString(bytes);
         }

@@ -45,7 +45,7 @@ namespace Asv.IO
                 if ((data & mask) > 0)
                     buff[(int)(i / 8)] |= (byte)(1u << (int)(7 - i % 8));
                 else
-                    buff[(int)(i / 8)] &= (byte)(~(1u << (int)(7 - i % 8)));
+                    buff[(int)(i / 8)] &= (byte)~(1u << (int)(7 - i % 8));
             }
             pos += len;
         }
@@ -61,7 +61,7 @@ namespace Asv.IO
                 if ((data & mask) > 0)
                     buff[(int)(i / 8)] |= (byte)(1u << (int)(7 - i % 8));
                 else
-                    buff[(int)(i / 8)] &= (byte)(~(1u << (int)(7 - i % 8)));
+                    buff[(int)(i / 8)] &= (byte)~(1u << (int)(7 - i % 8));
             }
             pos += len;
         }

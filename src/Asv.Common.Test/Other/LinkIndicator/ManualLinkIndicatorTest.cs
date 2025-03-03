@@ -67,7 +67,7 @@ public class ManualLinkIndicatorTest:LinkIndicatorExTestBase<ManualLinkIndicator
         // Arrange
         var linkIndicator = CreateLinkIndicator();
         bool lostEmitted = false;
-        linkIndicator.OnLost.Subscribe(x=>lostEmitted = true);
+        ((ILinkIndicator)linkIndicator).OnLost.Subscribe(x=>lostEmitted = true);
 
         // Act
         linkIndicator.Downgrade(); // move to Downgrade

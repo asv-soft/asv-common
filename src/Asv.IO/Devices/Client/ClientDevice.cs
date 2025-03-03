@@ -96,7 +96,7 @@ public abstract class ClientDevice<TDeviceId> : AsyncDisposableWithCancel, IClie
         var builder = ImmutableArray.CreateBuilder<IMicroserviceClient>();
         try
         {
-            _state.OnNext(ClientDeviceState.InProgress);
+            _state.Value = ClientDeviceState.InProgress;
             await InitBeforeMicroservices(DisposeCancel).ConfigureAwait(false);
             
             await foreach (var item in InternalCreateMicroservices(DisposeCancel))
@@ -111,14 +111,18 @@ public abstract class ClientDevice<TDeviceId> : AsyncDisposableWithCancel, IClie
             }
             _microservices = builder.ToImmutable();
             await InitAfterMicroservices(DisposeCancel).ConfigureAwait(false);
-            _state.OnNext(ClientDeviceState.Complete);
+            _state.Value = ClientDeviceState.Complete;
             _needToRequestAgain = false;
         }
         catch (Exception ex)
         {
             _logger.ZLogError(ex, $"Error on connect/reconnect device [{Id}]: {ex.Message}");
             SafeDisposeMicroservices(builder.ToImmutable());
-            _state.OnNext(ClientDeviceState.Failed);
+            if (IsDisposed)
+            {
+                return;
+            }
+            _state.Value = ClientDeviceState.Failed;
             _needToRequestAgain = true;
             _reconnectionTimer = Context.TimeProvider.CreateTimer(TryReconnect, null,
                 TimeSpan.FromMilliseconds(_config.RequestDelayAfterFailMs),Timeout.InfiniteTimeSpan);
@@ -150,7 +154,7 @@ public abstract class ClientDevice<TDeviceId> : AsyncDisposableWithCancel, IClie
 
     protected void UpdateDeviceName(string? name)
     {
-        _name.OnNext(name);
+        _name.Value = name;
     }
 
     public ReadOnlyReactiveProperty<string?> Name => _name;

@@ -84,14 +84,14 @@ namespace Asv.Common
 
         public uint GetBitU(int index, int size)
         {
-            if ((index + size) > Size)
+            if (index + size > Size)
                 throw new ArgumentOutOfRangeException(nameof(Size), $"Size + Index must be less then {Size} bit");
             return (_value >> index) & MutiplyMask[size];
         }
 
         public void SetBitU(int index, int size, uint value)
         {
-            if ((index + size) > Size)
+            if (index + size > Size)
                 throw new ArgumentOutOfRangeException(nameof(Size), $"Size + Index must be less then {Size} bit");
             _value = (_value & ~(MutiplyMask[size] << index)) | ((value & MutiplyMask[size]) << index);
         }

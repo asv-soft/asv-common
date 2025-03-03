@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Immutable;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Asv.Common;
@@ -22,6 +23,10 @@ public interface IClientDevice:IDisposable, IAsyncDisposable
 
 public static class ClientDeviceHelper
 {
+    public static T? GetMicroservice<T>(this IClientDevice src) where T : class
+    {
+        return src.Microservices.OfType<T>().FirstOrDefault();
+    }
     public static async Task WaitUntilConnect(this IClientDevice src, int timeoutMs, TimeProvider timeProvider)
     {
         using var cancel = new CancellationTokenSource(TimeSpan.FromMilliseconds(timeoutMs),timeProvider);

@@ -110,7 +110,7 @@ namespace Asv.Common
             var degrees = (int)Math.Abs(decimalDegrees);
             var remainingDegrees = Math.Abs(decimalDegrees) - degrees;
             var minutes = (int)(decimalDegrees * 60);
-            var remainingMinutes = (remainingDegrees * 60) - (int)(remainingDegrees * 60);
+            var remainingMinutes = remainingDegrees * 60 - (int)(remainingDegrees * 60);
             var seconds = Math.Round(remainingMinutes * 60, 2);
             while (seconds >= 60d)
             {

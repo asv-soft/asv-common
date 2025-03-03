@@ -224,7 +224,7 @@ public class DefaultMeterFactory : IMeterFactory
 
             GetIndexAndMask(index, out var bitIndex, out var mask);
             var value = _bitMap[bitIndex];
-            return ((value & mask) != 0);
+            return (value & mask) != 0;
         }
     }
 }

@@ -132,7 +132,7 @@ namespace Asv.Common
         /// <returns></returns>
         public static double mW2uV(double mW, double ohm)
         {
-            return Math.Sqrt((mW / 1000) * ohm) * 1e6;
+            return Math.Sqrt(mW / 1000 * ohm) * 1e6;
         }
         /// <summary>
         /// Calculate дБм в мВт

@@ -1469,7 +1469,7 @@ namespace Asv.IO
             var frac = Fraction(min, max, val);
 
             // Remap it to a byte and write it (+ .5f because we want round, not floor).
-            WriteByte(ref span, (byte)((byte.MaxValue * frac) + .5f));
+            WriteByte(ref span, (byte)(byte.MaxValue * frac + .5f));
         }
 
         /// <summary>
@@ -1489,7 +1489,7 @@ namespace Asv.IO
             var frac = Fraction(min, max, val);
 
             // Remap it to ushort and write it (+ .5f because we want round, not floor).
-            WriteUShort(ref span, (ushort)((ushort.MaxValue * frac) + .5f));
+            WriteUShort(ref span, (ushort)(ushort.MaxValue * frac + .5f));
         }
 
         #endregion
@@ -1950,14 +1950,14 @@ namespace Asv.IO
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Interpolate(float min, float max, float frac) =>
-            min + ((max - min) * Clamp01(frac));
+            min + (max - min) * Clamp01(frac);
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Fraction(float min, float max, float val) =>
-            (min == max) ? 0f : Clamp01((val - min) / (max - min));
+            min == max ? 0f : Clamp01((val - min) / (max - min));
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static float Clamp01(float val) => val < 0f ? 0f : (val > 1f ? 1f : val);
+        private static float Clamp01(float val) => val < 0f ? 0f : val > 1f ? 1f : val;
 
         
     }

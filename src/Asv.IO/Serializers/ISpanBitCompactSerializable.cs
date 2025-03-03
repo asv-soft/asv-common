@@ -28,7 +28,7 @@ namespace Asv.IO
         public int GetByteSize()
         {
             var bitSize = GetBitSize();
-            var size = (bitSize / 8);
+            var size = bitSize / 8;
             return bitSize % 8.0 == 0 ? size : size + 1;
         }
 

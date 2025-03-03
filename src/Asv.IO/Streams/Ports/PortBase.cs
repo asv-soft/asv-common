@@ -83,13 +83,13 @@ namespace Asv.IO
 
         public void Enable()
         {
-            _enableStream.OnNext(true);
+            _enableStream.Value = true;
         }
 
         public void Disable()
         {
-            _enableStream.OnNext(false);
-            _portStateStream.OnNext(PortState.Disabled);
+            _enableStream.Value = false;
+            _portStateStream.Value = PortState.Disabled;
             Task.Factory.StartNew(Stop, DisposeCancel);
         }
 
@@ -116,9 +116,9 @@ namespace Asv.IO
             {
                 if (!_enableStream.Value) return;
                 if (IsDisposed) return;
-                _portStateStream.OnNext(PortState.Connecting);
+                _portStateStream.Value = PortState.Connecting;
                 InternalStart();
-                _portStateStream.OnNext(PortState.Connected);
+                _portStateStream.Value = PortState.Connected;
             }
             catch (Exception e)
             {
@@ -152,7 +152,7 @@ namespace Asv.IO
         protected void InternalOnError(Exception exception)
         {
             
-            _portStateStream.OnNext(PortState.Error);
+            _portStateStream.Value = PortState.Error;
             _portErrorStream.OnNext(exception);
             _reconnectTimer = _timeProvider.CreateTimer(x => TryConnect(), null, ReconnectTimeout, Timeout.InfiniteTimeSpan);
             Stop();

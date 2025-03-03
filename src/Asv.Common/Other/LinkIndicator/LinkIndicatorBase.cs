@@ -4,77 +4,62 @@ using R3;
 
 namespace Asv.Common;
 
-public class LinkIndicatorBase : ILinkIndicator, IDisposable, IAsyncDisposable
+public class LinkIndicatorBase(int downgradeErrors = 3) : AsyncDisposableOnce, ILinkIndicator
 {
     private int _connErrors;
     private readonly object _sync = new();
     private readonly ReactiveProperty<LinkState> _state = new(LinkState.Disconnected);
-    private readonly int _downgradeErrors;
-    public LinkIndicatorBase(int downgradeErrors = 3)
-    {
-        _downgradeErrors = downgradeErrors;
-        OnLost = _state.Where(x=>x == LinkState.Disconnected).Select(_=>Unit.Default);
-        OnFound = _state.Where(x=>x == LinkState.Connected).Select(_=>Unit.Default);
-            
-    }
 
 
     protected virtual void InternalUpgrade()
     {
+        if (IsDisposed) return;
         lock (_sync)
         {
             _connErrors = 0;
-            _state.OnNext(LinkState.Connected);
+            _state.Value = LinkState.Connected;
         }
     }
 
     protected void InternalDowngrade()
     {
+        if (IsDisposed) return;
         lock (_sync)
         {
             _connErrors++;
-            if (_connErrors >= 1 && _connErrors <= _downgradeErrors) _state.OnNext(LinkState.Downgrade);
-            if (_connErrors >= _downgradeErrors) _state.OnNext(LinkState.Disconnected);
+            if (_connErrors >= 1 && _connErrors <= downgradeErrors) _state.Value = LinkState.Downgrade;
+            if (_connErrors >= downgradeErrors) _state.Value = LinkState.Disconnected;
         }
     }
         
     public void ForceDisconnected()
     {
-        _state.OnNext(LinkState.Disconnected);
+        if (IsDisposed) return;
+        _state.Value = LinkState.Disconnected;
     }
 
     public ReadOnlyReactiveProperty<LinkState> State => _state;
-    public Observable<Unit> OnFound { get; }
-    public Observable<Unit> OnLost { get; }
 
     #region Dispose
 
-    protected virtual void Dispose(bool disposing)
+    protected override void Dispose(bool disposing)
     {
         if (disposing)
         {
             _state.Dispose();
         }
+
+        base.Dispose(disposing);
     }
 
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
-    protected virtual async ValueTask DisposeAsyncCore()
+    protected override async ValueTask DisposeAsyncCore()
     {
         if (_state is IAsyncDisposable stateAsyncDisposable)
             await stateAsyncDisposable.DisposeAsync();
         else
             _state.Dispose();
-    }
 
-    public async ValueTask DisposeAsync()
-    {
-        await DisposeAsyncCore();
-        GC.SuppressFinalize(this);
+        await base.DisposeAsyncCore();
     }
 
     #endregion

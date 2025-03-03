@@ -412,7 +412,7 @@ namespace Asv.Common
         /// </param>
         private int InternalIndex(int index)
         {
-            return _start + (index < (Capacity - _start) ? index : index - Capacity);
+            return _start + (index < Capacity - _start ? index : index - Capacity);
         }
 
         // doing ArrayOne and ArrayTwo methods returning ArraySegment<T> as seen here: 

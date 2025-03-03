@@ -73,7 +73,7 @@ namespace Asv.Common
             foreach (var value in _dict)
             {
                 var valueTime = _getTimeCallback(value.Value);
-                if ((now - valueTime) < TimeSpan.Zero || (now - valueTime) > _maxAge)
+                if (now - valueTime < TimeSpan.Zero || now - valueTime > _maxAge)
                 {
                     itemsToDelete.Add(value.Key);
                 }

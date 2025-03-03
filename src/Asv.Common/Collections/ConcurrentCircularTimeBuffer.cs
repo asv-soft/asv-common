@@ -101,7 +101,7 @@ namespace Asv.Common
             {
                 var rcvTime = _getTimeCallback(current.Value);
                 if (rcvTime > now || // Элемент из будущего!!! Вдруг системные часы резко ушли, поэтому заглядываем и проверяем, что элементы из будущего. Их тоже удаляем.
-                    (now - rcvTime) >= _maxAge) // старый пакет
+                    now - rcvTime >= _maxAge) // старый пакет
                 {
                     itemsToDeleteFromFirst++;
                     current = current.Next;
@@ -136,7 +136,7 @@ namespace Asv.Common
             {
                 var rcvTime = _getTimeCallback(current.Value);
                 if (rcvTime > now || // Элемент из будущего!!! Вдруг системные часы резко ушли, поэтому заглядываем и проверяем, что элементы из будущего. Их тоже удаляем.
-                    (now - rcvTime) >= _maxAge) // старый пакет
+                    now - rcvTime >= _maxAge) // старый пакет
                 {
                     itemsToDeleteFromFirst++;
                     current = current.Next;

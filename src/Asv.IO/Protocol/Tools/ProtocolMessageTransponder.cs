@@ -79,21 +79,21 @@ public class ProtocolMessageTransponder<TMessage>
     private void LogError(Exception e)
     {
         if (_state.Value == TransponderState.ErrorToSend) return;
-        _state.OnNext(TransponderState.ErrorToSend);
+        _state.Value = TransponderState.ErrorToSend;
         _logger.ZLogError($"{_message.Name} sending error:{e.Message}");
     }
 
     private void LogSuccess()
     {
         if (_state.Value == TransponderState.Ok) return;
-        _state.OnNext(TransponderState.Ok);
+        _state.Value = TransponderState.Ok;
         _logger.ZLogDebug($"{_message.Name} start stream");
     }
 
     private void LogSkipped()
     {
         if (_state.Value == TransponderState.Skipped) return;
-        _state.OnNext(TransponderState.Skipped);
+        _state.Value = TransponderState.Skipped;
         _logger.ZLogWarning($"{_message.Name} skipped sending: previous command has not yet been executed");
     }
     public bool IsStarted { get; private set; }

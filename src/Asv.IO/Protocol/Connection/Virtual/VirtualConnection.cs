@@ -18,8 +18,8 @@ public sealed class VirtualConnection: IVirtualConnection
 
     public VirtualConnection(Func<IProtocolMessage, bool>? clientToServerFilter,Func<IProtocolMessage, bool>? serverToClientFilter, IProtocolContext context, bool printMessages = true)
     {
-        clientToServerFilter ??= (_ => true);
-        serverToClientFilter ??= (_ => true);
+        clientToServerFilter ??= _ => true;
+        serverToClientFilter ??= _ => true;
         _server = new VirtualPort("Server", context,serverToClientFilter,_statistic);
         _client = new VirtualPort("Client", context,clientToServerFilter,_statistic);
         
