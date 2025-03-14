@@ -42,7 +42,7 @@ public abstract class ClientDevice<TDeviceId> : AsyncDisposableWithCancel, IClie
         _extenders = extenders;
         Context = context;
         Id = id;
-        _name = new ReactiveProperty<string?>(id.ToString());
+        _name = new ReactiveProperty<string?>(id.AsString());
         _logger = context.LoggerFactory.CreateLogger(id.AsString());
     }
     
@@ -188,6 +188,7 @@ public abstract class ClientDevice<TDeviceId> : AsyncDisposableWithCancel, IClie
 
     protected override void Dispose(bool disposing)
     {
+        _logger.ZLogTrace($"Dispose {GetType().Name}");
         if (disposing)
         {
             _reconnectionTimer?.Dispose();
