@@ -44,6 +44,9 @@ public class DeviceExplorer : AsyncDisposableOnce, IDeviceExplorer
     private readonly ILogger<DeviceExplorer> _logger;
     private readonly ITimer _timer;
     private readonly TimeSpan _deviceTimeout;
+    private readonly ObservableList<IClientDevice> _deviceList;
+    private readonly IDisposable _sub2;
+    private readonly IDisposable _sub3;
 
     internal DeviceExplorer(ClientDeviceBrowserConfig config, IEnumerable<IClientDeviceFactory> providers, ImmutableArray<IClientDeviceExtender> extenders, IMicroserviceContext context)
     {
@@ -57,8 +60,26 @@ public class DeviceExplorer : AsyncDisposableOnce, IDeviceExplorer
         _sub1 = context.Connection.OnRxMessage.Subscribe(CheckNewDevice);
         _deviceTimeout = TimeSpan.FromMilliseconds(config.DeviceTimeoutMs);
         _timer = context.TimeProvider.CreateTimer(RemoveOldDevices, null, TimeSpan.FromMilliseconds(config.DeviceCheckIntervalMs), TimeSpan.FromMilliseconds(config.DeviceCheckIntervalMs));
+        _deviceList = [];
+        _sub2 = _devices.ObserveAdd().Subscribe(OnAddNewDevice);
+        _sub3 = _devices.ObserveRemove().Subscribe(OnDeviceRemove);
     }
+
+    private void OnDeviceRemove(CollectionRemoveEvent<KeyValuePair<DeviceId,IClientDevice>> e)
+    {
+        _deviceList.Remove(e.Value.Value);
+    }
+
+    private void OnAddNewDevice(CollectionAddEvent<KeyValuePair<DeviceId, IClientDevice>> e)
+    {
+        // we don't need to unsubscribe from this subscription because it will be disposed with Device itself
+        e.Value.Value.State.Where(x=>x == ClientDeviceState.Complete).Take(1).Subscribe(e.Value.Value,(x,dev)=> _deviceList.Add(dev)); 
+    }
+
     public IReadOnlyObservableDictionary<DeviceId, IClientDevice> Devices => _devices;
+
+    public IReadOnlyObservableList<IClientDevice> InitializedDevices => _deviceList;
+
     private void RemoveOldDevices(object? state)
     {
         var itemsToDelete = _lastSeen
@@ -142,12 +163,16 @@ public class DeviceExplorer : AsyncDisposableOnce, IDeviceExplorer
 
     protected override void Dispose(bool disposing)
     {
+        _logger.ZLogTrace($"Dispose {nameof(DeviceExplorer)}");
         if (disposing)
         {
             _sub1.Dispose();
+            _sub2.Dispose();
+            _sub3.Dispose();
             _lock.Dispose();
             _timer.Dispose();
             _lastSeen.Clear();
+            
             foreach (var device in _devices)
             {
                 device.Value.Dispose();
@@ -161,6 +186,8 @@ public class DeviceExplorer : AsyncDisposableOnce, IDeviceExplorer
     protected override async ValueTask DisposeAsyncCore()
     {
         await CastAndDispose(_sub1);
+        await CastAndDispose(_sub2);
+        await CastAndDispose(_sub3);
         await CastAndDispose(_lock);
         _lastSeen.Clear();
         foreach (var device in _devices)

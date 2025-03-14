@@ -140,6 +140,7 @@ public abstract class ConfigurationBase(ILogger? logger = null) : AsyncDisposabl
 
     protected override void Dispose(bool disposing)
     {
+        _logger.ZLogTrace($"Dispose {GetType().Name}");
         if (disposing)
         {
             _onError.Dispose();
