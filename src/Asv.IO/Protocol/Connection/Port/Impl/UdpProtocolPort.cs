@@ -27,7 +27,7 @@ public class UdpProtocolPortConfig(Uri connectionString) : ProtocolPortConfig(co
         return CheckIpEndpoint(remoteHost, port);
     }
 
-
+    public override object Clone() => new UdpProtocolPortConfig(AsUri());
    
 }
 
@@ -107,6 +107,8 @@ public class UdpProtocolPort:ProtocolPort<UdpProtocolPortConfig>
             InternalRisePortErrorAndReconnect(ex);
         }
     }
+    
+    
 }
 
 public static class UdpProtocolPortHelper

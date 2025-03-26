@@ -9,6 +9,8 @@ namespace Asv.IO;
 public class TcpClientProtocolPortConfig(Uri connectionString) : ProtocolPortConfig(connectionString)
 {
     public static TcpClientProtocolPortConfig CreateDefault() => new(new Uri($"{TcpClientProtocolPort.Scheme}://127.0.0.1:7341"));
+    
+    public override object Clone() => new TcpClientProtocolPortConfig(AsUri());
 }
 
 public class TcpClientProtocolPort:ProtocolPort<TcpClientProtocolPortConfig>

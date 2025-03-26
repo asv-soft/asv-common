@@ -12,7 +12,7 @@ namespace Asv.IO;
 ///  └─┬─┘   └─────────────┬─────────────┘└───────┬───────┘ └────────────┬───────┘ └───────┬──────────────────────────────┘
 ///  scheme            authority                path                   query                 fragment
 /// </summary>
-public class ProtocolPortConfig(Uri connectionString)
+public class ProtocolPortConfig(Uri connectionString) : ICloneable
 {
 
     public const string NameQueryKey = "name";
@@ -180,5 +180,10 @@ public class ProtocolPortConfig(Uri connectionString)
 
     
     
-    
+    public override string ToString()
+    {
+        return AsUri().ToString();
+    }
+
+    public virtual object Clone() => new ProtocolPortConfig(AsUri());
 }

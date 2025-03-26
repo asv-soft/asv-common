@@ -91,6 +91,7 @@ public class SerialProtocolPortConfig(Uri cs):ProtocolPortConfig(cs)
         set => Query["wb"] = value.ToString();
     }
 
+    public override object Clone() => new SerialProtocolPortConfig(AsUri());
     
 }
 

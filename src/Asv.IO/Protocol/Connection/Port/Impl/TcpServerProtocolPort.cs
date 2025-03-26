@@ -37,6 +37,8 @@ public class TcpServerProtocolPortConfig(Uri connectionString) : ProtocolPortCon
             }
         }
     }
+
+    public override object Clone() => new TcpServerProtocolPortConfig(AsUri());
 }
 
 public class TcpServerProtocolPort:ProtocolPort<TcpServerProtocolPortConfig>
