@@ -11,6 +11,7 @@ public interface IProtocolRouter:IProtocolConnection
     ImmutableArray<IProtocolPort> Ports { get; }
     Observable<IProtocolPort> PortAdded { get; }
     Observable<IProtocolPort> PortRemoved { get; }
+    Observable<IProtocolPort> PortUpdated { get; }
     IProtocolPort AddPort(Uri connectionString);
     void RemovePort(IProtocolPort port);
 }

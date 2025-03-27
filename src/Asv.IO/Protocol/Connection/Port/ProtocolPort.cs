@@ -162,8 +162,8 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
             return;
         }
         _logger.ZLogInformation($"Enable {this} port");
-        _isEnabled.Value = true;
         _config.IsEnabled = true;
+        _isEnabled.Value = true;
         try
         {
             _status.OnNext(ProtocolPortStatus.InProgress);

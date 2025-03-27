@@ -16,6 +16,7 @@ public sealed class ProtocolRouter:ProtocolConnection, IProtocolRouter
     private ImmutableArray<IProtocolPort> _ports = [];
     private readonly Subject<IProtocolPort> _portAdded = new();
     private readonly Subject<IProtocolPort> _portRemoved = new();
+    private readonly Subject<IProtocolPort> _portUpdated = new();
 
     internal ProtocolRouter(string id, IProtocolContext context, IStatisticHandler? statistic = null) 
         : base(id, context, statistic)
@@ -41,7 +42,9 @@ public sealed class ProtocolRouter:ProtocolConnection, IProtocolRouter
         }
         InternalPublishTxMessage(message);
     }
-   
+
+    public Observable<IProtocolPort> PortUpdated => _portUpdated;
+
     public IProtocolPort AddPort(Uri connectionString)
     {
         if (!Context.PortFactory.TryGetValue(connectionString.Scheme, out var factory))
@@ -49,7 +52,10 @@ public sealed class ProtocolRouter:ProtocolConnection, IProtocolRouter
             throw new InvalidOperationException($"Port scheme {connectionString.Scheme} not found");
         }
         var port = factory(connectionString, Context, StatisticHandler);
+        
+        // we don't need to dispose the port because it will be disposed when the router or port is disposed
         port.OnRxMessage.Subscribe(InternalPublishRxMessage);
+        port.IsEnabled.Subscribe(port, (_, value) => _portUpdated.OnNext(value));
         
         ImmutableArray<IProtocolPort> after, before;
         do
@@ -117,8 +123,10 @@ public sealed class ProtocolRouter:ProtocolConnection, IProtocolRouter
                 _portRemoved.OnNext(port);
                 port.Dispose();
             }
-
-
+            _portUpdated.Dispose();
+            _portAdded.Dispose();
+            _portRemoved.Dispose();
+            _logger.ZLogTrace($"{this} disposed");
         }
 
         base.Dispose(disposing);
@@ -126,6 +134,7 @@ public sealed class ProtocolRouter:ProtocolConnection, IProtocolRouter
 
     protected override async ValueTask DisposeAsyncCore()
     {
+       
         ImmutableArray<IProtocolPort> before,after;
         do
         {
@@ -139,7 +148,9 @@ public sealed class ProtocolRouter:ProtocolConnection, IProtocolRouter
             _portRemoved.OnNext(port);
             await port.DisposeAsync();
         }
-
+        _portUpdated.Dispose();
+        _portAdded.Dispose();
+        _portRemoved.Dispose();
         await base.DisposeAsyncCore();
     }
 
