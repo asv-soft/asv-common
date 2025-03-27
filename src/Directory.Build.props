@@ -1,7 +1,10 @@
 <Project>
   <PropertyGroup>
-    <ProductVersion>3.1.1-dev.4</ProductVersion>
+    <ProductVersion>3.1.1-dev.5</ProductVersion>
+    <DotNetVersion>9.0.3</DotNetVersion>
+    <DotNextVersion>5.19.1</DotNextVersion>
     <R3Version>1.2.9</R3Version>
+    <R3Collections>3.3.3</R3Collections>
     <NewtonsoftJsonVersion>13.0.3</NewtonsoftJsonVersion>
     <ZLoggerVersion>2.5.5</ZLoggerVersion>
     <DeepEqualVersion>4.2.1</DeepEqualVersion>
