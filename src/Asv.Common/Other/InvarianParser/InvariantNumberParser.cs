@@ -76,8 +76,9 @@ public static class InvariantNumberParser
         return ValidationResult.Success;
     }
 
-    public static ValidationResult TryParse(string? input, ref int value, int min, int max)
+    public static ValidationResult TryParse(string? input, out int value, int min, int max)
     {
+        value = 0;
         var result = TryParse(input, out value);
         if (result.IsSuccess == false) return result;
         if (min > value || value > max)

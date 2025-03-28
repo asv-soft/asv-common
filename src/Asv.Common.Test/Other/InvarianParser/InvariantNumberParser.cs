@@ -188,10 +188,10 @@ public class InvariantNumberParserTest
         public void TryParseInt_WithRange_OutOfRangeValue_ReturnsFailAsOutOfRange(string input, int min, int max)
         {
             // Arrange
-            var intValue = 0;
+            int intValue;
 
             // Act
-            var result = InvariantNumberParser.TryParse(input, ref intValue, min, max);
+            var result = InvariantNumberParser.TryParse(input, out intValue, min, max);
 
             // Assert
             Assert.False(result.IsSuccess, "Ожидается IsSuccess == false при выходе за указанный диапазон");
@@ -206,10 +206,10 @@ public class InvariantNumberParserTest
         public void TryParseInt_WithRange_ValidValue_ReturnsSuccess(string input, int min, int max, int expected)
         {
             // Arrange
-            var intValue = 0;
+            int intValue;
 
             // Act
-            var result = InvariantNumberParser.TryParse(input, ref intValue, min, max);
+            var result = InvariantNumberParser.TryParse(input, out intValue, min, max);
 
             // Assert
             Assert.True(result.IsSuccess, "Ожидается успешный парсинг при корректном числе и диапазоне");
@@ -222,15 +222,15 @@ public class InvariantNumberParserTest
         {
             // Arrange
             string? input = null;
-            var intValue = -1;
+            int intValue;
 
             // Act
-            var result = InvariantNumberParser.TryParse(input, ref intValue, 0, 100);
+            var result = InvariantNumberParser.TryParse(input, out intValue, 0, 100);
 
             // Assert
             Assert.False(result.IsSuccess);
             Assert.Same(IsNullOrWhiteSpaceValidationException.Instance, result.ValidationException);
-            Assert.Equal(-1, intValue);
+            
         }
 
         #endregion
