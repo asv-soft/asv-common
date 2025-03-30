@@ -7,7 +7,7 @@ namespace Asv.IO;
 
 public abstract class ProtocolParser<TMessage,TMessageId> : AsyncDisposableOnce, IProtocolParser
     where TMessage : IProtocolMessage<TMessageId>
-    where TMessageId : notnull
+    where TMessageId : struct
 {
     private readonly IProtocolMessageFactory<TMessage,TMessageId> _messageFactory;
     private readonly Subject<IProtocolMessage> _onMessage = new();
