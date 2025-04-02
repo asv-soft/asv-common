@@ -1,48 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Linq;
 
 namespace Asv.IO;
-
-public class ProtocolInfo(string id,string name):IEquatable<ProtocolInfo>
-{
-    public string Id { get; } = id;
-    public string Name { get; } = name;
-
-    public override string ToString()
-    {
-        return $"{Name}[{Id}]";
-    }
-
-    public bool Equals(ProtocolInfo? other)
-    {
-        if (other is null) return false;
-        if (ReferenceEquals(this, other)) return true;
-        return Id == other.Id && Name == other.Name;
-    }
-
-    public override bool Equals(object? obj)
-    {
-        if (obj is null) return false;
-        if (ReferenceEquals(this, obj)) return true;
-        if (obj.GetType() != GetType()) return false;
-        return Equals((ProtocolInfo)obj);
-    }
-
-    public override int GetHashCode()
-    {
-        return HashCode.Combine(Id, Name);
-    }
-
-    public static bool operator ==(ProtocolInfo? left, ProtocolInfo? right)
-    {
-        return Equals(left, right);
-    }
-
-    public static bool operator !=(ProtocolInfo? left, ProtocolInfo? right)
-    {
-        return !Equals(left, right);
-    }
-}
 
 public interface IProtocolMessageFactory
 {
@@ -55,4 +16,19 @@ public interface IProtocolMessageFactory<out TProtocolMessageBase, TMessageId> :
 {
     TProtocolMessageBase? Create(TMessageId id);
     IEnumerable<TMessageId> GetSupportedIds();
+}
+
+public class ProtocolMessageFactory<TProtocolMessageBase, TMessageId>(ProtocolInfo info,
+    ImmutableDictionary<TMessageId, Func<TProtocolMessageBase>> messageTypes)
+    : IProtocolMessageFactory<TProtocolMessageBase, TMessageId>
+    where TProtocolMessageBase : IProtocolMessage<TMessageId>
+    where TMessageId : notnull
+{
+    public ProtocolInfo Info => info;
+    public TProtocolMessageBase? Create(TMessageId id)
+    {
+        return messageTypes.TryGetValue(id, out var factory) ? factory() : default;
+    }
+
+    public IEnumerable<TMessageId> GetSupportedIds() => messageTypes.Keys.Select(x=>x);
 }

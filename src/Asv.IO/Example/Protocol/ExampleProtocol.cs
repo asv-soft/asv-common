@@ -1,11 +1,19 @@
+using System;
+
 namespace Asv.IO;
 
 public static class ExampleProtocol
 {
     public static readonly ProtocolInfo Info = new("example","Example protocol");
 
-    public static void RegisterExampleProtocol(this IProtocolParserBuilder builder)
+    public static void RegisterExampleProtocol(this IProtocolParserBuilder builder, Action<IProtocolMessageFactoryBuilder<ExampleMessageBase, byte>>? configure = null)
     {
-        builder.Register(Info, (core,stat) => new ExampleParser(ExampleMessageFactory.Instance, core,stat));
+        var factory = new ProtocolMessageFactoryBuilder<ExampleMessageBase, byte>(Info);
+        factory
+            .Add<ExampleMessage1>()
+            .Add<ExampleMessage2>();
+        configure?.Invoke(factory);
+        var messageFactory = factory.Build();
+        builder.Register(Info, (core,stat) => new ExampleParser(messageFactory, core,stat));
     }
 }
