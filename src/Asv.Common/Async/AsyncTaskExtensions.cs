@@ -4,27 +4,28 @@ using System.Threading.Tasks;
 
 namespace Asv.Common;
 
+// https://github.com/TheCodeTraveler/AsyncAwaitBestPractices/blob/main/src/AsyncAwaitBestPractices/SafeFireAndForgetExtensions.shared.cs
 public static class AsyncTaskExtensions
 {
     static Action<Exception>? _exceptionHandler;
     static bool _alwaysRethrowExceptions;
 
-    public static void ExecuteAsync(this ValueTask task, in Action<Exception>? exceptionHandler = null, in bool continueOnCapturedContext = false) 
+    public static void SafeFireAndForget(this ValueTask task, in Action<Exception>? exceptionHandler = null, in bool continueOnCapturedContext = false) 
         => ProcessAsyncExecution(task, continueOnCapturedContext, exceptionHandler);
-    public static void ExecuteAsync<T>(this ValueTask<T> task, in Action<Exception>? exceptionHandler = null, in bool continueOnCapturedContext = false) 
+    public static void SafeFireAndForget<T>(this ValueTask<T> task, in Action<Exception>? exceptionHandler = null, in bool continueOnCapturedContext = false) 
         => ProcessAsyncExecution(task, continueOnCapturedContext, exceptionHandler);
-    public static void ExecuteAsync<TException>(this ValueTask task, in Action<TException>? exceptionHandler = null, in bool continueOnCapturedContext = false) 
+    public static void SafeFireAndForget<TException>(this ValueTask task, in Action<TException>? exceptionHandler = null, in bool continueOnCapturedContext = false) 
         where TException : Exception => ProcessAsyncExecution(task, continueOnCapturedContext, exceptionHandler);
-    public static void ExecuteAsync<T, TException>(this ValueTask<T> task, in Action<TException>? exceptionHandler = null, in bool continueOnCapturedContext = false) 
+    public static void SafeFireAndForget<T, TException>(this ValueTask<T> task, in Action<TException>? exceptionHandler = null, in bool continueOnCapturedContext = false) 
         where TException : Exception => ProcessAsyncExecution(task, continueOnCapturedContext, exceptionHandler);
 
-    public static void ExecuteAsync(this Task task, in ConfigureAwaitOptions configureAwaitOptions, in Action<Exception>? exceptionHandler = null) 
+    public static void SafeFireAndForget(this Task task, in ConfigureAwaitOptions configureAwaitOptions, in Action<Exception>? exceptionHandler = null) 
         => ProcessAsyncExecution(task, configureAwaitOptions, exceptionHandler);
-    public static void ExecuteAsync<TException>(this Task task, in ConfigureAwaitOptions configureAwaitOptions, in Action<TException>? exceptionHandler = null) 
+    public static void SafeFireAndForget<TException>(this Task task, in ConfigureAwaitOptions configureAwaitOptions, in Action<TException>? exceptionHandler = null) 
         where TException : Exception => ProcessAsyncExecution(task, configureAwaitOptions, exceptionHandler);
-    public static void ExecuteAsync(this Task task, in Action<Exception>? exceptionHandler = null, in bool continueOnCapturedContext = false) 
+    public static void SafeFireAndForget(this Task task, in Action<Exception>? exceptionHandler = null, in bool continueOnCapturedContext = false) 
         => ProcessAsyncExecution(task, continueOnCapturedContext, exceptionHandler);
-    public static void ExecuteAsync<TException>(this Task task, in Action<TException>? exceptionHandler = null, in bool continueOnCapturedContext = false) 
+    public static void SafeFireAndForget<TException>(this Task task, in Action<TException>? exceptionHandler = null, in bool continueOnCapturedContext = false) 
         where TException : Exception => ProcessAsyncExecution(task, continueOnCapturedContext, exceptionHandler);
     public static void Configure(in bool alwaysRethrowExceptions = false) => _alwaysRethrowExceptions = alwaysRethrowExceptions;
     public static void ClearDefaultExceptionHandler() => _exceptionHandler = null;
