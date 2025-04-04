@@ -48,6 +48,7 @@ public class DigitHelperTest
     {
         var result = value.CountHexDigits();
         Assert.Equal(expectedDigits, result);
+        Assert.Equal(value.ToString("X").Length, result);
     }
 
     [Theory]
@@ -56,12 +57,13 @@ public class DigitHelperTest
     [InlineData(16, 2)]           // 0x10
     [InlineData(255, 2)]          // 0xFF
     [InlineData(4096, 4)]         // 0x1000
-    [InlineData(int.MaxValue, 7)] // 0x7FFFFFFF
+    [InlineData(int.MaxValue, 8)] // 0x7FFFFFFF
     [InlineData(-1, 8)]           // 0xFFFFFFFF (uint: 4294967295)
     [InlineData(-255, 8)]         // 0xFFFFFF01
     public void CountHexDigits_Int32_ReturnsCorrectDigits(int value, int expectedDigits)
     {
         var result = value.CountHexDigits();
         Assert.Equal(expectedDigits, result);
+        Assert.Equal(value.ToString("X").Length, result);
     }
 }
