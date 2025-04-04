@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -8,18 +9,18 @@ namespace Asv.Common;
 public static class DigitHelper
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static int CountDigits(this int value)
+    public static int CountDecDigits(this int value)
     {
         return value switch
         {
             0 => 1,
-            < 0 => ToStringCharCount((uint)-value) + 1,
-            _ => ToStringCharCount((uint)value)
+            < 0 => CountDecDigits((uint)-value) + 1,
+            _ => CountDecDigits((uint)value)
         };
     }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static int ToStringCharCount(this uint value)
+    public static int CountDecDigits(this uint value)
     {
         // Algorithm based on https://lemire.me/blog/2021/06/03/computing-the-number-of-digits-of-an-integer-even-faster.
         ReadOnlySpan<long> table =
@@ -62,5 +63,22 @@ public static class DigitHelper
         // TODO: Replace with table[uint.Log2(value)] once https://github.com/dotnet/runtime/issues/79257 is fixed
         var tableValue = Unsafe.Add(ref MemoryMarshal.GetReference(table), uint.Log2(value));
         return (int)((value + tableValue) >> 32);
+    }
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static int CountHexDigits(this int value)
+    {
+        return CountHexDigits((uint)value);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static int CountHexDigits(this uint value)
+    {
+        
+        if (value == 0)
+            return 1;
+
+        var bits = BitOperations.Log2(value) + 1;
+        return (bits + 3) / 4;
     }
 }
