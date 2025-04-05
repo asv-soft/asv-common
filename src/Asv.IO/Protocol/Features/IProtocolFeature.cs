@@ -20,15 +20,3 @@ public interface IProtocolFeatureBuilder
     void Clear();
     void Register(IProtocolFeature feature);
 }
-
-public static class ProtocolProcessingFeatureHelper
-{
-    public static void RegisterBroadcastFeature<TMessage>(this IProtocolFeatureBuilder builder)
-    {
-        builder.Register(new BroadcastingFeature<TMessage>());
-    }
-    public static void RegisterBroadcastAllFeature(this IProtocolFeatureBuilder builder)
-    {
-        builder.Register(new BroadcastingFeature<IProtocolMessage>());
-    }
-}

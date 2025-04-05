@@ -8,7 +8,7 @@ public class BroadcastingFeature<TMessage> : IProtocolFeature
     public const string FeatureId = $"Broadcasting {nameof(TMessage)}";
     
     public string Name => $"Message Broadcasting {nameof(TMessage)}";
-    public string Description => "Allows retransmission of incoming messages to all other connections";
+    public string Description => "Allows retransmission of incoming messages to all other connection endpoints.";
     public string Id => FeatureId;
     public int Priority => 0;
 
@@ -18,7 +18,7 @@ public class BroadcastingFeature<TMessage> : IProtocolFeature
         if (connection is IProtocolEndpoint endpoint)
         {
             // mark message with connection id
-            message.SetConnectionId(endpoint.Id);
+            message.MarkBroadcast(connection);
         }
 
         if (connection is IProtocolRouter router)
@@ -33,8 +33,8 @@ public class BroadcastingFeature<TMessage> : IProtocolFeature
     {
         if (connection is IProtocolEndpoint endpoint && message is TMessage)
         {
-            // check if message was received by this connection => skip it
-            return message.GetConnectionId() == endpoint.Id ? default : ValueTask.FromResult<IProtocolMessage?>(message);
+            // check if message was received by that connection => skip it
+            return message.CheckBroadcast(endpoint) ? default : ValueTask.FromResult<IProtocolMessage?>(message);
         }
         return ValueTask.FromResult<IProtocolMessage?>(message);
     }

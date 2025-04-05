@@ -195,10 +195,7 @@ public class TcpPortComplexTest
         var port = _clientRouter.AddPort(validConnString);
         _serverRouter.AddPort("tcps://127.0.0.1:5650");
         _clientRouter.OnRxMessage.Subscribe();
-        var guid = new Guid().ToString();
-        _clientRouter.SetConnectionId(guid);
-        var connId = _clientRouter.GetConnectionId();
-        Assert.Equal(connId, guid);
+        
     }
 
     //[Fact]
@@ -208,9 +205,6 @@ public class TcpPortComplexTest
         const string validConnString = "tcp://127.0.0.1:5650";
         var port = _clientRouter.AddPort(validConnString);
         _serverRouter.AddPort("tcps://127.0.0.1:5650");
-        var guid = new Guid().ToString();
-        _clientRouter.SetPortId(guid);
-        var portId = _clientRouter.GetPortId();
-        Assert.Equal(portId, guid);
+        
     }
 }

@@ -105,7 +105,7 @@ internal class ProtocolBuilder : IProtocolBuilder,IProtocolFeatureBuilder,IProto
     public IProtocolFactory Create()
     {
         return new Protocol(
-            _featureBuilder.ToImmutable(),
+            _featureBuilder.ToImmutable(), // TODO: sort by order here
             _parserBuilder.ToImmutable(),
             _protocolInfoBuilder.ToImmutable(),
             _portBuilder.ToImmutable(),
