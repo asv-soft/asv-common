@@ -83,7 +83,7 @@ public static class SpanSerializableMixin
 
                 if (!reader.TryCopyTo(buffer))
                 {
-                    throw new InvalidOperationException("Failed to copy data from SequenceReader to rented array.");
+                    return false;
                 }
                 reader.Advance(size);
                 var span = new ReadOnlySpan<byte>(rentedArray, 0, size);

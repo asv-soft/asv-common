@@ -1,10 +1,12 @@
 
 using System;
 using System.Buffers;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using FluentAssertions;
 using JetBrains.Annotations;
+using Moq;
 using Xunit;
 
 namespace Asv.IO.Test;
@@ -170,7 +172,7 @@ public class SpanSerializableMixinTest
         var stream = new MemoryStream(new byte[] { 1, 2 });
         var testObject = new TestSerializable();
 
-        Action action = () => testObject.Deserialize(stream, 5);
+        var action = () => testObject.Deserialize(stream, 5);
 
         action.Should().Throw<Exception>().WithMessage("*Want read 5 bytes. Got 2 bytes*");
     }
@@ -206,4 +208,5 @@ public class SpanSerializableMixinTest
     }
 
     #endregion
+    
 }
