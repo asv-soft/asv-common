@@ -2,6 +2,7 @@ using System;
 using System.Buffers;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace Asv.IO
@@ -29,7 +30,7 @@ namespace Asv.IO
             return length - span.Length;
         }
        
-        public static ValueTask<int> Serialize(this ISpanSerializable src,Memory<byte> destination)
+        public static ValueTask<int> Serialize(this ISpanSerializable src, Memory<byte> destination)
         {
             var span = destination.Span;
             src.Serialize(ref span);
@@ -53,33 +54,80 @@ namespace Asv.IO
             return length - span.Length;
         }
         
-        public static T Deserialize<T>(ref ReadOnlySpan<byte> data) where T : ISizedSpanSerializable, new()
-        {
-            var result = new T();
-            result.Deserialize(ref data);
-            return result;
-        }
-        public static void Serialize<T>(ref Span<byte> data, T value) where T : ISizedSpanSerializable, new()
-        {
-            value.Serialize(ref data);
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Serialize(this ISizedSpanSerializable value, IBufferWriter<byte> buffer) 
+            => Serialize(value, buffer, value.GetByteSize());
 
-        public static int SerializeSize<T>(T value) where T : ISizedSpanSerializable, new()
+        public static void Serialize(this ISpanSerializable value, IBufferWriter<byte> buffer, int size) 
         {
-            return value.GetByteSize();
+            var writer = buffer.GetSpan(size);
+            value.Serialize(ref writer);
+            buffer.Advance(size);
         }
 
-        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool Deserialize(this ISizedSpanSerializable value, ref SequenceReader<byte> reader) 
+            => Deserialize(value, ref reader, value.GetByteSize());
 
-        public static void WriteToStream(this ISpanSerializable item, Stream file, int itemMaxSize)
+        public static bool Deserialize(this ISpanSerializable value,ref SequenceReader<byte> reader, int size)
         {
-            var array = ArrayPool<byte>.Shared.Rent(itemMaxSize);
+            if (reader.Remaining < size)
+            {
+                return false;
+            }
+
+            // If the data is in the current span, we can use it directly
+            if (reader.CurrentSpan.Length - reader.CurrentSpanIndex >= size)
+            {
+                var span = reader.CurrentSpan.Slice(reader.CurrentSpanIndex, size);
+                reader.Advance(size);
+                value.Deserialize(ref span);
+            }
+            else
+            {
+                // Otherwise, we need to rent a buffer from the pool
+                var rentedArray = ArrayPool<byte>.Shared.Rent(size);
+                try
+                {
+                    var buffer = rentedArray.AsSpan(0, size);
+
+                    if (!reader.TryCopyTo(buffer))
+                    {
+                        throw new InvalidOperationException("Failed to copy data from SequenceReader to rented array.");
+                    }
+                    reader.Advance(size);
+                    var span = new ReadOnlySpan<byte>(rentedArray, 0, size);
+                    value.Deserialize(ref span);
+                    Debug.Assert(rentedArray.Length == span.Length, "Read not all data from rented array");
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(rentedArray);
+                }
+            }
+
+            return true;
+        }
+
+        public static bool Deserialize(this ISizedSpanSerializable value, ref ReadOnlySequence<byte> rdr) 
+        {
+            var reader = new SequenceReader<byte>(rdr);
+            return Deserialize(value, ref reader);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Serialize(this ISizedSpanSerializable item, Stream dest) 
+            => Serialize(item,dest, item.GetByteSize());
+
+        public static void Serialize(this ISpanSerializable item, Stream dest, int maxSize)
+        {
+            var array = ArrayPool<byte>.Shared.Rent(maxSize);
             try
             {
-                var span = new Span<byte>(array, 0, itemMaxSize);
+                var span = new Span<byte>(array, 0, maxSize);
                 item.Serialize(ref span);
                 for (var i = 0; i < span.Length; i++) span[i] = 0;
-                file.Write(array, 0, itemMaxSize);
+                dest.Write(array, 0, maxSize);
             }
             finally
             {
@@ -87,17 +135,21 @@ namespace Asv.IO
             }
         }
 
-        public static void ReadFromStream(this ISpanSerializable item, Stream file, int offset)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Deserialize(this ISizedSpanSerializable value, Stream src) 
+            => Deserialize(value, src, value.GetByteSize());
+
+        public static void Deserialize(this ISpanSerializable item, Stream src, int size)
         {
-            var array = ArrayPool<byte>.Shared.Rent(offset);
+            var array = ArrayPool<byte>.Shared.Rent(size);
 
             try
             {
-                var readed = file.Read(array, 0, offset);
-                if (readed != offset)
+                var read = src.Read(array, 0, size);
+                if (read != size)
                     throw new Exception(
-                        $"Error to read item {item}: file length error. Want read {offset} bytes. Got {readed} bytes.");
-                var span = new ReadOnlySpan<byte>(array, 0, offset);
+                        $"Error to read item {item}: file length error. Want read {size} bytes. Got {read} bytes.");
+                var span = new ReadOnlySpan<byte>(array, 0, size);
                 item.Deserialize(ref span);
             }
             finally
@@ -107,7 +159,7 @@ namespace Asv.IO
         }
         
         /// <summary>
-        /// Copy data from src to dest
+        /// Copy data from src to dest by serializing and deserializing
         /// </summary>
         /// <param name="src">Source</param>
         /// <param name="dest">Destination</param>
