@@ -120,9 +120,6 @@ namespace Asv.IO
             SetBitSReverse(buff, ref pos, len, (int)data);
         }
 
-        public static void SetBitStr(Span<byte> buffer, ref int bitPosition, string message, int maxBitSize)
-        {
-            throw new NotImplementedException();
-        }
+        
     }
 }

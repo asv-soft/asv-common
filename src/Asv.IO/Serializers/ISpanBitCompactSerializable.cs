@@ -15,14 +15,14 @@ namespace Asv.IO
         {
             int bitIndex = 0;
             Deserialize(buffer, ref bitIndex);
-            buffer = bitIndex % 8.0 == 0 ? buffer.Slice(bitIndex / 8) : buffer.Slice(bitIndex / 8 + 1);
+            buffer = bitIndex % 8.0 == 0 ? buffer[(bitIndex / 8)..] : buffer[(bitIndex / 8 + 1)..];
         }
 
         public void Serialize(ref Span<byte> buffer)
         {
             int bitIndex = 0;
             Serialize(buffer, ref bitIndex);
-            buffer = bitIndex % 8.0 == 0 ? buffer.Slice(bitIndex / 8) : buffer.Slice(bitIndex / 8 + 1);
+            buffer = bitIndex % 8.0 == 0 ? buffer[(bitIndex / 8)..] : buffer[(bitIndex / 8 + 1)..];
         }
 
         public int GetByteSize()
