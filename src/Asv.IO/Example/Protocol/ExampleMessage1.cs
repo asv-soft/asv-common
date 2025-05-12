@@ -7,6 +7,12 @@ public class ExampleMessage1: ExampleMessageBase
     public const string MessageName = "ExampleMessage1";
     public const int MessageId = 1;
 
+    public static Schema Schema = new Schema.Builder()
+        .Field(f => f.Name(nameof(Value1)).DataType(FieldInt32Type.Default))
+        /*.Field(f => f.Name(nameof(Value2)).DataType(FieldUInt16Type.Default))
+        .Field(f => f.Name(nameof(Value3)).DataType(FieldStringType.Default))*/
+        .Build();
+
     protected override void InternalDeserialize(ref ReadOnlySpan<byte> buffer)
     {
         Value1 = BinSerialize.ReadPackedInteger(ref buffer);

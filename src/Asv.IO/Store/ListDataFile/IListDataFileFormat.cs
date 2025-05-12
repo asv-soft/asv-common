@@ -58,7 +58,7 @@ public interface IListDataFileFormat
 public class ListDataFileFormat:ISizedSpanSerializable, IEquatable<ListDataFileFormat>,IListDataFileFormat
 {
     /// <summary>
-    /// The maximum size allowed for a variable.
+    /// The maximum size allowed for a HEADER.
     /// </summary>
     public const int MaxSize = 256;
 
