@@ -22,9 +22,6 @@ namespace Asv.IO
         /// <summary>
         /// Read a packed integer.
         /// </summary>
-        /// <remarks>
-        /// See <see cref="WritePackedInteger"/> for more information.
-        /// </remarks>
         /// <param name="span">Span to read from.</param>
         /// <returns>Unpacked integer.</returns>
         public static int ReadPackedInteger(ref ReadOnlySpan<byte> span)
@@ -32,15 +29,19 @@ namespace Asv.IO
             var zigzagged = ReadPackedUnsignedInteger(ref span);
             return FromZigZagEncoding(zigzagged);
         }
+        
+        /// <summary>
+        /// Read a packed integer. https://en.wikipedia.org/wiki/Variable-length_quantity
+        /// </summary>
+        public static void ReadPackedInteger(ref ReadOnlySpan<byte> span, ref int value)
+        {
+            var zigzagged = ReadPackedUnsignedInteger(ref span);
+            value = FromZigZagEncoding(zigzagged);
+        }
 
         /// <summary>
-        /// Read a packed unsigned integer.
+        /// Read a packed unsigned integer. https://en.wikipedia.org/wiki/Variable-length_quantity
         /// </summary>
-        /// <remarks>
-        /// See <see cref="WritePackedUnsignedInteger"/> for more information.
-        /// </remarks>
-        /// <param name="span">Span to read from.</param>
-        /// <returns>Unpacked unsigned integer.</returns>
         public static uint ReadPackedUnsignedInteger(ref ReadOnlySpan<byte> span)
         {
             /* Read 7 bits of integer data and then the 8th bit indicates wether more data will follow.
@@ -64,6 +65,32 @@ namespace Asv.IO
             }
 
             return result;
+        }
+        
+        /// <summary>
+        /// Read a packed unsigned integer. https://en.wikipedia.org/wiki/Variable-length_quantity
+        /// </summary>
+        public static void ReadPackedUnsignedInteger(ref ReadOnlySpan<byte> span, ref uint value)
+        {
+            /* Read 7 bits of integer data and then the 8th bit indicates wether more data will follow.
+            More info: https://en.wikipedia.org/wiki/Variable-length_quantity */
+
+            value = 0;
+            var resultBitOffset = 0;
+            while (true)
+            {
+                var data = ReadByte(ref span);
+
+                // Mask of the first 7 bits of the data and then 'apply' it to the result.
+                value |= (uint)(data & 0b0111_1111) << resultBitOffset;
+
+                // Check the last bit to see if this was the end.
+                if ((data & 0b1000_0000) == 0)
+                    break;
+
+                // Increment the offset so the next iteration points at the next bits of the result.
+                resultBitOffset += 7;
+            }
         }
 
         /// <summary>

@@ -6,6 +6,8 @@ namespace Asv.IO;
 
 public partial class Field
 {
+    
+    
     public class Builder
     {
         private string? _name;
@@ -49,6 +51,13 @@ public partial class Field
             {
                 Metadata(entry.Key, entry.Value);
             }
+            return this;
+        }
+
+        public Builder Read<T>(Action<T,ISerializeVisitor> getter)
+            where T : ISupportSchema
+        {
+            
             return this;
         }
     }

@@ -8,7 +8,4 @@ public partial class Field(string name, IFieldType type, ImmutableDictionary<str
     
     public IFieldType DataType => type;
     public string Name => name;    
-
-    
 }
-

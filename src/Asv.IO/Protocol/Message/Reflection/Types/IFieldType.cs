@@ -17,7 +17,9 @@ public enum FieldTypeId
     Double,
     String,
     Array,
-    Schema
+    List,
+    Schema,
+    Struct
 }
 
 public interface IFieldType
@@ -30,3 +32,15 @@ public interface IFieldType
 
     bool IsFixedWidth { get; }
 }
+
+public interface IFieldTypeVisitor
+{
+    void Visit(IFieldType type);
+}
+
+public interface IFieldTypeVisitor<in T>: IFieldTypeVisitor
+    where T: IFieldType
+{
+    void Visit(T type);
+}
+

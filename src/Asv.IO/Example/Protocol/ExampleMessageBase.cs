@@ -3,10 +3,11 @@ using System;
 namespace Asv.IO;
 /// <summary>
 /// Example message base class
+/// [SYNC:1][SENDER_ID:1][MSG_ID:1][PAYLOAD_SIZE:1][PAYLOAD:SIZE][CRC:1, RANGE=1..^1]
 /// </summary>
 public abstract class ExampleMessageBase : IProtocolMessage<byte>
 {
-    private ProtocolTags _tags = [];
+    private ProtocolTags _tags;
 
     public static byte CalcCrc(ReadOnlySpan<byte> buff)
     {
@@ -27,7 +28,6 @@ public abstract class ExampleMessageBase : IProtocolMessage<byte>
     
     public void Deserialize(ref ReadOnlySpan<byte> buffer)
     { 
-        // [SYNC:1][SENDER_ID:1][MSG_ID:1][PAYLOAD_SIZE:1][PAYLOAD:SIZE][CRC:1, RANGE=1..^1]
         if (buffer[0] != ExampleParser.SyncByte)
         {
             throw new ProtocolDeserializeMessageException(Protocol, this, "Invalid sync byte");
@@ -54,7 +54,6 @@ public abstract class ExampleMessageBase : IProtocolMessage<byte>
     
     public void Serialize(ref Span<byte> buffer)
     {
-        // [SYNC:1][SENDER_ID:1][MSG_ID:1][PAYLOAD_SIZE:1][PAYLOAD:SIZE][CRC:1, RANGE=1..^1]
         var origin = buffer;
         BinSerialize.WriteByte(ref buffer, ExampleParser.SyncByte);
         BinSerialize.WriteByte(ref buffer, SenderId);
@@ -79,7 +78,17 @@ public abstract class ExampleMessageBase : IProtocolMessage<byte>
     public abstract string Name { get; }
     public string GetIdAsString() => Id.ToString();
     public abstract byte Id { get; }
+    [Newtonsoft.Json.JsonIgnore]
+    [System.Text.Json.Serialization.JsonIgnore]
     public ref ProtocolTags Tags => ref _tags;
-    
     public byte SenderId { get; set; }
+    
+    
+    [Newtonsoft.Json.JsonIgnore]
+    [System.Text.Json.Serialization.JsonIgnore]
+    public abstract Schema Schema { get; }
+
+    public abstract void Serialize(ISerializeVisitor visitor);
+    public abstract void Deserialize(IDeserializeVisitor visitor);
+
 }

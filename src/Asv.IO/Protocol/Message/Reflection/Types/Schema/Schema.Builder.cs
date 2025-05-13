@@ -27,7 +27,7 @@ public partial class Schema
         {
             var fieldBuilder = new Field.Builder();
             fieldBuilderAction(fieldBuilder);
-            Field field = fieldBuilder.Build();
+            var field = fieldBuilder.Build();
 
             _fields.Add(field);
             return this;

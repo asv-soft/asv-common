@@ -6,10 +6,75 @@ public class ExampleMessage2 : ExampleMessageBase
 {
     public const string MessageName = "ExampleMessage2";
     public const int MessageId = 2;
-
+    public static readonly Schema StaticSchema = new Schema.Builder()
+        .Field(f => f
+            .Name(nameof(Value1))
+            .DataType(Int32Type.Default)
+            .Title("Title  message  field 1")
+            .Description("Description message field 1")
+        )
+        .Field(f => f
+            .Name(nameof(Value2))
+            .DataType(UInt16Type.Default)
+            .Title("Title  message  field 2")
+            .Description("Description message field 2")
+        )
+        .Field(f => f
+            .Name(nameof(Value3))
+            .DataType(StringType.Default)
+            .Title("Title  message  field 3")
+            .Description("Description message field 3")
+        )
+        .Field(f => f
+            .Name(nameof(Value4))
+            .DataType(Int32Type.Default)
+            .Title("Title  message  field 4")
+            .Description("Description message field 4")
+        )
+        .Field(f => f
+            .Name(nameof(Value5))
+            .DataType(FloatType.Default)
+            .Title("Title  message  field 5")
+            .Description("Description message field 5")
+        )
+        .Field(f => f
+            .Name(nameof(Value6))
+            .DataType(DoubleType.Default)
+            .Title("Title  message  field 6")
+            .Description("Description message field 6")
+        )
+        .Field(f => f
+            .Name(nameof(Value7))
+            .DataType(BooleanType.Default)
+            .Title("Title  message  field 7")
+            .Description("Description message field 7")
+        )
+        .Field(f => f
+            .Name(nameof(Value8))
+            .DataType(Int64Type.Default)
+            .Title("Title  message  field 8")
+            .Description("Description message field 8")
+        )
+        .Field(f => f
+            .Name(nameof(Value9))
+            .DataType(UInt64Type.Default)
+            .Title("Title  message  field 9")
+            .Description("Description message field 9")
+        )
+        .Build();
     
     public override string Name => MessageName;
     public override byte Id => MessageId;
+    public override Schema Schema => StaticSchema;
+    public override void Serialize(ISerializeVisitor visitor)
+    {
+        throw new NotImplementedException();
+    }
+
+    public override void Deserialize(IDeserializeVisitor visitor)
+    {
+        throw new NotImplementedException();
+    }
 
     public int Value1 { get; set; }
     public ushort Value2 { get; set; }

@@ -1,15 +1,13 @@
 namespace Asv.IO;
 
-public sealed class FieldInt8Type : FieldIntegerType
+public sealed class Int8Type : FieldIntegerType
 {
-    public const string TypeName = "int8";
-    
-    public static readonly FieldInt8Type Default = new();
+    public static readonly Int8Type Default = new();
 
     public override FieldTypeId TypeId => FieldTypeId.Int8;
-    public override string Name => TypeName;
+    public override string Name => "int8";
     public override int BitWidth => 8;
+    public override int ByteWidth => 1;
     public override bool IsSigned => true;
-
     public override void Accept(IFieldTypeVisitor visitor) => Accept(this, visitor);
 }
