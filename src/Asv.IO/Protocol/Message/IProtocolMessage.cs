@@ -1,6 +1,6 @@
 namespace Asv.IO;
 
-public interface IProtocolMessage:ISizedSpanSerializable, ISupportTag, ISupportSchema
+public interface IProtocolMessage:ISizedSpanSerializable, ISupportTag
 {
     ProtocolInfo Protocol { get; }
     string Name { get; }

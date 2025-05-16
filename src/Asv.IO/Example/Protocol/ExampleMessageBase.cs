@@ -5,7 +5,7 @@ namespace Asv.IO;
 /// Example message base class
 /// [SYNC:1][SENDER_ID:1][MSG_ID:1][PAYLOAD_SIZE:1][PAYLOAD:SIZE][CRC:1, RANGE=1..^1]
 /// </summary>
-public abstract class ExampleMessageBase : IProtocolMessage<byte>
+public abstract class ExampleMessageBase : IProtocolMessage<byte>, IVisitable
 {
     private ProtocolTags _tags;
 
@@ -83,12 +83,5 @@ public abstract class ExampleMessageBase : IProtocolMessage<byte>
     public ref ProtocolTags Tags => ref _tags;
     public byte SenderId { get; set; }
     
-    
-    [Newtonsoft.Json.JsonIgnore]
-    [System.Text.Json.Serialization.JsonIgnore]
-    public abstract Schema Schema { get; }
-
-    public abstract void Serialize(ISerializeVisitor visitor);
-    public abstract void Deserialize(IDeserializeVisitor visitor);
-
+    public abstract void Accept(IVisitor visitor);
 }
