@@ -1,12 +1,10 @@
-using System;
 using JetBrains.Annotations;
 using Xunit;
 
-namespace Asv.IO.Test.Message.Reflection;
+namespace Asv.IO.Test.Visitable;
 
-
-[TestSubject(typeof(IVisitable))]
-public class SupportSchemaTest
+[TestSubject(typeof(IVisitor))]
+public class VisitorTest
 {
 
     [Fact]

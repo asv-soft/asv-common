@@ -12,24 +12,43 @@ public static class RandomizeVisitorMixin
         return src;
     }
     
-    public static T Randomize<T>(this T src, Random random, string? allowedChars = null, int? maxStringSize = null)
+    public static T Randomize<T>(this T src, 
+        Random random, 
+        string? allowedChars = null, 
+        int? maxStringSize = null, 
+        uint minListSize = RandomizeVisitor.MinListSize,
+        uint maxListSize = RandomizeVisitor.MaxListSize)
         where T : IVisitable, new() =>
-        src.Randomize(new RandomizeVisitor(random, allowedChars ?? RandomizeVisitor.AllowedChars, maxStringSize ?? RandomizeVisitor.MaxStringSize));
+        src.Randomize(new RandomizeVisitor(random, 
+            allowedChars ?? RandomizeVisitor.AllowedChars, 
+            maxStringSize ?? RandomizeVisitor.MaxStringSize,
+            minListSize, maxListSize));
 
-    public static T Randomize<T>(this T src, int seed, string? allowedChars = null, int? maxStringSize = null)
+    public static T Randomize<T>(this T src, 
+        int seed, 
+        string? allowedChars = null, 
+        int? maxStringSize = null,
+        uint minListSize = RandomizeVisitor.MinListSize,
+        uint maxListSize = RandomizeVisitor.MaxListSize)
         where T : IVisitable, new() =>
-        src.Randomize(new RandomizeVisitor(new Random(seed), allowedChars ?? RandomizeVisitor.AllowedChars , maxStringSize ?? RandomizeVisitor.MaxStringSize));
+        src.Randomize(new RandomizeVisitor(new Random(seed), 
+            allowedChars ?? RandomizeVisitor.AllowedChars , 
+            maxStringSize ?? RandomizeVisitor.MaxStringSize,
+            minListSize,
+            maxListSize));
     
     public static T Randomize<T>(this T src)
         where T : IVisitable, new() =>
         src.Randomize(RandomizeVisitor.Shared);
 }
 
-public class RandomizeVisitor(Random random, string allowedChars, int maxStringSize) : IFullVisitor
+public class RandomizeVisitor(Random random, string allowedChars, int maxStringSize, uint minListSize, uint maxListSize) : IFullVisitor
 {
     public const string AllowedChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     public const int MaxStringSize = 16;
-    public static RandomizeVisitor Shared { get; } = new(Random.Shared, AllowedChars, MaxStringSize);
+    public const uint MinListSize = 0;
+    public const uint MaxListSize = 5;
+    public static RandomizeVisitor Shared { get; } = new(Random.Shared, AllowedChars, MaxStringSize, MinListSize, MaxListSize);
 
     public void Visit(Field field, ref int value) => value = random.Next();
 
@@ -76,6 +95,16 @@ public class RandomizeVisitor(Random random, string allowedChars, int maxStringS
     }
 
     public void EndArray()
+    {
+        // do nothing
+    }
+
+    public void BeginList(Field field, ref uint size)
+    {
+        size = (uint)random.Next((int)minListSize, (int)maxListSize);
+    }
+
+    public void EndList()
     {
         // do nothing
     }

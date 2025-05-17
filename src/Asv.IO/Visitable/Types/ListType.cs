@@ -21,7 +21,7 @@ public sealed class ListType(Field valueField) : NestedType([valueField])
     {
         if (visitor is IListVisitor accept)
         {
-            var newSize = list.Count;
+            var newSize = (uint)list.Count;
             accept.BeginList(field, ref newSize);
             while (newSize > list.Count)
             {
@@ -35,7 +35,7 @@ public sealed class ListType(Field valueField) : NestedType([valueField])
             {
                 callback(i, visitor);
             }
-            accept.EndArray();
+            accept.EndList();
         }
         else
         {
@@ -47,6 +47,6 @@ public sealed class ListType(Field valueField) : NestedType([valueField])
 
 public interface IListVisitor: IVisitor
 {
-    void BeginList(Field field, ref int size);
-    void EndArray();
+    void BeginList(Field field, ref uint size);
+    void EndList();
 }

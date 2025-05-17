@@ -25,6 +25,7 @@ public interface IStructVisitor: IVisitor
 public interface IFullVisitor : 
     IArrayVisitor,
     IStructVisitor,
+    IListVisitor,
     IVisitor<byte>,
     IVisitor<sbyte>,
     IVisitor<short>,
