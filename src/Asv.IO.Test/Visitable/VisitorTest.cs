@@ -7,10 +7,5 @@ namespace Asv.IO.Test.Visitable;
 public class VisitorTest
 {
 
-    [Fact]
-    public void METHOD()
-    {
-        var msg1 = new ExampleMessage1().Randomize();
-        
-    }
+    
 }

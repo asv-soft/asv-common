@@ -108,6 +108,23 @@ public static class SpanSerializableMixin
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void Serialize(this ISizedSpanSerializable item, Stream dest) 
         => Serialize(item,dest, item.GetByteSize());
+    
+    /// <summary>
+    /// Create new byte array and serialize item to it
+    /// Do not use it in performance critical code
+    /// </summary>
+    /// <param name="item"></param>
+    /// <returns></returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static byte[] Serialize(this ISizedSpanSerializable item)
+    {
+        var size = item.GetByteSize();
+        var array = new byte[size];
+        var wSize = item.Serialize(array);
+        if (wSize != size)
+            throw new Exception($"Error to serialize item {item}: file length error. Want write {size} bytes. Writed {wSize} bytes.");
+        return array;
+    }
 
     public static void Serialize(this ISpanSerializable item, Stream dest, int maxSize)
     {

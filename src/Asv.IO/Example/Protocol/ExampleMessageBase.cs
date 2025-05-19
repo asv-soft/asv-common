@@ -71,7 +71,7 @@ public abstract class ExampleMessageBase : IProtocolMessage<byte>, IVisitable
     protected abstract void InternalSerialize(ref Span<byte> buffer);
     protected abstract int InternalGetByteSize();
     
-    public virtual int GetByteSize() => 5 /*SYNC + ID + SIZE + SENDER_ID + CRC*/ + InternalGetByteSize();
+    public virtual int GetByteSize() => 5 /*SYNC + SENDER_ID + ID + SIZE + CRC*/ + InternalGetByteSize();
     
     public ProtocolInfo Protocol => ExampleProtocol.Info;
     

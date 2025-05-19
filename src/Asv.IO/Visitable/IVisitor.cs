@@ -22,7 +22,7 @@ public interface IStructVisitor: IVisitor
     void EndStruct();
 }
 
-public interface IFullVisitor : 
+public interface IFullVisitor : IVisitor,
     IArrayVisitor,
     IStructVisitor,
     IListVisitor,

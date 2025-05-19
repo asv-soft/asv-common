@@ -143,41 +143,41 @@ public class ExampleMessage2 : ExampleMessageBase
 
     protected override void InternalDeserialize(ref ReadOnlySpan<byte> buffer)
     {
-        Value1 = BinSerialize.ReadPackedInteger(ref buffer);
-        Value2 = BinSerialize.ReadUShort(ref buffer);
-        Value3 = BinSerialize.ReadString(ref buffer);
-        Value4 = BinSerialize.ReadInt(ref buffer);
-        Value5 = BinSerialize.ReadFloat(ref buffer);
-        Value6 = BinSerialize.ReadDouble(ref buffer);
-        Value7 = BinSerialize.ReadBool(ref buffer);
-        Value8 = BinSerialize.ReadLong(ref buffer);
-        Value9 = BinSerialize.ReadULong(ref buffer);
+        BinSerialize.ReadPackedInteger(ref buffer, ref _value1);
+        BinSerialize.ReadUShort(ref buffer, ref _value2);
+        _value3 = BinSerialize.ReadString(ref buffer);
+        BinSerialize.ReadInt(ref buffer, ref _value4);
+        BinSerialize.ReadFloat(ref buffer, ref _value5);
+        BinSerialize.ReadDouble(ref buffer, ref _value6);
+        BinSerialize.ReadBool(ref buffer, ref _value7);
+        BinSerialize.ReadLong(ref buffer, ref _value8);
+        BinSerialize.ReadULong(ref buffer, ref _value9);
     }
 
     protected override void InternalSerialize(ref Span<byte> buffer)
     {
-        BinSerialize.WritePackedInteger(ref buffer, Value1);
-        BinSerialize.WriteUShort(ref buffer, Value2);
-        BinSerialize.WriteString(ref buffer, Value3 ?? string.Empty);
-        BinSerialize.WriteInt(ref buffer, Value4);
-        BinSerialize.WriteFloat(ref buffer, Value5);
-        BinSerialize.WriteDouble(ref buffer, Value6);
-        BinSerialize.WriteBool(ref buffer, Value7);
-        BinSerialize.WriteLong(ref buffer, Value8);
-        BinSerialize.WriteULong(ref buffer, Value9);
+        BinSerialize.WritePackedInteger(ref buffer, _value1);
+        BinSerialize.WriteUShort(ref buffer, _value2);
+        BinSerialize.WriteString(ref buffer, _value3 ?? string.Empty);
+        BinSerialize.WriteInt(ref buffer, _value4);
+        BinSerialize.WriteFloat(ref buffer, _value5);
+        BinSerialize.WriteDouble(ref buffer, _value6);
+        BinSerialize.WriteBool(ref buffer, _value7);
+        BinSerialize.WriteLong(ref buffer, _value8);
+        BinSerialize.WriteULong(ref buffer, _value9);
     }
 
     protected override int InternalGetByteSize()
     {
-        return BinSerialize.GetSizeForPackedInteger(Value1) +
-               sizeof(ushort) +
-               BinSerialize.GetSizeForString(Value3 ?? string.Empty) +
-               sizeof(int) +
-               sizeof(float) +
-               sizeof(double) +
-               sizeof(bool) +
-               sizeof(long) +
-               sizeof(ulong);
+        return BinSerialize.GetSizeForPackedInteger(Value1) + // value1 is int
+               sizeof(ushort) + // value2 is ushort
+               BinSerialize.GetSizeForString(Value3 ?? string.Empty) + // value3 is string
+               sizeof(int) + // value4 is int
+               sizeof(float) + // value5 is float
+               sizeof(double) + // value6 is double
+               sizeof(bool) + // value7 is bool
+               sizeof(long) + // value8 is long
+               sizeof(ulong); // value9 is ulong
     }
 
     public override string ToString()
