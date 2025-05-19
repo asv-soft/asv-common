@@ -3,7 +3,7 @@ using Xunit;
 
 namespace Asv.IO.Test.Example.Protocol;
 
-public class ExampleMessageTestBase<T>
+public abstract class ExampleMessageTestBase<T>
     where T : IProtocolMessage, IVisitable, new()
 {
     [Fact]
