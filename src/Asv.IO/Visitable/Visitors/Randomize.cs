@@ -6,7 +6,7 @@ namespace Asv.IO;
 public static class RandomizeVisitorMixin
 {
     public static T Randomize<T>(this T src, RandomizeVisitor visitor)
-        where T : IVisitable, new()
+        where T : IVisitable
     {
         src.Accept(visitor);
         return src;
@@ -19,7 +19,7 @@ public static class RandomizeVisitorMixin
         int? minStringSize = null, 
         uint minListSize = RandomizeVisitor.MinListSize,
         uint maxListSize = RandomizeVisitor.MaxListSize)
-        where T : IVisitable, new() =>
+        where T : IVisitable =>
         src.Randomize(new RandomizeVisitor(random, 
             allowedChars ?? RandomizeVisitor.AllowedChars,
             minStringSize ?? RandomizeVisitor.MinStringSize,
@@ -33,7 +33,7 @@ public static class RandomizeVisitorMixin
         int? maxStringSize = null,
         uint minListSize = RandomizeVisitor.MinListSize,
         uint maxListSize = RandomizeVisitor.MaxListSize)
-        where T : IVisitable, new() =>
+        where T : IVisitable =>
         src.Randomize(new RandomizeVisitor(new Random(seed), 
             allowedChars ?? RandomizeVisitor.AllowedChars , 
             minStringSize ?? RandomizeVisitor.MinStringSize,
@@ -42,7 +42,7 @@ public static class RandomizeVisitorMixin
             maxListSize));
     
     public static T Randomize<T>(this T src)
-        where T : IVisitable, new() =>
+        where T : IVisitable =>
         src.Randomize(RandomizeVisitor.Shared);
 }
 
