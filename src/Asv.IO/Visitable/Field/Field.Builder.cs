@@ -15,7 +15,7 @@ public partial class Field
         private ImmutableDictionary<string, string>.Builder? _metadata;
         private IFieldType? _type;
 
-        public Field Build()
+        public virtual Field Build()
         {
             return new Field(_name ?? throw new InvalidOperationException(), _type ?? throw new InvalidOperationException(), _metadata?.ToImmutable() ?? ImmutableDictionary<string, string>.Empty);
         }
