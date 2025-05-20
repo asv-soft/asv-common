@@ -1,71 +1,72 @@
-using System;
+using System.Buffers;
 
 namespace Asv.IO;
 
-public ref struct SimpleBinarySerialize(Span<byte> buffer, bool skipUnknown) : IFullVisitor
+public readonly struct SimpleBinarySerialize(IBufferWriter<byte> buffer, bool skipUnknown) : IFullVisitor
 {
-    private Span<byte> _buffer = buffer;
-
-    public Span<byte> Buffer => _buffer;
-
     public void Visit(Field field, ref byte value)
     {
-        BinSerialize.WriteByte(ref _buffer, value);
+       BinSerialize.WriteByte(buffer, value);
     }
 
     public void Visit(Field field, ref sbyte value)
     {
-        BinSerialize.WriteSByte(ref _buffer, value);
+        BinSerialize.WriteSByte(buffer, value);
     }
 
     public void Visit(Field field, ref short value)
     {
-        BinSerialize.WriteShort(ref _buffer, value);
+        BinSerialize.WriteShort(buffer, value);
     }
 
     public void Visit(Field field, ref ushort value)
     {
-        BinSerialize.WriteUShort(ref _buffer, value);
+        BinSerialize.WriteUShort(buffer, value);
     }
 
     public void Visit(Field field, ref int value)
     {
-        BinSerialize.WriteInt(ref _buffer, value);
+        BinSerialize.WriteInt(buffer, value);
     }
 
     public void Visit(Field field, ref uint value)
     {
-        BinSerialize.WriteUInt(ref _buffer, value);
+        BinSerialize.WriteUInt(buffer, value);
     }
 
     public void Visit(Field field, ref long value)
     {
-        BinSerialize.WriteLong(ref _buffer, value);
+        BinSerialize.WriteLong(buffer, value);
     }
 
     public void Visit(Field field, ref ulong value)
     {
-        BinSerialize.WriteULong(ref _buffer, value);
+        BinSerialize.WriteULong(buffer, value);
     }
 
     public void Visit(Field field, ref float value)
     {
-        BinSerialize.WriteFloat(ref _buffer, value);
+        BinSerialize.WriteFloat(buffer, value);
     }
 
     public void Visit(Field field, ref double value)
     {
-        BinSerialize.WriteDouble(ref _buffer, value);
+        BinSerialize.WriteDouble(buffer, value);
     }
 
     public void Visit(Field field, ref string value)
     {
-        BinSerialize.WriteString(ref _buffer, value);
+        BinSerialize.WriteString(buffer, value);
     }
 
     public void Visit(Field field, ref bool value)
     {
-        BinSerialize.WriteBool(ref _buffer, value);
+        BinSerialize.WriteBool(buffer, value);
+    }
+
+    public void Visit(Field field, ref char value)
+    {
+        BinSerialize.WriteByte(buffer, (byte)value);
     }
 
     public void VisitUnknown(Field field)
@@ -100,7 +101,7 @@ public ref struct SimpleBinarySerialize(Span<byte> buffer, bool skipUnknown) : I
 
     public void BeginList(Field field, ref uint size)
     {
-        BinSerialize.WriteUInt(ref _buffer, size);
+        BinSerialize.WriteUInt(buffer, size);
     }
 
     public void EndList()

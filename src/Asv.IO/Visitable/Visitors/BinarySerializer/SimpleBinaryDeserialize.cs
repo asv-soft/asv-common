@@ -1,110 +1,111 @@
 using System;
+using System.Buffers;
 
 namespace Asv.IO;
 
-public ref struct SimpleBinaryDeserialize(ReadOnlySpan<byte> buffer, bool skipUnknown) : IFullVisitor
+public delegate void ReadDelegate(ref Span<byte> buffer);
+
+public class SimpleBinaryDeserialize(ReadOnlyMemory<byte> memory, bool skipUnknown) : FullVisitorBase(skipUnknown)
 {
-    private ReadOnlySpan<byte> _buffer = buffer;
+    public ReadOnlyMemory<byte> Memory = memory;
 
-    public ReadOnlySpan<byte> Buffer => _buffer;
-    
-    public void Visit(Field field, ref byte value)
+    public override void Visit(Field field, ref sbyte value)
     {
-        BinSerialize.ReadByte(ref _buffer, ref value);
+        BinSerialize.ReadSByte(ref Memory, ref value);
     }
 
-    public void Visit(Field field, ref sbyte value)
+    public override void Visit(Field field, ref short value)
     {
-        BinSerialize.ReadSByte(ref _buffer, ref value);
+        BinSerialize.ReadShort(ref Memory, ref value);        
     }
 
-    public void Visit(Field field, ref short value)
+    public override void Visit(Field field, ref ushort value)
     {
-        BinSerialize.ReadShort(ref _buffer, ref value);
+        BinSerialize.ReadUShort(ref Memory, ref value);
     }
 
-    public void Visit(Field field, ref ushort value)
+    public override void Visit(Field field, ref int value)
     {
-        BinSerialize.ReadUShort(ref _buffer, ref value);
+        BinSerialize.ReadInt(ref Memory, ref value);
     }
 
-    public void Visit(Field field, ref int value)
+    public override void Visit(Field field, ref uint value)
     {
-        BinSerialize.ReadInt(ref _buffer, ref value);
+        BinSerialize.ReadUInt(ref Memory, ref value);        
     }
 
-    public void Visit(Field field, ref uint value)
+    public override void Visit(Field field, ref long value)
     {
-        BinSerialize.ReadUInt(ref _buffer, ref value);
+        BinSerialize.ReadLong(ref Memory, ref value);
     }
 
-    public void Visit(Field field, ref long value)
+    public override void Visit(Field field, ref ulong value)
     {
-        BinSerialize.ReadLong(ref _buffer, ref value);
+        BinSerialize.ReadULong(ref Memory, ref value);
     }
 
-    public void Visit(Field field, ref ulong value)
+    public override void Visit(Field field, ref float value)
     {
-        BinSerialize.ReadULong(ref _buffer, ref value);
+        BinSerialize.ReadFloat(ref Memory, ref value);
     }
 
-    public void Visit(Field field, ref float value)
+    public override void Visit(Field field, ref double value)
     {
-        BinSerialize.ReadFloat(ref _buffer, ref value);
+        BinSerialize.ReadDouble(ref Memory, ref value);
     }
 
-    public void Visit(Field field, ref double value)
+    public override void Visit(Field field, ref string value)
     {
-        BinSerialize.ReadDouble(ref _buffer, ref value);
+        value = BinSerialize.ReadString(ref Memory);
     }
 
-    public void Visit(Field field, ref string value)
+    public override void Visit(Field field, ref bool value)
     {
-        value = BinSerialize.ReadString(ref _buffer);
+        BinSerialize.ReadBool(ref Memory, ref value);
     }
 
-    public void Visit(Field field, ref bool value)
+    public override void Visit(Field field, ref char value)
     {
-        BinSerialize.ReadBool(ref _buffer, ref value);
+        var tmp = default(byte);
+        BinSerialize.ReadByte(ref Memory, ref tmp);
+        value = (char)tmp;
     }
 
-    public void VisitUnknown(Field field)
+    public override void Visit(Field field, ref byte value)
     {
-        if (skipUnknown)
-        {
-            return;
-        }
-
-        throw new System.NotImplementedException($"Unknown field {field.Name} [{field}]");
+        BinSerialize.ReadByte(ref Memory, ref value);
     }
 
-    public void BeginArray(Field field, int size)
+   
+
+    public override void BeginArray(Field field, int size)
     {
         // do nothing
     }
 
-    public void EndArray()
+    public override void EndArray()
     {
         // do nothing
     }
 
-    public void BeginStruct(Field field)
+    public override void BeginStruct(Field field)
     {
         // do nothing
     }
 
-    public void EndStruct()
+    public override void EndStruct()
     {
         // do nothing
     }
 
-    public void BeginList(Field field, ref uint size)
+    public override void BeginList(Field field, ref uint size)
     {
-        BinSerialize.ReadUInt(ref _buffer, ref size);
+        BinSerialize.ReadUInt(ref Memory, ref size);
     }
 
-    public void EndList()
+    public override void EndList()
     {
         // do nothing
     }
+
 }

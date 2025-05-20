@@ -21,7 +21,8 @@ public enum FieldTypeId
     Schema,
     Struct,
     Time32,
-    Time64
+    Time64,
+    AsciiChar
 }
 
 public interface IFieldType

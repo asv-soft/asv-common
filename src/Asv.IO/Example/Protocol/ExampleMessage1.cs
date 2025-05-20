@@ -150,12 +150,12 @@ public class ExampleMessage1: ExampleMessageBase
             t.Deserialize(ref buffer);
         }
         _value7.Deserialize(ref buffer);
-        _value8.Resize(BinSerialize.ReadByte(ref buffer));
+        _value8.Resize((int)BinSerialize.ReadUInt(ref buffer));
         foreach (var t in _value8)
         {
             t.Deserialize(ref buffer);
         }
-        _value9.Resize(BinSerialize.ReadByte(ref buffer));
+        _value9.Resize((int)BinSerialize.ReadUInt(ref buffer));
         for (var i = 0; i < _value9.Count; i++)
         {
             _value9[i] = BinSerialize.ReadInt(ref buffer);
@@ -182,12 +182,12 @@ public class ExampleMessage1: ExampleMessageBase
             t.Serialize(ref buffer);
         }
         _value7.Serialize(ref buffer);
-        BinSerialize.WriteByte(ref buffer, (byte)_value8.Count);
+        BinSerialize.WriteUInt(ref buffer, (uint)_value8.Count);
         foreach (var t in _value8)
         {
             t.Serialize(ref buffer);
         }
-        BinSerialize.WriteByte(ref buffer, (byte)_value9.Count);
+        BinSerialize.WriteUInt(ref buffer, (uint)_value9.Count);
         foreach (var t in _value9)
         {
             BinSerialize.WriteInt(ref buffer, t);
@@ -203,9 +203,9 @@ public class ExampleMessage1: ExampleMessageBase
             + _value5.Sum(BinSerialize.GetSizeForString)
             + _value6.Sum(x=>x.GetByteSize())
             + _value7.GetByteSize()
-            + sizeof(byte) // size of list
+            + sizeof(uint) // size of list
             + _value8.Sum(x=>x.GetByteSize())
-            + sizeof(byte) // size of list
+            + sizeof(uint) // size of list
             + _value9.Count * sizeof(int);
             
             
@@ -216,7 +216,7 @@ public class ExampleMessage1: ExampleMessageBase
 
     public override string ToString()
     {
-        return $"{Name}({Value1},{Value2},{Value3})";
+        return $"{Name}({this.PrintValues()})";
     }
 }
 

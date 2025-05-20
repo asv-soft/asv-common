@@ -1,105 +1,100 @@
 namespace Asv.IO;
 
-public struct SimpleBinarySizeCalculator(bool skipUnknown) : IFullVisitor
+public class SimpleBinarySizeCalculator(bool skipUnknown) : FullVisitorBase(skipUnknown)
 {
     public int Size { get; private set; }
 
-    public void Visit(Field field, ref byte value)
+    public override void Visit(Field field, ref byte value)
     {
         Size += sizeof(byte);
     }
 
-    public void Visit(Field field, ref sbyte value)
+    public override void Visit(Field field, ref sbyte value)
     {
         Size += sizeof(sbyte);
     }
 
-    public void Visit(Field field, ref short value)
+    public override void Visit(Field field, ref short value)
     {
         Size += sizeof(short);
     }
 
-    public void Visit(Field field, ref ushort value)
+    public override void Visit(Field field, ref ushort value)
     {
         Size += sizeof(ushort);
     }
 
-    public void Visit(Field field, ref int value)
+    public override void Visit(Field field, ref int value)
     {
         Size += sizeof(int);
     }
 
-    public void Visit(Field field, ref uint value)
+    public override void Visit(Field field, ref uint value)
     {
         Size += sizeof(uint);
     }
 
-    public void Visit(Field field, ref long value)
+    public override void Visit(Field field, ref long value)
     {
         Size += sizeof(long);
     }
 
-    public void Visit(Field field, ref ulong value)
+    public override void Visit(Field field, ref ulong value)
     {
         Size += sizeof(ulong);
     }
 
-    public void Visit(Field field, ref float value)
+    public override void Visit(Field field, ref float value)
     {
         Size += sizeof(float);
     }
 
-    public void Visit(Field field, ref double value)
+    public override void Visit(Field field, ref double value)
     {
         Size += sizeof(double);
     }
 
-    public void Visit(Field field, ref string value)
+    public override void Visit(Field field, ref string value)
     {
         Size+= BinSerialize.GetSizeForString(value);
     }
 
-    public void Visit(Field field, ref bool value)
+    public override void Visit(Field field, ref bool value)
     {
         Size += sizeof(bool);
     }
 
-    public void VisitUnknown(Field field)
+    public override void Visit(Field field, ref char value)
     {
-        if (skipUnknown)
-        {
-            return;
-        }
-
-        throw new System.NotImplementedException($"Unknown field {field.Name} [{field}]");
+        Size += 8;
     }
 
-    public void BeginArray(Field field, int size)
+    public override void BeginArray(Field field, int size)
     {
         // fixed size array => skip
     }
 
-    public void EndArray()
+    public override void EndArray()
     {
         // fixed size array => skip
     }
 
-    public void BeginStruct(Field field)
+    public override void BeginStruct(Field field)
     {
         // fixed size struct => skip
     }
 
-    public void EndStruct()
+    public override void EndStruct()
     {
         // fixed size struct => skip
     }
 
-    public void BeginList(Field field, ref uint size)
+    public override void BeginList(Field field, ref uint size)
     {
         Size += sizeof(uint);
     }
 
-    public void EndList()
+    public override void EndList()
     {
         // do nothing
     }

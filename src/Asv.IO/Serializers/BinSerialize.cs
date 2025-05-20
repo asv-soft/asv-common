@@ -18,7 +18,9 @@ namespace Asv.IO
             if (!BitConverter.IsLittleEndian)
                 throw new NotSupportedException("BigEndian systems are not supported at this time.");
         }
-        
+
+        #region Read a packed integer
+
         /// <summary>
         /// Read a packed integer.
         /// </summary>
@@ -33,11 +35,44 @@ namespace Asv.IO
         /// <summary>
         /// Read a packed integer. https://en.wikipedia.org/wiki/Variable-length_quantity
         /// </summary>
+        public static int ReadPackedInteger(ref ReadOnlyMemory<byte> span)
+        {
+            var zigzagged = ReadPackedUnsignedInteger(ref span);
+            return FromZigZagEncoding(zigzagged);
+        }
+        
+        /// <summary>
+        /// Read a packed integer. https://en.wikipedia.org/wiki/Variable-length_quantity
+        /// </summary>
         public static void ReadPackedInteger(ref ReadOnlySpan<byte> span, ref int value)
         {
             var zigzagged = ReadPackedUnsignedInteger(ref span);
             value = FromZigZagEncoding(zigzagged);
         }
+        /// <summary>
+        /// Read a packed integer. https://en.wikipedia.org/wiki/Variable-length_quantity
+        /// </summary>
+        public static void ReadPackedInteger(ref ReadOnlyMemory<byte> span, ref int value)
+        {
+            var zigzagged = ReadPackedUnsignedInteger(ref span);
+            value = FromZigZagEncoding(zigzagged);
+        }
+        
+        /// <summary>
+        /// Read a packed integer. https://en.wikipedia.org/wiki/Variable-length_quantity
+        /// </summary>
+        public static bool ReadPackedInteger(ref SequenceReader<byte> reader, ref int value)
+        {
+            var zigzagged = 0U;
+            if (TryReadPackedUnsignedInteger(ref reader, ref zigzagged) == false) return false;
+            value = FromZigZagEncoding(zigzagged);
+            return true;
+
+        }
+
+        #endregion
+
+        #region Read Packed Unsigned Integer
 
         /// <summary>
         /// Read a packed unsigned integer. https://en.wikipedia.org/wiki/Variable-length_quantity
@@ -67,6 +102,33 @@ namespace Asv.IO
             return result;
         }
         
+        public static uint ReadPackedUnsignedInteger(ref ReadOnlyMemory<byte> span)
+        {
+            /* Read 7 bits of integer data and then the 8th bit indicates wether more data will follow.
+            More info: https://en.wikipedia.org/wiki/Variable-length_quantity */
+
+            uint result = 0;
+            var resultBitOffset = 0;
+            while (true)
+            {
+                var data = ReadByte(ref span);
+
+                // Mask of the first 7 bits of the data and then 'apply' it to the result.
+                result |= (uint)(data & 0b0111_1111) << resultBitOffset;
+
+                // Check the last bit to see if this was the end.
+                if ((data & 0b1000_0000) == 0)
+                    break;
+
+                // Increment the offset so the next iteration points at the next bits of the result.
+                resultBitOffset += 7;
+            }
+
+            return result;
+        }
+        
+        
+        
         /// <summary>
         /// Read a packed unsigned integer. https://en.wikipedia.org/wiki/Variable-length_quantity
         /// </summary>
@@ -92,6 +154,78 @@ namespace Asv.IO
                 resultBitOffset += 7;
             }
         }
+        
+        public static void ReadPackedUnsignedInteger(ref ReadOnlyMemory<byte> span, ref uint value)
+        {
+            /* Read 7 bits of integer data and then the 8th bit indicates wether more data will follow.
+            More info: https://en.wikipedia.org/wiki/Variable-length_quantity */
+
+            value = 0;
+            var resultBitOffset = 0;
+            while (true)
+            {
+                var data = ReadByte(ref span);
+
+                // Mask of the first 7 bits of the data and then 'apply' it to the result.
+                value |= (uint)(data & 0b0111_1111) << resultBitOffset;
+
+                // Check the last bit to see if this was the end.
+                if ((data & 0b1000_0000) == 0)
+                    break;
+
+                // Increment the offset so the next iteration points at the next bits of the result.
+                resultBitOffset += 7;
+            }
+        }
+
+        /// <summary>
+        /// Read a packed unsigned integer. https://en.wikipedia.org/wiki/Variable-length_quantity
+        /// </summary>
+        public static bool TryReadPackedUnsignedInteger(ref SequenceReader<byte> reader, ref uint value, out int consumed)
+        {
+            value = 0;
+            consumed = 0;
+            var resultBitOffset = 0;
+            while (true)
+            {
+                if (!reader.TryRead(out byte data))
+                {
+                    value = 0;
+                    
+                    reader.Rewind(consumed);
+                    return false; // Not enough data to read the entire integer
+                }
+
+                consumed++;
+                value |= (uint)(data & 0b0111_1111) << resultBitOffset;
+
+                if ((data & 0b1000_0000) == 0)
+                {
+                    return true; // Successfully read the packed unsigned integer
+                }
+
+                resultBitOffset += 7;
+
+                // Prevent reading more than 5 bytes (UInt32 max size)
+                if (resultBitOffset >= 35)
+                {
+                    value = 0;
+                    reader.Rewind(consumed);
+                    return false; // Overflow or malformed data
+                }
+            }
+        }
+        /// <summary>
+        /// Read a packed unsigned integer. https://en.wikipedia.org/wiki/Variable-length_quantity
+        /// </summary>
+        public static bool TryReadPackedUnsignedInteger(ref SequenceReader<byte> reader, ref uint value)
+        {
+            return TryReadPackedUnsignedInteger(ref reader, ref value, out _);
+        }
+
+        #endregion
+
+        #region WritePackedInteger
 
         /// <summary>
         /// Check how many bytes it will take to write the given value as a packed integer.
@@ -105,29 +239,6 @@ namespace Asv.IO
         {
             var zigzagged = ToZigZagEncoding(value);
             return GetSizeForPackedUnsignedInteger(zigzagged);
-        }
-
-        /// <summary>
-        /// Check how many bytes it will take to write the given value as a packed unsigned integer.
-        /// </summary>
-        /// <remarks>
-        /// See <see cref="WritePackedUnsignedInteger"/> for more information (including a size-table).
-        /// </remarks>
-        /// <param name="value">Value to check.</param>
-        /// <returns>Number of bytes it will take.</returns>
-        public static int GetSizeForPackedUnsignedInteger(uint value)
-        {
-            /* Check how many 7 bit values we need to store the integer, for more info see
-            'WritePackedUnsignedInteger' implementation. */
-
-            var bytes = 1;
-            while (value > 0b0111_1111)
-            {
-                value >>= 7;
-                bytes++;
-            }
-
-            return bytes;
         }
 
         /// <summary>
@@ -153,6 +264,41 @@ namespace Asv.IO
             var zigzagged = ToZigZagEncoding(value);
             WritePackedUnsignedInteger(ref span, zigzagged);
         }
+        
+        public static void WritePackedInteger(ref Memory<byte> span, int value)
+        {
+            var zigzagged = ToZigZagEncoding(value);
+            WritePackedUnsignedInteger(ref span, zigzagged);
+        }
+
+        #endregion
+
+        #region WritePackedUnsignedInteger
+
+        /// <summary>
+        /// Check how many bytes it will take to write the given value as a packed unsigned integer.
+        /// </summary>
+        /// <remarks>
+        /// See <see cref="WritePackedUnsignedInteger"/> for more information (including a size-table).
+        /// </remarks>
+        /// <param name="value">Value to check.</param>
+        /// <returns>Number of bytes it will take.</returns>
+        public static int GetSizeForPackedUnsignedInteger(uint value)
+        {
+            /* Check how many 7 bit values we need to store the integer, for more info see
+            'WritePackedUnsignedInteger' implementation. */
+
+            var bytes = 1;
+            while (value > 0b0111_1111)
+            {
+                value >>= 7;
+                bytes++;
+            }
+
+            return bytes;
+        }
+
+        
 
         /// <summary>
         /// Pack a unsigned integer and write it.
@@ -186,6 +332,46 @@ namespace Asv.IO
             // Write out the last data (the 8th bit will always be 0 here to indicate the end).
             WriteByte(ref span, (byte)value);
         }
+        
+        public static void WritePackedUnsignedInteger(ref Memory<byte> span, uint value)
+        {
+            /* Write 7 bits of integer data and then the 8th bit indicates wether more data will follow.
+            More info: https://en.wikipedia.org/wiki/Variable-length_quantity */
+
+            // As long as we have more data left then we can fit into 7 bits we need to 'split' it up.
+            while (value > 0b0111_1111)
+            {
+                // Write out the value and set the 8th bit to 1 to indicate more data will follow.
+                WriteByte(ref span, (byte)(value | 0b1000_0000));
+
+                // Shift the value by 7 to 'consume' the bits we've just written.
+                value >>= 7;
+            }
+
+            // Write out the last data (the 8th bit will always be 0 here to indicate the end).
+            WriteByte(ref span, (byte)value);
+        }
+        
+        public static void WritePackedUnsignedInteger(IBufferWriter<byte> wrt, uint value)
+        {
+            /* Write 7 bits of integer data and then the 8th bit indicates wether more data will follow.
+            More info: https://en.wikipedia.org/wiki/Variable-length_quantity */
+
+            // As long as we have more data left then we can fit into 7 bits we need to 'split' it up.
+            while (value > 0b0111_1111)
+            {
+                // Write out the value and set the 8th bit to 1 to indicate more data will follow.
+                WriteByte(wrt, (byte)(value | 0b1000_0000));
+
+                // Shift the value by 7 to 'consume' the bits we've just written.
+                value >>= 7;
+            }
+
+            // Write out the last data (the 8th bit will always be 0 here to indicate the end).
+            WriteByte(wrt, (byte)value);
+        }
+
+        #endregion
         
         #region WriteString
 
@@ -242,6 +428,17 @@ namespace Asv.IO
             return headerSize + charsSize;
         }
 
+        public static void WriteString(IBufferWriter<byte> span, string? val)
+        {
+            var size = GetSizeForString(val);
+            var spanPointer = span.GetSpan(size);
+            WriteString(ref spanPointer,val);
+            span.Advance(size);
+        }
+        
+        
+
+        
         /// <summary>
         /// Write a string as utf8.
         /// </summary>
@@ -252,6 +449,19 @@ namespace Asv.IO
         /// <param name="span">Span to write to.</param>
         /// <param name="val">Value to write.</param>
         public static void WriteString(ref Span<byte> span, string? val)
+        {
+            if (string.IsNullOrWhiteSpace(val))
+            {
+                WritePackedUnsignedInteger(ref span, 0);
+                return;
+            }
+            fixed (char* charPointer = val)
+            {
+                WriteString(ref span, charPointer, val.Length);
+            }
+        }
+        
+        public static void WriteString(ref Memory<byte> span, string? val)
         {
             if (string.IsNullOrWhiteSpace(val))
             {
@@ -280,6 +490,23 @@ namespace Asv.IO
                 WriteString(ref span, charPointer, val.Length);
             }
         }
+        
+        public static void WriteString(IBufferWriter<byte> span, in ReadOnlySpan<char> val)
+        {
+            var size = GetSizeForString(val);
+            var spanPointer = span.GetSpan(size);
+            WriteString(ref spanPointer,val);
+            span.Advance(size);
+        }
+        
+        public static void WriteString(ref Memory<byte> span,in ReadOnlySpan<char> val)
+        {
+            fixed (char* charPointer = val)
+            {
+                WriteString(ref span, charPointer, val.Length);
+            }
+        }
+        
 
         /// <summary>
         /// Write a string as utf8.
@@ -309,23 +536,37 @@ namespace Asv.IO
                 span = span[byteCount..];
             }
         }
+        
+        public static void WriteString(ref Memory<byte> memory, char* charPointer,int charCount)
+        {
+            // Write amount of bytes will follow.
+            var byteCount = Uft8.GetByteCount(charPointer, charCount);
+            WritePackedUnsignedInteger(ref memory, (uint)byteCount);
+            if (charCount != 0)
+            {
+                fixed (byte* spanPointer = memory.Span)
+                {
+                    // Write chars as utf8.
+                    var writtenBytes = Uft8.GetBytes(charPointer, charCount, spanPointer, memory.Length);
+                    Debug.Assert(byteCount == writtenBytes, "Written bytes did not match encodings expected size");
+                }
+                // 'Advance' the span.
+                memory = memory[byteCount..];
+            }
+        }
+
+        public static void WriteString(IBufferWriter<byte> span, char* charPointer, int charCount)
+        {
+            var size = GetSizeForString(charPointer, charCount);
+            var spanPointer = span.GetSpan(size);
+            WriteString(ref spanPointer,charPointer, charCount);
+            span.Advance(size);
+        }
 
         #endregion
 
         #region WriteStruct
 
-        /// <summary>
-        /// Write unmanaged struct.
-        /// </summary>
-        /// <remarks>
-        /// When using this make sure that 'T' has explict memory-layout so its consistent
-        /// accross platforms.
-        /// In other words, only use this if you are 100% sure its safe to do so.
-        /// Will consume sizeof T.
-        /// </remarks>
-        /// <param name="span">Span to write to.</param>
-        /// <param name="val">Value to write.</param>
-        /// <typeparam name="T">Type of the struct to write.</typeparam>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteStruct<T>(ref Span<byte> span, T val)
             where T : unmanaged
@@ -335,18 +576,8 @@ namespace Asv.IO
             var size = Unsafe.SizeOf<T>();
             span = span[size..];
         }
-        /// <summary>
-        /// Write unmanaged struct.
-        /// </summary>
-        /// <remarks>
-        /// When using this make sure that 'T' has explict memory-layout so its consistent
-        /// accross platforms.
-        /// In other words, only use this if you are 100% sure its safe to do so.
-        /// Will consume sizeof T.
-        /// </remarks>
-        /// <param name="span">Span to write to.</param>
-        /// <param name="val">Value to write.</param>
-        /// <typeparam name="T">Type of the struct to write.</typeparam>
+
+        
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteStruct<T>(ref Span<byte> span, in T val)
             where T : unmanaged
@@ -357,55 +588,47 @@ namespace Asv.IO
             span = span[size..];
         }
         
-        /// <summary>
-        /// Write unmanaged struct.
-        /// </summary>
-        /// <remarks>
-        /// When using this make sure that 'T' has explict memory-layout so its consistent
-        /// accross platforms.
-        /// In other words, only use this if you are 100% sure its safe to do so.
-        /// Will consume sizeof T.
-        /// </remarks>
-        /// <param name="span">Span to write to.</param>
-        /// <param name="val">Value to write.</param>
-        /// <typeparam name="T">Type of the struct to write.</typeparam>
+        public static void WriteStruct<T>(IBufferWriter<byte> wrt, in T val)
+            where T : unmanaged
+        {
+            var size = Unsafe.SizeOf<T>();
+            var span = wrt.GetSpan(size);
+            WriteStruct(ref span,in val);
+            wrt.Advance(size);
+        }
+        
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteStruct<T>(Span<byte> span,in T val)
             where T : unmanaged
         {
             MemoryMarshal.Write(span, in val);
         }
-        /// <summary>
-        /// Write unmanaged struct.
-        /// </summary>
-        /// <remarks>
-        /// When using this make sure that 'T' has explict memory-layout so its consistent
-        /// accross platforms.
-        /// In other words, only use this if you are 100% sure its safe to do so.
-        /// Will consume sizeof T.
-        /// </remarks>
-        /// <param name="span">Span to write to.</param>
-        /// <param name="val">Value to write.</param>
-        /// <typeparam name="T">Type of the struct to write.</typeparam>
+       
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteStruct<T>(Span<byte> span,T val)
             where T : unmanaged
         {
             MemoryMarshal.Write(span, in val);
         }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteStruct<T>(Memory<byte> memory,in T val)
+            where T : unmanaged
+        {
+            MemoryMarshal.Write(memory.Span, in val);
+        }
+       
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteStruct<T>(Memory<byte> memory,T val)
+            where T : unmanaged
+        {
+            MemoryMarshal.Write(memory.Span, in val);
+        }
 
         #endregion
 
         #region WriteBool
 
-        /// <summary>
-        /// Write a boolean.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 1 byte.
-        /// </remarks>
-        /// <param name="span">Span to write to.</param>
-        /// <param name="val">Value to write.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteBool(ref Span<byte> span, bool val)
         {
@@ -414,33 +637,40 @@ namespace Asv.IO
             // 'Advance' the span.
             span = span[sizeof(bool)..];
         }
-        
-        /// <summary>
-        /// Write a boolean.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 1 byte.
-        /// </remarks>
-        /// <param name="span">Span to write to.</param>
-        /// <param name="val">Value to write.</param>
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteBool(Span<byte> span, bool val)
         {
             MemoryMarshal.Write(span, in val);
         }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteBool(ref Memory<byte> memory, bool val)
+        {
+            MemoryMarshal.Write(memory.Span, in val);
+
+            // 'Advance' the span.
+            memory = memory[sizeof(bool)..];
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteBool(Memory<byte> memory, bool val)
+        {
+            MemoryMarshal.Write(memory.Span, in val);
+        }
+        
+        public static void WriteBool(IBufferWriter<byte> wrt, bool val)
+        {
+            var span = wrt.GetSpan(1);
+            span[0] = (byte)(val ? 1 : 0);
+            wrt.Advance(1);
+        }
+        
 
         #endregion
         
         #region ReadBool
 
-        /// <summary>
-        /// Read a boolean.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 1 byte.
-        /// </remarks>
-        /// <param name="span">Span to read from.</param>
-        /// <returns>Read value.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool ReadBool(ref ReadOnlySpan<byte> span)
         {
@@ -450,14 +680,6 @@ namespace Asv.IO
             return result;
         }
 
-        /// <summary>
-        /// Read a boolean.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 1 byte.
-        /// </remarks>
-        /// <param name="span">Span to read from.</param>
-        /// <param name="value">Read value</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ReadBool(ref ReadOnlySpan<byte> span, ref bool value)
         {
@@ -465,33 +687,44 @@ namespace Asv.IO
             // 'Advance' the span.
             span = span[sizeof(bool)..];
         }
-        
-        /// <summary>
-        /// Read a boolean.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 1 byte.
-        /// </remarks>
-        /// <param name="span">Span to read from.</param>
-        /// <param name="value">Read value</param>
+       
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ReadBool(ReadOnlySpan<byte> span, ref bool value)
         {
             value = MemoryMarshal.Read<bool>(span);
         }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ReadBool(ref ReadOnlyMemory<byte> memory, ref bool value)
+        {
+            value = MemoryMarshal.Read<bool>(memory.Span);
+            // 'Advance' the span.
+            memory = memory[sizeof(bool)..];
+        }
+       
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ReadBool(ReadOnlyMemory<byte> memory, ref bool value)
+        {
+            value = MemoryMarshal.Read<bool>(memory.Span);
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool TryReadBool(ref SequenceReader<byte> reader, ref bool value)
+        {
+            if (reader.TryRead(out var result))
+            {
+                value = result != 0;
+                return true;
+            }
+
+            return false;
+        }
+        
 
         #endregion
 
         #region WriteByte
 
-        /// <summary>
-        /// Write a unsigned 8 bit integer.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 1 byte.
-        /// </remarks>
-        /// <param name="span">Span to write to.</param>
-        /// <param name="val">Value to write.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteByte(ref Span<byte> span, byte val)
         {
@@ -501,32 +734,34 @@ namespace Asv.IO
             span = span[sizeof(byte)..];
         }
         
-        /// <summary>
-        /// Write a unsigned 8 bit integer.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 1 byte.
-        /// </remarks>
-        /// <param name="span">Span to write to.</param>
-        /// <param name="val">Value to write.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteByte(Span<byte> span, byte val)
         {
             MemoryMarshal.Write(span, in val);
         }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteByte(ref Memory<byte> span, byte val)
+        {
+            MemoryMarshal.Write(span.Span, in val);
+            // 'Advance' the span.
+            span = span[sizeof(byte)..];
+        }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteByte(IBufferWriter<byte> wrt, byte val)
+        {
+            var span = wrt.GetSpan(1);
+            span[0] = val;
+            wrt.Advance(1);
+        }
+        
+       
+        
         #endregion
         
         #region ReadByte
 
-        /// <summary>
-        /// Read a unsigned 8 bit integer.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 1 byte.
-        /// </remarks>
-        /// <param name="span">Span to read from.</param>
-        /// <returns>Read value.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static byte ReadByte(ref ReadOnlySpan<byte> span)
         {
@@ -535,15 +770,7 @@ namespace Asv.IO
             span = span[sizeof(byte)..];
             return result;
         }
-
-        /// <summary>
-        /// Read a unsigned 8 bit integer.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 1 byte.
-        /// </remarks>
-        /// <param name="span">Span to read from.</param>
-        /// <param name="value"> Read value</param>
+        
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ReadByte(ref ReadOnlySpan<byte> span, ref byte value)
         {
@@ -552,32 +779,46 @@ namespace Asv.IO
             span = span[sizeof(byte)..];
         }
         
-        /// <summary>
-        /// Read a unsigned 8 bit integer.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 1 byte.
-        /// </remarks>
-        /// <param name="span">Span to read from.</param>
-        /// <param name="value"> Read value</param>
+        
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ReadByte(ReadOnlySpan<byte> span, ref byte value)
         {
             value = MemoryMarshal.Read<byte>(span);
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static byte ReadByte(ref ReadOnlyMemory<byte> memory)
+        {
+            var result = MemoryMarshal.Read<byte>(memory.Span);
+            // 'Advance' the span.
+            memory = memory[sizeof(byte)..];
+            return result;
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ReadByte(ReadOnlyMemory<byte> memory, ref byte value)
+        {
+            value = MemoryMarshal.Read<byte>(memory.Span);
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ReadByte(ref ReadOnlyMemory<byte> memory, ref byte value)
+        {
+            value = MemoryMarshal.Read<byte>(memory.Span);
+            // 'Advance' the span.
+            memory = memory[sizeof(byte)..];
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool TryReadByte(ref SequenceReader<byte> reader, ref byte value)
+        {
+            return reader.TryRead(out value);
         }
 
         #endregion
 
         #region WriteSByte
 
-        /// <summary>
-        /// Write a signed 8 bit integer.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 1 byte.
-        /// </remarks>
-        /// <param name="span">Span to write to.</param>
-        /// <param name="val">Value to write.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteSByte(ref Span<byte> span, sbyte val)
         {
@@ -587,32 +828,37 @@ namespace Asv.IO
             span = span[sizeof(sbyte)..];
         }
         
-        /// <summary>
-        /// Write a signed 8 bit integer.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 1 byte.
-        /// </remarks>
-        /// <param name="span">Span to write to.</param>
-        /// <param name="val">Value to write.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteSByte(Span<byte> span, sbyte val)
         {
             MemoryMarshal.Write(span, in val);
         }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteSByte(ref Memory<byte> memory, sbyte val)
+        {
+            MemoryMarshal.Write(memory.Span, in val);
 
+            // 'Advance' the span.
+            memory = memory[sizeof(sbyte)..];
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteSByte(Memory<byte> memory, sbyte val)
+        {
+            MemoryMarshal.Write(memory.Span, in val);
+        }
+
+        public static void WriteSByte(IBufferWriter<byte> wrt,in sbyte val)
+        {
+            var span = wrt.GetSpan(1);
+            WriteSByte(ref span, val);
+            wrt.Advance(1);
+        }
         #endregion
         
         #region ReadSByte
 
-        /// <summary>
-        /// Read a signed 8 bit integer.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 1 byte.
-        /// </remarks>
-        /// <param name="span">Span to read from.</param>
-        /// <returns>Read value.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static sbyte ReadSByte(ref ReadOnlySpan<byte> span)
         {
@@ -622,46 +868,48 @@ namespace Asv.IO
             return result;
         }
 
-        /// <summary>
-        /// Read a signed 8 bit integer.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 1 byte.
-        /// </remarks>
-        /// <param name="span">Span to read from.</param>
-        /// <param name="value">Read value</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ReadSByte(ref ReadOnlySpan<byte> span, ref sbyte value)
         {
             value = MemoryMarshal.Read<sbyte>(span);
             span = span[sizeof(sbyte)..];
         }
-        /// <summary>
-        /// Read a signed 8 bit integer.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 1 byte.
-        /// </remarks>
-        /// <param name="span">Span to read from.</param>
-        /// <param name="value">Read value</param>
+      
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ReadSByte(ReadOnlySpan<byte> span, ref sbyte value)
         {
             value = MemoryMarshal.Read<sbyte>(span);
         }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ReadSByte(ref ReadOnlyMemory<byte> memory, ref sbyte value)
+        {
+            value = MemoryMarshal.Read<sbyte>(memory.Span);
+            memory = memory[sizeof(sbyte)..];
+        }
+      
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ReadSByte(ReadOnlyMemory<byte> memory, ref sbyte value)
+        {
+            value = MemoryMarshal.Read<sbyte>(memory.Span);
+        }
+        
+        public static bool TryReadSByte(ref SequenceReader<byte> reader, ref sbyte value)
+        {
+            if (reader.TryRead(out var result))
+            {
+                value = (sbyte)result;
+                return true;
+            }
+
+            return false;
+        }
+        
 
         #endregion
 
         #region WriteShort
 
-        /// <summary>
-        /// Write a 16 bit signed integer.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 2 bytes.
-        /// </remarks>
-        /// <param name="span">Span to write to.</param>
-        /// <param name="val">Value to write.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteShort(ref Span<byte> span, short val)
         {
@@ -670,32 +918,38 @@ namespace Asv.IO
             span = span[sizeof(short)..];
         }
         
-        /// <summary>
-        /// Write a 16 bit signed integer.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 2 bytes.
-        /// </remarks>
-        /// <param name="span">Span to write to.</param>
-        /// <param name="val">Value to write.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteShort(Span<byte> span, short val)
         {
             MemoryMarshal.Write(span, in val);
         }
-
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteShort(ref Memory<byte> span, short val)
+        {
+            MemoryMarshal.Write(span.Span, in val);
+            // 'Advance' the span.
+            span = span[sizeof(short)..];
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteShort(Memory<byte> span, short val)
+        {
+            MemoryMarshal.Write(span.Span, in val);
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteShort(IBufferWriter<byte> wrt, short val)
+        {
+            var span = wrt.GetSpan(sizeof(short));
+            WriteShort(ref span, val);
+            wrt.Advance(sizeof(short));
+        }
         #endregion
         
         #region ReadShort
 
-        /// <summary>
-        /// Read a signed 16 bit integer.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 2 bytes.
-        /// </remarks>
-        /// <param name="span">Span to read from.</param>
-        /// <returns>Read value.</returns>
+       
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static short ReadShort(ref ReadOnlySpan<byte> span)
         {
@@ -705,14 +959,6 @@ namespace Asv.IO
             return result;
         }
 
-        /// <summary>
-        /// Read a signed 16 bit integer.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 2 bytes.
-        /// </remarks>
-        /// <param name="span">Span to read from.</param>
-        /// <param name="value">Read value</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ReadShort(ref ReadOnlySpan<byte> span, ref short value)
         {
@@ -721,18 +967,53 @@ namespace Asv.IO
             span = span[sizeof(short)..];
         }
 
-        /// <summary>
-        /// Read a signed 16 bit integer.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 2 bytes.
-        /// </remarks>
-        /// <param name="span">Span to read from.</param>
-        /// <param name="value">Read value</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ReadShort(ReadOnlySpan<byte> span, ref short value)
         {
             value = MemoryMarshal.Read<short>(span);
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static short ReadShort(ref ReadOnlyMemory<byte> span)
+        {
+            var result = MemoryMarshal.Read<short>(span.Span);
+            // 'Advance' the span.
+            span = span[sizeof(short)..];
+            return result;
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ReadShort(ref ReadOnlyMemory<byte> memory, ref short value)
+        {
+            value = MemoryMarshal.Read<short>(memory.Span);
+            // 'Advance' the span.
+            memory = memory[sizeof(short)..];
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ReadShort(ReadOnlyMemory<byte> memory, ref short value)
+        {
+            value = MemoryMarshal.Read<short>(memory.Span);
+        }
+
+        public static bool TryReadShort(ref SequenceReader<byte> reader, ref short value)
+        {
+            const int size = sizeof(short);
+            var buff = ArrayPool<byte>.Shared.Rent(size);
+            try
+            {
+                var span = new Span<byte>(buff, 0, size);
+                if (reader.TryCopyTo(span) == false) return false;
+                reader.Advance(size);
+                var roSpan = new ReadOnlySpan<byte>(buff, 0, size);
+                ReadShort(ref roSpan, ref value);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buff);
+            }
+
+            return true;
         }
 
         #endregion
@@ -767,6 +1048,14 @@ namespace Asv.IO
         public static void WriteUShort(Span<byte> span, ushort val)
         {
             MemoryMarshal.Write(span, in val);
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteUShort(IBufferWriter<byte> wrt, ushort val)
+        {
+            var span = wrt.GetSpan(sizeof(ushort));
+            WriteUShort(ref span, val);
+            wrt.Advance(sizeof(ushort));
         }
         
         #endregion
@@ -818,19 +1107,44 @@ namespace Asv.IO
         {
             value = MemoryMarshal.Read<ushort>(span);
         }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ReadUShort(ref ReadOnlyMemory<byte> span, ref ushort value)
+        {
+            value = MemoryMarshal.Read<ushort>(span.Span);
+            span = span[sizeof(ushort)..];
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ReadUShort(ReadOnlyMemory<byte> span, ref ushort value)
+        {
+            value = MemoryMarshal.Read<ushort>(span.Span);
+        }
+        
+        public static bool TryReadUShort(ref SequenceReader<byte> reader, ref ushort value)
+        {
+            const int size = sizeof(ushort);
+            var buff = ArrayPool<byte>.Shared.Rent(size);
+            try
+            {
+                var span = new Span<byte>(buff, 0, size);
+                if (reader.TryCopyTo(span) == false) return false;
+                reader.Advance(size);
+                var roSpan = new ReadOnlySpan<byte>(buff, 0, size);
+                ReadUShort(ref roSpan, ref value);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buff);
+            }
+
+            return true;
+        }
 
         #endregion
 
         #region WriteInt
 
-        /// <summary>
-        /// Write a 32 bit signed integer.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 4 bytes.
-        /// </remarks>
-        /// <param name="span">Span to write to.</param>
-        /// <param name="val">Value to write.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteInt(ref Span<byte> span, int val)
         {
@@ -838,33 +1152,38 @@ namespace Asv.IO
             // 'Advance' the span.
             span = span[sizeof(int)..];
         }
-
-        /// <summary>
-        /// Write a 32 bit signed integer.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 4 bytes.
-        /// </remarks>
-        /// <param name="span">Span to write to.</param>
-        /// <param name="val">Value to write.</param>
+       
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteInt(Span<byte> span, int val)
         {
             MemoryMarshal.Write(span, in val);
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteInt(ref Memory<byte> mem, in int val)
+        {
+            MemoryMarshal.Write(mem.Span, in val);
+            // 'Advance' the span.
+            mem = mem[sizeof(int)..];
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteInt(Memory<byte> mem, in int val)
+        {
+            MemoryMarshal.Write(mem.Span, in val);
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteInt(IBufferWriter<byte> wrt, int val)
+        {
+            var span = wrt.GetSpan(sizeof(int));
+            WriteInt(ref span, val);
+            wrt.Advance(sizeof(int));
         }
         
         #endregion
         
         #region ReadInt
 
-        /// <summary>
-        /// Read signed 32 bit integer.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 4 bytes.
-        /// </remarks>
-        /// <param name="span">Span to read from.</param>
-        /// <returns>Read value.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int ReadInt(ref ReadOnlySpan<byte> span)
         {
@@ -876,14 +1195,6 @@ namespace Asv.IO
             return result;
         }
 
-        /// <summary>
-        /// Read signed 32 bit integer.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 4 bytes.
-        /// </remarks>
-        /// <param name="span">Span to read from.</param>
-        /// <param name="value">Read value</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ReadInt(ref ReadOnlySpan<byte> span, ref int value)
         {
@@ -891,32 +1202,52 @@ namespace Asv.IO
             // 'Advance' the span.
             span = span[sizeof(int)..];
         }
-        /// <summary>
-        /// Read signed 32 bit integer.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 4 bytes.
-        /// </remarks>
-        /// <param name="span">Span to read from.</param>
-        /// <param name="value">Read value</param>
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ReadInt(ReadOnlySpan<byte> span, ref int value)
         {
             value = MemoryMarshal.Read<int>(span);
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ReadInt(ReadOnlyMemory<byte> memory, ref int value)
+        {
+            value = MemoryMarshal.Read<int>(memory.Span);
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ReadInt(ref ReadOnlyMemory<byte> memory, ref int value)
+        {
+            value = MemoryMarshal.Read<int>(memory.Span);
+            // 'Advance' the span.
+            memory = memory[sizeof(int)..];
+        }
+        
+        public static bool TryReadInt(ref SequenceReader<byte> reader, ref int value)
+        {
+            const int size = sizeof(int);
+            var buff = ArrayPool<byte>.Shared.Rent(size);
+            try
+            {
+                var span = new Span<byte>(buff, 0, size);
+                if (reader.TryCopyTo(span) == false) return false;
+                reader.Advance(size);
+                var roSpan = new ReadOnlySpan<byte>(buff, 0, size);
+                ReadInt(ref roSpan, ref value);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buff);
+            }
+
+            return true;
         }
 
         #endregion
 
         #region WriteUInt
 
-        /// <summary>
-        /// Write a 32 bit unsigned integer.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 4 bytes.
-        /// </remarks>
-        /// <param name="span">Span to write to.</param>
-        /// <param name="val">Value to write.</param>
+      
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteUInt(ref Span<byte> span, uint val)
         {
@@ -924,32 +1255,39 @@ namespace Asv.IO
             // 'Advance' the span.
             span = span[sizeof(uint)..];
         }
-        /// <summary>
-        /// Write a 32 bit unsigned integer.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 4 bytes.
-        /// </remarks>
-        /// <param name="span">Span to write to.</param>
-        /// <param name="val">Value to write.</param>
+       
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteUInt(Span<byte> span, uint val)
         {
             MemoryMarshal.Write(span, in val);
         }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteUInt(ref Memory<byte> memory, uint val)
+        {
+            MemoryMarshal.Write(memory.Span, in val);
+            // 'Advance' the span.
+            memory = memory[sizeof(uint)..];
+        }
+       
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteUInt(Memory<byte> memory, uint val)
+        {
+            MemoryMarshal.Write(memory.Span, in val);
+        }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteUInt(IBufferWriter<byte> wrt, uint val)
+        {
+            var span = wrt.GetSpan(sizeof(uint));
+            WriteUInt(ref span, val);
+            wrt.Advance(sizeof(uint));
+        }
+        
         #endregion
         
         #region ReadUInt
 
-        /// <summary>
-        /// Read unsigned 32 bit integer.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 4 bytes.
-        /// </remarks>
-        /// <param name="span">Span to read from.</param>
-        /// <returns>Read value.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static uint ReadUInt(ref ReadOnlySpan<byte> span)
         {
@@ -959,14 +1297,6 @@ namespace Asv.IO
             return result;
         }
 
-        /// <summary>
-        /// Read unsigned 32 bit integer.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 4 bytes.
-        /// </remarks>
-        /// <param name="span">Span to read from.</param>
-        /// <param name="value">Read value</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ReadUInt(ref ReadOnlySpan<byte> span, ref uint value)
         {
@@ -974,32 +1304,51 @@ namespace Asv.IO
             // 'Advance' the span.
             span = span[sizeof(uint)..];
         }
-        /// <summary>
-        /// Read unsigned 32 bit integer.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 4 bytes.
-        /// </remarks>
-        /// <param name="span">Span to read from.</param>
-        /// <param name="value">Read value</param>
+       
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ReadUInt(ReadOnlySpan<byte> span, ref uint value)
         {
             value = MemoryMarshal.Read<uint>(span);
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ReadUInt(ref ReadOnlyMemory<byte> span, ref uint value)
+        {
+            value = MemoryMarshal.Read<uint>(span.Span);
+            // 'Advance' the span.
+            span = span[sizeof(uint)..];
+        }
+       
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ReadUInt(ReadOnlyMemory<byte> span, ref uint value)
+        {
+            value = MemoryMarshal.Read<uint>(span.Span);
+        }
+        
+        public static bool TryReadUInt(ref SequenceReader<byte> reader, ref uint value)
+        {
+            const int size = sizeof(uint);
+            var buff = ArrayPool<byte>.Shared.Rent(size);
+            try
+            {
+                var span = new Span<byte>(buff, 0, size);
+                if (reader.TryCopyTo(span) == false) return false;
+                reader.Advance(size);
+                var roSpan = new ReadOnlySpan<byte>(buff, 0, size);
+                ReadUInt(ref roSpan, ref value);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buff);
+            }
+            return true;
         }
 
         #endregion
 
         #region WriteLong
 
-        /// <summary>
-        /// Write a 64 bit signed integer.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 8 bytes.
-        /// </remarks>
-        /// <param name="span">Span to write to.</param>
-        /// <param name="val">Value to write.</param>
+     
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteLong(ref Span<byte> span, long val)
         {
@@ -1007,15 +1356,7 @@ namespace Asv.IO
             // 'Advance' the span.
             span = span[sizeof(long)..];
         }
-        
-        /// <summary>
-        /// Write a 64 bit signed integer.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 8 bytes.
-        /// </remarks>
-        /// <param name="span">Span to write to.</param>
-        /// <param name="val">Value to write.</param>
+       
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteLong(ref Span<byte> span, in long val)
         {
@@ -1024,46 +1365,38 @@ namespace Asv.IO
             span = span[sizeof(long)..];
         }
         
-        /// <summary>
-        /// Write a 64 bit signed integer.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 8 bytes.
-        /// </remarks>
-        /// <param name="span">Span to write to.</param>
-        /// <param name="val">Value to write.</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void WriteLong(Span<byte> span, long val)
-        {
-            MemoryMarshal.Write(span, in val);
-        }
-        
-        /// <summary>
-        /// Write a 64 bit signed integer.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 8 bytes.
-        /// </remarks>
-        /// <param name="span">Span to write to.</param>
-        /// <param name="val">Value to write.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteLong(Span<byte> span, in long val)
         {
             MemoryMarshal.Write(span, in val);
         }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteLong(ref Memory<byte> memory, in long val)
+        {
+            MemoryMarshal.Write(memory.Span, in val);
+            // 'Advance' the memory.
+            memory = memory[sizeof(long)..];
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteLong(Memory<byte> memory, in long val)
+        {
+            MemoryMarshal.Write(memory.Span, in val);
+        }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteLong(IBufferWriter<byte> wrt, in long val)
+        {
+            var span = wrt.GetSpan(sizeof(long));
+            WriteLong(ref span,in val);
+            wrt.Advance(sizeof(long));
+        }
+        
         #endregion
         
         #region ReadLong
 
-        /// <summary>
-        /// Read a signed 64 bit integer.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 8 bytes.
-        /// </remarks>
-        /// <param name="span">Span to read from.</param>
-        /// <returns>Read value.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static long ReadLong(ref ReadOnlySpan<byte> span)
         {
@@ -1075,14 +1408,6 @@ namespace Asv.IO
             return result;
         }
 
-        /// <summary>
-        /// Read a signed 64 bit integer.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 8 bytes.
-        /// </remarks>
-        /// <param name="span">Span to read from.</param>
-        /// <param name="value">Read value</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ReadLong(ref ReadOnlySpan<byte> span, ref long value)
         {
@@ -1090,32 +1415,50 @@ namespace Asv.IO
             // 'Advance' the span.
             span = span[sizeof(long)..];
         }
-        /// <summary>
-        /// Read a signed 64 bit integer.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 8 bytes.
-        /// </remarks>
-        /// <param name="span">Span to read from.</param>
-        /// <param name="value">Read value</param>
+        
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ReadLong(ReadOnlySpan<byte> span, ref long value)
         {
             value = MemoryMarshal.Read<long>(span);
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ReadLong(ref ReadOnlyMemory<byte> memory, ref long value)
+        {
+            value = MemoryMarshal.Read<long>(memory.Span);
+            // 'Advance' the span.
+            memory = memory[sizeof(long)..];
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ReadLong(ReadOnlyMemory<byte> memory, ref long value)
+        {
+            value = MemoryMarshal.Read<long>(memory.Span);
+        }
+        
+        public static bool TryReadLong(ref SequenceReader<byte> reader, ref long value)
+        {
+            const int size = sizeof(long);
+            var buff = ArrayPool<byte>.Shared.Rent(size);
+            try
+            {
+                var span = new Span<byte>(buff, 0, size);
+                if (reader.TryCopyTo(span) == false) return false;
+                reader.Advance(size);
+                var roSpan = new ReadOnlySpan<byte>(buff, 0, size);
+                ReadLong(ref roSpan, ref value);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buff);
+            }
+            return true;
         }
 
         #endregion
         
         #region WriteULong
 
-        /// <summary>
-        /// Write a 64 bit unsigned integer.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 8 bytes.
-        /// </remarks>
-        /// <param name="span">Span to write to.</param>
-        /// <param name="val">Value to write.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteULong(ref Span<byte> span, ulong val)
         {
@@ -1124,14 +1467,6 @@ namespace Asv.IO
             span = span[sizeof(ulong)..];
         }
 
-        /// <summary>
-        /// Write a 64 bit unsigned integer.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 8 bytes.
-        /// </remarks>
-        /// <param name="span">Span to write to.</param>
-        /// <param name="val">Value to write.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteULong(ref Span<byte> span, in ulong val)
         {
@@ -1139,45 +1474,39 @@ namespace Asv.IO
             // 'Advance' the span.
             span = span[sizeof(ulong)..];
         }
-        /// <summary>
-        /// Write a 64 bit unsigned integer.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 8 bytes.
-        /// </remarks>
-        /// <param name="span">Span to write to.</param>
-        /// <param name="val">Value to write.</param>
+      
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteULong(Span<byte> span, in ulong val)
         {
             MemoryMarshal.Write(span, in val);
         }
-        /// <summary>
-        /// Write a 64 bit unsigned integer.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 8 bytes.
-        /// </remarks>
-        /// <param name="span">Span to write to.</param>
-        /// <param name="val">Value to write.</param>
+        
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void WriteULong(Span<byte> span, ulong val)
+        public static void WriteULong(ref Memory<byte> memory, in ulong val)
         {
-            MemoryMarshal.Write(span, in val);
+            MemoryMarshal.Write(memory.Span, in val);
+            // 'Advance' the span.
+            memory = memory[sizeof(ulong)..];
+        }
+      
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteULong(Memory<byte> memory, in ulong val)
+        {
+            MemoryMarshal.Write(memory.Span, in val);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteULong(IBufferWriter<byte> wrt, in ulong val)
+        {
+            var span = wrt.GetSpan(sizeof(ulong));
+            WriteULong(ref span,in val);
+            wrt.Advance(sizeof(ulong));
+        }
+        
         #endregion
         
         #region ReadULong
 
-        /// <summary>
-        /// Read a unsigned 64 bit integer.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 8 bytes.
-        /// </remarks>
-        /// <param name="span">Span to read from.</param>
-        /// <returns>Read value.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ulong ReadULong(ref ReadOnlySpan<byte> span)
         {
@@ -1188,14 +1517,7 @@ namespace Asv.IO
 
             return result;
         }
-        /// <summary>
-        /// Read a unsigned 64 bit integer.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 8 bytes.
-        /// </remarks>
-        /// <param name="span">Span to read from.</param>
-        /// <param name="value">Read value</param>
+       
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ReadULong(ref ReadOnlySpan<byte> span, ref ulong value)
         {
@@ -1203,32 +1525,51 @@ namespace Asv.IO
             // 'Advance' the span.
             span = span[sizeof(ulong)..];
         }
-        /// <summary>
-        /// Read a unsigned 64 bit integer.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 8 bytes.
-        /// </remarks>
-        /// <param name="span">Span to read from.</param>
-        /// <param name="value">Read value</param>
+       
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ReadULong(ReadOnlySpan<byte> span, ref ulong value)
         {
             value = MemoryMarshal.Read<ulong>(span);
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ReadULong(ref ReadOnlyMemory<byte> memory, ref ulong value)
+        {
+            value = MemoryMarshal.Read<ulong>(memory.Span);
+            // 'Advance' the span.
+            memory = memory[sizeof(ulong)..];
+        }
+       
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ReadULong(ReadOnlyMemory<byte> memory, ref ulong value)
+        {
+            value = MemoryMarshal.Read<ulong>(memory.Span);
+        }
+        
+        public static bool TryReadULong(ref SequenceReader<byte> reader, ref ulong value)
+        {
+            const int size = sizeof(ulong);
+            var buff = ArrayPool<byte>.Shared.Rent(size);
+            try
+            {
+                var span = new Span<byte>(buff, 0, size);
+                if (reader.TryCopyTo(span) == false) return false;
+                reader.Advance(size);
+                var roSpan = new ReadOnlySpan<byte>(buff, 0, size);
+                ReadULong(ref roSpan, ref value);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buff);
+            }
+
+            return true;
         }
 
         #endregion
 
         #region WriteFloat
 
-        /// <summary>
-        /// Write a 32 bit floating-point number.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 4 bytes.
-        /// </remarks>
-        /// <param name="span">Span to write to.</param>
-        /// <param name="val">Value to write.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteFloat(ref Span<byte> span, float val)
         {
@@ -1237,14 +1578,6 @@ namespace Asv.IO
             span = span[sizeof(float)..];
         }
 
-        /// <summary>
-        /// Write a 32 bit floating-point number.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 4 bytes.
-        /// </remarks>
-        /// <param name="span">Span to write to.</param>
-        /// <param name="val">Value to write.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteFloat(ref Span<byte> span, in float val)
         {
@@ -1253,34 +1586,40 @@ namespace Asv.IO
             span = span[sizeof(float)..];
         }
         
-        /// <summary>
-        /// Write a 32 bit floating-point number.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 4 bytes.
-        /// </remarks>
-        /// <param name="span">Span to write to.</param>
-        /// <param name="val">Value to write.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteFloat(Span<byte> span, in float val)
         {
             MemoryMarshal.Write(span, in val);
         }
         
-        /// <summary>
-        /// Write a 32 bit floating-point number.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 4 bytes.
-        /// </remarks>
-        /// <param name="span">Span to write to.</param>
-        /// <param name="val">Value to write.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteFloat(Span<byte> span, float val)
         {
             MemoryMarshal.Write(span, in val);
         }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteFloat(Memory<byte> memory, in float val)
+        {
+            MemoryMarshal.Write(memory.Span, in val);
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteFloat(ref Memory<byte> memory, in float val)
+        {
+            MemoryMarshal.Write(memory.Span, in val);
+            // 'Advance' the span.
+            memory = memory[sizeof(float)..];
+        }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteFloat(IBufferWriter<byte> wrt, in float val)
+        {
+            var span = wrt.GetSpan(sizeof(float));
+            WriteFloat(ref span,in val);
+            wrt.Advance(sizeof(float));
+        }
+        
         #endregion
         
         #region ReadFloat
@@ -1302,14 +1641,6 @@ namespace Asv.IO
             return result;
         }
 
-        /// <summary>
-        /// Read a 32 bit floating-point number.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 4 bytes.
-        /// </remarks>
-        /// <param name="span">Span to read from.</param>
-        /// <param name="value">Read value</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ReadFloat(ref ReadOnlySpan<byte> span, ref float value)
         {
@@ -1318,32 +1649,51 @@ namespace Asv.IO
             span = span[sizeof(float)..];
         }
 
-        /// <summary>
-        /// Read a 32 bit floating-point number.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 4 bytes.
-        /// </remarks>
-        /// <param name="span">Span to read from.</param>
-        /// <param name="value"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ReadFloat(ReadOnlySpan<byte> span, ref float value)
         {
             value = MemoryMarshal.Read<float>(span);
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ReadFloat(ref ReadOnlyMemory<byte> memory, ref float value)
+        {
+            value = MemoryMarshal.Read<float>(memory.Span);
+            // 'Advance' the span.
+            memory = memory[sizeof(float)..];
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ReadFloat(ReadOnlyMemory<byte> memory, ref float value)
+        {
+            value = MemoryMarshal.Read<float>(memory.Span);
+        }
+
+        
+        public static bool TryReadFloat(ref SequenceReader<byte> reader, ref float value)
+        {
+            const int size = sizeof(float);
+            var buff = ArrayPool<byte>.Shared.Rent(size);
+            try
+            {
+                var span = new Span<byte>(buff, 0, size);
+                if (reader.TryCopyTo(span) == false) return false;
+                reader.Advance(size);
+                var roSpan = new ReadOnlySpan<byte>(buff, 0, size);
+                ReadFloat(ref roSpan, ref value);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buff);
+            }
+
+            return true;
         }
 
         #endregion
 
         #region WriteDouble
 
-        /// <summary>
-        /// Write a 64 bit floating-point number.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 8 bytes.
-        /// </remarks>
-        /// <param name="span">Span to write to.</param>
-        /// <param name="val">Value to write.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteDouble(ref Span<byte> span, double val)
         {
@@ -1351,14 +1701,7 @@ namespace Asv.IO
             // 'Advance' the span.
             span = span[sizeof(double)..];
         }
-        /// <summary>
-        /// Write a 64 bit floating-point number.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 8 bytes.
-        /// </remarks>
-        /// <param name="span">Span to write to.</param>
-        /// <param name="val">Value to write.</param>
+        
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteDouble(ref Span<byte> span, in double val)
         {
@@ -1366,32 +1709,41 @@ namespace Asv.IO
             // 'Advance' the span.
             span = span[sizeof(double)..];
         }
-        /// <summary>
-        /// Write a 64 bit floating-point number.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 8 bytes.
-        /// </remarks>
-        /// <param name="span">Span to write to.</param>
-        /// <param name="val">Value to write.</param>
+        
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteDouble(Span<byte> span, in double val)
         {
             MemoryMarshal.Write(span, in val);
         }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteDouble(ref Memory<byte> memory, in double val)
+        {
+            MemoryMarshal.Write(memory.Span, in val);
+            // 'Advance' the span.
+            memory = memory[sizeof(double)..];
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteDouble(Memory<byte> memory, in double val)
+        {
+            MemoryMarshal.Write(memory.Span, in val);
+        }
+
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteDouble(IBufferWriter<byte> wrt, in double val)
+        {
+            var span = wrt.GetSpan(sizeof(double));
+            WriteDouble(ref span,in val);
+            wrt.Advance(sizeof(double));
+        }
+
 
         #endregion
         
         #region ReadDouble
 
-        /// <summary>
-        /// Read a 64 bit floating-point number.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 4 bytes.
-        /// </remarks>
-        /// <param name="span">Span to read from.</param>
-        /// <returns>Read value.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double ReadDouble(ref ReadOnlySpan<byte> span)
         {
@@ -1401,14 +1753,6 @@ namespace Asv.IO
             return result;
         }
 
-        /// <summary>
-        /// Read a 64 bit floating-point number.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 4 bytes.
-        /// </remarks>
-        /// <param name="span">Span to read from.</param>
-        /// <param name="value">Read value</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ReadDouble(ref ReadOnlySpan<byte> span, ref double value)
         {
@@ -1417,62 +1761,100 @@ namespace Asv.IO
             span = span[sizeof(double)..];
         }
 
-        /// <summary>
-        /// Read a 64 bit floating-point number.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 4 bytes.
-        /// </remarks>
-        /// <param name="span">Span to read from.</param>
-        /// <param name="value">Read value</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ReadDouble(ReadOnlySpan<byte> span, ref double value)
         {
             value = MemoryMarshal.Read<double>(span);
         }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ReadDouble(ref ReadOnlyMemory<byte> span, ref double value)
+        {
+            value = MemoryMarshal.Read<double>(span.Span);
+            // 'Advance' the span.
+            span = span[sizeof(double)..];
+        }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ReadDouble(ReadOnlyMemory<byte> span, ref double value)
+        {
+            value = MemoryMarshal.Read<double>(span.Span);
+        }
+
+        public static bool TryReadDouble(ref SequenceReader<byte> reader, ref double value)
+        {
+            const int size = sizeof(double);
+            var buff = ArrayPool<byte>.Shared.Rent(size);
+            try
+            {
+                var span = new Span<byte>(buff, 0, size);
+                if (reader.TryCopyTo(span) == false) return false;
+                reader.Advance(size);
+                var roSpan = new ReadOnlySpan<byte>(buff, 0, size);
+                ReadDouble(ref roSpan, ref value);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buff);
+            }
+
+            return true;
+        }
+        
         #endregion
 
         #region ReadBitRange
 
-        /// <summary>
-        /// Read a value as a fraction between a given minimum and maximum.
-        /// Uses 8 bits so we have '256' steps between min and max.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 1 byte.
-        /// </remarks>
-        /// <param name="span">Span to read from.</param>
-        /// <param name="min">Minimum value of the range.</param>
-        /// <param name="max">Maximum value of the range.</param>
-        /// <returns>Read value.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float Read8BitRange(ref ReadOnlySpan<byte> span, float min, float max)
+        public static float Read8BitRange(ref ReadOnlySpan<byte> span,in float min,in float max)
         {
             // Read a byte.
             var raw = ReadByte(ref span);
             // Remap it to the given range.
             return Interpolate(min, max, (float)raw / byte.MaxValue);
         }
-       
-        /// <summary>
-        /// Read a value as a fraction between a given minimum and maximum.
-        /// Uses 16 bits so we have '65535' steps between min and max.
-        /// </summary>
-        /// <remarks>
-        /// Will consume 2 bytes.
-        /// </remarks>
-        /// <param name="span">Span to read from.</param>
-        /// <param name="min">Minimum value of the range.</param>
-        /// <param name="max">Maximum value of the range.</param>
-        /// <returns>Read value.</returns>
+        
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float Read16BitRange(ref ReadOnlySpan<byte> span, float min, float max)
+        public static float Read8BitRange(ref ReadOnlyMemory<byte> span,in float min,in float max)
+        {
+            // Read a byte.
+            var raw = ReadByte(ref span);
+            // Remap it to the given range.
+            return Interpolate(min, max, (float)raw / byte.MaxValue);
+        }
+
+        public static bool TryRead8BitRange(ref SequenceReader<byte> rdr,in float min,in float max, ref float value)
+        {
+            byte raw = 0;
+            if (TryReadByte(ref rdr, ref raw) == false) return false;
+            value = Interpolate(min, max, (float)raw / byte.MaxValue);
+            return true;
+        }
+       
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float Read16BitRange(ref ReadOnlySpan<byte> span,in  float min,in  float max)
         {
             // Read a ushort.
             var raw = ReadUShort(ref span);
             // Remap it to the given range.
             return Interpolate(min, max, (float)raw / ushort.MaxValue);
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float Read16BitRange(ref ReadOnlyMemory<byte> span,in  float min,in  float max)
+        {
+            ushort raw = 0; 
+            ReadUShort(ref span, ref raw);
+            // Remap it to the given range.
+            return Interpolate(min, max, (float)raw / ushort.MaxValue);
+        }
+        
+        public static bool TryRead16BitRange(ref SequenceReader<byte> rdr,in float min,in float max, ref float value)
+        {
+            ushort raw = 0;
+            if (TryReadUShort(ref rdr, ref raw) == false) return false;
+            value = Interpolate(min, max, (float)raw / byte.MaxValue);
+            return true;
         }
 
         #endregion
@@ -1490,7 +1872,8 @@ namespace Asv.IO
         /// <param name="min">Minimum value of the range.</param>
         /// <param name="max">Maximum value of the range.</param>
         /// <param name="val">Value to write (within the range.</param>
-        public static void Write8BitRange(ref Span<byte> span, float min, float max, float val)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Write8BitRange(ref Span<byte> span,in  float min,in  float max,in  float val)
         {
             // Get a 0f - 1f fraction.
             var frac = Fraction(min, max, val);
@@ -1499,6 +1882,16 @@ namespace Asv.IO
             WriteByte(ref span, (byte)(byte.MaxValue * frac + .5f));
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Write8BitRange(IBufferWriter<byte> wrt, in float min,in float max,in float val)
+        {
+            // Get a 0f - 1f fraction.
+            var frac = Fraction(min, max, val);
+
+            // Remap it to a byte and write it (+ .5f because we want round, not floor).
+            WriteByte(wrt, (byte)(byte.MaxValue * frac + .5f));
+        }
+        
         /// <summary>
         /// Write a value as a fraction between a given minimum and maximum.
         /// Uses 16 bits so we have '65535' steps between min and max.
@@ -1510,7 +1903,8 @@ namespace Asv.IO
         /// <param name="min">Minimum value of the range.</param>
         /// <param name="max">Maximum value of the range.</param>
         /// <param name="val">Value to write (within the range.</param>
-        public static void Write16BitRange(ref Span<byte> span, float min, float max, float val)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Write16BitRange(ref Span<byte> span, in float min,in float max,in float val)
         {
             // Get a 0f - 1f fraction.
             var frac = Fraction(min, max, val);
@@ -1518,7 +1912,15 @@ namespace Asv.IO
             // Remap it to ushort and write it (+ .5f because we want round, not floor).
             WriteUShort(ref span, (ushort)(ushort.MaxValue * frac + .5f));
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Write16BitRange(IBufferWriter<byte> wrt, in float min,in float max,in float val)
+        {
+            // Get a 0f - 1f fraction.
+            var frac = Fraction(min, max, val);
 
+            // Remap it to ushort and write it (+ .5f because we want round, not floor).
+            WriteUShort(wrt, (ushort)(ushort.MaxValue * frac + .5f));
+        }
         #endregion
         
         #region ReadString
@@ -1577,6 +1979,16 @@ namespace Asv.IO
             }
         }
 
+        public static string ReadString(ref ReadOnlyMemory<byte> span)
+        {
+            var originSpan = span.Span;
+            var str = ReadString(ref originSpan);
+            var size = span.Span.Length - originSpan.Length;
+            span = span[size..];
+            return str;
+
+        }
+
         /// <summary>
         /// Read a string to a given output-buffer.
         /// </summary>
@@ -1608,6 +2020,34 @@ namespace Asv.IO
 
             return charsRead;
         }
+
+        public static bool TryReadString(ref SequenceReader<byte> reader, ref string value)
+        {
+            uint size = 0;
+            if (TryReadPackedUnsignedInteger(ref reader, ref size, out var consumed) == false)
+            {
+                return false;
+            }
+            var buff = ArrayPool<byte>.Shared.Rent((int)size);
+            try
+            {
+                var span = new Span<byte>(buff, 0, (int)size);
+                if (reader.TryCopyTo(span) == false)
+                {
+                    reader.Rewind(consumed);
+                    return false;
+                }
+                value = Uft8.GetString(span);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buff);
+            }
+
+            return true;
+        }
+        
+        
 
         #endregion
 
@@ -1705,7 +2145,14 @@ namespace Asv.IO
         {
             val.CopyTo(span);
         }
-
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteBlock(IBufferWriter<byte> wrt, ReadOnlySpan<byte> val)
+        {
+            var span = wrt.GetSpan(val.Length);
+            WriteBlock(ref span, val);
+            wrt.Advance(val.Length);
+        }
         #endregion
 
         #region ReadBlock
@@ -1727,14 +2174,6 @@ namespace Asv.IO
             return result;
         }
 
-        /// <summary>
-        /// Read a continuous block of bytes into given output span.
-        /// </summary>
-        /// <remarks>
-        /// Will consume length of '<paramref name="output"/>'.
-        /// </remarks>
-        /// <param name="span">Span to read from.</param>
-        /// <param name="output">Span to write to.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ReadBlock(ref ReadOnlySpan<byte> span, Span<byte> output)
         {
@@ -1743,18 +2182,37 @@ namespace Asv.IO
             // 'Advance' the span.
             span = span[output.Length..];
         }
-        /// <summary>
-        /// Read a continuous block of bytes into given output span.
-        /// </summary>
-        /// <remarks>
-        /// Will consume length of '<paramref name="output"/>'.
-        /// </remarks>
-        /// <param name="span">Span to read from.</param>
-        /// <param name="output">Span to write to.</param>
+       
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ReadBlock(ReadOnlySpan<byte> span, Span<byte> output)
         {
             span[..output.Length].CopyTo(output);
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ReadBlock(ReadOnlyMemory<byte> span, Span<byte> output)
+        {
+            span[..output.Length].Span.CopyTo(output);
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ReadBlock(ref ReadOnlyMemory<byte> span, Span<byte> output)
+        {
+            span[..output.Length].Span.CopyTo(output);
+
+            // 'Advance' the span.
+            span = span[output.Length..];
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool TryReadBlock(ref SequenceReader<byte> reader, Span<byte> output)
+        {
+            if (reader.TryCopyTo(output) == false)
+            {
+                return false;
+            }
+            reader.Advance(output.Length);
+            return true;
         }
 
         #endregion
