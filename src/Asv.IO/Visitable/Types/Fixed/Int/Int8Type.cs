@@ -1,13 +1,23 @@
+using System;
+
 namespace Asv.IO;
 
-public sealed class Int8Type : FieldIntegerType
+public sealed class Int8Type(sbyte min = sbyte.MinValue, sbyte max = sbyte.MaxValue) : IntegerType
 {
     public static readonly Int8Type Default = new();
 
+    public sbyte MinValue => min;
+    public sbyte MaxValue => max;
+    
     public override FieldTypeId TypeId => FieldTypeId.Int8;
     public override string Name => "int8";
     public override int BitWidth => 8;
     public override int ByteWidth => 1;
     public override bool IsSigned => true;
     public static void Accept(IVisitor visitor,Field field, ref sbyte value) => FieldType.Accept(visitor, field, ref value);
+
+    public override string ToString()
+    {
+        return $"int8({MinValue}-{MaxValue})";
+    }
 }

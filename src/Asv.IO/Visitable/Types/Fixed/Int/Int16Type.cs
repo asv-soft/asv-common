@@ -1,6 +1,6 @@
 namespace Asv.IO;
 
-public sealed class Int16Type : FieldIntegerType
+public sealed class Int16Type : IntegerType
 {
     public static readonly Int16Type Default = new();
     public override FieldTypeId TypeId => FieldTypeId.Int16;

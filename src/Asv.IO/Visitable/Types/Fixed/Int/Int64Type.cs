@@ -1,6 +1,6 @@
 namespace Asv.IO
 {
-    public sealed class Int64Type : FieldIntegerType
+    public sealed class Int64Type : IntegerType
     {
         public static readonly Int64Type Default = new();
 

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using Asv.Common;
 using Microsoft.Extensions.Logging;
@@ -52,13 +51,13 @@ namespace Asv.Cfg
         private const string InfoKey = "FileInfo";
 
         public ZipJsonVersionedFile(
-            Stream zipStream,
+            Stream stream,
             SemVersion lastVersion, 
             string fileType, 
             bool createIfNotExist,
             bool leaveOpen = false, 
             ILogger? logger = null )
-            :base(zipStream, leaveOpen,logger)
+            :base(stream, leaveOpen,logger)
         {
             var info = Get(InfoKey, new Lazy<ZipJsonFileInfo>(ZipJsonFileInfo.Empty));
             string type;

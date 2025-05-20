@@ -1,6 +1,6 @@
 namespace Asv.IO;
 
-public sealed class UInt16Type : FieldIntegerType
+public sealed class UInt16Type : IntegerType
 {
     public static readonly UInt16Type Default = new();
 

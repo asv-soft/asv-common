@@ -74,4 +74,7 @@
       <LastGenOutput>SpanBitHelperExt.cs</LastGenOutput>
     </None>
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Visitable\Types\Fixed\Time\" />
+  </ItemGroup>
 </Project>

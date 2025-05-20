@@ -1,6 +1,6 @@
 namespace Asv.IO;
 
-public sealed class BooleanType: FieldNumberType
+public sealed class BooleanType: NumberType
 {
     public static readonly BooleanType Default = new();
 

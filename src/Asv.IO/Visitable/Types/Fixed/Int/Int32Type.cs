@@ -1,6 +1,6 @@
 namespace Asv.IO;
 
-public sealed class Int32Type : FieldIntegerType
+public sealed class Int32Type : IntegerType
 {
     public static readonly Int32Type Default = new();
 

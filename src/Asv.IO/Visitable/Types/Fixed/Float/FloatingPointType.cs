@@ -1,6 +1,6 @@
 namespace Asv.IO;
 
-public abstract class FloatingPointType: FieldNumberType
+public abstract class FloatingPointType: NumberType
 {
     public enum PrecisionKind
     {

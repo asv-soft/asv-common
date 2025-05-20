@@ -6,7 +6,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Asv.Common;
 using R3;
-using OperationCanceledException = System.OperationCanceledException;
 
 namespace Asv.IO;
 

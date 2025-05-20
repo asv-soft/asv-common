@@ -9,8 +9,6 @@ using R3;
 using TimeProviderExtensions;
 using Xunit;
 using Xunit.Abstractions;
-using DeepEqual.Syntax;
-using Guid = System.Guid;
 
 namespace Asv.IO.Test;
 

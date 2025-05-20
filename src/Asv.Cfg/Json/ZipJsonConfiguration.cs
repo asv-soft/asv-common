@@ -2,16 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
-using System.IO.Abstractions;
 using System.IO.Compression;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
-using Asv.Common;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Newtonsoft.Json;
-using R3;
 using ZLogger;
 
 namespace Asv.Cfg
@@ -26,14 +23,14 @@ namespace Asv.Cfg
 
         public ZipJsonConfiguration
         (
-            Stream zipStream,
+            Stream stream,
             bool leaveOpen = false, 
             ILogger? logger = null
         )
         {
-            ArgumentNullException.ThrowIfNull(zipStream);
+            ArgumentNullException.ThrowIfNull(stream);
             _logger = logger ?? NullLogger.Instance;
-            _archive = new ZipArchive(zipStream, ZipArchiveMode.Update, leaveOpen);
+            _archive = new ZipArchive(stream, ZipArchiveMode.Update, leaveOpen);
             _serializer = JsonHelper.CreateDefaultJsonSerializer();
         }
 
@@ -48,7 +45,7 @@ namespace Asv.Cfg
 
         protected override IEnumerable<string> InternalSafeGetReservedParts()
         {
-            return Array.Empty<string>();
+            return [];
         }
 
         protected override IEnumerable<string> InternalSafeGetAvailableParts()

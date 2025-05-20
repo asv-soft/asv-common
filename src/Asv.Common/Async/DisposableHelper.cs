@@ -1,5 +1,4 @@
 using System;
-using System.Threading;
 using R3;
 
 namespace Asv.Common

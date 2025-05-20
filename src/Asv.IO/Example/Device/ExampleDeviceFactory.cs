@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Immutable;
 
 namespace Asv.IO.Device;

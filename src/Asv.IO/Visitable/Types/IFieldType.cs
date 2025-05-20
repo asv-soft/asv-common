@@ -19,7 +19,9 @@ public enum FieldTypeId
     Array,
     List,
     Schema,
-    Struct
+    Struct,
+    Time32,
+    Time64
 }
 
 public interface IFieldType

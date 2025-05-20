@@ -1,6 +1,6 @@
 namespace Asv.IO;
 
-public sealed class UInt8Type : FieldIntegerType
+public sealed class UInt8Type : IntegerType
 {
     public static readonly UInt8Type Default = new();
 

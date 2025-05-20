@@ -1,6 +1,6 @@
 namespace Asv.IO;
 
-public abstract class FieldFixedWidthType: FieldType
+public abstract class FixedWidthType: FieldType
 {
     public override bool IsFixedWidth => true;
 

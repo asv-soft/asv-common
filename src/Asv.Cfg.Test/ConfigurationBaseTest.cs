@@ -2,7 +2,6 @@ using System;
 using System.Linq;
 using System.Threading;
 using AutoFixture;
-using JetBrains.Annotations;
 using Xunit;
 using Xunit.Abstractions;
 

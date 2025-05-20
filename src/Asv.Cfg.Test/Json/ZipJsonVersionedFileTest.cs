@@ -4,7 +4,6 @@ using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using Asv.Common;
 using JetBrains.Annotations;
-using Microsoft.Extensions.Logging;
 using R3;
 using Xunit;
 using Xunit.Abstractions;
