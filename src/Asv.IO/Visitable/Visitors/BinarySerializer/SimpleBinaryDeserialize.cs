@@ -98,7 +98,7 @@ public class SimpleBinaryDeserialize(ReadOnlyMemory<byte> memory, bool skipUnkno
         // do nothing
     }
 
-    public override void BeginList(Field field, ref uint size)
+    public override void BeginList(Field field, IFieldType type, ref uint size)
     {
         BinSerialize.ReadUInt(ref Memory, ref size);
     }

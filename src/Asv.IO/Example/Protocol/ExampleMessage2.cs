@@ -18,7 +18,7 @@ public class ExampleMessage2 : ExampleMessageBase
         Int32Type.Accept(visitor, Value4Field, ref _value4);
         FloatType.Accept(visitor, Value5Field, ref _value5);
         DoubleType.Accept(visitor, Value6Field, ref _value6);
-        BooleanType.Visit(visitor, Value7Field, ref _value7);
+        BoolType.Visit(visitor, Value7Field, ref _value7);
         Int64Type.Accept(visitor, Value8Field, ref _value8);
         UInt64Type.Accept(visitor, Value9Field, ref _value9);
     }
@@ -104,7 +104,7 @@ public class ExampleMessage2 : ExampleMessageBase
 
     private static readonly Field Value7Field = new Field.Builder()
         .Name(nameof(Value7))
-        .DataType(BooleanType.Default)
+        .DataType(BoolType.Default)
         .Title("Title  message  field 7")
         .Description("Description message field 7").Build();
     private bool _value7;

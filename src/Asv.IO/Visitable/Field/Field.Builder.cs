@@ -7,17 +7,19 @@ namespace Asv.IO;
 
 public partial class Field
 {
-    
-    
-    public class Builder
+    public static Builder CreateBuilder() => new();
+
+    public sealed class Builder
     {
         private string? _name;
-        private ImmutableDictionary<string, string>.Builder? _metadata;
+        private readonly ImmutableDictionary<string, object?>.Builder _metadata = ImmutableDictionary.CreateBuilder<string, object?>();
         private IFieldType? _type;
 
-        public virtual Field Build()
+        public Field Build()
         {
-            return new Field(_name ?? throw new InvalidOperationException(), _type ?? throw new InvalidOperationException(), _metadata?.ToImmutable() ?? ImmutableDictionary<string, string>.Empty);
+            ArgumentException.ThrowIfNullOrWhiteSpace(_name);
+            ArgumentNullException.ThrowIfNull(_type);
+            return new Field(_name, _type, _metadata.ToImmutable());
         }
         
         public Builder Name(string value)
@@ -32,29 +34,15 @@ public partial class Field
             return this;
         }
         
-        public Builder Metadata(string key, string value)
+        public Builder Metadata(string key, object? value)
         {
             if (string.IsNullOrWhiteSpace(key))
             {
                 throw new ArgumentNullException(nameof(key));
             }
-
-            _metadata ??= ImmutableDictionary.CreateBuilder<string, string>();
-
             _metadata[key] = value;
             return this;
         }
-        
-        public Builder Metadata(IEnumerable<KeyValuePair<string, string>> dictionary)
-        {
-            ArgumentNullException.ThrowIfNull(dictionary);
-            foreach (var entry in dictionary)
-            {
-                Metadata(entry.Key, entry.Value);
-            }
-            return this;
-        }
-
 
     }
 }

@@ -104,7 +104,7 @@ public class ExampleMessage1: ExampleMessageBase
 
     public override void Accept(IVisitor visitor)
     {
-        Int32Type.Accept(visitor, Value1Field, ref _value1);
+        Int32Type.Accept(visitor, Value1Field, Value1Field.DataType, ref _value1);
         UInt16Type.Accept(visitor, Value2Field, ref _value2);
         StringType.Accept(visitor, Value3Field, ref _value3);
         ArrayType.Accept(visitor, Value4Field, _value4.Length, (index,v) =>

@@ -89,7 +89,7 @@ public class SimpleBinarySizeCalculator(bool skipUnknown) : FullVisitorBase(skip
         // fixed size struct => skip
     }
 
-    public override void BeginList(Field field, ref uint size)
+    public override void BeginList(Field field, IFieldType type, ref uint size)
     {
         Size += sizeof(uint);
     }

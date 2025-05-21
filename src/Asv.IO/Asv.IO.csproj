@@ -74,7 +74,4 @@
       <LastGenOutput>SpanBitHelperExt.cs</LastGenOutput>
     </None>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="MessageVisitor\Field\" />
-  </ItemGroup>
 </Project>

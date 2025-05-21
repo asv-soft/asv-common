@@ -42,6 +42,6 @@ public abstract class FullVisitorBase(bool skipUnknown)  : IFullVisitor
     public abstract void EndArray();
     public abstract void BeginStruct(Field field);
     public abstract void EndStruct();
-    public abstract void BeginList(Field field, ref uint size);
+    public abstract void BeginList(Field field, IFieldType type, ref uint size);
     public abstract void EndList();
 }

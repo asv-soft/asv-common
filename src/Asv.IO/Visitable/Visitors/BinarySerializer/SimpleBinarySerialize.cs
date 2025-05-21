@@ -99,7 +99,7 @@ public readonly struct SimpleBinarySerialize(IBufferWriter<byte> buffer, bool sk
         // fixed size struct => skip
     }
 
-    public void BeginList(Field field, ref uint size)
+    public void BeginList(Field field, IFieldType type, ref uint size)
     {
         BinSerialize.WriteUInt(buffer, size);
     }

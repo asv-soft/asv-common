@@ -130,7 +130,7 @@ public struct PrintValueVisitor(StringBuilder sb) : IFullVisitor
         sb.Append('}');
     }
 
-    public void BeginList(Field field, ref uint size)
+    public void BeginList(Field field, IFieldType type, ref uint size)
     {
         CheckFirst();
         _first = true;

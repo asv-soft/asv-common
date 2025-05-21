@@ -2,40 +2,29 @@ namespace Asv.IO;
 
 public interface IVisitor
 {
-    void VisitUnknown(Field field);
+    void VisitUnknown(Field field, IFieldType type);
 }
 
-public interface IVisitor<TValue> : IVisitor
+public interface IReferenceVisitor<in TType, TValue> : IVisitor
 {
-    void Visit(Field field, ref TValue value);
+    void Visit(Field field, TType type, ref TValue value);
 }
 
-public interface IArrayVisitor: IVisitor
-{
-    void BeginArray(Field field, int size);
-    void EndArray();
-}
-
-public interface IStructVisitor: IVisitor
-{
-    void BeginStruct(Field field);
-    void EndStruct();
-}
-
-public interface IFullVisitor : 
-    IArrayVisitor,
-    IStructVisitor,
-    IListVisitor,
-    IVisitor<char>,
-    IVisitor<byte>,
-    IVisitor<sbyte>,
-    IVisitor<short>,
-    IVisitor<ushort>,
-    IVisitor<int>,
-    IVisitor<uint>,
-    IVisitor<long>,
-    IVisitor<ulong>,
-    IVisitor<float>,
-    IVisitor<double>,
-    IVisitor<string>,
-    IVisitor<bool>;
+public interface IFullVisitor :
+    ListType.IVisitor,
+    ArrayType.IVisitor,
+    StructType.IVisitor,
+    DoubleType.IVisitor,
+    FloatType.IVisitor,
+    HalfFloatType.IVisitor,
+    Int8Type.IVisitor,
+    Int16Type.IVisitor,
+    Int32Type.IVisitor,
+    Int64Type.IVisitor,
+    UInt8Type.IVisitor,
+    UInt16Type.IVisitor,
+    UInt32Type.IVisitor,
+    UInt64Type.IVisitor,
+    StringType.IVisitor,
+    BoolType.IVisitor,
+    CharType.IVisitor;

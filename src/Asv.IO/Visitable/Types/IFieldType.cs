@@ -1,35 +1,30 @@
 namespace Asv.IO;
 
-public enum FieldTypeId
-{
-    Null,
-    Boolean,
-    UInt8,
-    Int8,
-    UInt16,
-    Int16,
-    UInt32,
-    Int32,
-    UInt64,
-    Int64,
-    HalfFloat,
-    Float,
-    Double,
-    String,
-    Array,
-    List,
-    Schema,
-    Struct,
-    Time32,
-    Time64,
-    AsciiChar
-}
-
 public interface IFieldType
 {
-    FieldTypeId TypeId { get; }
-
     string Name { get; }
- 
-    bool IsFixedWidth { get; }
 }
+
+public abstract class FieldType: IFieldType
+{
+    public abstract string Name { get; }
+}
+
+public abstract class FieldType<TSelf, TValue> : FieldType
+    where TSelf : IFieldType
+{
+    public static void Accept(Asv.IO.IVisitor visitor, Field field, IFieldType type, ref TValue value)
+    {
+        if (visitor is IVisitor accept)
+        {
+            accept.Visit(field, (TSelf)type, ref value);
+        }
+        else
+        {
+            visitor.VisitUnknown(field, type);
+        }
+    }
+    public interface IVisitor : IReferenceVisitor<TSelf, TValue>;
+}
+
+

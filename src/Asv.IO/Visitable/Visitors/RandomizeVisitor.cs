@@ -3,7 +3,8 @@ using DotNext;
 
 namespace Asv.IO;
 
-public class RandomizeVisitor(Random random, string allowedChars, int minStringSize, int maxStringSize, uint minListSize, uint maxListSize) : IFullVisitor
+public class RandomizeVisitor(Random random, string allowedChars, int minStringSize, int maxStringSize, uint minListSize, uint maxListSize) 
+    : IFullVisitor
 {
     public const string AllowedChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     public const int MaxStringSize = 16;
@@ -51,6 +52,11 @@ public class RandomizeVisitor(Random random, string allowedChars, int minStringS
         // do nothing
     }
 
+    public void BeginStruct(Field field, StructType type)
+    {
+        throw new NotImplementedException();
+    }
+
     public void EndStruct()
     {
         // do nothing
@@ -61,18 +67,103 @@ public class RandomizeVisitor(Random random, string allowedChars, int minStringS
         // do nothing
     }
 
+    public void BeginArray(Field field, ArrayType fieldType, int size)
+    {
+        throw new NotImplementedException();
+    }
+
     public void EndArray()
     {
         // do nothing
     }
 
-    public void BeginList(Field field, ref uint size)
+    public void BeginList(Field field, IFieldType type, ref uint size)
     {
         size = (uint)random.Next((int)minListSize, (int)maxListSize);
+    }
+
+    public void BeginList(Field field, ListType type, ref uint size)
+    {
+        throw new NotImplementedException();
     }
 
     public void EndList()
     {
         // do nothing
+    }
+
+    public void Visit(Field field, FloatType type, ref double value)
+    {
+        throw new NotImplementedException();
+    }
+
+    public void Visit(Field field, FloatType type, ref float value)
+    {
+        throw new NotImplementedException();
+    }
+
+    public void Visit(Field field, FloatType type, ref Half value)
+    {
+        throw new NotImplementedException();
+    }
+
+    public void Visit(Field field, Int8Type type, ref sbyte value)
+    {
+        throw new NotImplementedException();
+    }
+
+    public void Visit(Field field, Int16Type type, ref short value)
+    {
+        throw new NotImplementedException();
+    }
+
+    public void Visit(Field field, Int32Type type, ref int value)
+    {
+        throw new NotImplementedException();
+    }
+
+    public void Visit(Field field, Int64Type type, ref long value)
+    {
+        throw new NotImplementedException();
+    }
+
+    public void Visit(Field field, UInt8Type type, ref byte value)
+    {
+        throw new NotImplementedException();
+    }
+
+    public void Visit(Field field, UInt16Type type, ref ushort value)
+    {
+        throw new NotImplementedException();
+    }
+
+    public void Visit(Field field, UInt32Type type, ref uint value)
+    {
+        throw new NotImplementedException();
+    }
+
+    public void Visit(Field field, UInt64Type type, ref ulong value)
+    {
+        throw new NotImplementedException();
+    }
+
+    public void Visit(Field field, StringType type, ref string value)
+    {
+        throw new NotImplementedException();
+    }
+
+    public void Visit(Field field, BoolType type, ref bool value)
+    {
+        throw new NotImplementedException();
+    }
+
+    public void Visit(Field field, CharType type, ref char value)
+    {
+        throw new NotImplementedException();
+    }
+
+    public void VisitUnknown(Field field, IFieldType type)
+    {
+        throw new NotImplementedException();
     }
 }
