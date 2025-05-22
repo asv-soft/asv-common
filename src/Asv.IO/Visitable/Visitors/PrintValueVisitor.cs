@@ -1,8 +1,9 @@
+using System;
 using System.Text;
 
 namespace Asv.IO;
 
-public struct PrintValueVisitor(StringBuilder sb) : IFullVisitor
+public class PrintValueVisitor(StringBuilder sb, bool skipUnknown) : FullVisitorBase(skipUnknown)
 {
     private bool _first = true;
 
@@ -17,7 +18,64 @@ public struct PrintValueVisitor(StringBuilder sb) : IFullVisitor
             sb.Append(", ");
         }
     }
-    public void Visit(Field field, ref byte value)
+    public override void Visit(Field field, UInt8Type type, ref byte value)
+    {
+        CheckFirst();
+        sb.Append(value);
+    }
+
+    public override void Visit(Field field, HalfFloatType type, ref Half value)
+    {
+        CheckFirst();
+        sb.Append(value);
+    }
+
+
+    public override void Visit(Field field, Int8Type type, ref sbyte value)
+    {
+        CheckFirst();
+        sb.Append(value);
+    }
+    public override void Visit(Field field, Int16Type type, ref short value)
+    {
+        CheckFirst();
+        sb.Append(value);
+    }
+    public override void Visit(Field field, UInt16Type type, ref ushort value)
+    {
+        CheckFirst();
+        sb.Append(value);
+    }
+    public override void Visit(Field field, Int32Type type, ref int value)
+    {
+        CheckFirst();
+        sb.Append(value);
+    }
+    public override void Visit(Field field, UInt32Type type, ref uint value)
+    {
+        CheckFirst();
+        sb.Append(value);
+    }
+
+    public override void Visit(Field field, Int64Type type, ref long value)
+    {
+        CheckFirst();
+        sb.Append(value);
+    }
+
+    public override void Visit(Field field, UInt64Type type, ref ulong value)
+    {
+        CheckFirst();
+        sb.Append(value);
+    }
+
+    public override void Visit(Field field, DoubleType type, ref double value)
+    {
+        CheckFirst();
+        sb.Append(value);
+    }
+
+    public override void Visit(Field field, FloatType type, ref float value)
     {
         CheckFirst();
         sb.Append(value);
@@ -25,61 +83,7 @@ public struct PrintValueVisitor(StringBuilder sb) : IFullVisitor
 
     
 
-    public void Visit(Field field, ref sbyte value)
-    {
-        CheckFirst();
-        sb.Append(value);
-    }
-
-    public void Visit(Field field, ref short value)
-    {
-        CheckFirst();
-        sb.Append(value);
-    }
-
-    public void Visit(Field field, ref ushort value)
-    {
-        CheckFirst();
-        sb.Append(value);
-    }
-
-    public void Visit(Field field, ref int value)
-    {
-        CheckFirst();
-        sb.Append(value);
-    }
-
-    public void Visit(Field field, ref uint value)
-    {
-        CheckFirst();
-        sb.Append(value);
-    }
-
-    public void Visit(Field field, ref long value)
-    {
-        CheckFirst();
-        sb.Append(value);
-    }
-
-    public void Visit(Field field, ref ulong value)
-    {
-        CheckFirst();
-        sb.Append(value);
-    }
-
-    public void Visit(Field field, ref float value)
-    {
-        CheckFirst();
-        sb.Append(value);
-    }
-
-    public void Visit(Field field, ref double value)
-    {
-        CheckFirst();
-        sb.Append(value);
-    }
-
-    public void Visit(Field field, ref string value)
+    public override void Visit(Field field, StringType type, ref string value)
     {
         CheckFirst();
         sb.Append('\'');
@@ -87,57 +91,58 @@ public struct PrintValueVisitor(StringBuilder sb) : IFullVisitor
         sb.Append('\'');
     }
 
-    public void Visit(Field field, ref bool value)
+    public override void Visit(Field field, BoolType type, ref bool value)
     {
         CheckFirst();
         sb.Append(value);
     }
 
-    public void Visit(Field field, ref char value)
+    public override void Visit(Field field, CharType type, ref char value)
     {
         CheckFirst();
         sb.Append(value);
     }
 
-    public void VisitUnknown(Field field)
+    public override void VisitUnknown(Field field, IFieldType type)
     {
         // This method is not implemented in this visitor
     }
 
-    public void BeginArray(Field field, int size)
+    public override void BeginArray(Field field, ArrayType fieldType, int size)
     {
         CheckFirst();
         _first = true;
         sb.Append('[');
     }
 
-    public void EndArray()
+    public override void EndArray()
     {
         _first = false;
         sb.Append(']');
     }
 
-    public void BeginStruct(Field field)
+    public override void BeginStruct(Field field, StructType type)
     {
         CheckFirst();
         _first = true;
         sb.Append('{');
     }
 
-    public void EndStruct()
+    public override void EndStruct()
     {
         _first = false;
         sb.Append('}');
     }
 
-    public void BeginList(Field field, IFieldType type, ref uint size)
+    public override void BeginList(Field field, ListType type, ref uint size)
     {
         CheckFirst();
         _first = true;
         sb.Append('<');
     }
 
-    public void EndList()
+    
+    public override void EndList()
     {
         _first = false;
         sb.Append('>');

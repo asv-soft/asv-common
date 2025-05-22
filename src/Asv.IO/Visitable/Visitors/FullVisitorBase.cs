@@ -1,47 +1,37 @@
+using System;
+
 namespace Asv.IO;
 
 public abstract class FullVisitorBase(bool skipUnknown)  : IFullVisitor
 {
-    public abstract void Visit(Field field, ref char value);
-
-    public abstract void Visit(Field field, ref byte value);
-
-    public abstract void Visit(Field field, ref sbyte value);
-
-    public abstract void Visit(Field field, ref short value);
-
-    public abstract void Visit(Field field, ref ushort value);
-
-    public abstract void Visit(Field field, ref int value);
-
-    public abstract void Visit(Field field, ref uint value);
-
-    public abstract void Visit(Field field, ref long value);
-
-    public abstract void Visit(Field field, ref ulong value);
-
-    public abstract void Visit(Field field, ref float value);
-
-    public abstract void Visit(Field field, ref double value);
-
-    public abstract void Visit(Field field, ref string value);
-
-    public abstract void Visit(Field field, ref bool value);
-
-    public void VisitUnknown(Field field)
+    public virtual void VisitUnknown(Field field, IFieldType type)
     {
         if (skipUnknown)
         {
             return;
         }
 
-        throw new System.NotImplementedException($"Unknown field {field.Name} [{field}]");
+        throw new NotImplementedException($"Unknown field type {field.Name} [{field}]");
     }
 
-    public abstract void BeginArray(Field field, int size);
-    public abstract void EndArray();
-    public abstract void BeginStruct(Field field);
-    public abstract void EndStruct();
-    public abstract void BeginList(Field field, IFieldType type, ref uint size);
+    public abstract void Visit(Field field, DoubleType type, ref double value);
+    public abstract void Visit(Field field, FloatType type, ref float value);
+    public abstract void Visit(Field field, HalfFloatType type, ref Half value);
+    public abstract void Visit(Field field, Int8Type type, ref sbyte value);
+    public abstract void Visit(Field field, Int16Type type, ref short value);
+    public abstract void Visit(Field field, Int32Type type, ref int value);
+    public abstract void Visit(Field field, Int64Type type, ref long value);
+    public abstract void Visit(Field field, UInt8Type type, ref byte value);
+    public abstract void Visit(Field field, UInt16Type type, ref ushort value);
+    public abstract void Visit(Field field, UInt32Type type, ref uint value);
+    public abstract void Visit(Field field, UInt64Type type, ref ulong value);
+    public abstract void Visit(Field field, StringType type, ref string value);
+    public abstract void Visit(Field field, BoolType type, ref bool value);
+    public abstract void Visit(Field field, CharType type, ref char value);
+    public abstract void BeginList(Field field, ListType type, ref uint size);
     public abstract void EndList();
+    public abstract void BeginArray(Field field, ArrayType fieldType, int size);
+    public abstract void EndArray();
+    public abstract void BeginStruct(Field field, StructType type);
+    public abstract void EndStruct();
 }

@@ -12,9 +12,16 @@ public class ExampleMessage1: ExampleMessageBase
 
     private static readonly Field Value1Field = new Field.Builder()
         .Name(nameof(Value1))
-        .DataType(Int32Type.Default)
+        .DataType(new Int32Type(0,3))
         .Title("Title  message  field 1")
-        .Description("Description message field 1").Build();
+        .Description("Description message field 1")
+        .Enum<int>(
+            new (0, "Enum 1","Enum 1 description"),
+            new (1, "Enum 2", "Enum 2 description"),
+            new (2, "Enum 3", "Enum 3 description"),
+            new (3, "Enum 4", "Enum 4 description")
+            )
+        .Build();
     private int _value1;
     public int Value1
     {
@@ -36,7 +43,7 @@ public class ExampleMessage1: ExampleMessageBase
 
     private static readonly Field Value3Field = new Field.Builder()
         .Name(nameof(Value3))
-        .DataType(StringType.Default)
+        .DataType(StringType.Ascii)
         .Title("Title  message  field 3")
         .Description("Description message field 3").Build();
     private string _value3 = string.Empty;
@@ -59,7 +66,7 @@ public class ExampleMessage1: ExampleMessageBase
     
     private static readonly Field Value5Field = new Field.Builder()
         .Name(nameof(Value5))
-        .DataType(new ArrayType(StringType.Default,2))
+        .DataType(new ArrayType(StringType.Ascii,2))
         .Title("Title  message  field 5")
         .Description("Description message field 5").Build();
     private readonly string[] _value5 = new string[2];
@@ -67,7 +74,7 @@ public class ExampleMessage1: ExampleMessageBase
     
     private static readonly Field Value6Field = new Field.Builder()
         .Name(nameof(Value6))
-        .DataType(new StructType(new SubObject().GetFields()))
+        .DataType(new ArrayType(SubObject.StructType, 2))
         .Title("Title  message  field 6")
         .Description("Description message field 6").Build();
     private readonly SubObject[] _value6 =
@@ -80,7 +87,7 @@ public class ExampleMessage1: ExampleMessageBase
 
     private static readonly Field Value7Field = new Field.Builder()
         .Name(nameof(Value7))
-        .DataType(new StructType(new SubObject().GetFields()))
+        .DataType(SubObject.StructType)
         .Title("Title  message  field 7")
         .Description("Description message field 7").Build();
     private readonly SubObject _value7 = new();
@@ -88,7 +95,7 @@ public class ExampleMessage1: ExampleMessageBase
     
     private static readonly Field Value8Field = new Field.Builder()
         .Name(nameof(Value8))
-        .DataType(new ListType(new StructType(new SubObject().GetFields())))
+        .DataType(new ListType(SubObject.StructType))
         .Title("Title  message  field 8")
         .Description("Description message field 8").Build();
     private readonly List<SubObject> _value8 = new();
@@ -105,29 +112,29 @@ public class ExampleMessage1: ExampleMessageBase
     public override void Accept(IVisitor visitor)
     {
         Int32Type.Accept(visitor, Value1Field, Value1Field.DataType, ref _value1);
-        UInt16Type.Accept(visitor, Value2Field, ref _value2);
-        StringType.Accept(visitor, Value3Field, ref _value3);
-        ArrayType.Accept(visitor, Value4Field, _value4.Length, (index,v) =>
+        UInt16Type.Accept(visitor, Value2Field,Value2Field.DataType, ref _value2);
+        StringType.Accept(visitor, Value3Field,Value3Field.DataType, ref _value3);
+        ArrayType.Accept(visitor, Value4Field,Value4Field.DataType, _value4.Length, (index, v, f, t) =>
         {
-            Int32Type.Accept(v,Value4Field, ref _value4[index]);
+            Int32Type.Accept(v,f,t,ref _value4[index]);
         });
-        ArrayType.Accept(visitor, Value5Field, _value5.Length, (index,v) =>
+        ArrayType.Accept(visitor, Value5Field,Value5Field.DataType, _value5.Length, (index, v, f, t) =>
         {
-            StringType.Accept(v,Value5Field, ref _value5[index]);
+            StringType.Accept(v,f,t, ref _value5[index]);
         });
-        ArrayType.Accept(visitor, Value6Field, _value6.Length, (index,v) =>
+        ArrayType.Accept(visitor, Value6Field, Value6Field.DataType, _value6.Length, (index, v, f, t) =>
         {
-            StructType.Accept(v, Value6Field, _value6[index]);
+            StructType.Accept(v,f,t, _value6[index]);
         });
-        StructType.Accept(visitor, Value7Field, _value7);
-        ListType.Accept(visitor, Value8Field, _value8, (index, v) =>
+        StructType.Accept(visitor, Value7Field,Value7Field.DataType, _value7);
+        ListType.Accept(visitor, Value8Field, Value8Field.DataType, _value8, (index, v, f, t) =>
         {
-            StructType.Accept(v, Value8Field, _value8[index]);
+            StructType.Accept(v,f,t, _value8[index]);
         });
-        ListType.Accept(visitor, Value9Field, _value9, (index, v) =>
+        ListType.Accept(visitor, Value9Field, Value9Field.DataType, _value9, (index, v, f, t) =>
         {
             var temp = _value9[index];
-            Int32Type.Accept(v,Value9Field, ref temp);
+            Int32Type.Accept(v,f,t, ref temp);
             _value9[index] = temp;
         });
     }

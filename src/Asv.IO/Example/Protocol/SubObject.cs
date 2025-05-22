@@ -1,10 +1,19 @@
 using System;
+using System.Collections.Immutable;
 
 namespace Asv.IO;
 
 public record SubObject : IVisitable, ISizedSpanSerializable
 {
-    private static readonly Field Field1Field = new Field.Builder()
+    private static StructType? _type;
+    public static StructType StructType => _type ??= new StructType([
+        Field1Field,
+        Field2Field,
+        Field3Field,
+        Field4Field
+    ]);
+    
+    public static readonly Field Field1Field = new Field.Builder()
         .Name(nameof(Field1))
         .DataType(Int8Type.Default)
         .Title("Title  message  field 1")
@@ -17,7 +26,7 @@ public record SubObject : IVisitable, ISizedSpanSerializable
         set => _field1 = value;
     }
 
-    private static readonly Field Field2Field = new Field.Builder()
+    public static readonly Field Field2Field = new Field.Builder()
         .Name(nameof(Field2))
         .DataType(UInt8Type.Default)
         .Title("Title  message  field 2")
@@ -29,7 +38,7 @@ public record SubObject : IVisitable, ISizedSpanSerializable
         set => _field2 = value;
     }
 
-    private static readonly Field Field3Field = new Field.Builder()
+    public static readonly Field Field3Field = new Field.Builder()
         .Name(nameof(Field3))
         .DataType(Int16Type.Default)
         .Title("Title  message  field 3")
@@ -41,7 +50,7 @@ public record SubObject : IVisitable, ISizedSpanSerializable
         set => _field3 = value;
     }
 
-    private static readonly Field Field4Field = new Field.Builder()
+    public static readonly Field Field4Field = new Field.Builder()
         .Name(nameof(Field4))
         .DataType(UInt16Type.Default)
         .Title("Title  message  field 4")
@@ -53,12 +62,14 @@ public record SubObject : IVisitable, ISizedSpanSerializable
         set => _field4 = value;
     }
 
+    
+
     public void Accept(IVisitor visitor)
     {
-        Int8Type.Accept(visitor,Field1Field, ref _field1);
-        UInt8Type.Accept(visitor,Field2Field, ref _field2);
-        Int16Type.Accept(visitor,Field3Field, ref _field3);
-        UInt16Type.Accept(visitor,Field4Field, ref _field4);
+        Int8Type.Accept(visitor,Field1Field, Field1Field.DataType, ref _field1);
+        UInt8Type.Accept(visitor,Field2Field, Field2Field.DataType,  ref _field2);
+        Int16Type.Accept(visitor,Field3Field, Field3Field.DataType, ref _field3);
+        UInt16Type.Accept(visitor,Field4Field, Field4Field.DataType, ref _field4);
     }
 
     public void Deserialize(ref ReadOnlySpan<byte> buffer)

@@ -1568,6 +1568,130 @@ namespace Asv.IO
 
         #endregion
 
+        #region Write Half
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteHalf(ref Span<byte> span, Half val)
+        {
+            MemoryMarshal.Write(span, in val);
+            // 'Advance' the span.
+            span = span[sizeof(Half)..];
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteHalf(ref Span<byte> span, in Half val)
+        {
+            MemoryMarshal.Write(span, in val);
+            // 'Advance' the span.
+            span = span[sizeof(Half)..];
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteHalf(Span<byte> span, in Half val)
+        {
+            MemoryMarshal.Write(span, in val);
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteHalf(Span<byte> span, Half val)
+        {
+            MemoryMarshal.Write(span, in val);
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteHalf(Memory<byte> memory, in Half val)
+        {
+            MemoryMarshal.Write(memory.Span, in val);
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteHalf(ref Memory<byte> memory, in Half val)
+        {
+            MemoryMarshal.Write(memory.Span, in val);
+            // 'Advance' the span.
+            memory = memory[sizeof(Half)..];
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteHalf(IBufferWriter<byte> wrt, in Half val)
+        {
+            var span = wrt.GetSpan(sizeof(Half));
+            WriteHalf(ref span,in val);
+            wrt.Advance(sizeof(Half));
+        }
+        
+        #endregion
+        
+        #region Read Half
+        
+        /// <summary>
+        /// Read a 32 bit Halfing-point number.
+        /// </summary>
+        /// <remarks>
+        /// Will consume 4 bytes.
+        /// </remarks>
+        /// <param name="span">Span to read from.</param>
+        /// <returns>Read value.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Half ReadHalf(ref ReadOnlySpan<byte> span)
+        {
+            var result = MemoryMarshal.Read<Half>(span);
+            // 'Advance' the span.
+            span = span[sizeof(Half)..];
+            return result;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ReadHalf(ref ReadOnlySpan<byte> span, ref Half value)
+        {
+            value = MemoryMarshal.Read<Half>(span);
+            // 'Advance' the span.
+            span = span[sizeof(Half)..];
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ReadHalf(ReadOnlySpan<byte> span, ref Half value)
+        {
+            value = MemoryMarshal.Read<Half>(span);
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ReadHalf(ref ReadOnlyMemory<byte> memory, ref Half value)
+        {
+            value = MemoryMarshal.Read<Half>(memory.Span);
+            // 'Advance' the span.
+            memory = memory[sizeof(Half)..];
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ReadHalf(ReadOnlyMemory<byte> memory, ref Half value)
+        {
+            value = MemoryMarshal.Read<Half>(memory.Span);
+        }
+
+        
+        public static bool TryReadHalf(ref SequenceReader<byte> reader, ref Half value)
+        {
+            var size = sizeof(Half);
+            var buff = ArrayPool<byte>.Shared.Rent(size);
+            try
+            {
+                var span = new Span<byte>(buff, 0, size);
+                if (reader.TryCopyTo(span) == false) return false;
+                reader.Advance(size);
+                var roSpan = new ReadOnlySpan<byte>(buff, 0, size);
+                ReadHalf(ref roSpan, ref value);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buff);
+            }
+
+            return true;
+        }
+        
+        #endregion
+        
         #region WriteFloat
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

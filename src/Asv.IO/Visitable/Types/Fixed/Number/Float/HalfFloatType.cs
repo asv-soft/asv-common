@@ -3,7 +3,7 @@ using System;
 namespace Asv.IO;
 
 public sealed class HalfFloatType(Half min, Half max) 
-    : FloatingPointType<FloatType,Half>(max, min)
+    : FloatingPointType<HalfFloatType,Half>(min, max)
 {
     public const string TypeId = "halffloat";
     public static readonly HalfFloatType Default = new(Half.MinValue,Half.MaxValue);

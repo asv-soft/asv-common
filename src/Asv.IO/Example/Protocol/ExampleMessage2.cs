@@ -12,15 +12,15 @@ public class ExampleMessage2 : ExampleMessageBase
 
     public override void Accept(IVisitor visitor)
     {
-        Int32Type.Accept(visitor, Value1Field, ref _value1);
-        UInt16Type.Accept(visitor, Value2Field, ref _value2);
-        StringType.Accept(visitor, Value3Field, ref _value3);
-        Int32Type.Accept(visitor, Value4Field, ref _value4);
-        FloatType.Accept(visitor, Value5Field, ref _value5);
-        DoubleType.Accept(visitor, Value6Field, ref _value6);
-        BoolType.Visit(visitor, Value7Field, ref _value7);
-        Int64Type.Accept(visitor, Value8Field, ref _value8);
-        UInt64Type.Accept(visitor, Value9Field, ref _value9);
+        Int32Type.Accept(visitor, Value1Field, Value1Field.DataType, ref _value1);
+        UInt16Type.Accept(visitor, Value2Field, Value2Field.DataType, ref _value2);
+        StringType.Accept(visitor, Value3Field, Value3Field.DataType, ref _value3);
+        Int32Type.Accept(visitor, Value4Field, Value4Field.DataType, ref _value4);
+        FloatType.Accept(visitor, Value5Field, Value5Field.DataType, ref _value5);
+        DoubleType.Accept(visitor, Value6Field, Value6Field.DataType, ref _value6);
+        BoolType.Accept(visitor, Value7Field, Value7Field.DataType, ref _value7);
+        Int64Type.Accept(visitor, Value8Field, Value8Field.DataType, ref _value8);
+        UInt64Type.Accept(visitor, Value9Field, Value9Field.DataType, ref _value9);
     }
 
 
@@ -52,7 +52,7 @@ public class ExampleMessage2 : ExampleMessageBase
 
     private static readonly Field Value3Field = new Field.Builder()
         .Name(nameof(Value3))
-        .DataType(StringType.Default)
+        .DataType(StringType.Ascii)
         .Title("Title  message  field 3")
         .Description("Description message field 3").Build();
     private string _value3 = string.Empty;

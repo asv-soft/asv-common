@@ -1,7 +1,8 @@
 namespace Asv.IO;
 
-public sealed class CharType(EncodingId encoding) : FixedType<CharType,char>
+public sealed class CharType(EncodingId encoding, string? allowedChars = null) : FixedType<CharType,char>
 {
+    
     public const string TypeId = "char-ascii";
     
     public static readonly CharType Ascii = new(EncodingId.Ascii);
@@ -11,4 +12,5 @@ public sealed class CharType(EncodingId encoding) : FixedType<CharType,char>
     
     public override string Name => TypeId;
     public EncodingId Encoding => encoding;
+    public string? AllowedChars => allowedChars;
 }

@@ -15,8 +15,6 @@ public class SimpleBinaryMixinTest
     {
         var example = new SubObject().Randomize();
         Assert.Equal(example.GetByteSize(), SimpleBinaryMixin.GetSize(example));
-        
-        
     }
     
     [Fact]

@@ -1,7 +1,8 @@
 ﻿namespace Asv.IO;
 
-public sealed class StringType(EncodingId encoding, uint minSize, uint maxSize) : FieldType<StringType, string>
+public sealed class StringType(EncodingId encoding, uint minSize, uint maxSize, string? allowedChars = null) : FieldType<StringType, string>
 {
+    
     public const int DefaultMinSize = 0;
     public const int DefaultMaxSize = 1024;
     public const string TypeId = "string";
@@ -13,6 +14,10 @@ public sealed class StringType(EncodingId encoding, uint minSize, uint maxSize) 
     
     public override string Name => TypeId;
     public EncodingId Encoding => encoding;
+
+    public uint MinSize { get; } = minSize;
+    public uint MaxSize { get; } = maxSize;
+    public string? AllowedChars { get; } = allowedChars;
 }
 
 public enum EncodingId
