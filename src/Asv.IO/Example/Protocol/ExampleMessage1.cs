@@ -43,7 +43,7 @@ public class ExampleMessage1: ExampleMessageBase
 
     private static readonly Field Value3Field = new Field.Builder()
         .Name(nameof(Value3))
-        .DataType(StringType.Ascii)
+        .DataType(new StringType(EncodingId.Ascii, 0, 10))
         .Title("Title  message  field 3")
         .Description("Description message field 3").Build();
     private string _value3 = string.Empty;
@@ -66,7 +66,7 @@ public class ExampleMessage1: ExampleMessageBase
     
     private static readonly Field Value5Field = new Field.Builder()
         .Name(nameof(Value5))
-        .DataType(new ArrayType(StringType.Ascii,2))
+        .DataType(new ArrayType(new StringType(EncodingId.Ascii, 0, 10),2))
         .Title("Title  message  field 5")
         .Description("Description message field 5").Build();
     private readonly string[] _value5 = new string[2];
@@ -95,14 +95,14 @@ public class ExampleMessage1: ExampleMessageBase
     
     private static readonly Field Value8Field = new Field.Builder()
         .Name(nameof(Value8))
-        .DataType(new ListType(SubObject.StructType))
+        .DataType(new ListType(SubObject.StructType, 0 , 10))
         .Title("Title  message  field 8")
         .Description("Description message field 8").Build();
     private readonly List<SubObject> _value8 = new();
     public IList<SubObject> Value8 => _value8;
     private static readonly Field Value9Field = new Field.Builder()
         .Name(nameof(Value9))
-        .DataType(new ListType(Int32Type.Default))
+        .DataType(new ListType(Int32Type.Default,0 , 10))
         .Title("Title  message  field 9")
         .Description("Description message field 9").Build();
     

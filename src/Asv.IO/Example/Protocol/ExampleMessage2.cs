@@ -28,7 +28,7 @@ public class ExampleMessage2 : ExampleMessageBase
 
     private static readonly Field Value1Field = new Field.Builder()
         .Name(nameof(Value1))
-        .DataType(UInt32Type.Default)
+        .DataType(Int32Type.Default)
         .Title("Title  message  field 1")
         .Description("Description message field 1").Build();
     private int _value1;
@@ -52,7 +52,7 @@ public class ExampleMessage2 : ExampleMessageBase
 
     private static readonly Field Value3Field = new Field.Builder()
         .Name(nameof(Value3))
-        .DataType(StringType.Ascii)
+        .DataType(new StringType(EncodingId.Ascii,0,50))
         .Title("Title  message  field 3")
         .Description("Description message field 3").Build();
     private string _value3 = string.Empty;
