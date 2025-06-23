@@ -1,4 +1,4 @@
-namespace Asv.Drones.Gui.Plugin.Afis;
+namespace Asv.Common;
 
 public static class Tolerance
 {

@@ -102,12 +102,12 @@ public class ExampleMessage1: ExampleMessageBase
     public IList<SubObject> Value8 => _value8;
     private static readonly Field Value9Field = new Field.Builder()
         .Name(nameof(Value9))
-        .DataType(new ListType(Int32Type.Default,0 , 10))
+        .DataType(new ListType(CharType.Ascii,0 , 10))
         .Title("Title  message  field 9")
         .Description("Description message field 9").Build();
     
-    private readonly List<int> _value9 = new();
-    public IList<int> Value9 => _value9;
+    private readonly List<char> _value9 = new();
+    public IList<char> Value9 => _value9;
 
     public override void Accept(IVisitor visitor)
     {
@@ -134,7 +134,7 @@ public class ExampleMessage1: ExampleMessageBase
         ListType.Accept(visitor, Value9Field, Value9Field.DataType, _value9, (index, v, f, t) =>
         {
             var temp = _value9[index];
-            Int32Type.Accept(v,f,t, ref temp);
+            CharType.Accept(v,f,t, ref temp);
             _value9[index] = temp;
         });
     }
@@ -165,7 +165,7 @@ public class ExampleMessage1: ExampleMessageBase
         _value9.Resize((int)BinSerialize.ReadUInt(ref buffer));
         for (var i = 0; i < _value9.Count; i++)
         {
-            _value9[i] = BinSerialize.ReadInt(ref buffer);
+            _value9[i] = (char)BinSerialize.ReadByte(ref buffer);
         }
         
         
@@ -197,7 +197,7 @@ public class ExampleMessage1: ExampleMessageBase
         BinSerialize.WriteUInt(ref buffer, (uint)_value9.Count);
         foreach (var t in _value9)
         {
-            BinSerialize.WriteInt(ref buffer, t);
+            BinSerialize.WriteByte(ref buffer, (byte)t);
         }
     }
 
@@ -213,7 +213,7 @@ public class ExampleMessage1: ExampleMessageBase
             + sizeof(uint) // size of list
             + _value8.Sum(x=>x.GetByteSize())
             + sizeof(uint) // size of list
-            + _value9.Count * sizeof(int);
+            + _value9.Count * sizeof(byte);
             
             
     }
