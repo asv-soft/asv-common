@@ -1,12 +1,12 @@
 <Project>
   <PropertyGroup>
-    <ProductVersion>3.2.1</ProductVersion>
+    <ProductVersion>3.2.2</ProductVersion>
     <DotNetVersion>9.0.3</DotNetVersion>
     <DotNextVersion>5.19.1</DotNextVersion>
-    <R3Version>1.2.9</R3Version>
+    <R3Version>1.3.0</R3Version>
     <R3Collections>3.3.3</R3Collections>
     <NewtonsoftJsonVersion>13.0.3</NewtonsoftJsonVersion>
-    <ZLoggerVersion>2.5.5</ZLoggerVersion>
+    <ZLoggerVersion>2.5.10</ZLoggerVersion>
     <DeepEqualVersion>4.2.1</DeepEqualVersion>
     <AutoFixtureVersion>4.18.1</AutoFixtureVersion>
     <SystemIOAbstractionsVersion>21.0.29</SystemIOAbstractionsVersion>

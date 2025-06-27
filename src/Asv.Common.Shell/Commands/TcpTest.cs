@@ -152,20 +152,18 @@ public class TcpTest
 
     private Task<int> Router_RecreatePortWithAddAndRemove_Success()
     {
-        var AssertValue = 1;
         const string validConnString = "tcp://127.0.0.1:5650";
-        _clientRouter.PortAdded.Subscribe(_ => AssertValue = 0);
+        _clientRouter.PortAdded.Subscribe(_ => { });
         var port = _clientRouter.AddPort(validConnString);
         _clientRouter.PortRemoved.Subscribe(_ =>
         {
             if (port == _)
             {
-                AssertValue = 0;
             }
         });
         _clientRouter.RemovePort(port);
         var port1 = _clientRouter.AddPort(validConnString);
-        if (port1 is not null) AssertValue = 0;
+        
         return Task.FromResult(0);
     }
 

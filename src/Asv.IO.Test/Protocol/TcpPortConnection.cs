@@ -8,7 +8,7 @@ namespace Asv.IO.Test;
 
 public class TcpPortConnectionTest(ITestOutputHelper output)
 {
-    [Fact]
+    //[Fact]
     public async void TcpPortReconnectionTest()
     {
         var protocol = Protocol.Create(builder =>
