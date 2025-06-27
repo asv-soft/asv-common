@@ -160,8 +160,9 @@ public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
             InternalPublishRxError(new ProtocolConnectionException(this, $"Error at read loop: {e.Message}",e));
         }
     }
-    
+
     protected abstract int GetAvailableBytesToRead();
+
     protected abstract ValueTask<int> InternalRead(Memory<byte> memory, CancellationToken cancel);
     protected abstract ValueTask<int> InternalWrite(ReadOnlyMemory<byte> memory, CancellationToken cancel);
     private async void WriteLoop(object? o)

@@ -16,7 +16,14 @@ public class SocketProtocolEndpoint(
     : ProtocolEndpoint(id, config, parsers, context,statisticHandler)
 {
     
-    protected override int GetAvailableBytesToRead() => socket.Available;
+    protected override int GetAvailableBytesToRead()
+    {
+        if (socket.Connected == false)
+        {
+            throw new InvalidOperationException("Socket is not connected");
+        }
+        return socket.Available;
+    }
 
     protected override ValueTask<int> InternalRead(Memory<byte> memory, CancellationToken cancel)
     {
@@ -46,7 +53,6 @@ public class SocketProtocolEndpoint(
         socket.Dispose();
         await base.DisposeAsyncCore();
     }
-    
 
     #endregion
 }

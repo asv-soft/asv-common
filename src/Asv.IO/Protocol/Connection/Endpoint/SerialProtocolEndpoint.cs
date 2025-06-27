@@ -15,7 +15,14 @@ public sealed class SerialProtocolEndpoint(
     IStatisticHandler statisticHandler)
     : ProtocolEndpoint(id, config, parsers, context, statisticHandler)
 {
-    protected override int GetAvailableBytesToRead() => port.BytesToRead;
+    protected override int GetAvailableBytesToRead()
+    {
+        if (!port.IsOpen)
+        {
+            throw new InvalidOperationException("Serial port is not open.");
+        }
+        return port.BytesToRead;
+    }
 
     protected override ValueTask<int> InternalRead(Memory<byte> memory, CancellationToken cancel)
     {
@@ -47,6 +54,5 @@ public sealed class SerialProtocolEndpoint(
         port.Dispose();
         await base.DisposeAsyncCore();
     }
-    
     #endregion
 }

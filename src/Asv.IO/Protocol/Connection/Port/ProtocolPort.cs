@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Asv.Common;
 using Microsoft.Extensions.Logging;
 using R3;
 using ZLogger;
@@ -143,7 +144,7 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
         return [.._protocols.Select(x => Context.ParserFactory[x.Id](_context, StatisticHandler))];
     }
 
-    public ProtocolPortConfig Config => _config;
+    public ProtocolPortConfig Config => (ProtocolPortConfig)_config.Clone();
     public abstract PortTypeInfo TypeInfo { get; }
     public IEnumerable<ProtocolInfo> EnabledProtocols => _protocols;
     public ReadOnlyReactiveProperty<ProtocolException?> Error => _error;
@@ -155,11 +156,24 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
 
     public void Enable()
     {
+        if (IsEnabled.CurrentValue)
+        {
+            _logger.ZLogWarning($"Port {this} already enabled, skip enable request");
+        }
+        Task.Factory.StartNew(InternalEnable, TaskCreationOptions.LongRunning).SafeFireAndForget();
+    }
+
+    private void InternalEnable()
+    {
         if (IsDisposed) return;
         if (Interlocked.CompareExchange(ref _isBusy, 1, 0) == 1)
         {
             _logger.ZLogTrace($"Port {this} skip duplicate enable ");
             return;
+        }
+        if (IsEnabled.CurrentValue)
+        {
+            _logger.ZLogWarning($"Port {this} already enabled, skip enable request");
         }
         _logger.ZLogInformation($"Enable {this} port");
         _config.IsEnabled = true;
@@ -186,6 +200,11 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
     }
 
     public void Disable()
+    {
+        Task.Factory.StartNew(InternalDisable, TaskCreationOptions.LongRunning).SafeFireAndForget();
+    }
+    
+    private void InternalDisable()
     {
         if (IsDisposed) return;
         if (Interlocked.CompareExchange(ref _isBusy, 1, 0) == 1)
@@ -257,9 +276,9 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
         var newMessage = await InternalFilterTxMessage(message);
         if (newMessage == null) return;
         var endpoints = _endpoints;
-        foreach (var connection in endpoints)
+        foreach (var endpoint in endpoints)
         {
-            await connection.Send(newMessage, cancel);
+            await endpoint.Send(newMessage, cancel);
         }
         InternalPublishTxMessage(newMessage);
     }

@@ -107,8 +107,7 @@ public class UdpProtocolPort:ProtocolPort<UdpProtocolPortConfig>
             InternalRisePortErrorAndReconnect(ex);
         }
     }
-    
-    
+
 }
 
 public static class UdpProtocolPortHelper
