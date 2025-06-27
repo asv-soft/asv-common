@@ -8,9 +8,11 @@ namespace Asv.IO.Test;
 
 public class TcpPortConnectionTest(ITestOutputHelper output)
 {
-    //[Fact]
+    //[Fact] // this code is for manual testing only
     public async void TcpPortReconnectionTest()
     {
+        
+        
         var protocol = Protocol.Create(builder =>
         {
             builder.Protocols.RegisterExampleProtocol();
@@ -18,7 +20,6 @@ public class TcpPortConnectionTest(ITestOutputHelper output)
         });
         var router = protocol.CreateRouter("TEST");
         var port = router.AddPort("tcp://127.0.0.1:5762");
-        port.Enable();
         router.OnRxMessage.Subscribe(x =>
         {
             output.WriteLine(x.ToString());

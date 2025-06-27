@@ -15,14 +15,34 @@ public class SocketProtocolEndpoint(
     IStatisticHandler statisticHandler)
     : ProtocolEndpoint(id, config, parsers, context,statisticHandler)
 {
-    
+    private long _lastDataReceived = context.TimeProvider.GetTimestamp();
+    private readonly TimeSpan _reconnectTimeout = TimeSpan.FromMilliseconds(config.ReconnectTimeoutMs);
+    private readonly IProtocolContext _context = context;
+
     protected override int GetAvailableBytesToRead()
     {
         if (socket.Connected == false)
         {
+            throw new InvalidOperationException("Socket is disconnected");
+        }
+
+        var available = socket.Available;
+        if (available > 0)
+        {
+            _lastDataReceived = _context.TimeProvider.GetTimestamp();
+            return available;
+        }
+        
+        // this is for ping disconnected socket
+        if (_context.TimeProvider.GetElapsedTime(_lastDataReceived) > _reconnectTimeout)
+        {
+            socket.Send(ReadOnlySpan<byte>.Empty);
+        }
+        if (socket.Connected == false)
+        {
             throw new InvalidOperationException("Socket is not connected");
         }
-        return socket.Available;
+        return 0;
     }
 
     protected override ValueTask<int> InternalRead(Memory<byte> memory, CancellationToken cancel)
