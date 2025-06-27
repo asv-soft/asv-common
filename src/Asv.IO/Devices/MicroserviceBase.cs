@@ -93,7 +93,7 @@ public abstract class MicroserviceBase<TBaseMessage> : AsyncDisposableWithCancel
     protected ValueTask InternalSend(TBaseMessage packet, CancellationToken cancel = default)
     {
         ArgumentNullException.ThrowIfNull(packet);
-        _loggerBase.ZLogTrace($"=> send {packet.Name}");
+        //_loggerBase.ZLogTrace($"=> send {packet.Name}");
         FillMessageBeforeSent(packet);
         return Context.Connection.Send(packet, cancel);
     }
@@ -231,6 +231,7 @@ public abstract class MicroserviceBase<TBaseMessage> : AsyncDisposableWithCancel
     {
         if (disposing)
         {
+            _loggerBase.ZLogTrace($"Dispose {Id}");
             _internalFilteredDeviceMessages.Dispose();
             _sub1.Dispose();
         }

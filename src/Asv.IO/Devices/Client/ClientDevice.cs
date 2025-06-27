@@ -23,7 +23,7 @@ public abstract class ClientDevice<TDeviceId> : AsyncDisposableWithCancel, IClie
     private readonly ImmutableArray<IClientDeviceExtender> _extenders;
     private readonly ReactiveProperty<string?> _name;
     private readonly ReactiveProperty<ClientDeviceState> _state = new(ClientDeviceState.Uninitialized);
-    private ImmutableArray<IMicroserviceClient> _microservices;
+    private ImmutableArray<IMicroserviceClient> _microservices = [];
     private int _isTryReconnectInProgress;
     private readonly ILogger _logger;
     private bool _needToRequestAgain = true; // first request must be done
@@ -188,7 +188,7 @@ public abstract class ClientDevice<TDeviceId> : AsyncDisposableWithCancel, IClie
 
     protected override void Dispose(bool disposing)
     {
-        _logger.ZLogTrace($"Dispose {GetType().Name}");
+        _logger.ZLogTrace($"Dispose {Id}");
         if (disposing)
         {
             _reconnectionTimer?.Dispose();
@@ -196,6 +196,7 @@ public abstract class ClientDevice<TDeviceId> : AsyncDisposableWithCancel, IClie
             _state.Dispose();
             _sub1?.Dispose();
             _sub2?.Dispose();
+            SafeDisposeMicroservices(_microservices);
         }
 
         base.Dispose(disposing);

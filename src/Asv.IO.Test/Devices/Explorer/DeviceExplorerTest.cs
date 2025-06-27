@@ -58,7 +58,7 @@ public class DeviceExplorerTest:IDisposable
         await _link.Server.Send(new ExampleMessage1 { SenderId = 3 });
         Assert.Equal(2, _explorer.Devices.Count);
         
-        _routerTime.Advance(TimeSpan.FromMilliseconds(Math.Max(_explorerConfig.DeviceTimeoutMs, _explorerConfig.DeviceCheckIntervalMs)));
+        _routerTime.Advance(TimeSpan.FromMilliseconds(Math.Max(_explorerConfig.DeviceTimeoutMs + 1, _explorerConfig.DeviceCheckIntervalMs + 1)));
         Assert.Equal(0, _explorer.Devices.Count);
     }
 

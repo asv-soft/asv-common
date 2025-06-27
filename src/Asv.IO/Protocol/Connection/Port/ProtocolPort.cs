@@ -307,7 +307,7 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
 
     protected override async ValueTask DisposeAsyncCore()
     {
-        _logger.ZLogTrace($"{nameof(DisposeAsync)} {this}");
+        _logger.ZLogTrace($"{nameof(DisposeAsync)} {Id}");
         ClearAndDisposeAllEndpoints();
         await CastAndDispose(_endpointAdded);
         await CastAndDispose(_endpointRemoved);

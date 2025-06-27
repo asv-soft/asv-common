@@ -100,7 +100,7 @@ public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolC
     {
         if (disposing)
         {
-            _logger.ZLogTrace($"{nameof(Dispose)} port {this}");
+            _logger.ZLogTrace($"{nameof(Dispose)} connection {Id}");
             foreach (var feature in Context.Features)
             {
                 feature.Unregister(this);

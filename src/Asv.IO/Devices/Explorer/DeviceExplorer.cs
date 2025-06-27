@@ -90,7 +90,14 @@ public class DeviceExplorer : AsyncDisposableOnce, IDeviceExplorer
             {
                 if (_devices.TryGetValue(item.Key, out var device))
                 {
-                    device.Dispose();
+                    try
+                    {
+                        device.Dispose();
+                    }
+                    catch (Exception e)
+                    {
+                        _logger.ZLogError(e, $"Error to dispose device: {e.Message}");
+                    }
                 }
                 _lastSeen.TryRemove(item.Key, out _);
                 _devices.Remove(item.Key);
