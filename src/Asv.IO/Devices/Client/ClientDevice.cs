@@ -26,10 +26,7 @@ public abstract class ClientDevice<TDeviceId> : AsyncDisposableWithCancel, IClie
     private ImmutableArray<IMicroserviceClient> _microservices = [];
     private int _isTryReconnectInProgress;
     private readonly ILogger _logger;
-    private bool _needToRequestAgain = true; // first request must be done
     private ITimer? _reconnectionTimer;
-    private IDisposable? _sub1;
-    private IDisposable? _sub2;
     private int _isInitialized;
 
 
@@ -54,17 +51,10 @@ public abstract class ClientDevice<TDeviceId> : AsyncDisposableWithCancel, IClie
             return;
         }
         
-        _sub1 = Link.State.DistinctUntilChanged()
-            .Where(s => s == LinkState.Disconnected)
-            .Subscribe(_ => _needToRequestAgain = true);
-
-        _sub2 = Link.State.DistinctUntilChanged()
-            .Where(_ => _needToRequestAgain)
-            .Where(s => s == LinkState.Connected)
-            .Subscribe(_ => TryReconnect(null));
         try
         {
             InternalInitializeOnce();
+            TryReconnect(null); // call first time to create and init microservices
         }
         catch (Exception e)
         {
@@ -116,7 +106,6 @@ public abstract class ClientDevice<TDeviceId> : AsyncDisposableWithCancel, IClie
             _microservices = builder.ToImmutable();
             await InitAfterMicroservices(DisposeCancel).ConfigureAwait(false);
             _state.Value = ClientDeviceState.Complete;
-            _needToRequestAgain = false;
         }
         catch (Exception ex)
         {
@@ -127,7 +116,6 @@ public abstract class ClientDevice<TDeviceId> : AsyncDisposableWithCancel, IClie
                 return;
             }
             _state.Value = ClientDeviceState.Failed;
-            _needToRequestAgain = true;
             _reconnectionTimer = Context.TimeProvider.CreateTimer(TryReconnect, null,
                 TimeSpan.FromMilliseconds(_config.RequestDelayAfterFailMs),Timeout.InfiniteTimeSpan);
         }
@@ -198,8 +186,6 @@ public abstract class ClientDevice<TDeviceId> : AsyncDisposableWithCancel, IClie
             _reconnectionTimer?.Dispose();
             _name.Dispose();
             _state.Dispose();
-            _sub1?.Dispose();
-            _sub2?.Dispose();
             SafeDisposeMicroservices(_microservices);
         }
 
@@ -211,8 +197,6 @@ public abstract class ClientDevice<TDeviceId> : AsyncDisposableWithCancel, IClie
         if (_reconnectionTimer != null) await _reconnectionTimer.DisposeAsync();
         await CastAndDispose(_name);
         await CastAndDispose(_state);
-        if (_sub1 != null) await CastAndDispose(_sub1);
-        if (_sub2 != null) await CastAndDispose(_sub2);
         SafeDisposeMicroservices(_microservices);
         _microservices = ImmutableArray<IMicroserviceClient>.Empty;
         await base.DisposeAsyncCore();
