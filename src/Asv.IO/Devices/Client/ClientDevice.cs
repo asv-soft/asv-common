@@ -48,7 +48,7 @@ public abstract class ClientDevice<TDeviceId> : AsyncDisposableWithCancel, IClie
     
     public void Initialize()
     {   
-        if (Interlocked.CompareExchange(ref _isInitialized, 0, 1) == 1)
+        if (Interlocked.CompareExchange(ref _isInitialized, 1, 0) == 1)
         {
             _logger.ZLogTrace($"Skip double initialization [{Id}]");
             return;
@@ -71,6 +71,10 @@ public abstract class ClientDevice<TDeviceId> : AsyncDisposableWithCancel, IClie
             _logger.ZLogError(e, $"Error on initialize device [{Id}]: {e.Message}");
             throw;
         }
+        finally
+        {
+            Interlocked.Exchange(ref _isInitialized,0);
+        }
         
     }
 
@@ -87,7 +91,7 @@ public abstract class ClientDevice<TDeviceId> : AsyncDisposableWithCancel, IClie
     {
         if (IsDisposed) return; // do not reconnect if disposed
         
-        if (Interlocked.CompareExchange(ref _isTryReconnectInProgress, 0, 1) == 1)
+        if (Interlocked.CompareExchange(ref _isTryReconnectInProgress, 1, 0) == 1)
         {
             _logger.ZLogTrace($"Skip double reconnect [{Id}]");
             return;
