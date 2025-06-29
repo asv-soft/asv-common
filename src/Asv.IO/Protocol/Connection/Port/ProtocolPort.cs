@@ -18,7 +18,8 @@ namespace Asv.IO;
 public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
     where TConfig:ProtocolPortConfig
 {
-    private int _isBusy;
+    private volatile int _isEnableBusy;
+    private volatile int _isDisableBusy;
     private readonly ImmutableArray<ProtocolInfo> _protocols;
     private readonly IProtocolContext _context;
     private readonly bool _reconnectWhenEndpointError;
@@ -32,6 +33,7 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
     private readonly Subject<IProtocolEndpoint> _endpointAdded = new();
     private readonly Subject<IProtocolEndpoint> _endpointRemoved = new();
     private readonly TConfig _config;
+    
 
     protected ProtocolPort(string id,
         TConfig config,
@@ -160,24 +162,20 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
         {
             _logger.ZLogWarning($"Port {this} already enabled, skip enable request");
         }
-        Task.Factory.StartNew(InternalEnable, TaskCreationOptions.LongRunning).SafeFireAndForget();
+        _logger.ZLogInformation($"Enable {this} port");
+        _config.IsEnabled = true;
+        _isEnabled.Value = true;
+        Task.Factory.StartNew(InternalEnable).SafeFireAndForget();
     }
 
     private void InternalEnable()
     {
         if (IsDisposed) return;
-        if (Interlocked.CompareExchange(ref _isBusy, 1, 0) == 1)
+        if (Interlocked.CompareExchange(ref _isEnableBusy, 1, 0) == 1)
         {
             _logger.ZLogTrace($"Port {this} skip duplicate enable ");
             return;
         }
-        if (IsEnabled.CurrentValue)
-        {
-            _logger.ZLogWarning($"Port {this} already enabled, skip enable request");
-        }
-        _logger.ZLogInformation($"Enable {this} port");
-        _config.IsEnabled = true;
-        _isEnabled.Value = true;
         try
         {
             _status.OnNext(ProtocolPortStatus.InProgress);
@@ -195,26 +193,32 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
         }
         finally
         {
-            Interlocked.Exchange(ref _isBusy, 0);
+            Interlocked.Exchange(ref _isEnableBusy, 0);
         }
     }
 
     public void Disable()
     {
-        Task.Factory.StartNew(InternalDisable, TaskCreationOptions.LongRunning).SafeFireAndForget();
+        if (IsEnabled.CurrentValue == false)
+        {
+            _logger.ZLogWarning($"Port {this} already disabled, skip disable request");
+        }
+        _config.IsEnabled = false;
+        _isEnabled.Value = false;
+        Task.Factory.StartNew(InternalDisable).SafeFireAndForget();
     }
     
     private void InternalDisable()
     {
         if (IsDisposed) return;
-        if (Interlocked.CompareExchange(ref _isBusy, 1, 0) == 1)
+        if (Interlocked.CompareExchange(ref _isDisableBusy, 1, 0) == 1)
         {
             _logger.ZLogTrace($"{this} Skip duplicate disable");
             return;
         }
         _logger.ZLogInformation($"Disable {this} port");
-        _isEnabled.Value = false;
-        _config.IsEnabled = false;
+        
+        
         try
         {
             _status.Value = ProtocolPortStatus.InProgress;
@@ -239,7 +243,7 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
         }   
         finally
         {
-            Interlocked.Exchange(ref _isBusy, 0);
+            Interlocked.Exchange(ref _isDisableBusy, 0);
         }
     }
 
@@ -259,7 +263,7 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
         _reconnectTimer?.Dispose();
         _reconnectTimer = null;
         if (IsEnabled.CurrentValue == false) return;
-        Enable();
+        InternalEnable();
     }
     
     protected abstract void InternalSafeDisable();

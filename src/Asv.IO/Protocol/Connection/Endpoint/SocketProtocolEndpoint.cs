@@ -15,8 +15,11 @@ public class SocketProtocolEndpoint(
     IStatisticHandler statisticHandler)
     : ProtocolEndpoint(id, config, parsers, context,statisticHandler)
 {
-    private long _lastDataReceived = context.TimeProvider.GetTimestamp();
-    private readonly TimeSpan _reconnectTimeout = TimeSpan.FromMilliseconds(config.ReconnectTimeoutMs);
+    private long _lastDataReceivedOrSentSuccess = context.TimeProvider.GetTimestamp();
+    private readonly TimeSpan _reconnectTimeout = config.ReconnectTimeoutMs < 0 ?
+        Timeout.InfiniteTimeSpan :
+        TimeSpan.FromMilliseconds(config.ReconnectTimeoutMs);
+    
     private readonly IProtocolContext _context = context;
 
     protected override int GetAvailableBytesToRead()
@@ -25,23 +28,24 @@ public class SocketProtocolEndpoint(
         {
             throw new InvalidOperationException("Socket is disconnected");
         }
-
+        
         var available = socket.Available;
         if (available > 0)
         {
-            _lastDataReceived = _context.TimeProvider.GetTimestamp();
+            _lastDataReceivedOrSentSuccess = _context.TimeProvider.GetTimestamp();
             return available;
         }
+
+        // If no data is available, check if the socket is still connected
+        if (_reconnectTimeout != Timeout.InfiniteTimeSpan 
+            && _context.TimeProvider.GetElapsedTime(_lastDataReceivedOrSentSuccess) > _reconnectTimeout
+            && socket.ProtocolType == ProtocolType.Tcp)
+        {
+            throw new TimeoutException($"TCP socket didn't send or receive any data with {_reconnectTimeout}");
+        }
         
-        // this is for ping disconnected socket
-        if (_context.TimeProvider.GetElapsedTime(_lastDataReceived) > _reconnectTimeout)
-        {
-            socket.Send(ReadOnlySpan<byte>.Empty);
-        }
-        if (socket.Connected == false)
-        {
-            throw new InvalidOperationException("Socket is not connected");
-        }
+        
+        
         return 0;
     }
 
@@ -50,9 +54,11 @@ public class SocketProtocolEndpoint(
         return socket.ReceiveAsync(memory, cancel);
     }
 
-    protected override ValueTask<int> InternalWrite(ReadOnlyMemory<byte> memory, CancellationToken cancel)
+    protected override async ValueTask<int> InternalWrite(ReadOnlyMemory<byte> memory, CancellationToken cancel)
     {
-        return socket.SendAsync(memory, cancel);
+        var count = await socket.SendAsync(memory, cancel);
+        _lastDataReceivedOrSentSuccess = _context.TimeProvider.GetTimestamp();
+        return count;
     }
     #region Dispose
 

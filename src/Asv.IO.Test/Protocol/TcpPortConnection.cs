@@ -28,7 +28,18 @@ public class TcpPortConnectionTest(ITestOutputHelper output)
         {
             output.WriteLine(x.ToString());
         });
-
+        port.EndpointAdded.Subscribe(x =>
+        {
+            output.WriteLine($"Endpoint added: {x}");
+        });
+        port.EndpointRemoved.Subscribe(x =>
+        {
+            output.WriteLine($"Endpoint removed: {x}");
+        });
+        port.Status.Subscribe(x =>
+        {
+            output.WriteLine($"Port status: {x}");
+        });
         while (true)
         {
             await Task.Delay(1000);
