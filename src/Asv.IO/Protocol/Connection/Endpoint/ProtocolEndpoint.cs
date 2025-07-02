@@ -114,7 +114,7 @@ public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
         }
         catch (Exception e)
         {
-            _logger.LogCritical(e, "Error in publish loop");
+            _logger.ZLogError(e, $"Error in publish loop: {e.Message}");
             StatisticHandler.IncrementRxError();
             InternalPublishRxError(new ProtocolConnectionException(this,$"Error in '{nameof(PublishRxLoop)}': {e.Message}",e));
             Debug.Assert(false);
@@ -188,9 +188,9 @@ public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
         }
         catch (Exception e)
         {
+            _lastError.OnNext(new ProtocolConnectionException(this, $"Error at write loop: {e.Message}",e));
             _logger.ZLogError(e, $"Error while writing loop {Id}");
             InternalPublishTxError(new ProtocolConnectionException(this, $"Error at write loop: {e.Message}",e));
-            _lastError.OnNext(new ProtocolConnectionException(this, $"Error at write loop: {e.Message}",e));
         }
     }
   

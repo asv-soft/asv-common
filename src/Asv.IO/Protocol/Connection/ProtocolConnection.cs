@@ -82,14 +82,17 @@ public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolC
     }
     protected void InternalPublishRxError(Exception ex)
     {
+        if (IsDisposed) return;
         _onRxMessage.OnErrorResume(ex);
     }
     protected void InternalPublishTxError(ProtocolConnectionException ex)
     {
+        if (IsDisposed) return;
         _onTxMessage.OnErrorResume(ex);
     }
     protected void InternalPublishTxMessage(IProtocolMessage msg)
     {
+        if (IsDisposed) return;
         _onTxMessage.OnNext(msg);
     }
     public ref ProtocolTags Tags => ref _internalTags;
