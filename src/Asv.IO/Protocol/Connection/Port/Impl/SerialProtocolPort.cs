@@ -149,7 +149,7 @@ public sealed class SerialProtocolPort : ProtocolPort<SerialProtocolPortConfig>
             ProtocolHelper.NormalizeId(
                 $"{Id}_{_config.BoundRate}_{_config.DataBits}_{_config.Parity}_{_config.StopBits}"),
             _config, InternalCreateParsers(), _context, StatisticHandler);
-        InternalAddConnection(_pipe);
+        InternalAddEndpoint(_pipe);
         
     }
 

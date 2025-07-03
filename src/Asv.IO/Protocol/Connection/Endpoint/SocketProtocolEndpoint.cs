@@ -44,8 +44,6 @@ public class SocketProtocolEndpoint(
             throw new TimeoutException($"TCP socket didn't send or receive any data with {_reconnectTimeout}");
         }
         
-        
-        
         return 0;
     }
 

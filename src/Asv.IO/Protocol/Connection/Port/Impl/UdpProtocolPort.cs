@@ -81,7 +81,7 @@ public class UdpProtocolPort:ProtocolPort<UdpProtocolPortConfig>
         else
         {
             _socket.Connect(_sendEndPoint);
-            InternalAddConnection(new SocketProtocolEndpoint(
+            InternalAddEndpoint(new SocketProtocolEndpoint(
                 _socket,ProtocolHelper.NormalizeId($"{Id}_{_sendEndPoint}"), _config, InternalCreateParsers(), _context,StatisticHandler));
         }
     }
@@ -98,7 +98,7 @@ public class UdpProtocolPort:ProtocolPort<UdpProtocolPortConfig>
             EndPoint val = new IPEndPoint(IPAddress.Any, 0);
             _socket.ReceiveFrom(span, ref val);
             _socket.Connect(val);
-            InternalAddConnection(new SocketProtocolEndpoint(
+            InternalAddEndpoint(new SocketProtocolEndpoint(
                 _socket, ProtocolHelper.NormalizeId($"{Id}_{val}"), _config, InternalCreateParsers(), _context,StatisticHandler));
         }
         catch (ThreadAbortException ex)

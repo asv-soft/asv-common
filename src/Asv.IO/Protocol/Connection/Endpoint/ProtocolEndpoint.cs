@@ -155,9 +155,9 @@ public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
         }
         catch (Exception e)
         {
-            _lastError.OnNext(new ProtocolConnectionException(this, $"Error at read loop: {e.Message}",e));
             _logger.ZLogError(e, $"Error while reading loop {Id}");
             InternalPublishRxError(new ProtocolConnectionException(this, $"Error at read loop: {e.Message}",e));
+            _lastError.OnNext(new ProtocolConnectionException(this, $"Error at read loop: {e.Message}",e));
         }
     }
 
@@ -188,9 +188,9 @@ public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
         }
         catch (Exception e)
         {
-            _lastError.OnNext(new ProtocolConnectionException(this, $"Error at write loop: {e.Message}",e));
             _logger.ZLogError(e, $"Error while writing loop {Id}");
             InternalPublishTxError(new ProtocolConnectionException(this, $"Error at write loop: {e.Message}",e));
+            _lastError.OnNext(new ProtocolConnectionException(this, $"Error at write loop: {e.Message}",e));
         }
     }
   

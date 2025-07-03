@@ -123,7 +123,7 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
         }
     }
     
-    protected void InternalAddConnection(IProtocolEndpoint endpoint)
+    protected void InternalAddEndpoint(IProtocolEndpoint endpoint)
     {
         if (IsDisposed) return;
         _logger.ZLogInformation($"{this} add endpoint {endpoint}");

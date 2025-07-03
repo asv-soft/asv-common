@@ -66,7 +66,7 @@ public class TcpClientProtocolPort:ProtocolPort<TcpClientProtocolPortConfig>
             _socket,
             ProtocolHelper.NormalizeId($"{Id}_{_socket.RemoteEndPoint}"),
             _config, InternalCreateParsers(), _context, StatisticHandler);
-        InternalAddConnection(_endpoint);
+        InternalAddEndpoint(_endpoint);
     }
 
     #region Dispose
