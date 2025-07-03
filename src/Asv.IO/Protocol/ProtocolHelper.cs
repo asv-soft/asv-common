@@ -10,7 +10,8 @@ namespace Asv.IO;
 public static partial class ProtocolHelper
 {
 
-    internal static string NormalizeId(string id) => IdNormalizeRegex.Replace(id, "_");
+    internal static string NormalizeId(string id) => IdNormalizeRegex.Replace(id, "_")
+        .Trim('_').Replace("___", "_").Replace("__", "_");
 
     [GeneratedRegex(@"[^\w]")]
     private static partial Regex MyRegex();

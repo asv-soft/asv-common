@@ -11,7 +11,8 @@ public static class ExampleProtocol
         var factory = new ProtocolMessageFactoryBuilder<ExampleMessageBase, byte>(Info);
         factory
             .Add<ExampleMessage1>()
-            .Add<ExampleMessage2>();
+            .Add<ExampleMessage2>()
+            .Add<ExampleMessage3>();
         configure?.Invoke(factory);
         var messageFactory = factory.Build();
         builder.Register(Info, (core,stat) => new ExampleParser(messageFactory, core,stat));

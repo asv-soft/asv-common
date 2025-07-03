@@ -1,4 +1,6 @@
 using System;
+using System.Diagnostics;
+using System.Threading;
 using Microsoft.Extensions.Logging;
 using R3;
 using Xunit.Abstractions;
@@ -25,8 +27,21 @@ public class TestLoggerFactory(ITestOutputHelper testOutputHelper, TimeProvider 
     }
 }
 
-public class TestLogger(ITestOutputHelper testOutputHelper, TimeProvider time, string? categoryName) : ILogger
+public class TestLogger : ILogger
 {
+    private readonly ITestOutputHelper _testOutputHelper;
+    private readonly TimeProvider _time;
+    private readonly string? _categoryName;
+    private readonly long _start;
+
+    public TestLogger(ITestOutputHelper testOutputHelper, TimeProvider time, string? categoryName)
+    {
+        _testOutputHelper = testOutputHelper;
+        _time = time;
+        _categoryName = categoryName;
+        _start = _time.GetTimestamp();
+    }
+
     public bool IsEnabled(LogLevel logLevel) => logLevel != LogLevel.None;
 
     public IDisposable BeginScope<TState>(TState state) where TState : notnull => Disposable.Empty;
@@ -35,7 +50,8 @@ public class TestLogger(ITestOutputHelper testOutputHelper, TimeProvider time, s
     {
         try
         {
-            testOutputHelper.WriteLine($"{time.GetLocalNow().DateTime:HH:mm:ss.fff,15} |={ConvertToStr(logLevel)}=| {categoryName,-8} | {formatter(state, exception)}");
+            var t = _time.GetElapsedTime(_start);
+            _testOutputHelper.WriteLine($"+{t.TotalSeconds:000.000} |{Thread.CurrentThread.ManagedThreadId:00}|={ConvertToStr(logLevel)}=| {_categoryName,-20} | {formatter(state, exception)}");
         }
         catch
         {

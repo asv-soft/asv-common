@@ -3,6 +3,8 @@ using System.Collections.Immutable;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using ZLogger;
 
 namespace Asv.IO;
 
@@ -21,6 +23,7 @@ public class SocketProtocolEndpoint(
         TimeSpan.FromMilliseconds(config.ReconnectTimeoutMs);
     
     private readonly IProtocolContext _context = context;
+    private readonly ILogger<SocketProtocolEndpoint> _logger = context.LoggerFactory.CreateLogger<SocketProtocolEndpoint>();
 
     protected override int GetAvailableBytesToRead()
     {
@@ -47,9 +50,11 @@ public class SocketProtocolEndpoint(
         return 0;
     }
 
-    protected override ValueTask<int> InternalRead(Memory<byte> memory, CancellationToken cancel)
+    protected override async ValueTask<int> InternalRead(Memory<byte> memory, CancellationToken cancel)
     {
-        return socket.ReceiveAsync(memory, cancel);
+        return await socket.ReceiveAsync(memory, cancel);
+        //_logger.ZLogTrace($"RX:{BitConverter.ToString(memory.ToArray())}");
+        //return result;
     }
 
     protected override async ValueTask<int> InternalWrite(ReadOnlyMemory<byte> memory, CancellationToken cancel)

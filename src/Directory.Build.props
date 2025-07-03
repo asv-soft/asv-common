@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-    <ProductVersion>3.2.7</ProductVersion>
+    <ProductVersion>3.2.8</ProductVersion>
     <DotNetVersion>9.0.3</DotNetVersion>
     <DotNextVersion>5.19.1</DotNextVersion>
     <R3Version>1.3.0</R3Version>

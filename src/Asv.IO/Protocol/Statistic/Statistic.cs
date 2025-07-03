@@ -202,6 +202,15 @@ public class InheritedStatistic(IStatisticHandler parent) : IStatisticHandler
         Interlocked.Increment(ref _dropedTxMessages);
         parent.IncrementDropTxMessage();
     }
+
+    public override string ToString()
+    {
+        return $"RxBytes: {_rxBytes}, TxBytes: {_txBytes}, RxMessages: {_rxMessages}, TxMessages: {_txMessages}, " +
+               $"RxError: {_rxError}, TxError: {_txError}, ParsedBytes: {_parsedBytes}, ParsedMessages: {_parsedMessages}, " +
+               $"UnknownMessages: {_unknownMessages}, MessagePublishError: {_messagePublishError}, BadCrcError: {_badCrc}, " +
+               $"DeserializeError: {_deserializeError}, MessageReadNotAllData: {_messageReadNotAllData}, " +
+               $"DroppedRxMessages: {_dropedRxMessages}, DroppedTxMessages: {_dropedTxMessages}";
+    }
 }
 
 public enum ParserStatistic

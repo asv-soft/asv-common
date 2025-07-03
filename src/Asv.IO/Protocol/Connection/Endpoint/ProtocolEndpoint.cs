@@ -65,10 +65,6 @@ public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
             parser.OnMessage
                 .SubscribeAwait((x,cancel) => _rxChannel.Writer.WriteAsync(x,cancel))
                 .AddTo(ref disposableBuilder);
-            
-            /*parser.OnMessage
-                .Subscribe(InternalPublishRxMessage)
-                .AddTo(ref disposableBuilder);*/
         }
         _parserSub = disposableBuilder.Build();
         Task.Factory.StartNew(ReadLoop, TaskCreationOptions.LongRunning, DisposeCancel);
@@ -139,6 +135,7 @@ public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
                 using var mem = MemoryPool<byte>.Shared.Rent(bufferSize);
                 var readBytes = await InternalRead(mem.Memory, DisposeCancel);
                 StatisticHandler.AddRxBytes(readBytes);
+                
                 for (var i = 0; i < readBytes; i++)
                 {
                     var b = mem.Memory.Span[i];
@@ -157,7 +154,10 @@ public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
         {
             _logger.ZLogError(e, $"Error while reading loop {Id}");
             InternalPublishRxError(new ProtocolConnectionException(this, $"Error at read loop: {e.Message}",e));
-            _lastError.OnNext(new ProtocolConnectionException(this, $"Error at read loop: {e.Message}",e));
+            if (IsDisposed == false)
+            {
+                _lastError.OnNext(new ProtocolConnectionException(this, $"Error at read loop: {e.Message}",e));    
+            }
         }
     }
 
@@ -179,6 +179,7 @@ public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
                 var size = newMessage.GetByteSize();
                 using var mem = MemoryPool<byte>.Shared.Rent(size);
                 var writeBytes = await newMessage.Serialize(mem.Memory);
+                // _logger.ZLogTrace($"TX:{BitConverter.ToString(mem.Memory[..writeBytes].ToArray())} S{size} WS{writeBytes} ");
                 var sendBytes = await InternalWrite(mem.Memory[..writeBytes], DisposeCancel);
                 Debug.Assert(writeBytes == sendBytes);
                 StatisticHandler.AddTxBytes(sendBytes);
@@ -190,7 +191,10 @@ public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
         {
             _logger.ZLogError(e, $"Error while writing loop {Id}");
             InternalPublishTxError(new ProtocolConnectionException(this, $"Error at write loop: {e.Message}",e));
-            _lastError.OnNext(new ProtocolConnectionException(this, $"Error at write loop: {e.Message}",e));
+            if (IsDisposed == false)
+            {
+                _lastError.OnNext(new ProtocolConnectionException(this, $"Error at write loop: {e.Message}",e));    
+            }
         }
     }
   

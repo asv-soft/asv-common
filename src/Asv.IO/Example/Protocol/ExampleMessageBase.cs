@@ -64,7 +64,7 @@ public abstract class ExampleMessageBase : IProtocolMessage<byte>, IVisitable
         InternalSerialize(ref buffer);
         var size = (byte)(payload.Length - buffer.Length);
         BinSerialize.WriteByte(ref sizeRef, size);
-        var forCrc = origin[1..(size + 5)];
+        var forCrc = origin[1..(size + 4)];
         BinSerialize.WriteByte(ref buffer, CalcCrc(forCrc));
     }
     protected abstract void InternalDeserialize(ref ReadOnlySpan<byte> buffer);
