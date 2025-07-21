@@ -58,6 +58,7 @@ public abstract class ProtocolParser<TMessage,TMessageId> : AsyncDisposableOnce,
         {
             InternalOnError(ex);
             StatisticHandler.IncrementParserBadCrcError();
+            return;
         }
         catch (Exception e)
         {
