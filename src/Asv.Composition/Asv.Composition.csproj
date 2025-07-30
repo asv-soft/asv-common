@@ -8,7 +8,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="System.Composition" Version="$(DotNetVersion)" />
+        <PackageReference Include="System.Composition" Version="9.0.7" />
         <PackageReference Include="ZLogger" Version="$(ZLoggerVersion)" />
     </ItemGroup>
 
