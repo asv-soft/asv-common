@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.IO.Abstractions.TestingHelpers;
+using System.Threading.Tasks;
 using Asv.Common;
 using Xunit;
 
@@ -53,9 +54,9 @@ public class FileSystemHierarchicalStoreTest
     public void Check_Success_Create_File()
     {
         var storeLocation = "TestFolder_Success_CreateFile #" + _fileSystem.Path.GetRandomFileName();
-        var storeinfo = new DirectoryInfo(storeLocation);
-        _fileSystem.Directory.CreateDirectory(storeinfo.FullName);
-        var store = new FileSystemHierarchicalStore<Guid, IListDataFile<AsvSdrRecordFileMetadata>>(storeinfo.FullName,
+        var storeInfo = new DirectoryInfo(storeLocation);
+        _fileSystem.Directory.CreateDirectory(storeInfo.FullName);
+        var store = new FileSystemHierarchicalStore<Guid, IListDataFile<AsvSdrRecordFileMetadata>>(storeInfo.FullName,
             _format,
             TimeSpan.FromMilliseconds(0), null, fileSystem: _fileSystem);
 
@@ -64,12 +65,13 @@ public class FileSystemHierarchicalStoreTest
         var file = store.CreateFile(guid, "FirstCreation", store.RootFolderId);
         file.Dispose();
 
-        var files = _fileSystem.Directory.GetFiles(storeinfo.FullName);
+        var files = _fileSystem.Directory.GetFiles(storeInfo.FullName);
 
-        Assert.True(files[0].Equals($"{storeinfo.FullName}\\FirstCreation #{ShortGuid.Encode(guid)}.sdr"));
+        var path = _fileSystem.Path.Combine(storeInfo.FullName, $"FirstCreation #{ShortGuid.Encode(guid)}.sdr");
+        Assert.Equal(files[0], path);
         store.Dispose();
 
-        ClearAllDirectories(storeinfo.FullName);
+        ClearAllDirectories(storeInfo.FullName);
     }
 
     [Fact]
@@ -224,7 +226,8 @@ public class FileSystemHierarchicalStoreTest
 
         Assert.Equal(guid1, store.RenameFile(guid1, "NewFirstFileName"));
 
-        Assert.True(_fileSystem.File.Exists($"{storeinfo.FullName}\\NewFirstFileName #{ShortGuid.Encode(guid1)}.sdr"));
+        var path = _fileSystem.Path.Combine(storeinfo.FullName, $"NewFirstFileName #{ShortGuid.Encode(guid1)}.sdr");
+        Assert.True(_fileSystem.File.Exists(path));
 
         store.Dispose();
 
@@ -267,8 +270,9 @@ public class FileSystemHierarchicalStoreTest
 
         store.MoveFile(guid1, folderGuid);
 
-        Assert.True(_fileSystem.File.Exists(
-            $"{storeinfo.FullName}\\FirstFolder #{ShortGuid.Encode(folderGuid)}\\FirstFile #{ShortGuid.Encode(guid1)}.sdr"));
+        var pathToDelete =
+            _fileSystem.Path.Combine(storeinfo.FullName, $"FirstFolder #{ShortGuid.Encode(folderGuid)}", $"FirstFile #{ShortGuid.Encode(guid1)}.sdr");
+        Assert.True(_fileSystem.File.Exists(pathToDelete));
 
         store.Dispose();
 
@@ -276,7 +280,7 @@ public class FileSystemHierarchicalStoreTest
     }
 
     [Fact]
-    public async void Check_OpenFile()
+    public async Task Check_OpenFile_Success()
     {
         var storeLocation = "TestFolder_OpenFile #" + _fileSystem.Path.GetRandomFileName();
         var storeinfo = new DirectoryInfo(storeLocation);
@@ -301,7 +305,8 @@ public class FileSystemHierarchicalStoreTest
 
         Assert.Throws<FileNotFoundException>(() => { store.OpenFile(guid3); });
 
-        _fileSystem.File.Delete($"{storeinfo.FullName}\\SecondFile #{ShortGuid.Encode(guid2)}.sdr");
+        var pathToDelete = _fileSystem.Path.Combine(storeinfo.FullName, $"SecondFile #{ShortGuid.Encode(guid2)}.sdr");
+        _fileSystem.File.Delete(pathToDelete);
 
         Assert.Throws<FileNotFoundException>(() => { store.OpenFile(guid2); });
 
@@ -363,7 +368,9 @@ public class FileSystemHierarchicalStoreTest
 
         Assert.Equal(2, folders.Count);
 
-        _fileSystem.Directory.Delete($"{storeinfo.FullName}\\SecondFolder #{ShortGuid.Encode(guid2)}");
+        var pathToDelete =
+            _fileSystem.Path.Combine(storeinfo.FullName, $"SecondFolder #{ShortGuid.Encode(guid2)}");
+        _fileSystem.Directory.Delete(pathToDelete);
 
         store.UpdateEntries();
 
@@ -473,7 +480,9 @@ public class FileSystemHierarchicalStoreTest
 
         Assert.True(store.FolderExists(guid1));
 
-        _fileSystem.Directory.Delete($"{storeinfo.FullName}\\SecondFolder #{ShortGuid.Encode(guid2)}");
+        var pathToDelete =
+            _fileSystem.Path.Combine(storeinfo.FullName, $"SecondFolder #{ShortGuid.Encode(guid2)}");
+        _fileSystem.Directory.Delete(pathToDelete);
 
         store.UpdateEntries();
 
@@ -515,12 +524,13 @@ public class FileSystemHierarchicalStoreTest
 
         file2.Dispose();
 
-        Assert.True(_fileSystem.Directory.Exists($"{storeinfo.FullName}\\SecondFolder #{ShortGuid.Encode(folder2)}"));
+        var firstPath = _fileSystem.Path.Combine(storeinfo.FullName, $"SecondFolder #{ShortGuid.Encode(folder2)}");
+        Assert.True(_fileSystem.Directory.Exists(firstPath));
 
         store.RenameFolder(folder2, "NewSecondFolder");
 
-        Assert.True(
-            _fileSystem.Directory.Exists($"{storeinfo.FullName}\\NewSecondFolder #{ShortGuid.Encode(folder2)}"));
+        var secondPath = _fileSystem.Path.Combine(storeinfo.FullName, $"NewSecondFolder #{ShortGuid.Encode(folder2)}");
+        Assert.True(_fileSystem.Directory.Exists(secondPath));
 
         store.Dispose();
 
@@ -555,12 +565,17 @@ public class FileSystemHierarchicalStoreTest
 
         Assert.Throws<HierarchicalStoreException>(() => { store.MoveFolder(folder1, guid3); });
 
-        Assert.True(_fileSystem.Directory.Exists($"{storeinfo.FullName}\\SecondFolder #{ShortGuid.Encode(folder2)}"));
+        var pathFirst = _fileSystem.Path.Combine(storeinfo.FullName, $"SecondFolder #{ShortGuid.Encode(folder2)}");
+        Assert.True(_fileSystem.Directory.Exists(pathFirst));
 
         store.MoveFolder(folder2, folder1);
 
-        Assert.True(_fileSystem.Directory.Exists(
-            $"{storeinfo.FullName}\\FirstFolder #{ShortGuid.Encode(folder1)}\\SecondFolder #{ShortGuid.Encode(folder2)}"));
+        var pathSecond = _fileSystem.Path.Combine(
+            storeinfo.FullName, 
+            $"FirstFolder #{ShortGuid.Encode(folder1)}",
+            $"SecondFolder #{ShortGuid.Encode(folder2)}"
+        );
+        Assert.True(_fileSystem.Directory.Exists(pathSecond));
         store.Dispose();
 
         ClearAllDirectories(storeinfo.FullName);

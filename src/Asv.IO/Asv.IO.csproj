@@ -54,8 +54,8 @@
     <PackageReference Include="System.IO.Abstractions" Version="$(SystemIOAbstractionsVersion)" />
     <PackageReference Include="TestableIO.System.IO.Abstractions" Version="$(SystemIOAbstractionsVersion)" />
     <PackageReference Include="TestableIO.System.IO.Abstractions.Wrappers" Version="$(SystemIOAbstractionsVersion)" />
-    <PackageReference Include="System.IO.Pipelines" Version="$(DotNetVersion)" />
-    <PackageReference Include="System.IO.Ports" Version="$(DotNetVersion)" />
+    <PackageReference Include="System.IO.Pipelines" Version="9.0.7" />
+    <PackageReference Include="System.IO.Ports" Version="9.0.7" />
     <PackageReference Include="DotNext.Threading" Version="$(DotNextVersion)" />
   </ItemGroup>
   <ItemGroup>

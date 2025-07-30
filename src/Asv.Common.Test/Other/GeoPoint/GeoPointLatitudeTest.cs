@@ -112,8 +112,8 @@ public class GeoPointLatitudeTest
     }
 
     [Theory]
-    [InlineData("0 0 0 N", 0)]
-    [InlineData("0 0 N", 0)]
+    [InlineData("0 0 0 N", 0.0)]
+    [InlineData("0 0 N", 0.0)]
     [InlineData("0 N", null)] // Assuming this should fail and not return a value.
     public void CheckIncompleteEntries(string input, double? expected)
     {
@@ -130,27 +130,27 @@ public class GeoPointLatitudeTest
     }
     
     [Theory]
-    [InlineData("01 00 00 N", 1)]
-    [InlineData("1 00 00 N", 1)]
-    [InlineData("09 00 00 N", 9)]
-    [InlineData("9 00 00 N", 9)]
-    [InlineData("89 00 00 N", 89)]
-    [InlineData("890000N", 89)]
+    [InlineData("01 00 00 N", 1.0)]
+    [InlineData("1 00 00 N", 1.0)]
+    [InlineData("09 00 00 N", 9.0)]
+    [InlineData("9 00 00 N", 9.0)]
+    [InlineData("89 00 00 N", 89.0)]
+    [InlineData("890000N", 89.0)]
     [InlineData("90 00 01 N", null)] // Assuming this should fail and not return a value.
     [InlineData("900001N", null)] // Assuming this should fail and not return a value.
-    [InlineData("+00 00 00 N", 0)]
-    [InlineData("+0 00 00 N", 0)]
-    [InlineData("+01 00 00 N", 1)]
-    [InlineData("+1 00 00 N", 1)]
-    [InlineData("+09 00 00 N", 9)]
-    [InlineData("+9 00 00 N", 9)]
-    [InlineData("+89 00 00 N", 89)]
-    [InlineData("+00000N", 0)]
-    [InlineData("+010000N", 1)]
-    [InlineData("+10000N", 10)] 
-    [InlineData("+090000N", 9)]
-    [InlineData("+90000N", 90)]
-    [InlineData("+890000N", 89)]
+    [InlineData("+00 00 00 N", 0.0)]
+    [InlineData("+0 00 00 N", 0.0)]
+    [InlineData("+01 00 00 N", 1.0)]
+    [InlineData("+1 00 00 N", 1.0)]
+    [InlineData("+09 00 00 N", 9.0)]
+    [InlineData("+9 00 00 N", 9.0)]
+    [InlineData("+89 00 00 N", 89.0)]
+    [InlineData("+00000N", 0.0)]
+    [InlineData("+010000N", 1.0)]
+    [InlineData("+10000N", 10.0)] 
+    [InlineData("+090000N", 9.0)]
+    [InlineData("+90000N", 90.0)]
+    [InlineData("+890000N", 89.0)]
     [InlineData("+90 00 01 N", null)] // Assuming this should fail and not return a value.
     [InlineData("-00 00 00 N", null)] // Assuming this should fail and not return a value.
     [InlineData("-0 00 00 N", null)] // Assuming this should fail and not return a value.
@@ -169,21 +169,21 @@ public class GeoPointLatitudeTest
     [InlineData("-90000N", null)] // Assuming this should fail and not return a value.
     [InlineData("-890000N", null)] // Assuming this should fail and not return a value.
     [InlineData("-900001N", null)] // Assuming this should fail and not return a value.
-    [InlineData("00 00 00", 0)]
-    [InlineData("+0 00 00", 0)]
-    [InlineData("+01 00 00", 1)]
-    [InlineData("+1 00 00", 1)]
-    [InlineData("+09 00 00", 9)]
-    [InlineData("+9 00 00", 9)]
-    [InlineData("+89 00 00", 89)]
+    [InlineData("00 00 00", 0.0)]
+    [InlineData("+0 00 00", 0.0)]
+    [InlineData("+01 00 00", 1.0)]
+    [InlineData("+1 00 00", 1.0)]
+    [InlineData("+09 00 00", 9.0)]
+    [InlineData("+9 00 00", 9.0)]
+    [InlineData("+89 00 00", 89.0)]
     [InlineData("+90 00 01", null)] // Assuming this should fail and not return a value.
-    [InlineData("000000", 0)]
-    [InlineData("+00000", 0)]
-    [InlineData("+010000", 1)]
-    [InlineData("+10000", 10)]
-    [InlineData("+090000", 9)]
-    [InlineData("+90000", 90)]
-    [InlineData("+890000", 89)]
+    [InlineData("000000", 0.0)]
+    [InlineData("+00000", 0.0)]
+    [InlineData("+010000", 1.0)]
+    [InlineData("+10000", 10.0)]
+    [InlineData("+090000", 9.0)]
+    [InlineData("+90000", 90.0)]
+    [InlineData("+890000", 89.0)]
     [InlineData("+900001", null)] // Assuming this should fail and not return a value.
     public void CheckValidLatitudeDegValues(string input, double? expected)
     {
