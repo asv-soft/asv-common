@@ -1,5 +1,6 @@
 <Project>
   <PropertyGroup>
+    <TargetFrameworksValue>net8.0;net9.0</TargetFrameworksValue>
     <ProductVersion>3.2.8</ProductVersion>
     <DotNetVersion>9.0.3</DotNetVersion>
     <DotNextVersion>5.19.1</DotNextVersion>
