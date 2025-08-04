@@ -84,7 +84,7 @@ public struct FieldVisitor(Action<Stack<Field>,IFieldType> callback)
         _ignoreUnknown = false;
     }
 
-    public void BeginArray(Field field, ArrayType fieldType, int size)
+    public void BeginArray(Field field, ArrayType fieldType)
     {
         _path.Push(field);
         callback(_path, fieldType);

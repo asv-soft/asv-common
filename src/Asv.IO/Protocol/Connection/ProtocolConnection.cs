@@ -10,10 +10,12 @@ namespace Asv.IO;
 
 public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolConnection
 {
-    private ProtocolTags _internalTags = [];
     private readonly ILogger<ProtocolConnection> _logger;
     private readonly Subject<IProtocolMessage> _onTxMessage = new();
     private readonly Subject<IProtocolMessage> _onRxMessage = new();
+    private readonly Subject<Exception> _onRxError = new();
+    private readonly Subject<Exception> _onTxError = new();
+    private ProtocolTags _tags = [];
 
     protected ProtocolConnection(string id, IProtocolContext context, IStatisticHandler? statistic = null)
     {
@@ -43,7 +45,10 @@ public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolC
     public string Id { get; }
     public IStatistic Statistic { get; }
     public Observable<IProtocolMessage> OnTxMessage => _onTxMessage;
+    public Observable<Exception> OnTxError => _onTxError;
     public Observable<IProtocolMessage> OnRxMessage => _onRxMessage;
+    public Observable<Exception> OnRxError => _onRxError;
+    
     protected IStatisticHandler StatisticHandler { get; }
     protected IProtocolContext Context { get; }
     public abstract ValueTask Send(IProtocolMessage message, CancellationToken cancel = default);
@@ -83,20 +88,20 @@ public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolC
     protected void InternalPublishRxError(Exception ex)
     {
         if (IsDisposed) return;
-        _onRxMessage.OnErrorResume(ex);
+        _onRxError.OnNext(ex);
     }
     protected void InternalPublishTxError(ProtocolConnectionException ex)
     {
         if (IsDisposed) return;
-        _onTxMessage.OnErrorResume(ex);
+        _onTxError.OnNext(ex);
     }
     protected void InternalPublishTxMessage(IProtocolMessage msg)
     {
         if (IsDisposed) return;
         _onTxMessage.OnNext(msg);
     }
-    public ref ProtocolTags Tags => ref _internalTags;
-    
+    public ref ProtocolTags Tags => ref _tags;
+
     #region Dispose
 
     protected override void Dispose(bool disposing)
@@ -108,6 +113,8 @@ public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolC
             {
                 feature.Unregister(this);
             }
+            _onTxError.Dispose();
+            _onRxError.Dispose();
             _onTxMessage.Dispose();
             _onRxMessage.Dispose();
         }
@@ -121,6 +128,8 @@ public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolC
         {
             feature.Unregister(this);
         }
+        await CastAndDispose(_onTxError);
+        await CastAndDispose(_onRxError);
         await CastAndDispose(_onTxMessage);
         await CastAndDispose(_onRxMessage);
         await base.DisposeAsyncCore();

@@ -11,6 +11,7 @@ public abstract class ProtocolParser<TMessage,TMessageId> : AsyncDisposableOnce,
 {
     private readonly IProtocolMessageFactory<TMessage,TMessageId> _messageFactory;
     private readonly Subject<IProtocolMessage> _onMessage = new();
+    private readonly Subject<Exception> _onError = new();
 
     protected ProtocolParser(IProtocolMessageFactory<TMessage,TMessageId> messageFactory, IProtocolContext context, IStatisticHandler? statisticHandler)
     {
@@ -36,6 +37,7 @@ public abstract class ProtocolParser<TMessage,TMessageId> : AsyncDisposableOnce,
     public abstract ProtocolInfo Info { get; }
     public ProtocolTags Tags { get; }
     public Observable<IProtocolMessage> OnMessage => _onMessage;
+    public Observable<Exception> OnError => _onError;
     public abstract bool Push(byte data);
     public abstract void Reset();
     protected void InternalParsePacket(TMessageId id, ref ReadOnlySpan<byte> data, bool ignoreReadNotAllData = false)
@@ -85,7 +87,7 @@ public abstract class ProtocolParser<TMessage,TMessageId> : AsyncDisposableOnce,
 
     protected void InternalOnError(ProtocolParserException ex)
     {
-        _onMessage.OnErrorResume(ex);
+        _onError.OnErrorResume(ex);
     }
 
     #region Dispose
@@ -95,6 +97,7 @@ public abstract class ProtocolParser<TMessage,TMessageId> : AsyncDisposableOnce,
     {
         if (disposing)
         {
+            _onError.Dispose();
             _onMessage.Dispose();
         }
 
@@ -103,10 +106,8 @@ public abstract class ProtocolParser<TMessage,TMessageId> : AsyncDisposableOnce,
 
     protected override async ValueTask DisposeAsyncCore()
     {
-        if (_onMessage is IAsyncDisposable onMessageAsyncDisposable)
-            await onMessageAsyncDisposable.DisposeAsync();
-        else
-            _onMessage.Dispose();
+        _onMessage.Dispose();
+        _onError.Dispose();
 
         await base.DisposeAsyncCore();
     }

@@ -111,27 +111,27 @@ public class ExampleMessage1: ExampleMessageBase
 
     public override void Accept(IVisitor visitor)
     {
-        Int32Type.Accept(visitor, Value1Field, Value1Field.DataType, ref _value1);
-        UInt16Type.Accept(visitor, Value2Field,Value2Field.DataType, ref _value2);
-        StringType.Accept(visitor, Value3Field,Value3Field.DataType, ref _value3);
-        ArrayType.Accept(visitor, Value4Field,Value4Field.DataType, _value4.Length, (index, v, f, t) =>
+        Int32Type.Accept(visitor, Value1Field, ref _value1);
+        UInt16Type.Accept(visitor, Value2Field, ref _value2);
+        StringType.Accept(visitor, Value3Field, ref _value3);
+        ArrayType.Accept(visitor, Value4Field, (index, v, f, t) =>
         {
             Int32Type.Accept(v,f,t,ref _value4[index]);
         });
-        ArrayType.Accept(visitor, Value5Field,Value5Field.DataType, _value5.Length, (index, v, f, t) =>
+        ArrayType.Accept(visitor, Value5Field, (index, v, f, t) =>
         {
             StringType.Accept(v,f,t, ref _value5[index]);
         });
-        ArrayType.Accept(visitor, Value6Field, Value6Field.DataType, _value6.Length, (index, v, f, t) =>
+        ArrayType.Accept(visitor, Value6Field, (index, v, f, t) =>
         {
             StructType.Accept(v,f,t, _value6[index]);
         });
-        StructType.Accept(visitor, Value7Field,Value7Field.DataType, _value7);
-        ListType.Accept(visitor, Value8Field, Value8Field.DataType, _value8, (index, v, f, t) =>
+        StructType.Accept(visitor, Value7Field, _value7);
+        ListType.Accept(visitor, Value8Field,  _value8, (index, v, f, t) =>
         {
             StructType.Accept(v,f,t, _value8[index]);
         });
-        ListType.Accept(visitor, Value9Field, Value9Field.DataType, _value9, (index, v, f, t) =>
+        ListType.Accept(visitor, Value9Field,  _value9, (index, v, f, t) =>
         {
             var temp = _value9[index];
             CharType.Accept(v,f,t, ref temp);

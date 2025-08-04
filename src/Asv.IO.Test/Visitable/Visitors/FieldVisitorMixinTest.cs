@@ -11,7 +11,7 @@ public class FieldVisitorMixinTest(ITestOutputHelper output)
     [Fact]
     public void PrintValues_RandomizedMessage_WritesOutputSuccessfully()
     {
-        output.WriteLine(new ExampleMessage1().Randomize().PrintValues());
+        output.WriteLine(new AllTypesStruct().Randomize().PrintValues());
         
     }
 }

@@ -65,6 +65,7 @@ public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
             parser.OnMessage
                 .SubscribeAwait((x,cancel) => _rxChannel.Writer.WriteAsync(x,cancel))
                 .AddTo(ref disposableBuilder);
+            
         }
         _parserSub = disposableBuilder.Build();
         Task.Factory.StartNew(ReadLoop, TaskCreationOptions.LongRunning, DisposeCancel);

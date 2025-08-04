@@ -56,6 +56,271 @@ public class SimpleBinarySerialize(IBufferWriter<byte> buffer, bool skipUnknown)
         BinSerialize.WriteFloat(buffer, value);
     }
 
+    public override void Visit(Field field, DoubleOptionalType type, ref double? value)
+    {
+        if (value.HasValue)
+        {
+            BinSerialize.WriteBool(buffer, true);
+            BinSerialize.WriteDouble(buffer, value.Value);
+        }
+        else
+        {
+            BinSerialize.WriteBool(buffer, false);
+        }
+    }
+
+    public override void Visit(Field field, FloatOptionalType type, ref float? value)
+    {
+        if (value.HasValue)
+        {
+            BinSerialize.WriteBool(buffer, true);
+            BinSerialize.WriteFloat(buffer, value.Value);
+        }
+        else
+        {
+            BinSerialize.WriteBool(buffer, false);
+        }
+    }
+
+    public override void Visit(Field field, HalfFloatOptionalType type, ref Half? value)
+    {
+        if (value.HasValue)
+        {
+            BinSerialize.WriteBool(buffer, true);
+            var floatValue = (float)value.Value;
+            BinSerialize.WriteFloat(buffer, floatValue);
+        }
+        else
+        {
+            BinSerialize.WriteBool(buffer, false);
+        }
+    }
+
+    public override void Visit(Field field, Int8OptionalType type, ref sbyte? value)
+    {
+        if (value.HasValue)
+        {
+            BinSerialize.WriteBool(buffer, true);
+            BinSerialize.WriteSByte(buffer, value.Value);
+        }
+        else
+        {
+            BinSerialize.WriteBool(buffer, false);
+        }
+    }
+
+    public override void Visit(Field field, Int16OptionalType type, ref short? value)
+    {
+        if (value.HasValue)
+        {
+            BinSerialize.WriteBool(buffer, true);
+            BinSerialize.WriteShort(buffer, value.Value);
+        }
+        else
+        {
+            BinSerialize.WriteBool(buffer, false);
+        }
+    }
+
+    public override void Visit(Field field, Int32OptionalType type, ref int? value)
+    {
+        if (value.HasValue)
+        {
+            BinSerialize.WriteBool(buffer, true);
+            BinSerialize.WriteInt(buffer, value.Value);
+        }
+        else
+        {
+            BinSerialize.WriteBool(buffer, false);
+        }
+    }
+
+    public override void Visit(Field field, Int64OptionalType type, ref long? value)
+    {
+        if (value.HasValue)
+        {
+            BinSerialize.WriteBool(buffer, true);
+            BinSerialize.WriteLong(buffer, value.Value);
+        }
+        else
+        {
+            BinSerialize.WriteBool(buffer, false);
+        }
+    }
+
+    public override void Visit(Field field, UInt8OptionalType type, ref byte? value)
+    {
+        if (value.HasValue)
+        {
+            BinSerialize.WriteBool(buffer, true);
+            BinSerialize.WriteByte(buffer, value.Value);
+        }
+        else
+        {
+            BinSerialize.WriteBool(buffer, false);
+        }
+    }
+
+    public override void Visit(Field field, UInt16OptionalType type, ref ushort? value)
+    {
+        if (value.HasValue)
+        {
+            BinSerialize.WriteBool(buffer, true);
+            BinSerialize.WriteUShort(buffer, value.Value);
+        }
+        else
+        {
+            BinSerialize.WriteBool(buffer, false);
+        }
+    }
+
+    public override void Visit(Field field, UInt32OptionalType type, ref uint? value)
+    {
+        if (value.HasValue)
+        {
+            BinSerialize.WriteBool(buffer, true);
+            BinSerialize.WriteUInt(buffer, value.Value);
+        }
+        else
+        {
+            BinSerialize.WriteBool(buffer, false);
+        }
+    }
+
+    public override void Visit(Field field, UInt64OptionalType type, ref ulong? value)
+    {
+        if (value.HasValue)
+        {
+            BinSerialize.WriteBool(buffer, true);
+            BinSerialize.WriteULong(buffer, value.Value);
+        }
+        else
+        {
+            BinSerialize.WriteBool(buffer, false);
+        }
+    }
+
+    public override void Visit(Field field, StringOptionalType type, ref string? value)
+    {
+        if (value != null)
+        {
+            BinSerialize.WriteBool(buffer, true);
+            BinSerialize.WriteString(buffer, value);
+        }
+        else
+        {
+            BinSerialize.WriteBool(buffer, false);
+        }
+    }
+
+    public override void Visit(Field field, BoolOptionalType type, ref bool? value)
+    {
+        if (value.HasValue)
+        {
+            BinSerialize.WriteBool(buffer, true);
+            BinSerialize.WriteBool(buffer, value.Value);
+        }
+        else
+        {
+            BinSerialize.WriteBool(buffer, false);
+        }
+    }
+
+    public override void Visit(Field field, CharOptionalType type, ref char? value)
+    {
+        if (value.HasValue)
+        {
+            BinSerialize.WriteBool(buffer, true);
+            BinSerialize.WriteByte(buffer, (byte)value.Value);
+        }
+        else
+        {
+            BinSerialize.WriteBool(buffer, false);
+        }
+    }
+
+    public override void Visit(Field field, DateTimeType type, ref DateTime value)
+    {
+        BinSerialize.WriteLong(buffer, value.ToBinary());
+    }
+
+    public override void Visit(Field field, DateTimeOptionalType type, ref DateTime? value)
+    {
+        if (value.HasValue)
+        {
+            BinSerialize.WriteBool(buffer, true);
+            BinSerialize.WriteLong(buffer, value.Value.ToBinary());
+        }
+        else
+        {
+            BinSerialize.WriteBool(buffer, false);
+        }
+    }
+
+    public override void Visit(Field field, TimeSpanType type, ref TimeSpan value)
+    {
+        BinSerialize.WriteLong(buffer, value.Ticks);
+    }
+
+    public override void Visit(Field field, TimeSpanOptionalType type, ref TimeSpan? value)
+    {
+        if (value.HasValue)
+        {
+            BinSerialize.WriteBool(buffer, true);
+            BinSerialize.WriteLong(buffer, value.Value.Ticks);
+        }
+        else
+        {
+            BinSerialize.WriteBool(buffer, false);
+        }
+    }
+
+    public override void Visit(Field field, DateOnlyType type, ref DateOnly value)
+    {
+        BinSerialize.WriteUShort(buffer, (ushort)value.Year);
+        BinSerialize.WriteByte(buffer, (byte)value.Month);
+        BinSerialize.WriteByte(buffer, (byte)value.Day);
+    }
+
+    public override void Visit(Field field, DateOnlyOptionalType type, ref DateOnly? value)
+    {
+        if (value.HasValue)
+        {
+            BinSerialize.WriteBool(buffer, true);
+            BinSerialize.WriteUShort(buffer, (ushort)value.Value.Year);
+            BinSerialize.WriteByte(buffer, (byte)value.Value.Month);
+            BinSerialize.WriteByte(buffer, (byte)value.Value.Day);
+        }
+        else
+        {
+            BinSerialize.WriteBool(buffer, false);
+        }
+    }
+
+    public override void Visit(Field field, TimeOnlyType type, ref TimeOnly value)
+    {
+        BinSerialize.WriteByte(buffer, (byte)value.Hour);
+        BinSerialize.WriteByte(buffer, (byte)value.Minute);
+        BinSerialize.WriteByte(buffer, (byte)value.Second);
+        BinSerialize.WriteByte(buffer, (byte)value.Millisecond);
+    }
+
+    public override void Visit(Field field, TimeOnlyOptionalType type, ref TimeOnly? value)
+    {
+        if (value.HasValue)
+        {
+            BinSerialize.WriteBool(buffer, true);
+            BinSerialize.WriteByte(buffer, (byte)value.Value.Hour);
+            BinSerialize.WriteByte(buffer, (byte)value.Value.Minute);
+            BinSerialize.WriteByte(buffer, (byte)value.Value.Second);
+            BinSerialize.WriteByte(buffer, (byte)value.Value.Millisecond);
+        }
+        else
+        {
+            BinSerialize.WriteBool(buffer, false);
+        }
+    }
+
     public override void Visit(Field field, DoubleType type, ref double value)
     {
         BinSerialize.WriteDouble(buffer, value);
@@ -76,7 +341,7 @@ public class SimpleBinarySerialize(IBufferWriter<byte> buffer, bool skipUnknown)
         BinSerialize.WriteByte(buffer, (byte)value);
     }
 
-    public override void BeginArray(Field field, ArrayType type, int size)
+    public override void BeginArray(Field field, ArrayType type)
     {
         // fixed size array => skip
     }
@@ -92,6 +357,17 @@ public class SimpleBinarySerialize(IBufferWriter<byte> buffer, bool skipUnknown)
     }
 
     public override void EndStruct()
+    {
+        // fixed size struct => skip
+    }
+
+    public override void BeginOptionalStruct(Field field, OptionalStructType type, bool isPresent, out bool createNew)
+    {
+        BinSerialize.WriteBool(buffer, isPresent);
+        createNew = false; 
+    }
+
+    public override void EndOptionalStruct(bool isPresent)
     {
         // fixed size struct => skip
     }

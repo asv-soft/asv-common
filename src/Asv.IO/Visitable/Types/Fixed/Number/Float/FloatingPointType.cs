@@ -5,8 +5,8 @@ public interface IFloatingPointType : IFixedType
 }
 
 
-public abstract class FloatingPointType<TSelf, TValue>(TValue min, TValue max) 
-    : NumberType<TSelf, TValue>(min, max), IFloatingPointType
+public abstract class FloatingPointType<TSelf, TValue>(TValue min, TValue max, TValue defaultValue) 
+    : NumberType<TSelf, TValue>(min, max, defaultValue), IFloatingPointType
     where TSelf : IFieldType, IFloatingPointType
 {
     public enum PrecisionKind

@@ -44,6 +44,11 @@ public class StructType(ImmutableArray<Field> fields) : FieldType
             visitor.VisitUnknown(field, type);
         }
     }
+
+    public static void Accept(Asv.IO.IVisitor visitor, Field field, IVisitable value)
+    {
+        Accept(visitor, field, field.DataType, value);
+    }
     
     public interface IVisitor: Asv.IO.IVisitor
     {
@@ -51,4 +56,3 @@ public class StructType(ImmutableArray<Field> fields) : FieldType
         void EndStruct();
     }
 }
-

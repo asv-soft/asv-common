@@ -9,7 +9,9 @@ public interface IProtocolConnection:ISupportTag,ISupportStatistic, IMessageForm
 {
     string Id { get; }
     Observable<IProtocolMessage> OnTxMessage { get; }
+    Observable<Exception> OnTxError { get; }
     Observable<IProtocolMessage> OnRxMessage { get; }
+    Observable<Exception> OnRxError { get; }
     ValueTask Send(IProtocolMessage message, CancellationToken cancel = default);
 }
 

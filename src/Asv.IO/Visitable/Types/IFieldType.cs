@@ -24,6 +24,10 @@ public abstract class FieldType<TSelf, TValue> : FieldType
             visitor.VisitUnknown(field, type);
         }
     }
+    public static void Accept(Asv.IO.IVisitor visitor, Field field, ref TValue value)
+    {
+        Accept(visitor, field, field.DataType, ref value);
+    }
     public interface IVisitor : IReferenceVisitor<TSelf, TValue>;
 }
 

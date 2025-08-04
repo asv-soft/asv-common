@@ -1,9 +1,9 @@
 namespace Asv.IO;
 
-public sealed class CharType(EncodingId encoding, string? allowedChars = null) : FixedType<CharType,char>
+public sealed class CharOptionalType(EncodingId encoding, string? allowedChars = null) : FixedType<CharOptionalType,char?>
 {
     
-    public const string TypeId = "char";
+    public const string TypeId = "char?";
     
     public static readonly CharType Ascii = new(EncodingId.Ascii);
     public static readonly CharType Utf8 = new(EncodingId.Utf8);

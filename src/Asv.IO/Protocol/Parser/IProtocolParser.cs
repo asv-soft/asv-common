@@ -11,6 +11,7 @@ public interface IProtocolParser:IDisposable,IAsyncDisposable
     ProtocolInfo Info { get; }
     ProtocolTags Tags { get; }
     Observable<IProtocolMessage> OnMessage { get; }
+    Observable<Exception> OnError { get; }
     bool Push(byte data);
     void Reset();
 }

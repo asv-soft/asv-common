@@ -38,6 +38,12 @@ public sealed class ListType(IFieldType elementType, int minSize = 0, int maxSiz
         }
     }
 
+    public static void Accept<TElement>(Asv.IO.IVisitor visitor, Field field, IList<TElement> list,
+        ElementDelegate callback) where TElement : new()
+    {
+        Accept(visitor, field, field.DataType, list, callback);
+    }
+
     public interface IVisitor: Asv.IO.IVisitor
     {
         void BeginList(Field field, ListType type, ref uint size);
