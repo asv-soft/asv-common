@@ -18,12 +18,11 @@ public class SocketProtocolEndpoint(
     : ProtocolEndpoint(id, config, parsers, context,statisticHandler)
 {
     private long _lastDataReceivedOrSentSuccess = context.TimeProvider.GetTimestamp();
-    private readonly TimeSpan _reconnectTimeout = config.ReconnectTimeoutMs < 0 ?
+    private readonly TimeSpan _reconnectTimeout = config.ReconnectTimeoutMs <= 0 ?
         Timeout.InfiniteTimeSpan :
         TimeSpan.FromMilliseconds(config.ReconnectTimeoutMs);
     
     private readonly IProtocolContext _context = context;
-    private readonly ILogger<SocketProtocolEndpoint> _logger = context.LoggerFactory.CreateLogger<SocketProtocolEndpoint>();
 
     protected override int GetAvailableBytesToRead()
     {

@@ -39,26 +39,28 @@ public class TcpPortComplexTest
         _clientRouter = _protocol.CreateRouter("Client");
     }
     [Theory(Skip = "This test can be performed only on a local machine.")]
+    //[Theory]
     [InlineData(100)]
     [InlineData(1000)]
     public async Task TcpPort_SendAndRecvMessages_Success(int messagesCount)
     {
         // Arrange
-        var serverPort = _serverRouter.AddTcpClientPort(x =>
-        {
-            x.Host = "127.0.0.1";
-            x.Port = 7341;
-        });
-
         var clientPort = _clientRouter.AddTcpServerPort(x =>
         {
             x.Host = "127.0.0.1";
-            x.Port = 7341;
+            x.Port = 65500;
         });
-        // Act
-
+        
         await clientPort.Status.FirstAsync(x => x == ProtocolPortStatus.Connected);
+        
+        var serverPort = _serverRouter.AddTcpClientPort(x =>
+        {
+            x.Host = "127.0.0.1";
+            x.Port = 65500;
+        });
         await serverPort.Status.FirstAsync(x => x == ProtocolPortStatus.Connected);
+        
+        // Act
         
         var tcs = new TaskCompletionSource();
         var cnt = 0;
@@ -88,6 +90,7 @@ public class TcpPortComplexTest
                     index++;
                     await clientPort.Send(new ExampleMessage1{ Value1 = 0});
                     
+                    
                     if (index % 100 == 0)
                     {
                         _logger.LogInformation($"Client send {index} messages");
@@ -110,8 +113,8 @@ public class TcpPortComplexTest
 
         await tcs.Task;
         // Assert
-        Assert.Equal(_clientRouter.Statistic.RxMessages, (uint)messagesCount);
         Assert.Equal(_clientRouter.Statistic.TxMessages, (uint)messagesCount);
+        Assert.Equal(_serverRouter.Statistic.RxMessages, (uint)messagesCount);
     }
 
     [Theory(Skip = "This test can be performed only on a local machine.")]

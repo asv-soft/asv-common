@@ -153,7 +153,7 @@ public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
         }
         catch (Exception e)
         {
-            _logger.ZLogError(e, $"Error while reading loop {Id}");
+            _logger.ZLogError(e, $"Error while reading loop {Id}: {e.Message}");
             InternalPublishRxError(new ProtocolConnectionException(this, $"Error at read loop: {e.Message}",e));
             if (IsDisposed == false)
             {
