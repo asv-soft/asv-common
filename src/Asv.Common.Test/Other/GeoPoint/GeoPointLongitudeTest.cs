@@ -18,18 +18,18 @@ public class GeoPointLongitudeTest
     }
 
     [Theory]
-    [InlineData("0° 0' 0\"", 0)]
-    [InlineData("0˚ 0' 0\"", 0)]
-    [InlineData("0º 0' 0\"", 0)]
-    [InlineData("0^ 0' 0\"", 0)]
-    [InlineData("0~ 0' 0\"", 0)]
-    [InlineData("0* 0' 0\"", 0)]
-    [InlineData("0°0'0\"", 0)]
-    [InlineData("0˚0'0\"", 0)]
-    [InlineData("0º0'0\"", 0)]
-    [InlineData("0^0'0\"", 0)]
-    [InlineData("0~0'0\"", 0)]
-    [InlineData("0*0'0\"", 0)]
+    [InlineData("0° 0' 0\"", 0.0)]
+    [InlineData("0˚ 0' 0\"", 0.0)]
+    [InlineData("0º 0' 0\"", 0.0)]
+    [InlineData("0^ 0' 0\"", 0.0)]
+    [InlineData("0~ 0' 0\"", 0.0)]
+    [InlineData("0* 0' 0\"", 0.0)]
+    [InlineData("0°0'0\"", 0.0)]
+    [InlineData("0˚0'0\"", 0.0)]
+    [InlineData("0º0'0\"", 0.0)]
+    [InlineData("0^0'0\"", 0.0)]
+    [InlineData("0~0'0\"", 0.0)]
+    [InlineData("0*0'0\"", 0.0)]
     [InlineData("00'0\"", null)]
     public void CheckDegreeSymbols(string input, double? expected)
     {
@@ -61,16 +61,16 @@ public class GeoPointLongitudeTest
         Assert.Equal(expected, value);
     }
     [Theory]
-    [InlineData("000° 00' 00\"", 0)]
-    [InlineData("000° 00' 00\" E", 0)]
-    [InlineData("000° 00' 00.000\" E", 0)]
-    [InlineData("000° 00' 00¨ E", 0)]
-    [InlineData("000° 00' 00¨", 0)]
-    [InlineData("000° 00' 00.000¨ E", 0)]
-    [InlineData("000° 00' 00˝ E", 0)]
-    [InlineData("000° 00' 00.000˝ E", 0)]
-    [InlineData("000° 00' 00", 0)]
-    [InlineData("000° 00' 00 E", 0)]
+    [InlineData("000° 00' 00\"", 0.0)]
+    [InlineData("000° 00' 00\" E", 0.0)]
+    [InlineData("000° 00' 00.000\" E", 0.0)]
+    [InlineData("000° 00' 00¨ E", 0.0)]
+    [InlineData("000° 00' 00¨", 0.0)]
+    [InlineData("000° 00' 00.000¨ E", 0.0)]
+    [InlineData("000° 00' 00˝ E", 0.0)]
+    [InlineData("000° 00' 00.000˝ E", 0.0)]
+    [InlineData("000° 00' 00", 0.0)]
+    [InlineData("000° 00' 00 E", 0.0)]
     [InlineData("000° 00' 00˝ 0°", null)]
     public void CheckSecondSymbols(string input, double? expected)
     {
@@ -101,14 +101,14 @@ public class GeoPointLongitudeTest
     }
 
     [Theory]
-    [InlineData("000° 00'00˝E", 0)]
-    [InlineData("000° 00'00˝", 0)]
-    [InlineData("E000° 00'00˝", 0)]
-    [InlineData("0° 00' 00˝ E", 0)]
-    [InlineData("E000° 00'00˝E", 0)]
-    [InlineData("000° 00'00˝W", 0)]
-    [InlineData("W000° 00'00˝", 0)]
-    [InlineData("W000° 00'00˝W", 0)]
+    [InlineData("000° 00'00˝E", 0.0)]
+    [InlineData("000° 00'00˝", 0.0)]
+    [InlineData("E000° 00'00˝", 0.0)]
+    [InlineData("0° 00' 00˝ E", 0.0)]
+    [InlineData("E000° 00'00˝E", 0.0)]
+    [InlineData("000° 00'00˝W", 0.0)]
+    [InlineData("W000° 00'00˝", 0.0)]
+    [InlineData("W000° 00'00˝W", 0.0)]
     [InlineData("E000° 00'00˝W", null)]
     public void CheckFullDmsPrefixSuffix(string input, double? expected)
     {
@@ -161,10 +161,10 @@ public class GeoPointLongitudeTest
     }
 
     [Theory]
-    [InlineData("000 00 E", 0)]
-    [InlineData("0 0 00 E", 0)]
-    [InlineData("0 0 0E", 0)]
-    [InlineData("000 E", 0)]
+    [InlineData("000 00 E", 0.0)]
+    [InlineData("0 0 00 E", 0.0)]
+    [InlineData("0 0 0E", 0.0)]
+    [InlineData("000 E", 0.0)]
     public void CheckIncompleteEntries(string input, double? expected)
     {
         bool result = GeoPointLongitude.TryParse(input, out double value);
