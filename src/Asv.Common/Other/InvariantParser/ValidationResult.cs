@@ -1,4 +1,4 @@
-namespace Asv.Common.InvariantParser;
+namespace Asv.Common;
 
 public readonly struct ValidationResult
 {

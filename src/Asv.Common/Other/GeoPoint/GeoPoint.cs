@@ -1,4 +1,5 @@
 using System;
+using static Asv.Common.GeoPointLatitude;
 
 namespace Asv.Common
 {
@@ -7,24 +8,85 @@ namespace Asv.Common
     /// https://en.wikipedia.org/wiki/World_Geodetic_System
     /// </summary>
 
-    public struct GeoPoint : IEquatable<GeoPoint>
+    public readonly struct GeoPoint(double latitude, double longitude, double altitude) : IEquatable<GeoPoint>
     {
+        
+
+        public const char Delimiter = ';';
+
+        public static GeoPoint Parse(string value)
+        {
+            if (TryParse(value, out var geoPoint) == false)
+            {
+                throw new ArgumentException($"Cannot parse '{value}' to GeoPoint", nameof(value));
+            }
+            return geoPoint;
+        }
+        
+        public static bool TryParse(string value, out GeoPoint geoPoint)
+        {
+            var arr = value.Split(Delimiter);
+            switch (arr.Length)
+            {
+                case 3:
+                    return TryParse(arr[0], arr[1], arr[2],out geoPoint);
+                case 2:
+                    return TryParse(arr[0], arr[1], out geoPoint);
+                default:
+                    geoPoint = default;
+                    return false;
+            }
+        }
+        
+        public static bool TryParse(string latitude, string longitude, out GeoPoint geoPoint)
+        {
+            if (GeoPointLatitude.TryParse(latitude, out var lat) == false || GeoPointLongitude.TryParse(longitude, out var lon) == false)
+            {
+                geoPoint = default;
+                return false;
+            }
+
+            geoPoint = new GeoPoint(lat, lon, 0);
+            return true;
+        }
+        
+        public static bool TryParse(string latitude, string longitude, string altitude, out GeoPoint geoPoint)
+        {
+            if (GeoPointLatitude.TryParse(latitude, out var lat) == false || GeoPointLongitude.TryParse(longitude, out var lon) == false)
+            {
+                geoPoint = default;
+                return false;
+            }
+
+            double alt;
+            var result = InvariantNumberParser.TryParse(altitude, out alt);
+            if (result.IsSuccess == false)
+            {
+                geoPoint = default;
+                return false;
+            }
+
+            geoPoint = new GeoPoint(lat, lon, alt);
+            return true;
+        }
+        public static GeoPoint Random(Random? random = null, double minLatitude = -90.0, double maxLatitude = 90.0, double minLongitude = -180.0, double maxLongitude = 180.0, double minAltitude = -10000.0, double maxAltitude = 10000.0)
+        {
+            random ??= System.Random.Shared;
+            var latitude = random.NextDouble() * (maxLatitude - minLatitude) + minLatitude;
+            var longitude = random.NextDouble() * (maxLongitude - minLongitude) + minLongitude;
+            var altitude = random.NextDouble() * (maxAltitude - minAltitude) + minAltitude;
+            return new GeoPoint(latitude, longitude, altitude);
+        }
+        
         // West-East
-        public readonly double Longitude;
+        public readonly double Longitude = longitude;
         // Nord-South
-        public readonly double Latitude;
-        public readonly double Altitude;
+        public readonly double Latitude = latitude;
+        public readonly double Altitude = altitude;
 
         public static GeoPoint NaN => new(Double.NaN, Double.NaN, Double.NaN);
         public static GeoPoint Zero => new(0.0, 0.0,0.0);
         public static GeoPoint ZeroWithAlt => new(0.0, 0.0, 0.0);
-        
-        public GeoPoint(double latitude, double longitude, double altitude)
-        {
-            this.Latitude = latitude;
-            this.Longitude = longitude;
-            this.Altitude = altitude;
-        }
 
         public static GeoPoint operator +(GeoPoint x, GeoPoint y)
         {
@@ -38,12 +100,12 @@ namespace Asv.Common
 
         public override string ToString()
         {
-            return $"Lat:{Latitude:F7},Lon:{Longitude:F7},Alt:{Altitude:F1} m";
+            return $"{GeoPointLatitude.PrintDms(Latitude)}{Delimiter}{GeoPointLongitude.PrintDms(Longitude)}{Delimiter}{Altitude}";
         }
 
         public bool Equals(GeoPoint other)
         {
-            return Longitude.Equals(other.Longitude) && Latitude.Equals(other.Latitude) && Nullable.Equals(Altitude, other.Altitude);
+            return Longitude.Equals(other.Longitude) && Latitude.Equals(other.Latitude) && Altitude.Equals(other.Altitude);
         }
 
         public override bool Equals(object? obj)
@@ -53,7 +115,17 @@ namespace Asv.Common
 
         public override int GetHashCode()
         {
-            return Longitude.GetHashCode() ^ Latitude.GetHashCode() ^ Altitude.GetHashCode();
+            return HashCode.Combine(Longitude, Latitude, Altitude);
+        }
+        
+        public static bool operator ==(GeoPoint left, GeoPoint right)
+        {
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(GeoPoint left, GeoPoint right)
+        {
+            return !left.Equals(right);
         }
     }
     

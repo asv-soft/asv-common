@@ -1,4 +1,4 @@
-namespace Asv.Common.InvariantParser;
+namespace Asv.Common;
 
 public class IsNullOrWhiteSpaceValidationException() : ValidationException("Value is null or whitespace")
 {

@@ -33,6 +33,8 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="R3" Version="$(R3Version)" />
+    <PackageReference Include="Geodesy" Version="$(GeodesyVersion)" />
+    
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Update="RS.resx">

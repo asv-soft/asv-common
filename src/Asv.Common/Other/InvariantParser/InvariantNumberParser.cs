@@ -2,7 +2,7 @@ using System;
 using System.Globalization;
 using System.Linq;
 
-namespace Asv.Common.InvariantParser;
+namespace Asv.Common;
 
 public static class InvariantNumberParser
 {

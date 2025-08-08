@@ -1,6 +1,6 @@
 using System;
 
-namespace Asv.Common.InvariantParser;
+namespace Asv.Common;
 
 public class ValidationException : Exception
 {
