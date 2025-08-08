@@ -1,12 +1,22 @@
+using System.Threading.Tasks;
+
 namespace Asv.Common;
 
 public readonly struct ValidationResult
 {
-    
     public required bool IsSuccess { get; init; }
+    public bool IsFailed => !IsSuccess;
     public ValidationException? ValidationException { get; init; }
     
-    
+    public static implicit operator ValidationResult(ValidationException exc)
+    {
+        return new ValidationResult { IsSuccess = false, ValidationException = exc };
+    }
+
+    public static implicit operator ValueTask<ValidationResult>(ValidationResult result)
+    {
+        return ValueTask.FromResult(result);
+    }
     public static ValidationResult Success { get; } = new() { IsSuccess = true };
 
     public static ValidationResult FailAsNullOrWhiteSpace { get; } = new()
