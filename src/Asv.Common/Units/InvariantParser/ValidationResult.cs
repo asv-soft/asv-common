@@ -29,4 +29,13 @@ public readonly struct ValidationResult
             ValidationException = new ValidationException($"Value is out of range. Min: {min}, Max: {max}")
         };
     }
+
+    public static ValidationResult FailFromErrorMessage(string errorMessage)
+    {
+        return new ValidationResult
+        {
+            IsSuccess = false,
+            ValidationException = new ValidationException(errorMessage)
+        };
+    }
 }

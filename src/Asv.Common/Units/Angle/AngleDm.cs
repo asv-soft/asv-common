@@ -5,37 +5,43 @@ using System.Text.RegularExpressions;
 namespace Asv.Common
 {
     /// <summary>
-    /// Provides utility methods for working with angles.
+    /// Represents an angle in degrees and minutes.
     /// </summary>
-    public static partial class Angle
+    public partial class AngleDm
     {
         [GeneratedRegex(@"^(-?((0|[1-9][0-9]?|1[0-7][0-9]|180|360)(\.\d{1,6})?)|360(\.0{1,6})?)$", RegexOptions.Compiled)]
-        private static partial Regex GetAngleInDegrees();
+        private static partial Regex GetAngleInDegreesRegex();
+        private static readonly Regex AngleInDegreesRegex = GetAngleInDegreesRegex();
         
-        private static readonly Regex AngleInDegrees =
-            GetAngleInDegrees();
-        [GeneratedRegex(@"((?<sign>(\-|\+))?(?<deg>\d+)(°|˚|º|\^|~|\*|\s|\-|_)*(((?<min>[0-5]?\d|\d)?)?)('|′|\s|\-|_)*(?<sec>(([0-5]?\d|\d)([.]\d*)?))?(""|¨|˝|\s|\-|_)*)[\s]*$", RegexOptions.Compiled)]
-        private static partial Regex GetAngleRegex();
-        private static readonly Regex AngleRegex = GetAngleRegex();
+        [GeneratedRegex(@"((?<sign>(\-|\+))?(?<deg>\d+)(°|˚|º|\^|~|\*|\s|\-|_)*(((?<min>(([0-5]?\d|\d)([.]\d*)?))?)?)('|′|\s|\-|_)*)[\s]*$", RegexOptions.Compiled)]
+        private static partial Regex GetAngleDmRegex();
+        private static readonly Regex AngleDmRegex = GetAngleDmRegex();
         
         [GeneratedRegex(@"^0+(?=\d+$)")]
         private static partial Regex GetCutOffZeroRegex();
         private static readonly Regex CutOffZeroRegex = GetCutOffZeroRegex();
         
-        public static bool IsValid(string value)
+        public static bool IsValid(string? value)
         {
             return TryParse(value, out _);
         }
         
-        public static string? GetErrorMessage(string value)
+        public static string? GetErrorMessage(string? value)
         {
-            return IsValid(value) == false ? RS.Angle_ErrorMessage : null;
+            return IsValid(value) == false ? RS.AngleDm_ErrorMessage : null;
         }
         
-        public static bool TryParse(string value, out double angle)
+        public static ValidationResult ValidateValue(string? value)
+        {
+            return IsValid(value)
+                ? ValidationResult.Success
+                : ValidationResult.FailFromErrorMessage(RS.AngleDm_ErrorMessage);
+        }
+        
+        public static bool TryParse(string? value, out double angle)
         {
             //Initialize a new angle value with NaN
-            angle = Double.NaN;
+            angle = double.NaN;
             
             //Checks whether value is null or whitespace 
             if (string.IsNullOrWhiteSpace(value)) return false;
@@ -43,7 +49,7 @@ namespace Asv.Common
             //Replace coma by dot
             value = value.Replace(',', '.');
 
-            if (AngleInDegrees.IsMatch(value))
+            if (AngleInDegreesRegex.IsMatch(value))
             {
                 if (double.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out angle))
                 {
@@ -52,7 +58,7 @@ namespace Asv.Common
             }
             
             //Checking value on specified potential regex matches
-            var match = AngleRegex.Match(value);
+            var match = AngleDmRegex.Match(value);
             
             //Trying to parse value in angle as double
             if (match.Success == false)
@@ -72,6 +78,7 @@ namespace Asv.Common
                 {
                     angle *= sign1;
                 }
+                
                 return result;
             }
             
@@ -79,26 +86,17 @@ namespace Asv.Common
             var signGroup = match.Groups["sign"];
             var degGroup = match.Groups["deg"];
             var minGroup = match.Groups["min"];
-            var secGroup = match.Groups["sec"];
 
             if (degGroup.Success == false) return false;
             
             if (int.TryParse(degGroup.Value,NumberStyles.Integer, CultureInfo.InvariantCulture, out var deg) == false) return false;
             
-            // if only seconds without minutes => error
-            if (secGroup.Success && minGroup.Success == false) return false;
-            
             //Initialize a new minutes and seconds values with zeros
-            var min = 0;
-            var sec = 0.0;
+            var min = 0.0;
             
             if (minGroup.Success)
             {
-                if (int.TryParse(minGroup.Value,NumberStyles.Any, CultureInfo.InvariantCulture, out min) == false) return false;
-            }
-            if (secGroup.Success)
-            {
-                if (double.TryParse(secGroup.Value,NumberStyles.Any, CultureInfo.InvariantCulture, out sec) == false) return false;
+                if (double.TryParse(minGroup.Value,NumberStyles.Any, CultureInfo.InvariantCulture, out min) == false) return false;
             }
             
             var sign = 1;
@@ -107,25 +105,23 @@ namespace Asv.Common
                 sign = signGroup.Value.Equals("-") ? -1 : 1;
             }
             
-            angle = sign * (deg + (double)min / 60.0 + sec / 3600.0);
+            angle = sign * (deg + min / 60.0);
             
             return !double.IsNaN(angle);
         }
         
-        public static string PrintDms(double decimalDegrees)
+        
+        public static string PrintDm(double decimalDegrees)
         {
             var degrees = (int)Math.Abs(decimalDegrees);
             var remainingDegrees = Math.Abs(decimalDegrees) - degrees;
-            var minutes = (int)(remainingDegrees * 60);
-            var remainingMinutes = remainingDegrees * 60 - minutes;
-            var seconds = Math.Round(remainingMinutes * 60, 2);
-            while (seconds >= 60d)
+            var minutes = Math.Round(remainingDegrees * 60, 2);
+            while (minutes >= 60d)
             {
-                minutes++;
-                seconds -= 60;
+                degrees++;
+                minutes -= 60;
             }
-            
-            return $"{Math.Sign(decimalDegrees) * degrees:00}°{minutes:00}′{seconds:00.00}˝";  
+            return $"{(Math.Sign(decimalDegrees) > 0 ? string.Empty : "-")}{degrees:00}°{minutes:00.00}′";  
         }
     }
 }

@@ -28,6 +28,13 @@ namespace Asv.Common
         {
             return IsValid(value) == false ? RS.GeoPointLongitude_GetErrorMessage : null;
         }
+        
+        public static ValidationResult ValidateValue(string? value)
+        {
+            return IsValid(value)
+                ? ValidationResult.Success
+                : ValidationResult.FailFromErrorMessage(RS.GeoPointLongitude_GetErrorMessage);
+        }
 
         public static bool TryParse(string? value, out double longitude)
         {

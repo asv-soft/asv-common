@@ -20,17 +20,24 @@ namespace Asv.Common
         private static partial Regex GetCutOffZeroRegex();
         private static readonly Regex CutOffZeroRegex = GetCutOffZeroRegex();
         
-        public static bool IsValid(string value)
+        public static bool IsValid(string? value)
         {
             return TryParse(value, out _);
         }
         
-        public static string? GetErrorMessage(string value)
+        public static string? GetErrorMessage(string? value)
         {
             return IsValid(value) == false ? RS.AngleMs_ErrorMessage : null;
         }
         
-        public static bool TryParse(string value, out double angle)
+        public static ValidationResult ValidateValue(string? value)
+        {
+            return IsValid(value)
+                ? ValidationResult.Success
+                : ValidationResult.FailFromErrorMessage(RS.AngleMs_ErrorMessage);
+        }
+        
+        public static bool TryParse(string? value, out double angle)
         {
             //Initialize a new angle value with NaN
             angle = double.NaN;

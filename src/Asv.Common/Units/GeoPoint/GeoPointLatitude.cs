@@ -26,6 +26,13 @@ namespace Asv.Common
             return IsValid(value) == false ? RS.GeoPointLatitude_ErrorMessage : null;
         }
 
+        public static ValidationResult ValidateValue(string? value)
+        {
+            return IsValid(value)
+                ? ValidationResult.Success
+                : ValidationResult.FailFromErrorMessage(RS.GeoPointLatitude_ErrorMessage);
+        }
+
         public static bool TryParse(string? value, out double latitude)
         {
             latitude = Double.NaN;
