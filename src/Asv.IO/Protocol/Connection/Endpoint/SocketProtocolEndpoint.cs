@@ -49,6 +49,8 @@ public class SocketProtocolEndpoint(
         return 0;
     }
 
+    public Socket Socket => socket;
+    
     protected override async ValueTask<int> InternalRead(Memory<byte> memory, CancellationToken cancel)
     {
         return await socket.ReceiveAsync(memory, cancel);
@@ -62,6 +64,7 @@ public class SocketProtocolEndpoint(
         _lastDataReceivedOrSentSuccess = _context.TimeProvider.GetTimestamp();
         return count;
     }
+    
     #region Dispose
 
     protected override void Dispose(bool disposing)

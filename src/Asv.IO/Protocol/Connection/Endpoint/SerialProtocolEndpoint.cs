@@ -15,6 +15,8 @@ public sealed class SerialProtocolEndpoint(
     IStatisticHandler statisticHandler)
     : ProtocolEndpoint(id, config, parsers, context, statisticHandler)
 {
+    
+    SerialPort SerialPort => port;
     protected override int GetAvailableBytesToRead()
     {
         if (!port.IsOpen)
