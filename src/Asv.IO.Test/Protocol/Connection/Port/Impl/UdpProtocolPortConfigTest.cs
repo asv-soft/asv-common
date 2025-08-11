@@ -13,7 +13,7 @@ namespace Asv.IO.Test.Connection.Port.Impl;
 public class UdpProtocolPortConfigTest(ITestOutputHelper output)
 {
 
-    [Fact]
+    [Fact(Skip = "Only for manual testing")]
     public async Task METHOD()
     {
         var testLogFactory = new TestLoggerFactory(output, TimeProvider.System, "CLIENT");
