@@ -108,6 +108,31 @@ public class UdpProtocolPort:ProtocolPort<UdpProtocolPortConfig>
         }
     }
 
+    protected override void Dispose(bool disposing)
+    {
+        if (_socket != null)
+        {
+            var socket = _socket;
+            socket.Close();
+            socket.Dispose();
+            _socket = null;
+        }
+
+        base.Dispose(disposing);
+    }
+
+    protected override async ValueTask DisposeAsyncCore()
+    {
+        if (_socket != null)
+        {
+            var socket = _socket;
+            socket.Close();
+            socket.Dispose();
+            _socket = null;
+        }
+
+        await base.DisposeAsyncCore();
+    }
 }
 
 public static class UdpProtocolPortHelper

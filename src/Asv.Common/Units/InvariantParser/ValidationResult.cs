@@ -25,20 +25,20 @@ public readonly struct ValidationResult
         ValidationException = IsNullOrWhiteSpaceValidationException.Instance
     };
     
+    public static ValidationResult FailAsInvalidCharacters { get; } = new()
+    {
+        IsSuccess = false, 
+        ValidationException = InvalidCharactersValidationException.Instance,
+    };
+    
     public static ValidationResult FailAsNotNumber = new()
     {
         IsSuccess = false, 
         ValidationException = NotNumberValidationException.Instance
     };
 
-    public static ValidationResult FailAsOutOfRange(string min, string max)
-    {
-        return new ValidationResult
-        {
-            IsSuccess = false,
-            ValidationException = new ValidationException($"Value is out of range. Min: {min}, Max: {max}")
-        };
-    }
+    public static ValidationResult FailAsOutOfRange(string min, string max) 
+        => FailFromErrorMessage("Value is out of range. Min: {min}, Max: {max}");
 
     public static ValidationResult FailFromErrorMessage(string errorMessage)
     {
