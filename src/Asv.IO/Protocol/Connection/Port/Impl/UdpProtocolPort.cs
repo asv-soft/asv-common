@@ -1,8 +1,14 @@
 using System;
+using System.Buffers;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Diagnostics;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using Asv.Common;
 using Microsoft.Extensions.Logging;
 using ZLogger;
 
@@ -14,7 +20,7 @@ public class UdpProtocolPortConfig(Uri connectionString) : ProtocolPortConfig(co
 
     public const string RemoteHostKey = "rhost";
     public const string RemotePortKey = "rport";
-
+    public const string RemoteEndpoints = "remote";
     
     public IPEndPoint? GetRemoteEndpoint()
     {
@@ -25,6 +31,28 @@ public class UdpProtocolPortConfig(Uri connectionString) : ProtocolPortConfig(co
             return null;
         }
         return CheckIpEndpoint(remoteHost, port);
+    }
+    
+    public IEnumerable<IPEndPoint> GetRemoteEndpoints()
+    {
+        var obsoleteSettings = GetRemoteEndpoint();
+        if (obsoleteSettings != null)
+        {
+            yield return obsoleteSettings;
+        }
+        var endpoints = Query.GetValues(RemoteEndpoints);
+        if (endpoints == null || endpoints.Length == 0)
+        {
+            yield break;
+        }
+
+        foreach (var endpoint in endpoints)
+        {
+            if (IPEndPoint.TryParse(endpoint, out var ep))
+            {
+                yield return ep;
+            }
+        }
     }
 
     public override object Clone() => new UdpProtocolPortConfig(AsUri());
@@ -37,8 +65,8 @@ public class UdpProtocolPort:ProtocolPort<UdpProtocolPortConfig>
     public static PortTypeInfo Info => new(Scheme, "Udp protocol port");
     private readonly UdpProtocolPortConfig _config;
     private readonly IProtocolContext _context;
-    private readonly IPEndPoint _receiveEndPoint;
-    private readonly IPEndPoint? _sendEndPoint;
+    private readonly IPEndPoint _localEndPoint;
+    private readonly ImmutableHashSet<IPEndPoint> _remoteEndPoints;
     private Socket? _socket;
     private readonly ILogger<UdpProtocolPort> _logger;
 
@@ -54,8 +82,9 @@ public class UdpProtocolPort:ProtocolPort<UdpProtocolPortConfig>
         _context = context;
         _logger = context.LoggerFactory.CreateLogger<UdpProtocolPort>();
 
-        _receiveEndPoint = config.CheckAndGetLocalHost();
-        _sendEndPoint = config.GetRemoteEndpoint();
+        _localEndPoint = config.CheckAndGetLocalHost();
+        _remoteEndPoints = config.GetRemoteEndpoints().ToImmutableHashSet();
+        
     }
 
     public override PortTypeInfo TypeInfo => Info;
@@ -72,39 +101,65 @@ public class UdpProtocolPort:ProtocolPort<UdpProtocolPortConfig>
 
     protected override void InternalSafeEnable(CancellationToken token)
     {
-        _socket = new Socket(_receiveEndPoint.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
-        _socket.Bind(_receiveEndPoint);
-        if (_sendEndPoint == null)
+        _socket = new Socket(_localEndPoint.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
+        _socket.Bind(_localEndPoint);
+        // if we have list of remote endpoints, we should create it for sending data
+        foreach (var recvAddr in _remoteEndPoints)
         {
-            Task.Factory.StartNew(AcceptNewEndpoint, token, TaskCreationOptions.LongRunning);
+            InternalAddEndpoint(new UdpSocketProtocolEndpoint(
+                _socket,
+                recvAddr,
+                ProtocolHelper.NormalizeId($"{Id}_{recvAddr}"),
+                _config, InternalCreateParsers(), _context, StatisticHandler));    
         }
-        else
-        {
-            _socket.Connect(_sendEndPoint);
-            InternalAddEndpoint(new SocketProtocolEndpoint(
-                _socket,ProtocolHelper.NormalizeId($"{Id}_{_sendEndPoint}"), _config, InternalCreateParsers(), _context,StatisticHandler));
-        }
+        Task.Factory.StartNew(BeginAcceptNewData, token, TaskCreationOptions.LongRunning | TaskCreationOptions.DenyChildAttach).SafeFireAndForget();
     }
     
-    private void AcceptNewEndpoint(object? state)
+    private void BeginAcceptNewData(object? state)
     {
-        var cancel = (CancellationToken)(state ?? throw new ArgumentNullException(nameof(state)));
+        // ReSharper disable once NullableWarningSuppressionIsUsed
+        var cancel = (CancellationToken) state!;
+        var buffer = ArrayPool<byte>.Shared.Rent(65536); // max UDP packet size
         try
         {
-            if (_socket == null) return;
-            if (cancel.IsCancellationRequested) return;
-            var data = new byte[1];
-            var span = new Span<byte>(data);
-            EndPoint val = new IPEndPoint(IPAddress.Any, 0);
-            _socket.ReceiveFrom(span, ref val);
-            _socket.Connect(val);
-            InternalAddEndpoint(new SocketProtocolEndpoint(
-                _socket, ProtocolHelper.NormalizeId($"{Id}_{val}"), _config, InternalCreateParsers(), _context,StatisticHandler));
+            
+            while (_socket != null && cancel is { IsCancellationRequested: false })
+            {
+                // receive data from any remote endpoint
+                EndPoint recvAddr = new IPEndPoint(IPAddress.Any, 0);
+                var readSize = _socket.ReceiveFrom(buffer, ref recvAddr);
+                if (recvAddr is not IPEndPoint recvAddrIPEndPoint)
+                {
+                    _logger.ZLogWarning($"Received data from unsupported endpoint type: {recvAddr.GetType().Name}. Data will be ignored.");
+                    continue;
+                }
+                // if we have whitelist of remote endpoints, we should check if received data is from one of them
+                if (_remoteEndPoints.Count > 0 && !_remoteEndPoints.Contains(recvAddrIPEndPoint))
+                {
+                    continue;
+                }
+                var exist = (UdpSocketProtocolEndpoint?)Endpoints.FirstOrDefault(x => recvAddrIPEndPoint.Equals(((UdpSocketProtocolEndpoint)x).RemoteEndPoint));
+                // if we have no endpoint for this remote address, we should create it
+                if (exist == null)
+                {
+                    InternalAddEndpoint(exist = new UdpSocketProtocolEndpoint(
+                        _socket,
+                        recvAddrIPEndPoint,
+                        ProtocolHelper.NormalizeId($"{Id}_{recvAddr}"),
+                        _config, InternalCreateParsers(), _context, StatisticHandler));    
+                }
+                // this method blocks this thread until data is processed by endpoint its own read thread
+                exist.ApplyData(buffer, readSize);
+            }
         }
-        catch (ThreadAbortException ex)
+        catch (Exception ex)
         {
-            _logger.ZLogDebug(ex, $"Thread abort exception:{ex.Message}");
+            _logger.ZLogDebug(ex, $"Unhandled exception on {nameof(BeginAcceptNewData)}:{ex.Message}");
             InternalRisePortErrorAndReconnect(ex);
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
         }
     }
 

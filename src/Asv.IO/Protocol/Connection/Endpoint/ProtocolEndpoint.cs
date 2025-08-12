@@ -68,9 +68,9 @@ public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
             
         }
         _parserSub = disposableBuilder.Build();
-        Task.Factory.StartNew(ReadLoop, TaskCreationOptions.LongRunning, DisposeCancel);
-        Task.Factory.StartNew(WriteLoop, TaskCreationOptions.LongRunning, DisposeCancel);
-        Task.Factory.StartNew(PublishRxLoop, TaskCreationOptions.LongRunning, DisposeCancel);
+        Task.Factory.StartNew(ReadLoop, TaskCreationOptions.LongRunning | TaskCreationOptions.DenyChildAttach, DisposeCancel);
+        Task.Factory.StartNew(WriteLoop, TaskCreationOptions.LongRunning | TaskCreationOptions.DenyChildAttach, DisposeCancel);
+        Task.Factory.StartNew(PublishRxLoop, TaskCreationOptions.LongRunning | TaskCreationOptions.DenyChildAttach, DisposeCancel);
     }
 
     private void RxMessageDropped(IProtocolMessage droppedMessage)

@@ -21,7 +21,7 @@ public class TcpClientProtocolPort:ProtocolPort<TcpClientProtocolPortConfig>
     private readonly TcpClientProtocolPortConfig _config;
     private readonly IProtocolContext _context;
     private readonly IPEndPoint _remoteEndpoint;
-    private SocketProtocolEndpoint? _endpoint;
+    private TcpSocketProtocolEndpoint? _endpoint;
     private Socket? _socket;
 
     public TcpClientProtocolPort(
@@ -62,7 +62,7 @@ public class TcpClientProtocolPort:ProtocolPort<TcpClientProtocolPortConfig>
         _socket.ReceiveBufferSize = _config.ReadBufferSize;
         _socket.ReceiveTimeout = _config.ReadTimeout;
         
-        _endpoint = new SocketProtocolEndpoint(
+        _endpoint = new TcpSocketProtocolEndpoint(
             _socket,
             ProtocolHelper.NormalizeId($"{Id}_{_socket.RemoteEndPoint}"),
             _config, InternalCreateParsers(), _context, StatisticHandler);

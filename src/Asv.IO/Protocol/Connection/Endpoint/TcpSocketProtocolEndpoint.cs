@@ -3,12 +3,10 @@ using System.Collections.Immutable;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
-using ZLogger;
 
 namespace Asv.IO;
 
-public class SocketProtocolEndpoint(
+public class TcpSocketProtocolEndpoint(
     Socket socket,
     string id,
     ProtocolPortConfig config,
@@ -40,8 +38,7 @@ public class SocketProtocolEndpoint(
 
         // If no data is available, check if the socket is still connected
         if (_reconnectTimeout != Timeout.InfiniteTimeSpan 
-            && _context.TimeProvider.GetElapsedTime(_lastDataReceivedOrSentSuccess) > _reconnectTimeout
-            && socket.ProtocolType == ProtocolType.Tcp)
+            && _context.TimeProvider.GetElapsedTime(_lastDataReceivedOrSentSuccess) > _reconnectTimeout)
         {
             throw new TimeoutException($"TCP socket didn't send or receive any data with {_reconnectTimeout}");
         }

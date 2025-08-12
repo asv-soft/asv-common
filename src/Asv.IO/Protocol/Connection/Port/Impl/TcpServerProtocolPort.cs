@@ -84,7 +84,7 @@ public class TcpServerProtocolPort:ProtocolPort<TcpServerProtocolPortConfig>
         {
             _socket.Listen(_config.MaxConnection.Value);
         }
-        Task.Factory.StartNew(AcceptNewEndpoint,token,token, TaskCreationOptions.LongRunning,TaskScheduler.Default);
+        Task.Factory.StartNew(AcceptNewEndpoint,token,token, TaskCreationOptions.LongRunning | TaskCreationOptions.DenyChildAttach,TaskScheduler.Default);
     }
     private void AcceptNewEndpoint(object? state)
     {
@@ -97,7 +97,7 @@ public class TcpServerProtocolPort:ProtocolPort<TcpServerProtocolPortConfig>
                 try
                 {
                     var socket = _socket.Accept();
-                    InternalAddEndpoint(new SocketProtocolEndpoint( 
+                    InternalAddEndpoint(new TcpSocketProtocolEndpoint( 
                         socket,
                         ProtocolHelper.NormalizeId($"{Id}_{_socket.RemoteEndPoint}"),
                         _config,InternalCreateParsers(),_context,StatisticHandler));
