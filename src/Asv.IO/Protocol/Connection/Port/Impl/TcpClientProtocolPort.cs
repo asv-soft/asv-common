@@ -62,7 +62,7 @@ public class TcpClientProtocolPort:ProtocolPort<TcpClientProtocolPortConfig>
         _socket.ReceiveBufferSize = _config.ReadBufferSize;
         _socket.ReceiveTimeout = _config.ReadTimeout;
         
-        _endpoint = new TcpSocketProtocolEndpoint(
+        _endpoint = new TcpClientSocketProtocolEndpoint(
             _socket,
             ProtocolHelper.NormalizeId($"{Id}_{_socket.RemoteEndPoint}"),
             _config, InternalCreateParsers(), _context, StatisticHandler);

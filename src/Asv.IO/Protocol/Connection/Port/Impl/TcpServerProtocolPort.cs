@@ -97,7 +97,7 @@ public class TcpServerProtocolPort:ProtocolPort<TcpServerProtocolPortConfig>
                 try
                 {
                     var socket = _socket.Accept();
-                    InternalAddEndpoint(new TcpSocketProtocolEndpoint( 
+                    InternalAddEndpoint(new TcpServerSocketProtocolEndpoint( 
                         socket,
                         ProtocolHelper.NormalizeId($"{Id}_{_socket.RemoteEndPoint}"),
                         _config,InternalCreateParsers(),_context,StatisticHandler));

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Asv.IO;
 
-public class TcpSocketProtocolEndpoint(
+public abstract class TcpSocketProtocolEndpoint(
     Socket socket,
     string id,
     ProtocolPortConfig config,
@@ -21,7 +21,7 @@ public class TcpSocketProtocolEndpoint(
         TimeSpan.FromMilliseconds(config.ReconnectTimeoutMs);
     
     private readonly IProtocolContext _context = context;
-
+    
     protected override int GetAvailableBytesToRead()
     {
         if (socket.Connected == false)
