@@ -152,6 +152,18 @@ public class UdpProtocolPort:ProtocolPort<UdpProtocolPortConfig>
                 exist.ApplyData(buffer, readSize);
             }
         }
+        catch (SocketException ex) when (ex.SocketErrorCode == SocketError.Interrupted)
+        {
+            // graceful shutdown: exit the loop without treating it as an error
+        }
+        catch (SocketException ex) when (ex.SocketErrorCode == SocketError.OperationAborted)
+        {
+            // Windows: overlapped I/O cancelled (CancelIoEx); also expected during shutdown
+        }
+        catch (ObjectDisposedException)
+        {
+            // socket already closed — expected during shutdown
+        }
         catch (Exception ex)
         {
             _logger.ZLogDebug(ex, $"Unhandled exception on {nameof(BeginAcceptNewData)}:{ex.Message}");
