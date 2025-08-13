@@ -250,6 +250,11 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
     protected void InternalRisePortErrorAndReconnect(Exception ex)
     {
         if (IsDisposed) return;
+        if (_reconnectTimer != null)
+        {
+            _reconnectTimer.Dispose();
+            _reconnectTimer = null;
+        }
         ClearAndDisposeAllEndpoints();
         _logger.ZLogError(ex,$"Port {this} error occured. Reconnect after {_config.ReconnectTimeoutMs} ms. Error message:{ex.Message}");
         _error.OnNext(new ProtocolPortException(this,$"Port {this} error:{ex.Message}",ex));
@@ -263,6 +268,7 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
         _reconnectTimer?.Dispose();
         _reconnectTimer = null;
         if (IsEnabled.CurrentValue == false) return;
+        if (_status.CurrentValue == ProtocolPortStatus.Connected) return;
         InternalEnable();
     }
     

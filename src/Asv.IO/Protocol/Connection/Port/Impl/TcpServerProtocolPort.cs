@@ -102,6 +102,18 @@ public class TcpServerProtocolPort:ProtocolPort<TcpServerProtocolPortConfig>
                         ProtocolHelper.NormalizeId($"{Id}_{_socket.RemoteEndPoint}"),
                         _config,InternalCreateParsers(),_context,StatisticHandler));
                 }
+                catch (SocketException ex) when (ex.SocketErrorCode == SocketError.Interrupted)
+                {
+                    // graceful shutdown: exit the loop without treating it as an error
+                }
+                catch (SocketException ex) when (ex.SocketErrorCode == SocketError.OperationAborted)
+                {
+                    // Windows: overlapped I/O cancelled (CancelIoEx); also expected during shutdown
+                }
+                catch (ObjectDisposedException)
+                {
+                    // socket already closed — expected during shutdown
+                }
                 catch (Exception ex)
                 {
                     _logger.ZLogError(ex, $"Unhandled exception:{ex.Message}");
