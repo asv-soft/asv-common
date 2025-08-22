@@ -14,7 +14,7 @@ public class SpanSerializableMixinTest
 {
     private class TestSerializable : ISizedSpanSerializable
     {
-        public byte[] Data { get; set; } = Array.Empty<byte>();
+        public byte[] Data { get; set; } = [];
 
         public void Serialize(ref Span<byte> buffer)
         {
@@ -41,7 +41,7 @@ public class SpanSerializableMixinTest
     [Fact]
     public void Serialize_ToByteArray_ShouldSerializeCorrectly()
     {
-        var testObject = new TestSerializable { Data = new byte[] { 1, 2, 3, 4, 5 } };
+        var testObject = new TestSerializable { Data = [1, 2, 3, 4, 5] };
         var buffer = new byte[10];
 
         var result = testObject.Serialize(buffer);
@@ -53,7 +53,7 @@ public class SpanSerializableMixinTest
     [Fact]
     public void Serialize_ToByteArray_WithStartingIndex_ShouldSerializeCorrectly()
     {
-        var testObject = new TestSerializable { Data = new byte[] { 1, 2, 3, 4, 5 } };
+        var testObject = new TestSerializable { Data = [1, 2, 3, 4, 5] };
         var buffer = new byte[10];
 
         var result = testObject.Serialize(buffer, 5);
@@ -65,7 +65,7 @@ public class SpanSerializableMixinTest
     [Fact]
     public void Serialize_ToByteArray_WithInsufficientLength_ShouldThrow()
     {
-        var testObject = new TestSerializable { Data = new byte[] { 1, 2, 3, 4, 5 } };
+        var testObject = new TestSerializable { Data = [1, 2, 3, 4, 5] };
         var buffer = new byte[3];
 
         Action action = () => testObject.Serialize(buffer);
@@ -109,7 +109,7 @@ public class SpanSerializableMixinTest
     [Fact]
     public async Task Serialize_ToMemory_ShouldSerializeCorrectly()
     {
-        var testObject = new TestSerializable { Data = new byte[] { 1, 2, 3, 4, 5 } };
+        var testObject = new TestSerializable { Data = [1, 2, 3, 4, 5] };
         var buffer = new byte[10];
 
         var result = await testObject.Serialize(new Memory<byte>(buffer));
@@ -141,7 +141,7 @@ public class SpanSerializableMixinTest
     [Fact]
     public void Serialize_ToBufferWriter_ShouldSerializeCorrectly()
     {
-        var testObject = new TestSerializable { Data = new byte[] { 1, 2, 3, 4, 5 } };
+        var testObject = new TestSerializable { Data = [1, 2, 3, 4, 5] };
         var bufferWriter = new ArrayBufferWriter<byte>();
 
         testObject.Serialize(bufferWriter);
@@ -156,7 +156,7 @@ public class SpanSerializableMixinTest
     [Fact]
     public void Deserialize_FromStream_ShouldDeserializeCorrectly()
     {
-        var stream = new MemoryStream(new byte[] { 1, 2, 3, 4, 5 });
+        var stream = new MemoryStream([1, 2, 3, 4, 5]);
         var testObject = new TestSerializable();
 
         testObject.Deserialize(stream, 5);
@@ -167,7 +167,7 @@ public class SpanSerializableMixinTest
     [Fact]
     public void Deserialize_FromStream_WithInsufficientData_ShouldThrow()
     {
-        var stream = new MemoryStream(new byte[] { 1, 2 });
+        var stream = new MemoryStream([1, 2]);
         var testObject = new TestSerializable();
 
         var action = () => testObject.Deserialize(stream, 5);
@@ -182,7 +182,7 @@ public class SpanSerializableMixinTest
     [Fact]
     public void BinaryClone_ShouldCloneCorrectly()
     {
-        var original = new TestSerializable { Data = new byte[] { 1, 2, 3, 4, 5 } };
+        var original = new TestSerializable { Data = [1, 2, 3, 4, 5] };
 
         var clone = original.BinaryClone();
 
@@ -197,7 +197,7 @@ public class SpanSerializableMixinTest
     [Fact]
     public void CopyTo_ShouldCopyDataCorrectly()
     {
-        var source = new TestSerializable { Data = new byte[] { 1, 2, 3, 4, 5 } };
+        var source = new TestSerializable { Data = [1, 2, 3, 4, 5] };
         var destination = new TestSerializable();
 
         source.CopyTo(destination);

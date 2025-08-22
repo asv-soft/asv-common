@@ -76,7 +76,7 @@ namespace Asv.Common
         public static bool ValidatePassword(string password, string correctHash)
         {
             // Extract the parameters from the hash
-            char[] delimiter = { ':' };
+            char[] delimiter = [':'];
             string[] split = correctHash.Split(delimiter);
             var iterations = int.Parse(split[ITERATION_INDEX]);
             var salt = Convert.FromBase64String(split[SALT_INDEX]);

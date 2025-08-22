@@ -11,7 +11,7 @@ namespace Asv.Cfg;
 
 public abstract class ConfigurationBase(ILogger? logger = null) : AsyncDisposableOnce, IConfiguration
 {
-    private readonly ILogger _logger = logger ?? NullLogger.Instance;
+    protected readonly ILogger Logger = logger ?? NullLogger.Instance;
     private readonly Subject<ConfigurationException> _onError = new();
     private readonly Subject<KeyValuePair<string, object?>> _onChanged = new();
 
@@ -53,7 +53,7 @@ public abstract class ConfigurationBase(ILogger? logger = null) : AsyncDisposabl
     {
         try
         {
-            ConfigurationHelper.ValidateKey(key);
+            ConfigurationMixin.ValidateKey(key);
             return InternalSafeExist(key);
         }
         catch (Exception e)
@@ -68,7 +68,7 @@ public abstract class ConfigurationBase(ILogger? logger = null) : AsyncDisposabl
     {
         try
         {
-            ConfigurationHelper.ValidateKey(key);
+            ConfigurationMixin.ValidateKey(key);
             if (typeof(TPocoType).IsAssignableTo(typeof(ICustomConfigurable)))
             {
                 if (defaultValue.Value is ICustomConfigurable cfg)
@@ -91,14 +91,14 @@ public abstract class ConfigurationBase(ILogger? logger = null) : AsyncDisposabl
     {
         try
         {
-            ConfigurationHelper.ValidateKey(key);
+            ConfigurationMixin.ValidateKey(key);
             if (value is ICustomConfigurable cfg)
             {
                 cfg.Save(key,this);
                 return;
             }
             InternalSafeSave(key,value);
-            _logger.ZLogTrace($"Set configuration key [{key}]");
+            Logger.ZLogTrace($"Set configuration key [{key}]");
             _onChanged.OnNext(new KeyValuePair<string, object?>(key,value));
         }
         catch (Exception e)
@@ -113,9 +113,9 @@ public abstract class ConfigurationBase(ILogger? logger = null) : AsyncDisposabl
     {
         try
         {
-            ConfigurationHelper.ValidateKey(key);
+            ConfigurationMixin.ValidateKey(key);
             InternalSafeRemove(key);
-            _logger.ZLogTrace($"Remove configuration key [{key}]");
+            Logger.ZLogTrace($"Remove configuration key [{key}]");
             _onChanged.OnNext(new KeyValuePair<string, object?>(key,null));
         }
         catch (Exception e)
@@ -128,7 +128,7 @@ public abstract class ConfigurationBase(ILogger? logger = null) : AsyncDisposabl
 
     protected ConfigurationException InternalPublishError(ConfigurationException e)
     {
-        _logger.ZLogError(e,$"{this} error: {e.Message}");
+        Logger.ZLogError(e,$"{this} error: {e.Message}");
         _onError.OnNext(e);
         return e;
     }
@@ -140,7 +140,7 @@ public abstract class ConfigurationBase(ILogger? logger = null) : AsyncDisposabl
 
     protected override void Dispose(bool disposing)
     {
-        _logger.ZLogTrace($"Dispose {GetType().Name}");
+        Logger.ZLogTrace($"Dispose {GetType().Name}");
         if (disposing)
         {
             _onError.Dispose();

@@ -11,7 +11,7 @@ namespace Asv.Common
         private readonly Func<T, DateTime> _getTimeCallback;
         private readonly int _maxCount;
         private readonly ITimeService _timeService;
-        private readonly LinkedList<T> _items = new();
+        private readonly LinkedList<T> _items = [];
         private readonly ReaderWriterLockSlim _lock = new(LockRecursionPolicy.NoRecursion);
 
         public ConcurrentCircularTimeBuffer(TimeSpan maxAge, Func<T,DateTime> getTimeCallback, int maxCount = int.MaxValue , ITimeService? timeService = default)

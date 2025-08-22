@@ -16,7 +16,7 @@ namespace Asv.Cfg
     {
         private readonly string _folderPath;
         private const string FixedSearchPattern = "*.json";
-        private readonly LockByKeyExecutor<string> _lock = new(ConfigurationHelper.DefaultKeyComparer);
+        private readonly LockByKeyExecutor<string> _lock = new(ConfigurationMixin.DefaultKeyComparer);
         private readonly ILogger _logger;
         private readonly JsonSerializer _serializer;
         private readonly IFileSystem _fileSystem;
@@ -44,7 +44,7 @@ namespace Asv.Cfg
             return _fileSystem.Path.Combine(_folderPath, $"{key}.json");
         }
 
-        protected override IEnumerable<string> InternalSafeGetReservedParts() => Array.Empty<string>();
+        protected override IEnumerable<string> InternalSafeGetReservedParts() => [];
 
         protected override IEnumerable<string> InternalSafeGetAvailableParts()
         {

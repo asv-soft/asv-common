@@ -22,14 +22,14 @@ namespace Asv.Cfg
         private readonly ILogger _logger = logger ?? NullLogger.Instance;
         private readonly Subject<ConfigurationException> _onError = new();
 
-        protected override IEnumerable<string> InternalSafeGetReservedParts() => Array.Empty<string>();
+        protected override IEnumerable<string> InternalSafeGetReservedParts() => [];
 
         protected override IEnumerable<string> InternalSafeGetAvailableParts()
         {
             try
             {
                 _rw.EnterReadLock();
-                return _values.Keys.ToImmutableArray();
+                return [.._values.Keys];
             }
             finally
             {

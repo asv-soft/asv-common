@@ -38,7 +38,7 @@ internal class ProtocolBuilder : IProtocolBuilder,IProtocolFeatureBuilder,IProto
     private readonly ImmutableArray<ProtocolInfo>.Builder _protocolInfoBuilder = ImmutableArray.CreateBuilder<ProtocolInfo>();
     private readonly ImmutableDictionary<string, PortFactoryDelegate>.Builder _portBuilder = ImmutableDictionary.CreateBuilder<string, PortFactoryDelegate>();
     private readonly ImmutableArray<PortTypeInfo>.Builder _portTypeInfoBuilder = ImmutableArray.CreateBuilder<PortTypeInfo>();
-    private readonly List<IProtocolMessageFormatter> _formatters = new();
+    private readonly List<IProtocolMessageFormatter> _formatters = [];
 
     internal ProtocolBuilder()
     {

@@ -10,8 +10,8 @@ namespace Asv.IO;
 
 public class Sync
 {
-    public byte[] SyncMagic = new byte[] { 0x0FF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
-    public byte[] FullToken = new byte[] { 0, 7, (byte)'S', 0x0FA, 0xFF, 0xFF, 0, 7, (byte)'S', 0xFF, 0xFF };
+    public byte[] SyncMagic = [0x0FF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF];
+    public byte[] FullToken = [0, 7, (byte)'S', 0x0FA, 0xFF, 0xFF, 0, 7, (byte)'S', 0xFF, 0xFF];
 }
 
 public static class GuidHierarchicalStoreFormat

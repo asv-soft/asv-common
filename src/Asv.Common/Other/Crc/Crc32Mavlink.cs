@@ -2,6 +2,7 @@ using System;
 
 namespace Asv.Common;
 
+
 public static class Crc32Mavlink
 {
     // Polynomial 0xEDB88320. It is reversed 0x04C11DB7

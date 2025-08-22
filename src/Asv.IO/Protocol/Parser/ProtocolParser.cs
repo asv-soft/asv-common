@@ -17,7 +17,7 @@ public abstract class ProtocolParser<TMessage,TMessageId> : AsyncDisposableOnce,
     {
         ArgumentNullException.ThrowIfNull(messageFactory);
         _messageFactory = messageFactory;
-        Tags = new ProtocolTags();
+        Tags = [];
         if (statisticHandler == null)
         {
             var value = new Statistic();

@@ -15,7 +15,7 @@ namespace Asv.Common
     /// </summary>
     public static class StringExtensions
     {
-        private static readonly string[] ByteSuffixes = { "B", "KB", "MB", "GB", "TB", "PB", "EB" };
+        private static readonly string[] ByteSuffixes = ["B", "KB", "MB", "GB", "TB", "PB", "EB"];
         public static string BytesToString(this long byteCount)
         {
             if (byteCount == 0)

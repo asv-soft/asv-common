@@ -18,7 +18,7 @@ namespace Asv.IO
         private readonly TcpPortConfig _cfg;
         private TcpListener? _tcp;
         private CancellationTokenSource? _stop;
-        private readonly List<TcpClient> _clients = new();
+        private readonly List<TcpClient> _clients = [];
         private readonly ReaderWriterLockSlim _rw = new();
         private readonly Subject<TcpClient> _removeTcpClientSubject;
         private readonly Subject<TcpClient> _addTcpClientSubject;

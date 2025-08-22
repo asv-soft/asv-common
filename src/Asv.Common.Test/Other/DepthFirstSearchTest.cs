@@ -14,14 +14,14 @@ public class DepthFirstSearchTest
     {
         var edges = new ReadOnlyDictionary<int, int[]>(new Dictionary<int, int[]>()
         {
-            {10, new [] { 5, 23, 54, 88 }},
-            {5, new [] { 23, 54 }},
-            {23, new int[] { }},
-            {54, new [] { 88 }},
-            {88, new int[] { }},
+            {10, [5, 23, 54, 88] },
+            {5, [23, 54] },
+            {23, [] },
+            {54, [88] },
+            {88, [] },
         });
         
-        Assert.Equal(new [] {23, 88, 54, 5, 10}, DepthFirstSearch.Sort(edges));
+        Assert.Equal([23, 88, 54, 5, 10], DepthFirstSearch.Sort(edges));
     }
     
     [Fact]
@@ -29,18 +29,18 @@ public class DepthFirstSearchTest
     {
         var edges = new ReadOnlyDictionary<int, int[]>(new Dictionary<int, int[]>()
         {
-            {12, new int[]{9}},
-            {1, new int[]{12}},
-            {9, new int[]{8}},
-            {8, new int[]{7, 1}},
-            {7, new int[]{10, 6, 3}},
-            {10, new int[]{11}},
-            {11, new int[]{7}},
-            {6, new int[]{5}},
-            {5, new int[]{3}},
-            {3, new int[]{2, 4}},
-            {2, new int[]{}},
-            {4, new int[]{}},
+            {12, [9] },
+            {1, [12] },
+            {9, [8] },
+            {8, [7, 1] },
+            {7, [10, 6, 3] },
+            {10, [11] },
+            {11, [7] },
+            {6, [5] },
+            {5, [3] },
+            {3, [2, 4] },
+            {2, [] },
+            {4, [] },
         });
         
         Assert.Throws<ArgumentException>(() =>
@@ -58,10 +58,10 @@ public class DepthFirstSearchTest
     {
         var edges = new ReadOnlyDictionary<int, int[]>(new Dictionary<int, int[]>()
         {
-            {12, new int[]{9}},
-            {1, new int[]{12}},
-            {8, new int[]{7, 1}},
-            {7, new int[]{10, 6, 3}},
+            {12, [9] },
+            {1, [12] },
+            {8, [7, 1] },
+            {7, [10, 6, 3] },
         });
         
         Assert.Throws<ArgumentException>(() =>
@@ -80,9 +80,9 @@ public class DepthFirstSearchTest
         var edges = new ReadOnlyDictionary<int, int[]>(new Dictionary<int, int[]>()
         {
             {12, null},
-            {1, new int[]{12}},
-            {8, new int[]{7, 1}},
-            {7, new int[]{10, 6, 3}},
+            {1, [12] },
+            {8, [7, 1] },
+            {7, [10, 6, 3] },
         });
         
         Assert.Throws<ArgumentNullException>(() =>
@@ -104,14 +104,14 @@ public class DepthFirstSearchTest
         
         var edges = new ReadOnlyDictionary<object, object[]>(new Dictionary<object, object[]>()
         {
-            {12, new object[] {1.2}},
-            {1.2, new object[] {"8RWE"}},
-            {"8RWE", new object[] {dateTime, someEnum}},
-            {dateTime, new object[] {}},
-            {someEnum, new object[] {}},
+            {12, [1.2] },
+            {1.2, ["8RWE"] },
+            {"8RWE", [dateTime, someEnum] },
+            {dateTime, [] },
+            {someEnum, [] },
         });
 
-        Assert.Equal(new object[] {dateTime, someEnum, "8RWE", 1.2, 12}, 
+        Assert.Equal([dateTime, someEnum, "8RWE", 1.2, 12], 
             DepthFirstSearch.Sort(edges));
     }
 }

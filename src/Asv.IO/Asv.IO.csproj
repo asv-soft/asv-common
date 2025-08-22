@@ -46,6 +46,14 @@
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>
+    <None Update="Bits\SpanBitHelperExt.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>SpanBitHelperExt.cs</LastGenOutput>
+    </None>
+    <None Update="Serializable\BitBased\SpanBitHelperExt.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>SpanBitHelperExt.cs</LastGenOutput>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="ObservableCollections.R3" Version="$(R3Collections)" />
@@ -57,6 +65,7 @@
     <PackageReference Include="System.IO.Pipelines" Version="$(DotNetVersion)" />
     <PackageReference Include="System.IO.Ports" Version="$(DotNetVersion)" />
     <PackageReference Include="DotNext.Threading" Version="$(DotNextVersion)" />
+      
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Asv.Common\Asv.Common.csproj" />

@@ -15,7 +15,7 @@ public class DeviceExplorerBuilder : IDeviceExplorerBuilder,IClientDeviceExtende
     private TimeProvider _timeProvider;
     private IMeterFactory _meterFactory;
     private ClientDeviceBrowserConfig _config = new();
-    private readonly List<IClientDeviceFactory> _factories = new();
+    private readonly List<IClientDeviceFactory> _factories = [];
     private readonly ImmutableArray<IClientDeviceExtender>.Builder _extenders = ImmutableArray.CreateBuilder<IClientDeviceExtender>();
 
     public DeviceExplorerBuilder(IProtocolConnection connection)

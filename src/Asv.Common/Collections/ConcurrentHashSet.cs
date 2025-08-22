@@ -8,7 +8,7 @@ namespace Asv.Common
     public class ConcurrentHashSet<T> : IDisposable
     {
         private readonly ReaderWriterLockSlim _lock = new(LockRecursionPolicy.SupportsRecursion);
-        private readonly HashSet<T> _hashSet = new();
+        private readonly HashSet<T> _hashSet = [];
 
         public void AddRange(IEnumerable<T> itemsToUpdate)
         {

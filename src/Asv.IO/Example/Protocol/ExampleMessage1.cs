@@ -98,7 +98,7 @@ public class ExampleMessage1: ExampleMessageBase
         .DataType(new ListType(SubObject.StructType, 0 , 10))
         .Title("Title  message  field 8")
         .Description("Description message field 8").Build();
-    private readonly List<SubObject> _value8 = new();
+    private readonly List<SubObject> _value8 = [];
     public IList<SubObject> Value8 => _value8;
     private static readonly Field Value9Field = new Field.Builder()
         .Name(nameof(Value9))
@@ -106,7 +106,7 @@ public class ExampleMessage1: ExampleMessageBase
         .Title("Title  message  field 9")
         .Description("Description message field 9").Build();
     
-    private readonly List<char> _value9 = new();
+    private readonly List<char> _value9 = [];
     public IList<char> Value9 => _value9;
 
     public override void Accept(IVisitor visitor)

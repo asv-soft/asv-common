@@ -141,7 +141,7 @@ public class CircularBuffer2Tests
 
         var array = buffer.ToArray();
 
-        Assert.Equal(new[] { 1, 2, 3 }, array);
+        Assert.Equal([1, 2, 3], array);
     }
 
     [Fact]
@@ -196,7 +196,7 @@ public class CircularBuffer2Tests
         Span<int> destination = new int[3];
         buffer.CopyTo(destination);
 
-        Assert.Equal(new[] { 1, 2, 3 }, destination.ToArray());
+        Assert.Equal([1, 2, 3], destination.ToArray());
     }
 
     [Fact]
@@ -218,7 +218,7 @@ public class CircularBuffer2Tests
         Span<int> destination = new int[5];
         buffer.CopyTo(destination);
 
-        Assert.Equal(new[] { 3, 4, 5, 6, 7 }, destination.ToArray());
+        Assert.Equal([3, 4, 5, 6, 7], destination.ToArray());
     }
 
     [Fact]
@@ -233,7 +233,7 @@ public class CircularBuffer2Tests
         buffer.CopyTo(destination);
 
         // Check that the destination was not fully overwritten
-        Assert.Equal(new[] { 1, 2 }, destination.ToArray());
+        Assert.Equal([1, 2], destination.ToArray());
     }
     
     [Fact]
@@ -251,7 +251,7 @@ public class CircularBuffer2Tests
         buffer.CopyTo(destination);
 
         // Check that the destination was not fully overwritten
-        Assert.Equal(new[] { 2, 3 }, destination.ToArray());
+        Assert.Equal([2, 3], destination.ToArray());
     }
 
     [Fact]
@@ -278,7 +278,7 @@ public class CircularBuffer2Tests
         Span<int> destination = new int[5];
         buffer.CopyTo(destination);
 
-        Assert.Equal(new[] { 1, 2, 3, 4, 5 }, destination.ToArray());
+        Assert.Equal([1, 2, 3, 4, 5], destination.ToArray());
     }
 
     [Fact]
@@ -291,6 +291,6 @@ public class CircularBuffer2Tests
         Span<int> destination = new int[5];
         buffer.CopyTo(destination);
 
-        Assert.Equal(new[] { 1, 2, 0, 0, 0 }, destination.ToArray());
+        Assert.Equal([1, 2, 0, 0, 0], destination.ToArray());
     }
 }

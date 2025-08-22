@@ -90,7 +90,7 @@ public class ProtocolConnectionTests
         var message = new ExampleMessage1()
         {
             Value1 = 100,
-            Tags = new ProtocolTags(),
+            Tags = [],
         };
 
         //Act

@@ -65,7 +65,7 @@ public class DefaultMeterFactory : IMeterFactory
             }
             else
             {
-                meterList = new List<FactoryMeter>();
+                meterList = [];
                 _cachedMeters.Add(options.Name, meterList);
             }
 
