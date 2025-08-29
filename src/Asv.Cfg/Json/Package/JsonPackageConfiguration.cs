@@ -12,9 +12,9 @@ public class JsonPackageConfiguration : JsonConfigurationBase
     private readonly Uri _partUri;
     private readonly string _contentType;
     private readonly CompressionOption _compression;
-    private readonly Lock? _packageLock;
+    private readonly object? _packageLock;
 
-    public JsonPackageConfiguration(Package package, Uri partUri, string contentType, CompressionOption compression, Lock? packageLock, TimeSpan? flushToFileDelayMs = null, bool sortKeysInFile = false, TimeProvider? timeProvider = null) 
+    public JsonPackageConfiguration(Package package, Uri partUri, string contentType, CompressionOption compression, object? packageLock, TimeSpan? flushToFileDelayMs = null, bool sortKeysInFile = false, TimeProvider? timeProvider = null) 
         : base(() => LoadCallback(package, partUri,contentType,compression), flushToFileDelayMs, sortKeysInFile, timeProvider)
     {
         ArgumentNullException.ThrowIfNull(package);
@@ -48,20 +48,20 @@ public class JsonPackageConfiguration : JsonConfigurationBase
 
     protected override void EndSaveChanges()
     {
-        _packageLock?.Enter();
+        if (_packageLock != null) Monitor.Enter(_packageLock);
         try
         {
             _package.Flush();
         }
         finally
         {
-            _packageLock?.Exit();
+            if (_packageLock != null) Monitor.Exit(_packageLock);
         }
     }
 
     protected override Stream BeginSaveChanges()
     {
-        _packageLock?.Enter();
+        if (_packageLock != null) Monitor.Enter(_packageLock);
         try
         {
             if (_package.PartExists(_partUri))
@@ -73,7 +73,7 @@ public class JsonPackageConfiguration : JsonConfigurationBase
         }
         finally
         {
-            _packageLock?.Exit();
+            if (_packageLock != null) Monitor.Exit(_packageLock);
         }
     }
 }
