@@ -16,7 +16,7 @@ public class ProtocolMessageTransponder<TMessage>
     private readonly Action<TMessage> _everySendCallback;
     private readonly IProtocolConnection _connection;
     private readonly TimeProvider _timeProvider;
-    private readonly Lock _sync = new();
+    private readonly object _sync = new();
     private int _isSending;
     private ITimer? _timer;
     private readonly ReactiveProperty<TransponderState> _state = new();
@@ -42,7 +42,7 @@ public class ProtocolMessageTransponder<TMessage>
 
     public void Start(TimeSpan dueTime, TimeSpan period)
     {
-        using(_sync.EnterScope())
+        lock(_sync)
         {
             _timer?.Dispose();
             _timer = _timeProvider.CreateTimer(OnTick,null,dueTime, period);
@@ -101,7 +101,7 @@ public class ProtocolMessageTransponder<TMessage>
 
     public void Stop()
     {
-        using(_sync.EnterScope())
+        lock(_sync)
         {
             _timer?.Dispose();
             _timer = null;
@@ -134,7 +134,7 @@ public class ProtocolMessageTransponder<TMessage>
         {
             _dataLock.Dispose();
             _state.Dispose();
-            using(_sync.EnterScope())
+            lock(_sync)
             {
                 _timer?.Dispose();
             }

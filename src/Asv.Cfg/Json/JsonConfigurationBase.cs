@@ -16,7 +16,7 @@ public abstract class JsonConfigurationBase : ConfigurationBase
     private readonly ConcurrentDictionary<string, JToken> _values;
     private readonly Subject<Unit> _onNeedToSave = new();
     private readonly JsonSerializer _serializer;
-    private readonly Lock _sync = new();
+    private readonly object _sync = new();
     private readonly bool _sortKeysInFile;
     private readonly IDisposable _saveSubscribe;
     private readonly bool _deferredFlush;
@@ -78,7 +78,7 @@ public abstract class JsonConfigurationBase : ConfigurationBase
     
     private void InternalSaveChanges(Unit unit)
     {
-        using(_sync.EnterScope())
+        lock(_sync)
         {
             try
             {

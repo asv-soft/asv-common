@@ -17,7 +17,7 @@ namespace Asv.IO
         private readonly Subject<string> _output = new();
         private readonly Subject<Exception> _onErrorSubject;
         private readonly byte[] _buffer;
-        private readonly Lock _sync = new();
+        private readonly object _sync = new();
         private readonly Subject<string> _onReceive = new();
         private readonly IDisposable _sub1;
         private readonly CancellationTokenSource _disposeCancel = new();
@@ -36,7 +36,7 @@ namespace Asv.IO
 
         private void OnData(byte[] dataArray)
         {
-            using(_sync.EnterScope())
+            lock(_sync)
             {
                 foreach (var data in dataArray)
                 {

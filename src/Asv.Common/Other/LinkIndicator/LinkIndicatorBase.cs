@@ -1,5 +1,4 @@
 using System;
-using System.Threading;
 using System.Threading.Tasks;
 using R3;
 
@@ -8,14 +7,15 @@ namespace Asv.Common;
 public class LinkIndicatorBase(int downgradeErrors = 3) : AsyncDisposableOnce, ILinkIndicator
 {
     private int _connErrors;
-    private readonly Lock _sync = new();
+    private readonly object _sync = new();
     private readonly ReactiveProperty<LinkState> _state = new(LinkState.Disconnected);
 
 
     protected virtual void InternalUpgrade()
     {
         if (IsDisposed) return;
-        using(_sync.EnterScope())
+
+        lock(_sync)
         {
             _connErrors = 0;
             _state.Value = LinkState.Connected;
@@ -25,7 +25,7 @@ public class LinkIndicatorBase(int downgradeErrors = 3) : AsyncDisposableOnce, I
     protected void InternalDowngrade()
     {
         if (IsDisposed) return;
-        using(_sync.EnterScope())
+        lock(_sync)
         {
             _connErrors++;
             if (_connErrors >= 1 && _connErrors <= downgradeErrors) _state.Value = LinkState.Downgrade;
