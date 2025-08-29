@@ -4,7 +4,6 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -16,7 +15,7 @@ namespace Asv.Cfg
     public class ZipJsonConfiguration:ConfigurationBase
     {
         private readonly ZipArchive _archive;
-        private readonly Lock _sync = new();
+        private readonly object _sync = new();
         private readonly JsonSerializer _serializer;
         private readonly ILogger _logger;
         private const string FixedFileExt = ".json";
@@ -37,7 +36,7 @@ namespace Asv.Cfg
         public override string ToString()
         {
             if (IsDisposed) return string.Empty;
-            using(_sync.EnterScope())
+            lock(_sync)
             {
                 return $"{nameof(ZipJsonConfiguration)}:{_archive}";
             }
@@ -50,7 +49,7 @@ namespace Asv.Cfg
 
         protected override IEnumerable<string> InternalSafeGetAvailableParts()
         {
-            using(_sync.EnterScope())
+            lock(_sync)
             {
                 return [
                     .._archive.Entries.Where(x => Path.GetExtension(x.Name) == FixedFileExt)
@@ -62,7 +61,7 @@ namespace Asv.Cfg
         protected override bool InternalSafeExist(string key)
         {
             var fileName = GetFilePath(key);
-            using(_sync.EnterScope())
+            lock(_sync)
             {
                 return _archive.Entries.Any(x => ConfigurationMixin.DefaultKeyComparer.Equals(x.Name, fileName));
             }
@@ -74,7 +73,7 @@ namespace Asv.Cfg
         protected override TPocoType InternalSafeGet<TPocoType>(string key, Lazy<TPocoType> defaultValue)
         {
             var fileName = GetFilePath(key);
-            using(_sync.EnterScope())
+            lock(_sync)
             {
                 var entry = _archive.Entries.FirstOrDefault(x => ConfigurationMixin.DefaultKeyComparer.Equals(x.Name, fileName));
                 if (entry == null)
@@ -100,7 +99,7 @@ namespace Asv.Cfg
         protected override void InternalSafeSave<TPocoType>(string key, TPocoType value)
         {
             var fileName = GetFilePath(key);
-            using(_sync.EnterScope())
+            lock(_sync)
             {
                 _archive.GetEntry(fileName)?.Delete();
                 var entry = _archive.CreateEntry(fileName);
@@ -115,7 +114,7 @@ namespace Asv.Cfg
         protected override void InternalSafeRemove(string key)
         {
             var fileName = GetFilePath(key);
-            using(_sync.EnterScope())
+            lock(_sync)
             {
                 _logger.ZLogTrace($"Remove configuration key [{key}]");
                 var entry = _archive.GetEntry(fileName);
@@ -129,7 +128,7 @@ namespace Asv.Cfg
         {
             if (disposing)
             {
-                using(_sync.EnterScope())
+                lock(_sync)
                 {
                     _archive.Dispose();
                 }
@@ -140,7 +139,7 @@ namespace Asv.Cfg
 
         protected override async ValueTask DisposeAsyncCore()
         {
-            using(_sync.EnterScope())
+            lock(_sync)
             {
                 _archive.Dispose();
             }

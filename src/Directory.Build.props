@@ -1,15 +1,15 @@
 <Project>
   <PropertyGroup>
-    <ProductVersion>3.2.9</ProductVersion>
-    <TargetFrameworksValue>net9.0</TargetFrameworksValue>
+    <ProductVersion>3.2.10-dev.1</ProductVersion>
+    <TargetFrameworksValue>net8.0;net9.0</TargetFrameworksValue>
     <DotNetVersion>9.0.8</DotNetVersion>
-    <DotNextVersion>5.23.0</DotNextVersion>
+    <DotNextVersion>5.24.0</DotNextVersion>
     <R3Version>1.3.0</R3Version>
     <R3Collections>3.3.4</R3Collections>
     <NewtonsoftJsonVersion>13.0.3</NewtonsoftJsonVersion>
     <ZLoggerVersion>2.5.10</ZLoggerVersion>
     <GeodesyVersion>4.1.0</GeodesyVersion>
-    <DeepEqualVersion>4.2.1</DeepEqualVersion>
+    <DeepEqualVersion>5.1.0</DeepEqualVersion>
     <AutoFixtureVersion>4.18.1</AutoFixtureVersion>
     <SystemIOAbstractionsVersion>22.0.15</SystemIOAbstractionsVersion>
   </PropertyGroup>
