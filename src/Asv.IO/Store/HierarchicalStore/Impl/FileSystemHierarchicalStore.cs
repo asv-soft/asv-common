@@ -81,14 +81,14 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
     private readonly IHierarchicalStoreFormat<TKey,TFile> _format;
     private readonly TimeProvider _timeProvider;
     private readonly ILogger _logger;
-    private readonly object _sync = new();
+    private readonly Lock _sync = new();
     private readonly ReactiveProperty<ushort> _count;
     private readonly ReactiveProperty<ulong> _size;
     private readonly Dictionary<TKey,FileSystemHierarchicalStoreEntry<TKey>> _entries;
     private readonly List<CachedFile<TKey,TFile>> _fileCache = [];
     private int _checkCacheInProgress;
     private readonly TimeSpan _fileCacheTime;
-    private IFileSystem _fileSystem;
+    private readonly IFileSystem _fileSystem;
 
     public FileSystemHierarchicalStore(string rootFolder, IHierarchicalStoreFormat<TKey, TFile> format,
         TimeSpan? fileCacheTime, ILoggerFactory? logFactory = null,TimeProvider? timeProvider = null, IFileSystem? fileSystem = null)
@@ -99,8 +99,7 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
         if (format == null) throw new ArgumentNullException(nameof(format));
         _timeProvider = timeProvider ?? TimeProvider.System;
         format.DisposeItWith(Disposable);
-        if (string.IsNullOrEmpty(rootFolder))
-            throw new ArgumentException($"{nameof(rootFolder)} cannot be null or empty.", nameof(rootFolder));
+        ArgumentException.ThrowIfNullOrEmpty(rootFolder);
         _fileCacheTime = fileCacheTime ?? TimeSpan.Zero;
         if (_fileCacheTime != TimeSpan.Zero)
         {
@@ -138,7 +137,7 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
 
     public void UpdateEntries()
     {
-        lock(_sync)
+        using(_sync.EnterScope())
         {
             InternalUpdateEntries();
         }    
@@ -247,7 +246,7 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
 
     public IReadOnlyList<IHierarchicalStoreEntry<TKey>> GetEntries()
     {
-        lock(_sync)
+        using(_sync.EnterScope())
         {
             return _entries.Values.ToImmutableList();
         }
@@ -263,7 +262,7 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
     public bool TryGetEntry(TKey id, out IHierarchicalStoreEntry<TKey>? entry)
     {
         entry = null;
-        lock(_sync)
+        using(_sync.EnterScope())
         {
             if (_entries.TryGetValue(id, out var localEntry))
             {
@@ -277,7 +276,7 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
 
     public bool EntryExists(TKey id)
     {
-        lock(_sync)
+        using(_sync.EnterScope())
         {
             return _entries.ContainsKey(id);
         }
@@ -291,7 +290,7 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
     
     public IReadOnlyList<IHierarchicalStoreEntry<TKey>> GetFolders()
     {
-        lock(_sync)
+        using(_sync.EnterScope())
         {
             return _entries.Where(x => x.Value.Type == FolderStoreEntryType.Folder).Select(x => x.Value)
                 .ToImmutableList();
@@ -321,7 +320,7 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
         if (string.IsNullOrEmpty(name))
             throw new ArgumentException("Folder name cannot be null or empty.", nameof(name));
         _format.CheckFolderDisplayName(name);
-        lock(_sync)
+        using(_sync.EnterScope())
         {
             var rootFolder = _rootFolder;
             if (!_entries.ContainsKey(parentId) && !_format.KeyComparer.Equals(parentId, RootFolderId))
@@ -366,7 +365,7 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
 
     public void DeleteFolder(TKey id)
     {
-        lock(_sync)
+        using(_sync.EnterScope())
         {
             _logger.ZLogInformation($"Delete folder {id}");
             if (_entries.TryGetValue(id, out var entry) == false)
@@ -400,7 +399,7 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
     /// <returns>True if the folder exists, otherwise false.</returns>
     public bool FolderExists(TKey id)
     {
-        lock(_sync)
+        using(_sync.EnterScope())
         {
             if (_entries.TryGetValue(id, out var entry) == false) return false;
             if (entry.Type != FolderStoreEntryType.Folder) return false;
@@ -410,7 +409,7 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
 
     public void RenameFolder(TKey id, string newName)
     {
-        lock(_sync)
+        using(_sync.EnterScope())
         {
             _logger.ZLogInformation($"Rename folder {id} to {newName}");
             if (_entries.TryGetValue(id, out var entry) == false)
@@ -464,7 +463,7 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
     /// </exception>
     public void MoveFolder(TKey id, TKey newParentId)
     {
-        lock(_sync)
+        using(_sync.EnterScope())
         {
             _logger.ZLogInformation($"Move folder '{id}' to '{newParentId}'");
             if (_entries.TryGetValue(id, out var entry) == false)
@@ -500,7 +499,7 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
     
     public IReadOnlyList<IHierarchicalStoreEntry<TKey>> GetFiles()
     {
-        lock(_sync)
+        using(_sync.EnterScope())
         {
             return _entries.Where(x => x.Value.Type == FolderStoreEntryType.File)
                 .Select(x => x.Value).ToImmutableList();
@@ -510,7 +509,7 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
     public bool TryGetFile(TKey id, out IHierarchicalStoreEntry<TKey>? entry)
     {
         entry = null;
-        lock(_sync)
+        using(_sync.EnterScope())
         {
             if (!_entries.TryGetValue(id, out var commonEntry)) return false;
             if (commonEntry.Type != FolderStoreEntryType.File) return false;
@@ -522,7 +521,7 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
 
     public void DeleteFile(TKey id)
     {
-        lock(_sync)
+        using(_sync.EnterScope())
         {   
             _logger.ZLogInformation($"Delete file {id}");
             if (_entries.TryGetValue(id, out var entry) == false)
@@ -547,7 +546,7 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
 
     public bool FileExists(TKey id)
     {
-        lock(_sync)
+        using(_sync.EnterScope())
         {
             if (_entries.TryGetValue(id, out var entry) == false) return false;
             return entry.Type == FolderStoreEntryType.File;
@@ -562,7 +561,7 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
     /// <returns>The ID of the renamed file.</returns>
     public TKey RenameFile(TKey id, string newName)
     {
-        lock(_sync)
+        using(_sync.EnterScope())
         {
             _logger.ZLogInformation($"Rename file {id} to {newName}");
             if (_entries.TryGetValue(id, out var entry) == false)
@@ -614,7 +613,7 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
     /// if the entry with the given ID is not a file, or if the parent entry is not a folder.</exception>
     public void MoveFile(TKey id, TKey newParentId)
     {
-        lock(_sync)
+        using(_sync.EnterScope())
         {
             _logger.ZLogInformation($"Move file {id} to {newParentId}");
             if (_entries.TryGetValue(id, out var entry) == false)
@@ -654,7 +653,7 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
 
     public ICachedFile<TKey, TFile> OpenFile(TKey id)
     {
-        lock(_sync)
+        using(_sync.EnterScope())
         {
             if (_entries.TryGetValue(id, out var entry) == false)
             {
@@ -685,7 +684,7 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
     /// <exception cref="HierarchicalStoreException">Thrown when the ID or file name already exists.</exception>
     public ICachedFile<TKey, TFile> CreateFile(TKey id, string name, TKey parentId)
     {
-        lock(_sync)
+        using(_sync.EnterScope())
         {
             if (_entries.ContainsKey(id))
             {
@@ -782,7 +781,7 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
 
     private void OnFileDisposed(CachedFile<TKey, TFile> file)
     {
-        lock(_sync)
+        using(_sync.EnterScope())
         {
             // we remove immediately only if file cache time is zero
             // otherwise we wait for check cache timer to delete it
@@ -806,7 +805,7 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
         {
             // check before lock (optimization)
             if (_fileCache.Count == 0) return;
-            lock(_sync)
+            using(_sync.EnterScope())
             {
                 // check again after lock (for thread safety)
                 if (_fileCache.Count == 0) return;
