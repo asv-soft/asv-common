@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Abstractions;
 using Asv.Common;
+using Lock =  System.Threading.Lock;
 
 namespace Asv.IO;
 
@@ -102,7 +103,7 @@ public class ListDataFile<TMetadata> : DisposableOnce, IListDataFile<TMetadata>
     
     private readonly Stream _stream;
     private readonly bool _disposeSteam;
-    private readonly object _sync = new();
+    private readonly Lock _sync = new();
     private readonly uint _startFileMetadataOffset;
     private readonly ushort _fileMetadataSize;
     private readonly uint _startDataOffset;
@@ -111,7 +112,7 @@ public class ListDataFile<TMetadata> : DisposableOnce, IListDataFile<TMetadata>
     private readonly int _startRowByteIndex;
     private readonly int _stopRowByteIndex;
     private TMetadata _metadata;
-    private IFileSystem _fileSystem;
+    private readonly IFileSystem _fileSystem;
 
     public ListDataFile(Stream stream, ListDataFileFormat header, bool disposeSteam, IFileSystem? fileSystem = null)
     {
@@ -203,7 +204,7 @@ public class ListDataFile<TMetadata> : DisposableOnce, IListDataFile<TMetadata>
     {
         get
         {
-            lock(_sync)  
+            using(_sync.EnterScope()) 
             {
                 return _stream.Length;
             }
@@ -239,7 +240,7 @@ public class ListDataFile<TMetadata> : DisposableOnce, IListDataFile<TMetadata>
         }
         try
         {
-            lock(_sync)
+            using(_sync.EnterScope())
             {
                 editCallback(_metadata);
                 var serializeSpan = new Span<byte>(data, 0, _fileMetadataSize - 2 /* without CRC*/);
@@ -264,7 +265,7 @@ public class ListDataFile<TMetadata> : DisposableOnce, IListDataFile<TMetadata>
 
     public TMetadata ReadMetadata()
     {
-        lock(_sync)
+        using(_sync.EnterScope())
         {
             return _metadata.BinaryClone();    
         }
@@ -281,7 +282,7 @@ public class ListDataFile<TMetadata> : DisposableOnce, IListDataFile<TMetadata>
     {
         get
         {
-            lock(_sync)  
+            using(_sync.EnterScope()) 
             {
                 return (uint)Math.Max((_stream.Length - _startDataOffset) / _rowSize, 0);
             }
@@ -331,7 +332,7 @@ public class ListDataFile<TMetadata> : DisposableOnce, IListDataFile<TMetadata>
         try
         {
             var buffer = new Span<byte>(data, 0, _rowSize);
-            lock(_sync)
+            using(_sync.EnterScope())
             {
                 if (_stream.Length <= stop) return false;
                 _stream.Seek(start, SeekOrigin.Begin);
@@ -363,7 +364,7 @@ public class ListDataFile<TMetadata> : DisposableOnce, IListDataFile<TMetadata>
             data[_stopRowByteIndex] = StopRowMagicByte;
             var calcCrc = CalculateRowCrc(row);
             WriteRowCrc(row, calcCrc);
-            lock(_sync)
+            using(_sync.EnterScope())
             {
                 _stream.Seek(start, SeekOrigin.Begin);
                 _stream.Write(row);
@@ -383,7 +384,7 @@ public class ListDataFile<TMetadata> : DisposableOnce, IListDataFile<TMetadata>
         try
         {
             var row = new Span<byte>(data, 0, (int)_rowSize);
-            lock(_sync)
+            using(_sync.EnterScope())
             {
                 // there is no data
                 if (_stream.Length < stop) return false;
@@ -406,7 +407,7 @@ public class ListDataFile<TMetadata> : DisposableOnce, IListDataFile<TMetadata>
     
     protected override void InternalDisposeOnce()
     {
-        lock(_sync)
+        using(_sync.EnterScope())
         {
             _stream.Flush();
             if (_disposeSteam) _stream.Dispose();
