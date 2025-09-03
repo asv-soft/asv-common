@@ -1,5 +1,4 @@
 using System;
-using static Asv.Common.GeoPointLatitude;
 
 namespace Asv.Common
 {
@@ -10,8 +9,6 @@ namespace Asv.Common
 
     public readonly struct GeoPoint(double latitude, double longitude, double altitude) : IEquatable<GeoPoint>
     {
-        
-
         public const char Delimiter = ';';
 
         public static GeoPoint Parse(string value)
@@ -102,12 +99,37 @@ namespace Asv.Common
         {
             return $"{GeoPointLatitude.PrintDms(Latitude)}{Delimiter}{GeoPointLongitude.PrintDms(Longitude)}{Delimiter}{Altitude}";
         }
-
+        
+        /// <summary>
+        /// Determines whether this geographic point is equal to another one within a fixed tolerance.
+        /// </summary>
+        /// <param name="other">The other geographic point to compare with.</param>
+        /// <returns>
+        /// <c>true</c> if the longitude, latitude, and altitude approximately equals, otherwise, <c>false</c>.
+        /// </returns>
         public bool Equals(GeoPoint other)
         {
-            return Longitude.Equals(other.Longitude) && Latitude.Equals(other.Latitude) && Altitude.Equals(other.Altitude);
+            return Longitude.ApproximatelyEquals(other.Longitude) 
+                   && Latitude.ApproximatelyEquals(other.Latitude) 
+                   && Altitude.ApproximatelyEquals(other.Altitude); 
         }
-
+        
+        /// <summary>
+        /// Determines whether this geographic point is equal to another one within a specified tolerance.
+        /// </summary>
+        /// <param name="other">The other geographic point to compare with.</param>
+        /// <param name="epsilon">The allowed tolerance when comparing coordinates.</param>
+        /// <returns>
+        /// <c>true</c> if the longitude, latitude, and altitude differ by no more than the specified <paramref name="epsilon"/>; 
+        /// otherwise, <c>false</c>.
+        /// </returns>
+        public bool Equals(GeoPoint other, double epsilon)
+        {
+            return Longitude.ApproximatelyEquals(other.Longitude, epsilon) 
+                   && Latitude.ApproximatelyEquals(other.Latitude, epsilon) 
+                   && Altitude.ApproximatelyEquals(other.Altitude, epsilon); 
+        }
+        
         public override bool Equals(object? obj)
         {
             return obj is GeoPoint other && Equals(other);

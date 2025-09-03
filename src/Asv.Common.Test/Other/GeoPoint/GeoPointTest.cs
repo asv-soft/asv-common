@@ -1,4 +1,3 @@
-using Asv.Common;
 using JetBrains.Annotations;
 using Xunit;
 
@@ -7,7 +6,6 @@ namespace Asv.Common.Test.Other;
 [TestSubject(typeof(Common.GeoPoint))]
 public class GeoPointTest
 {
-
     [Fact]
     public void GeoPoint_ShouldWorkCorrectly()
     {
@@ -47,7 +45,7 @@ public class GeoPointTest
         Assert.Equal(10.0, diff.Longitude);
         Assert.Equal(15.0, diff.Altitude);
 
-        // Test equality
+        // Test basic equality
         var point4 = new GeoPoint(45.5, -122.6, 100.0);
         Assert.True(point1.Equals(point4));
         Assert.True(point1 == point4);
@@ -71,7 +69,75 @@ public class GeoPointTest
         Assert.True(customRandomPoint.Longitude >= 0.0 && customRandomPoint.Longitude <= 90.0);
         Assert.True(customRandomPoint.Altitude >= 0.0 && customRandomPoint.Altitude <= 500.0);
     }
-
+    
+    [Theory]
+    [InlineData(89.999999995, 179.999999995, 0.0, 89.999999999, 179.999999999, 0.0)]
+    [InlineData(-45.123456789, 122.123456789, -10.0, -45.123456784, 122.123456784, -10.0)]
+    [InlineData(double.NaN, double.NaN, double.NaN, double.NaN, double.NaN, double.NaN)]
+    public void GeoPoint_Equality_ShouldBeEquals(
+        double lat1, double lon1, double alt1,
+        double lat2, double lon2, double alt2)
+    {
+        // Arrange
+        var point1 = new GeoPoint(lat1, lon1, alt1);
+        var point2 = new GeoPoint(lat2, lon2, alt2);
+        
+        // Act
+        var result = point1.Equals(point2);
+            
+        // Assert
+        Assert.True(result);
+    }
+    
+    [Theory]
+    [InlineData(-45.0, 122.6, -100.0, -45.00000002, 122.6, -100.0)]
+    [InlineData(55.0, 179.99999999, 0.0, 55.0, -179.99999999, 0.0)]
+    [InlineData(0.0, 0.0, double.NaN, 0.0, 0.0, 0.0)]
+    public void GeoPoint_Equality_ShouldNotBeEquals(
+        double lat1, double lon1, double alt1,
+        double lat2, double lon2, double alt2)
+    {
+        // Arrange
+        var point1 = new GeoPoint(lat1, lon1, alt1);
+        var point2 = new GeoPoint(lat2, lon2, alt2);
+        
+        // Act
+        var result = point1.Equals(point2);
+        
+        // Assert
+        Assert.False(result);
+    }
+    
+    [Fact]
+    public void GeoPoint_EqualityWithCustomEpsilon_ShouldBeEquals()
+    {
+        // Arrange
+        var point1 = new GeoPoint(0.002, 1.0, 10.2);
+        var point2 = new GeoPoint(0.001, 1.0, 10.2);
+        const double epsilon = 0.01;
+        
+        // Act
+        var result = point1.Equals(point2, epsilon);
+        
+        // Assert
+        Assert.True(result);
+    }
+    
+    [Fact]
+    public void GeoPoint_EqualityWithCustomEpsilon_ShouldNotBeEquals()
+    {
+        // Arrange
+        var point1 = new GeoPoint(0.02, 1.0, 10.2);
+        var point2 = new GeoPoint(0.01, 1.0, 10.2);
+        const double epsilon = 0.01;
+        
+        // Act
+        var result = point1.Equals(point2, epsilon);
+            
+        // Assert
+        Assert.False(result);
+    }
+    
     [Fact]
     public void GeoPoint_ToStringThenParse_ShouldWorkCorrectly()
     {
@@ -95,7 +161,6 @@ public class GeoPointTest
             new GeoPoint(0, 0, 0),
             new GeoPoint(90, 180, 1000),
             new GeoPoint(-90, -180, -100),
-            
         };
     
         foreach (var testCase in testCases)
