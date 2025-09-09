@@ -120,7 +120,7 @@ public abstract class MicroserviceBase<TBaseMessage> : AsyncDisposableWithCancel
                 }
             }
         });
-        
+        await InternalSend(packet, linkedCancel.Token);
         var result = await tcs.Task.ConfigureAwait(false);
         _loggerBase.ZLogTrace($"<= ok {packet.Name}<=={result}");
         return result;
@@ -146,7 +146,7 @@ public abstract class MicroserviceBase<TBaseMessage> : AsyncDisposableWithCancel
         return result;
     }
     
-    protected async Task<TResult> InternalCall<TResult,TSend, TReceive>(
+    protected Task<TResult> InternalCall<TResult,TSend, TReceive>(
         Action<TSend> fillPacket, FilterDelegate<TResult,TReceive> filterAndResultGetter, int attemptCount = 5,
         Action<TSend,int>? fillOnConfirmation = null, int timeoutMs = 1000,  CancellationToken cancel = default)
         where TSend : TBaseMessage, new() where TReceive : TBaseMessage
@@ -154,6 +154,14 @@ public abstract class MicroserviceBase<TBaseMessage> : AsyncDisposableWithCancel
         cancel.ThrowIfCancellationRequested();
         var packet = new TSend();
         fillPacket(packet);
+        return InternalCall(packet, filterAndResultGetter, attemptCount, fillOnConfirmation, timeoutMs, cancel);
+    }
+    
+    protected async Task<TResult> InternalCall<TResult,TSend, TReceive>(TSend packet, FilterDelegate<TResult,TReceive> filterAndResultGetter, int attemptCount = 5,
+        Action<TSend,int>? fillOnConfirmation = null, int timeoutMs = 1000,  CancellationToken cancel = default)
+        where TSend : TBaseMessage, new() where TReceive : TBaseMessage
+    {
+        cancel.ThrowIfCancellationRequested();
         byte currentAttempt = 0;
         var name = packet.Name;
         while (IsRetryCondition())
@@ -183,7 +191,7 @@ public abstract class MicroserviceBase<TBaseMessage> : AsyncDisposableWithCancel
         bool IsRetryCondition() => currentAttempt < attemptCount;
     }
     
-    protected async Task<TResult> InternalCall<TResult,TSend,TReceive>(
+    protected Task<TResult> InternalCall<TResult,TSend,TReceive>(
         Action<TSend> fillPacket, Func<TReceive,bool>? filter, Func<TReceive,TResult> resultGetter, int attemptCount = 5,
         Action<TSend,int>? fillOnConfirmation = null, int timeoutMs = 1000, CancellationToken cancel = default)
         where TSend : TBaseMessage, new()
@@ -192,6 +200,17 @@ public abstract class MicroserviceBase<TBaseMessage> : AsyncDisposableWithCancel
         cancel.ThrowIfCancellationRequested();
         var packet = new TSend();
         fillPacket(packet);
+        return InternalCall(packet, filter, resultGetter, attemptCount, fillOnConfirmation, timeoutMs, cancel);
+    }
+    
+    protected async Task<TResult> InternalCall<TResult,TSend,TReceive>(
+        TSend packet, Func<TReceive,bool>? filter, Func<TReceive,TResult> resultGetter, int attemptCount = 5,
+        Action<TSend,int>? fillOnConfirmation = null, int timeoutMs = 1000, CancellationToken cancel = default)
+        where TSend : TBaseMessage, new()
+        where TReceive : TBaseMessage, new()
+    {
+        cancel.ThrowIfCancellationRequested();
+      
         byte currentAttempt = 0;
         TReceive? result = default;
         var name = packet.Name;
