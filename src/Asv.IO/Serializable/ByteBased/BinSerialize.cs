@@ -1,16 +1,18 @@
 using System;
 using System.Buffers;
+using System.Buffers.Binary;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Asv.IO
 {
-    public static unsafe class BinSerialize
+    public static partial class BinSerialize
     {
         private static readonly Encoding Uft8 = Encoding.UTF8;
-        private static readonly Decoder Utf8decoder = Encoding.UTF8.GetDecoder();
+        private const int MaxStackStringBytes = 128 * 1024; // 128 KiB.
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ThrowForBigEndian()
@@ -19,61 +21,28 @@ namespace Asv.IO
                 throw new NotSupportedException("BigEndian systems are not supported at this time.");
         }
 
-        #region Read a packed integer
-
-        /// <summary>
-        /// Read a packed integer.
-        /// </summary>
-        /// <param name="span">Span to read from.</param>
-        /// <returns>Unpacked integer.</returns>
-        public static int ReadPackedInteger(ref ReadOnlySpan<byte> span)
-        {
-            var zigzagged = ReadPackedUnsignedInteger(ref span);
-            return FromZigZagEncoding(zigzagged);
-        }
         
-        /// <summary>
-        /// Read a packed integer. https://en.wikipedia.org/wiki/Variable-length_quantity
-        /// </summary>
-        public static int ReadPackedInteger(ref ReadOnlyMemory<byte> span)
-        {
-            var zigzagged = ReadPackedUnsignedInteger(ref span);
-            return FromZigZagEncoding(zigzagged);
-        }
-        
-        /// <summary>
-        /// Read a packed integer. https://en.wikipedia.org/wiki/Variable-length_quantity
-        /// </summary>
-        public static void ReadPackedInteger(ref ReadOnlySpan<byte> span, ref int value)
-        {
-            var zigzagged = ReadPackedUnsignedInteger(ref span);
-            value = FromZigZagEncoding(zigzagged);
-        }
-        /// <summary>
-        /// Read a packed integer. https://en.wikipedia.org/wiki/Variable-length_quantity
-        /// </summary>
-        public static void ReadPackedInteger(ref ReadOnlyMemory<byte> span, ref int value)
-        {
-            var zigzagged = ReadPackedUnsignedInteger(ref span);
-            value = FromZigZagEncoding(zigzagged);
-        }
-        
-        /// <summary>
-        /// Read a packed integer. https://en.wikipedia.org/wiki/Variable-length_quantity
-        /// </summary>
-        public static bool ReadPackedInteger(ref SequenceReader<byte> reader, ref int value)
-        {
-            var zigzagged = 0U;
-            if (TryReadPackedUnsignedInteger(ref reader, ref zigzagged) == false) return false;
-            value = FromZigZagEncoding(zigzagged);
-            return true;
-
-        }
-
-        #endregion
 
         #region Read Packed Unsigned Integer
 
+        /// <summary>
+        /// Read a packed unsigned integer. https://en.wikipedia.org/wiki/Variable-length_quantity
+        /// </summary>
+        public static uint ReadPackedUnsignedInteger(Stream stream)
+        {
+            uint result = 0;
+            var shift = 0;
+            for (var i = 0; i < 5; i++)
+            {
+                var b = stream.ReadByte();
+                if (b < 0) throw new EndOfStreamException("EOF while reading VLQ UInt32");
+                result |= (uint)(b & 0x7F) << shift;
+                if ((b & 0x80) == 0) return result;
+                shift += 7;
+            }
+            throw new FormatException("VLQ UInt32 overflow/malformed");
+        }
+        
         /// <summary>
         /// Read a packed unsigned integer. https://en.wikipedia.org/wiki/Variable-length_quantity
         /// </summary>
@@ -225,53 +194,7 @@ namespace Asv.IO
 
         #endregion
 
-        #region WritePackedInteger
-
-        /// <summary>
-        /// Check how many bytes it will take to write the given value as a packed integer.
-        /// </summary>
-        /// <remarks>
-        /// See <see cref="WritePackedInteger"/> for more information (including a size-table).
-        /// </remarks>
-        /// <param name="value">Value to check.</param>
-        /// <returns>Number of bytes it will take.</returns>
-        public static int GetSizeForPackedInteger(int value)
-        {
-            var zigzagged = ToZigZagEncoding(value);
-            return GetSizeForPackedUnsignedInteger(zigzagged);
-        }
-
-        /// <summary>
-        /// Pack a integer and write it.
-        /// Uses a variable-length encoding scheme.
-        /// </summary>
-        /// <remarks>
-        /// Size table:
-        /// less then -134217729 = 5 bytes
-        /// -134217728 to -1048577 = 4 bytes
-        /// -1048576 to -8193 = 3 bytes
-        /// -8192 to -65 = 2 bytes
-        /// -64 to 63 = 1 bytes
-        /// 64 to 8191 = 2 bytes
-        /// 8192 to 1048575 = 3 bytes
-        /// 1048576 to 134217727 = 4 bytes
-        /// more then 134217728 = 5 bytes
-        /// </remarks>
-        /// <param name="span">Span to write to.</param>
-        /// <param name="value">Value to pack and write.</param>
-        public static void WritePackedInteger(ref Span<byte> span, int value)
-        {
-            var zigzagged = ToZigZagEncoding(value);
-            WritePackedUnsignedInteger(ref span, zigzagged);
-        }
         
-        public static void WritePackedInteger(ref Memory<byte> span, int value)
-        {
-            var zigzagged = ToZigZagEncoding(value);
-            WritePackedUnsignedInteger(ref span, zigzagged);
-        }
-
-        #endregion
 
         #region WritePackedUnsignedInteger
 
@@ -298,7 +221,20 @@ namespace Asv.IO
             return bytes;
         }
 
-        
+        public static void WritePackedUnsignedInteger(Stream stream, uint value)
+        {
+            while (value > 0b0111_1111)
+            {
+                // Write out the value and set the 8th bit to 1 to indicate more data will follow.
+                WriteByte(stream, (byte)(value | 0b1000_0000));
+
+                // Shift the value by 7 to 'consume' the bits we've just written.
+                value >>= 7;
+            }
+
+            // Write out the last data (the 8th bit will always be 0 here to indicate the end).
+            WriteByte(stream, (byte)value);
+        }
 
         /// <summary>
         /// Pack a unsigned integer and write it.
@@ -375,6 +311,7 @@ namespace Asv.IO
         
         #region WriteString
 
+       
         /// <summary>
         /// Check how many bytes it will take to write the given string value.
         /// </summary>
@@ -386,10 +323,13 @@ namespace Asv.IO
         /// <returns>Number of bytes it will take.</returns>
         public static int GetSizeForString(string? val)
         {
-            if (string.IsNullOrWhiteSpace(val)) return GetSizeForPackedUnsignedInteger(0);
-            fixed (char* charPointer = val)
+            unsafe
             {
-                return GetSizeForString(charPointer, val.Length);
+                if (string.IsNullOrWhiteSpace(val)) return GetSizeForPackedUnsignedInteger(0);
+                fixed (char* charPointer = val)
+                {
+                    return GetSizeForString(charPointer, val.Length);
+                }
             }
         }
 
@@ -404,9 +344,12 @@ namespace Asv.IO
         /// <returns>Number of bytes it will take.</returns>
         public static int GetSizeForString(ReadOnlySpan<char> val)
         {
-            fixed (char* charPointer = val)
+            unsafe
             {
-                return GetSizeForString(charPointer, val.Length);
+                fixed (char* charPointer = val)
+                {
+                    return GetSizeForString(charPointer, val.Length);
+                }
             }
         }
 
@@ -421,13 +364,29 @@ namespace Asv.IO
         /// <param name="charPointer">Pointer to the first character.</param>
         /// <param name="charCount">How many characters are in the string.</param>
         /// <returns>Number of bytes it will take.</returns>
-        public static int GetSizeForString(char* charPointer,int charCount)
+        public static unsafe int GetSizeForString(char* charPointer,int charCount)
         {
             var headerSize = GetSizeForPackedUnsignedInteger((uint)charCount);
             var charsSize = Uft8.GetByteCount(charPointer, charCount);
             return headerSize + charsSize;
         }
 
+        public static void WriteString(Stream stream, string? val)
+        {
+            var size = GetSizeForString(val);
+            var buff = ArrayPool<byte>.Shared.Rent(size);
+            try
+            {
+                var span = new Span<byte>(buff, 0, size);
+                WriteString(ref span,val);
+                stream.Write(buff,0,size);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buff);
+            }
+        }
+        
         public static void WriteString(IBufferWriter<byte> span, string? val)
         {
             var size = GetSizeForString(val);
@@ -435,9 +394,6 @@ namespace Asv.IO
             WriteString(ref spanPointer,val);
             span.Advance(size);
         }
-        
-        
-
         
         /// <summary>
         /// Write a string as utf8.
@@ -450,27 +406,33 @@ namespace Asv.IO
         /// <param name="val">Value to write.</param>
         public static void WriteString(ref Span<byte> span, string? val)
         {
-            if (string.IsNullOrWhiteSpace(val))
+            unsafe
             {
-                WritePackedUnsignedInteger(ref span, 0);
-                return;
-            }
-            fixed (char* charPointer = val)
-            {
-                WriteString(ref span, charPointer, val.Length);
+                if (string.IsNullOrWhiteSpace(val))
+                {
+                    WritePackedUnsignedInteger(ref span, 0);
+                    return;
+                }
+                fixed (char* charPointer = val)
+                {
+                    WriteString(ref span, charPointer, val.Length);
+                }
             }
         }
         
         public static void WriteString(ref Memory<byte> span, string? val)
         {
-            if (string.IsNullOrWhiteSpace(val))
+            unsafe
             {
-                WritePackedUnsignedInteger(ref span, 0);
-                return;
-            }
-            fixed (char* charPointer = val)
-            {
-                WriteString(ref span, charPointer, val.Length);
+                if (string.IsNullOrWhiteSpace(val))
+                {
+                    WritePackedUnsignedInteger(ref span, 0);
+                    return;
+                }
+                fixed (char* charPointer = val)
+                {
+                    WriteString(ref span, charPointer, val.Length);
+                }
             }
         }
 
@@ -485,9 +447,12 @@ namespace Asv.IO
         /// <param name="val">Value to write.</param>
         public static void WriteString(ref Span<byte> span,in ReadOnlySpan<char> val)
         {
-            fixed (char* charPointer = val)
+            unsafe
             {
-                WriteString(ref span, charPointer, val.Length);
+                fixed (char* charPointer = val)
+                {
+                    WriteString(ref span, charPointer, val.Length);
+                }
             }
         }
         
@@ -501,9 +466,12 @@ namespace Asv.IO
         
         public static void WriteString(ref Memory<byte> span,in ReadOnlySpan<char> val)
         {
-            fixed (char* charPointer = val)
+            unsafe
             {
-                WriteString(ref span, charPointer, val.Length);
+                fixed (char* charPointer = val)
+                {
+                    WriteString(ref span, charPointer, val.Length);
+                }
             }
         }
         
@@ -519,7 +487,7 @@ namespace Asv.IO
         /// <param name="span">Span to write to.</param>
         /// <param name="charPointer">Pointer to the first character.</param>
         /// <param name="charCount">How many characters are in the string.</param>
-        public static void WriteString(ref Span<byte> span, char* charPointer,int charCount)
+        public static unsafe void WriteString(ref Span<byte> span, char* charPointer,int charCount)
         {
             // Write amount of bytes will follow.
             var byteCount = Uft8.GetByteCount(charPointer, charCount);
@@ -537,7 +505,7 @@ namespace Asv.IO
             }
         }
         
-        public static void WriteString(ref Memory<byte> memory, char* charPointer,int charCount)
+        public static unsafe void WriteString(ref Memory<byte> memory, char* charPointer,int charCount)
         {
             // Write amount of bytes will follow.
             var byteCount = Uft8.GetByteCount(charPointer, charCount);
@@ -555,7 +523,7 @@ namespace Asv.IO
             }
         }
 
-        public static void WriteString(IBufferWriter<byte> span, char* charPointer, int charCount)
+        public static unsafe void WriteString(IBufferWriter<byte> span, char* charPointer, int charCount)
         {
             var size = GetSizeForString(charPointer, charCount);
             var spanPointer = span.GetSpan(size);
@@ -567,6 +535,26 @@ namespace Asv.IO
 
         #region WriteStruct
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteStruct<T>(Stream stream, T val)
+            where T : unmanaged
+        {
+            var size = Unsafe.SizeOf<T>();
+            var buff = ArrayPool<byte>.Shared.Rent(size);
+            try
+            {
+                var span = new Span<byte>(buff, 0, size);
+                MemoryMarshal.Write(span, in val);
+                stream.Write(span);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buff);
+            }
+        }
+         
+           
+        
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteStruct<T>(ref Span<byte> span, T val)
             where T : unmanaged
@@ -630,10 +618,16 @@ namespace Asv.IO
         #region WriteBool
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteBool(Stream stream, bool val)
+        {
+            stream.WriteByte((byte)(val ? 1 : 0));
+        }
+        
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteBool(ref Span<byte> span, bool val)
         {
-            MemoryMarshal.Write(span, in val);
-
+            span[0] = (byte)(val ? 1 : 0);
             // 'Advance' the span.
             span = span[sizeof(bool)..];
         }
@@ -641,14 +635,13 @@ namespace Asv.IO
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteBool(Span<byte> span, bool val)
         {
-            MemoryMarshal.Write(span, in val);
+            span[0] = (byte)(val ? 1 : 0);
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteBool(ref Memory<byte> memory, bool val)
         {
-            MemoryMarshal.Write(memory.Span, in val);
-
+            memory.Span[0] = (byte)(val ? 1 : 0);
             // 'Advance' the span.
             memory = memory[sizeof(bool)..];
         }
@@ -656,7 +649,7 @@ namespace Asv.IO
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteBool(Memory<byte> memory, bool val)
         {
-            MemoryMarshal.Write(memory.Span, in val);
+            memory.Span[0] = (byte)(val ? 1 : 0);
         }
         
         public static void WriteBool(IBufferWriter<byte> wrt, bool val)
@@ -672,9 +665,15 @@ namespace Asv.IO
         #region ReadBool
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool ReadBool(Stream stream)
+        {
+            return stream.ReadByte() != 0;
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool ReadBool(ref ReadOnlySpan<byte> span)
         {
-            var result = MemoryMarshal.Read<bool>(span);
+            var result = span[0] != 0;
             // 'Advance' the span.
             span = span[sizeof(bool)..];
             return result;
@@ -683,7 +682,7 @@ namespace Asv.IO
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ReadBool(ref ReadOnlySpan<byte> span, ref bool value)
         {
-            value = MemoryMarshal.Read<bool>(span);
+            value = span[0] != 0;
             // 'Advance' the span.
             span = span[sizeof(bool)..];
         }
@@ -691,13 +690,13 @@ namespace Asv.IO
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ReadBool(ReadOnlySpan<byte> span, ref bool value)
         {
-            value = MemoryMarshal.Read<bool>(span);
+            value = span[0] != 0;
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ReadBool(ref ReadOnlyMemory<byte> memory, ref bool value)
         {
-            value = MemoryMarshal.Read<bool>(memory.Span);
+            value = memory.Span[0] != 0;
             // 'Advance' the span.
             memory = memory[sizeof(bool)..];
         }
@@ -705,7 +704,7 @@ namespace Asv.IO
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ReadBool(ReadOnlyMemory<byte> memory, ref bool value)
         {
-            value = MemoryMarshal.Read<bool>(memory.Span);
+            value = memory.Span[0] != 0;
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -724,12 +723,17 @@ namespace Asv.IO
         #endregion
 
         #region WriteByte
-
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteByte(Stream stream, byte val)
+        {
+            stream.WriteByte(val);
+        }
+        
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteByte(ref Span<byte> span, byte val)
         {
-            MemoryMarshal.Write(span, in val);
-
+            span[0] = val;
             // 'Advance' the span.
             span = span[sizeof(byte)..];
         }
@@ -737,13 +741,13 @@ namespace Asv.IO
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteByte(Span<byte> span, byte val)
         {
-            MemoryMarshal.Write(span, in val);
+            span[0] = val;
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteByte(ref Memory<byte> span, byte val)
         {
-            MemoryMarshal.Write(span.Span, in val);
+            span.Span[0] = val;
             // 'Advance' the span.
             span = span[sizeof(byte)..];
         }
@@ -756,16 +760,22 @@ namespace Asv.IO
             wrt.Advance(1);
         }
         
-       
-        
         #endregion
         
         #region ReadByte
-
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static byte ReadByte(Stream stream)
+        {
+            var result = stream.ReadByte();
+            if (result == -1) throw new EndOfStreamException("Reached end of stream while trying to read a byte");
+            return (byte)result;
+        }
+        
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static byte ReadByte(ref ReadOnlySpan<byte> span)
         {
-            var result = MemoryMarshal.Read<byte>(span);
+            var result = span[0];
             // 'Advance' the span.
             span = span[sizeof(byte)..];
             return result;
@@ -774,7 +784,7 @@ namespace Asv.IO
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ReadByte(ref ReadOnlySpan<byte> span, ref byte value)
         {
-            value = MemoryMarshal.Read<byte>(span);
+            value = span[0];
             // 'Advance' the span.
             span = span[sizeof(byte)..];
         }
@@ -783,13 +793,13 @@ namespace Asv.IO
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ReadByte(ReadOnlySpan<byte> span, ref byte value)
         {
-            value = MemoryMarshal.Read<byte>(span);
+            value = span[0];
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static byte ReadByte(ref ReadOnlyMemory<byte> memory)
         {
-            var result = MemoryMarshal.Read<byte>(memory.Span);
+            var result = memory.Span[0];
             // 'Advance' the span.
             memory = memory[sizeof(byte)..];
             return result;
@@ -798,13 +808,13 @@ namespace Asv.IO
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ReadByte(ReadOnlyMemory<byte> memory, ref byte value)
         {
-            value = MemoryMarshal.Read<byte>(memory.Span);
+            value = memory.Span[0];
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ReadByte(ref ReadOnlyMemory<byte> memory, ref byte value)
         {
-            value = MemoryMarshal.Read<byte>(memory.Span);
+            value = memory.Span[0];
             // 'Advance' the span.
             memory = memory[sizeof(byte)..];
         }
@@ -820,10 +830,15 @@ namespace Asv.IO
         #region WriteSByte
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteSByte(Stream stream, sbyte val)
+        {
+            stream.WriteByte((byte)val);
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteSByte(ref Span<byte> span, sbyte val)
         {
-            MemoryMarshal.Write(span, in val);
-
+            span[0] = (byte)val;
             // 'Advance' the span.
             span = span[sizeof(sbyte)..];
         }
@@ -831,14 +846,13 @@ namespace Asv.IO
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteSByte(Span<byte> span, sbyte val)
         {
-            MemoryMarshal.Write(span, in val);
+            span[0] = (byte)val;
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteSByte(ref Memory<byte> memory, sbyte val)
         {
-            MemoryMarshal.Write(memory.Span, in val);
-
+            memory.Span[0] = (byte)val;
             // 'Advance' the span.
             memory = memory[sizeof(sbyte)..];
         }
@@ -846,9 +860,9 @@ namespace Asv.IO
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteSByte(Memory<byte> memory, sbyte val)
         {
-            MemoryMarshal.Write(memory.Span, in val);
+            memory.Span[0] = (byte)val;
         }
-
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteSByte(IBufferWriter<byte> wrt,in sbyte val)
         {
             var span = wrt.GetSpan(1);
@@ -858,11 +872,19 @@ namespace Asv.IO
         #endregion
         
         #region ReadSByte
-
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static sbyte ReadSByte(Stream stream)
+        {
+            var result = stream.ReadByte();
+            if (result == -1) throw new EndOfStreamException("Reached end of stream while trying to read a sbyte");
+            return (sbyte)result;
+        }
+        
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static sbyte ReadSByte(ref ReadOnlySpan<byte> span)
         {
-            var result = MemoryMarshal.Read<sbyte>(span);
+            var result = (sbyte)span[0];
             // 'Advance' the span.
             span = span[sizeof(sbyte)..];
             return result;
@@ -871,27 +893,27 @@ namespace Asv.IO
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ReadSByte(ref ReadOnlySpan<byte> span, ref sbyte value)
         {
-            value = MemoryMarshal.Read<sbyte>(span);
+            value = (sbyte)span[0];
             span = span[sizeof(sbyte)..];
         }
       
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ReadSByte(ReadOnlySpan<byte> span, ref sbyte value)
         {
-            value = MemoryMarshal.Read<sbyte>(span);
+            value = (sbyte)span[0];
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ReadSByte(ref ReadOnlyMemory<byte> memory, ref sbyte value)
         {
-            value = MemoryMarshal.Read<sbyte>(memory.Span);
+            value = (sbyte)memory.Span[0];
             memory = memory[sizeof(sbyte)..];
         }
       
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ReadSByte(ReadOnlyMemory<byte> memory, ref sbyte value)
         {
-            value = MemoryMarshal.Read<sbyte>(memory.Span);
+            value = (sbyte)memory.Span[0];
         }
         
         public static bool TryReadSByte(ref SequenceReader<byte> reader, ref sbyte value)
@@ -913,7 +935,7 @@ namespace Asv.IO
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteShort(ref Span<byte> span, short val)
         {
-            MemoryMarshal.Write(span, in val);
+            BinaryPrimitives.WriteInt16LittleEndian(span, val);
             // 'Advance' the span.
             span = span[sizeof(short)..];
         }
@@ -921,13 +943,13 @@ namespace Asv.IO
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteShort(Span<byte> span, short val)
         {
-            MemoryMarshal.Write(span, in val);
+            BinaryPrimitives.WriteInt16LittleEndian(span, val);
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteShort(ref Memory<byte> span, short val)
         {
-            MemoryMarshal.Write(span.Span, in val);
+            BinaryPrimitives.WriteInt16LittleEndian(span.Span, val);
             // 'Advance' the span.
             span = span[sizeof(short)..];
         }
@@ -935,7 +957,7 @@ namespace Asv.IO
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteShort(Memory<byte> span, short val)
         {
-            MemoryMarshal.Write(span.Span, in val);
+            BinaryPrimitives.WriteInt16LittleEndian(span.Span, val);
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -953,7 +975,7 @@ namespace Asv.IO
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static short ReadShort(ref ReadOnlySpan<byte> span)
         {
-            var result = MemoryMarshal.Read<short>(span);
+            var result = BinaryPrimitives.ReadInt16LittleEndian(span);
             // 'Advance' the span.
             span = span[sizeof(short)..];
             return result;
@@ -962,7 +984,7 @@ namespace Asv.IO
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ReadShort(ref ReadOnlySpan<byte> span, ref short value)
         {
-            value = MemoryMarshal.Read<short>(span);
+            value = BinaryPrimitives.ReadInt16LittleEndian(span);
             // 'Advance' the span.
             span = span[sizeof(short)..];
         }
@@ -970,22 +992,22 @@ namespace Asv.IO
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ReadShort(ReadOnlySpan<byte> span, ref short value)
         {
-            value = MemoryMarshal.Read<short>(span);
+            value = BinaryPrimitives.ReadInt16LittleEndian(span);
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static short ReadShort(ref ReadOnlyMemory<byte> span)
+        public static short ReadShort(ref ReadOnlyMemory<byte> memory)
         {
-            var result = MemoryMarshal.Read<short>(span.Span);
+            var result = BinaryPrimitives.ReadInt16LittleEndian(memory.Span);
             // 'Advance' the span.
-            span = span[sizeof(short)..];
+            memory = memory[sizeof(short)..];
             return result;
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ReadShort(ref ReadOnlyMemory<byte> memory, ref short value)
         {
-            value = MemoryMarshal.Read<short>(memory.Span);
+            value = BinaryPrimitives.ReadInt16LittleEndian(memory.Span);
             // 'Advance' the span.
             memory = memory[sizeof(short)..];
         }
@@ -993,7 +1015,7 @@ namespace Asv.IO
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ReadShort(ReadOnlyMemory<byte> memory, ref short value)
         {
-            value = MemoryMarshal.Read<short>(memory.Span);
+            value = BinaryPrimitives.ReadInt16LittleEndian(memory.Span);
         }
 
         public static bool TryReadShort(ref SequenceReader<byte> reader, ref short value)
@@ -1145,6 +1167,21 @@ namespace Asv.IO
 
         #region WriteInt
 
+        public static void WriteInt(Stream stream, int value)
+        {
+            var buff = ArrayPool<byte>.Shared.Rent(sizeof(int));
+            try
+            {
+                var span = new Span<byte>(buff, 0, sizeof(int));
+                WriteInt(ref span, value);
+                stream.Write(buff, 0, sizeof(int));
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buff);
+            }
+        }
+        
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteInt(ref Span<byte> span, int val)
         {
@@ -1183,7 +1220,24 @@ namespace Asv.IO
         #endregion
         
         #region ReadInt
-
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int ReadInt(Stream stream)
+        {
+            var buff = ArrayPool<byte>.Shared.Rent(sizeof(int));
+            try
+            {
+                var read = stream.Read(buff, 0, sizeof(int));
+                if (read != sizeof(int)) throw new EndOfStreamException("Reached end of stream while trying to read an integer");
+                var span = new ReadOnlySpan<byte>(buff, 0, sizeof(int));
+                return ReadInt(ref span);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buff);
+            }
+        }
+        
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int ReadInt(ref ReadOnlySpan<byte> span)
         {
@@ -1571,7 +1625,7 @@ namespace Asv.IO
         #region Write Half
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void WriteHalf(ref Span<byte> span, Half val)
+        public static unsafe void WriteHalf(ref Span<byte> span, Half val)
         {
             MemoryMarshal.Write(span, in val);
             // 'Advance' the span.
@@ -1579,7 +1633,7 @@ namespace Asv.IO
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void WriteHalf(ref Span<byte> span, in Half val)
+        public static unsafe void WriteHalf(ref Span<byte> span, in Half val)
         {
             MemoryMarshal.Write(span, in val);
             // 'Advance' the span.
@@ -1605,7 +1659,7 @@ namespace Asv.IO
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void WriteHalf(ref Memory<byte> memory, in Half val)
+        public static unsafe void WriteHalf(ref Memory<byte> memory, in Half val)
         {
             MemoryMarshal.Write(memory.Span, in val);
             // 'Advance' the span.
@@ -1613,7 +1667,7 @@ namespace Asv.IO
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void WriteHalf(IBufferWriter<byte> wrt, in Half val)
+        public static unsafe void WriteHalf(IBufferWriter<byte> wrt, in Half val)
         {
             var span = wrt.GetSpan(sizeof(Half));
             WriteHalf(ref span,in val);
@@ -1633,7 +1687,7 @@ namespace Asv.IO
         /// <param name="span">Span to read from.</param>
         /// <returns>Read value.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Half ReadHalf(ref ReadOnlySpan<byte> span)
+        public static unsafe Half ReadHalf(ref ReadOnlySpan<byte> span)
         {
             var result = MemoryMarshal.Read<Half>(span);
             // 'Advance' the span.
@@ -1642,7 +1696,7 @@ namespace Asv.IO
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void ReadHalf(ref ReadOnlySpan<byte> span, ref Half value)
+        public static unsafe void ReadHalf(ref ReadOnlySpan<byte> span, ref Half value)
         {
             value = MemoryMarshal.Read<Half>(span);
             // 'Advance' the span.
@@ -1656,7 +1710,7 @@ namespace Asv.IO
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void ReadHalf(ref ReadOnlyMemory<byte> memory, ref Half value)
+        public static unsafe void ReadHalf(ref ReadOnlyMemory<byte> memory, ref Half value)
         {
             value = MemoryMarshal.Read<Half>(memory.Span);
             // 'Advance' the span.
@@ -1670,7 +1724,7 @@ namespace Asv.IO
         }
 
         
-        public static bool TryReadHalf(ref SequenceReader<byte> reader, ref Half value)
+        public static unsafe bool TryReadHalf(ref SequenceReader<byte> reader, ref Half value)
         {
             var size = sizeof(Half);
             var buff = ArrayPool<byte>.Shared.Rent(size);
@@ -1977,7 +2031,7 @@ namespace Asv.IO
         {
             ushort raw = 0;
             if (TryReadUShort(ref rdr, ref raw) == false) return false;
-            value = Interpolate(min, max, (float)raw / byte.MaxValue);
+            value = Interpolate(min, max, (float)raw / ushort.MaxValue);
             return true;
         }
 
@@ -2049,6 +2103,25 @@ namespace Asv.IO
         
         #region ReadString
 
+        public static string ReadString(Stream stream)
+        {
+            int byteCount = (int)ReadPackedUnsignedInteger(stream);
+            if (byteCount == 0) return string.Empty;
+            var bytes = ArrayPool<byte>.Shared.Rent(byteCount);
+            var chars = ArrayPool<char>.Shared.Rent(Uft8.GetMaxCharCount(byteCount));
+            try
+            {
+                stream.ReadExactly(bytes, 0, byteCount);
+                int charsWritten = Uft8.GetChars(bytes, 0, byteCount, chars, 0);
+                return new string(chars, 0, charsWritten);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(bytes);
+                ArrayPool<char>.Shared.Return(chars);
+            }
+        }
+
         /// <summary>
         /// Read a string.
         /// </summary>
@@ -2060,8 +2133,6 @@ namespace Asv.IO
         /// <returns>Read string.</returns>
         public static string ReadString(ref ReadOnlySpan<byte> span)
         {
-            const int maxStackStringBytes = 128 * 1024; // 128 KiB.
-
             // Read how many bytes will follow.
             var byteCount = (int)ReadPackedUnsignedInteger(ref span);
 
@@ -2072,7 +2143,7 @@ namespace Asv.IO
                 throw new ArgumentOutOfRangeException(nameof(span), "Given span is incomplete");
 
             // Sanity check the size before allocating space on the stack.
-            if (byteCount >= maxStackStringBytes)
+            if (byteCount >= MaxStackStringBytes)
                 throw new ArgumentException("Input contains a string with too many bytes to fit on the stack", nameof(span));
 
             // Decode on the stack to avoid having to allocate a temporary buffer on the heap.
@@ -2083,19 +2154,22 @@ namespace Asv.IO
 
             try
             {
-                // Read chars as utf8.
-                int actualCharCount;
-                fixed (byte* bytePointer = span)
-                fixed (char* charPointer = charBuffer)
+                unsafe
                 {
-                    actualCharCount =
-                        Utf8decoder.GetChars(bytePointer, byteCount, charPointer, maxCharCount, flush: false);
-                }
-                // 'Advance' the span.
-                span = span[byteCount..];
+                    // Read chars as utf8.
+                    int actualCharCount;
+                    fixed (byte* bytePointer = span)
+                    fixed (char* charPointer = charBuffer)
+                    {
+                        actualCharCount =
+                            Uft8.GetChars(bytePointer, byteCount, charPointer, maxCharCount);
+                    }
+                    // 'Advance' the span.
+                    span = span[byteCount..];
 
-                // Allocate the string.
-                return new string(charBuffer, startIndex: 0, length: actualCharCount);
+                    // Allocate the string.
+                    return new string(charBuffer, startIndex: 0, length: actualCharCount);
+                }
             }
             finally
             {
@@ -2121,28 +2195,31 @@ namespace Asv.IO
         /// <returns>Amount of characters written</returns>
         public static int ReadString(ref ReadOnlySpan<byte> span, Span<char> chars)
         {
-            // Read amount of bytes will follow.
-            var byteCount = (int)ReadPackedUnsignedInteger(ref span);
-
-            // Check if input span contains the entire string.
-            if (span.Length < byteCount)
-                throw new ArgumentOutOfRangeException(nameof(span), "Given span is incomplete");
-
-            // No need to check if the output span has enough space as 'Encoding.GetChars' will
-            // already do that for us.
-
-            // Read chars as utf8.
-            int charsRead;
-            fixed (char* charPointer = chars)
-            fixed (byte* bytePointer = span)
+            unsafe
             {
-                charsRead = Uft8.GetChars(bytePointer, byteCount, charPointer, chars.Length);
+                // Read amount of bytes will follow.
+                var byteCount = (int)ReadPackedUnsignedInteger(ref span);
+
+                // Check if input span contains the entire string.
+                if (span.Length < byteCount)
+                    throw new ArgumentOutOfRangeException(nameof(span), "Given span is incomplete");
+
+                // No need to check if the output span has enough space as 'Encoding.GetChars' will
+                // already do that for us.
+
+                // Read chars as utf8.
+                int charsRead;
+                fixed (char* charPointer = chars)
+                fixed (byte* bytePointer = span)
+                {
+                    charsRead = Uft8.GetChars(bytePointer, byteCount, charPointer, chars.Length);
+                }
+
+                // 'Advance' the span.
+                span = span[byteCount..];
+
+                return charsRead;
             }
-
-            // 'Advance' the span.
-            span = span[byteCount..];
-
-            return charsRead;
         }
 
         public static bool TryReadString(ref SequenceReader<byte> reader, ref string value)
@@ -2161,6 +2238,7 @@ namespace Asv.IO
                     reader.Rewind(consumed);
                     return false;
                 }
+                reader.Advance(size);
                 value = Uft8.GetString(span);
             }
             finally
@@ -2567,6 +2645,7 @@ namespace Asv.IO
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static float Clamp01(float val) => val < 0f ? 0f : val > 1f ? 1f : val;
+
 
         
     }
