@@ -2,7 +2,7 @@ using System;
 
 namespace Asv.IO;
 
-public abstract class FullVisitorBase(bool skipUnknown)  : IFullVisitor
+public abstract class FullVisitorBase(bool skipUnknown) : IFullVisitor
 {
     public abstract void Visit(Field field, DoubleOptionalType type, ref double? value);
 
@@ -78,6 +78,11 @@ public abstract class FullVisitorBase(bool skipUnknown)  : IFullVisitor
     public abstract void EndArray();
     public abstract void BeginStruct(Field field, StructType type);
     public abstract void EndStruct();
-    public abstract void BeginOptionalStruct(Field field, OptionalStructType type, bool isPresent, out bool createNew);
+    public abstract void BeginOptionalStruct(
+        Field field,
+        OptionalStructType type,
+        bool isPresent,
+        out bool createNew
+    );
     public abstract void EndOptionalStruct(bool isPresent);
 }

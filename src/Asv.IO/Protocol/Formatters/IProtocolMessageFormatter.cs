@@ -1,6 +1,5 @@
 namespace Asv.IO;
 
-
 public enum PacketFormatting
 {
     Inline,
@@ -27,6 +26,7 @@ public static class ProtocolMessageFormatterHelper
     {
         builder.Register(new JsonMessageFormatter());
     }
+
     public static void RegisterSimpleFormatter(this IProtocolMessageFormatterBuilder builder)
     {
         builder.Register(new SimpleMessageToStringFormatter());

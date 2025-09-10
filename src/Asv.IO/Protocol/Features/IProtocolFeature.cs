@@ -9,8 +9,16 @@ public interface IProtocolFeature
     string Description { get; }
     string Id { get; }
     int Priority { get; }
-    ValueTask<IProtocolMessage?> ProcessRx(IProtocolMessage message, IProtocolConnection connection, CancellationToken cancel);
-    ValueTask<IProtocolMessage?> ProcessTx(IProtocolMessage message, IProtocolConnection connection, CancellationToken cancel);
+    ValueTask<IProtocolMessage?> ProcessRx(
+        IProtocolMessage message,
+        IProtocolConnection connection,
+        CancellationToken cancel
+    );
+    ValueTask<IProtocolMessage?> ProcessTx(
+        IProtocolMessage message,
+        IProtocolConnection connection,
+        CancellationToken cancel
+    );
     void Register(IProtocolConnection connection);
     void Unregister(IProtocolConnection connection);
 }

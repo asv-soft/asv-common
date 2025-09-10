@@ -4,16 +4,21 @@ using System.Threading;
 
 namespace Asv.IO;
 
-
-
-public class CachedFile<TKey, TFile>: ICachedFile<TKey, TFile> 
+public class CachedFile<TKey, TFile> : ICachedFile<TKey, TFile>
     where TFile : IDisposable
 {
     private readonly Action<CachedFile<TKey, TFile>> _disposedCallback;
     private readonly TimeProvider _timeProvider;
     private int _refCount;
 
-    public CachedFile(TKey id, string name, TKey parentId, TFile file, Action<CachedFile<TKey, TFile>> disposedCallback, TimeProvider timeProvider)
+    public CachedFile(
+        TKey id,
+        string name,
+        TKey parentId,
+        TFile file,
+        Action<CachedFile<TKey, TFile>> disposedCallback,
+        TimeProvider timeProvider
+    )
     {
         _disposedCallback = disposedCallback;
         _timeProvider = timeProvider;
@@ -40,11 +45,12 @@ public class CachedFile<TKey, TFile>: ICachedFile<TKey, TFile>
     public TFile File { get; }
     public long DeadTimeBegin { get; private set; }
     public int RefCount => _refCount;
+
     public void AddRef()
     {
         Interlocked.Add(ref _refCount, 1);
     }
-    
+
     public void ImmediateDispose()
     {
         File.Dispose();

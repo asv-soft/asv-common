@@ -4,7 +4,7 @@ using R3;
 
 namespace Asv.IO;
 
-public interface IProtocolRouter:IProtocolConnection
+public interface IProtocolRouter : IProtocolConnection
 {
     ImmutableArray<ProtocolInfo> AvailableProtocols { get; }
     ImmutableArray<PortTypeInfo> AvailablePortTypes { get; }

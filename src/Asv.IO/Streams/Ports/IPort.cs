@@ -10,18 +10,17 @@ namespace Asv.IO
         Disabled,
         Connecting,
         Error,
-        Connected
+        Connected,
     }
 
     public enum PortType
     {
         Serial,
         Udp,
-        Tcp
+        Tcp,
     }
 
-
-    public interface IPort: IDataStream, IDisposable
+    public interface IPort : IDataStream, IDisposable
     {
         PortType PortType { get; }
         TimeSpan ReconnectTimeout { get; set; }
@@ -40,16 +39,30 @@ namespace Asv.IO
             var ar1 = requestQueryString.Split('&', '?');
             foreach (var row in ar1)
             {
-                if (string.IsNullOrEmpty(row)) continue;
+                if (string.IsNullOrEmpty(row))
+                {
+                    continue;
+                }
+
                 var index = row.IndexOf('=');
-                if (index < 0) continue;
-                rc[Uri.UnescapeDataString(row[..index])] = Uri.UnescapeDataString(row[(index + 1)..]); // use Unescape only parts          
+                if (index < 0)
+                {
+                    continue;
+                }
+
+                rc[Uri.UnescapeDataString(row[..index])] = Uri.UnescapeDataString(
+                    row[(index + 1)..]
+                ); // use Unescape only parts
             }
             return rc;
         }
 
-
-        public static IPort? Create(string connectionString, bool enabled = false, TimeProvider? timeProvider = null, ILogger? logger = null)
+        public static IPort? Create(
+            string connectionString,
+            bool enabled = false,
+            TimeProvider? timeProvider = null,
+            ILogger? logger = null
+        )
         {
             var uri = new Uri(connectionString);
             IPort? result = null;
@@ -61,16 +74,25 @@ namespace Asv.IO
                 }
                 else
                 {
-                    if (tcp != null) result = new TcpClientPort(tcp, timeProvider, logger);
+                    if (tcp != null)
+                    {
+                        result = new TcpClientPort(tcp, timeProvider, logger);
+                    }
                 }
             }
             else if (UdpPortConfig.TryParseFromUri(uri, out var udp))
             {
-                if (udp != null) result = new UdpPort(udp);
+                if (udp != null)
+                {
+                    result = new UdpPort(udp);
+                }
             }
             else if (SerialPortConfig.TryParseFromUri(uri, out var ser))
             {
-                if (ser != null) result = new CustomSerialPort(ser, timeProvider, logger);
+                if (ser != null)
+                {
+                    result = new CustomSerialPort(ser, timeProvider, logger);
+                }
             }
             else
             {

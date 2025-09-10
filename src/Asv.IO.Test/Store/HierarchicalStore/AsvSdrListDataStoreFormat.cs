@@ -4,50 +4,53 @@ using System.IO;
 
 namespace Asv.IO.Test.HierarchicalStore;
 
-public class AsvSdrListDataStoreFormat : GuidHierarchicalStoreFormat<IListDataFile<AsvSdrRecordFileMetadata>>
+public class AsvSdrListDataStoreFormat
+    : GuidHierarchicalStoreFormat<IListDataFile<AsvSdrRecordFileMetadata>>
 {
     public static readonly ListDataFileFormat FileFormat = new()
     {
         Version = "1.0.0",
         Type = "AsvSdrRecordFile",
         MetadataMaxSize =
-            78 /*size of AsvSdrRecordPayload */ + sizeof(ushort) /* size of tag list */ +
-            100 * 57 /* max 100 tag * size of AsvSdrRecordTagPayload */,
+            78 /*size of AsvSdrRecordPayload */
+            + sizeof(ushort) /* size of tag list */
+            + (
+                100 * 57
+            ) /* max 100 tag * size of AsvSdrRecordTagPayload */
+        ,
         ItemMaxSize = 256,
     };
-    
-    public AsvSdrListDataStoreFormat() : base(".sdr")
-    {
-    }
+
+    public AsvSdrListDataStoreFormat()
+        : base(".sdr") { }
+
     public override IListDataFile<AsvSdrRecordFileMetadata> OpenFile(Stream stream)
     {
         return new ListDataFile<AsvSdrRecordFileMetadata>(stream, FileFormat, true);
     }
 
-    public override IListDataFile<AsvSdrRecordFileMetadata> CreateFile(Stream stream, Guid id, string name)
+    public override IListDataFile<AsvSdrRecordFileMetadata> CreateFile(
+        Stream stream,
+        Guid id,
+        string name
+    )
     {
         var file = new ListDataFile<AsvSdrRecordFileMetadata>(stream, FileFormat, true);
-        file.EditMetadata(metadata=>
-        {
-            
-        });
+        file.EditMetadata(metadata => { });
         return file;
     }
 
-    public override void Dispose()
-    {
-        
-    }
+    public override void Dispose() { }
 }
 
-public class AsvSdrStore : FileSystemHierarchicalStore<Guid, IListDataFile<AsvSdrRecordFileMetadata>>
+public class AsvSdrStore
+    : FileSystemHierarchicalStore<Guid, IListDataFile<AsvSdrRecordFileMetadata>>
 {
-    public static readonly IHierarchicalStoreFormat<Guid, IListDataFile<AsvSdrRecordFileMetadata>> StoreFormat =
-        new AsvSdrListDataStoreFormat();
-    
-    public AsvSdrStore(string rootFolder, TimeSpan? fileCacheTime) : base(rootFolder, StoreFormat, fileCacheTime)
-    {
-        
-    }
-}
+    public static readonly IHierarchicalStoreFormat<
+        Guid,
+        IListDataFile<AsvSdrRecordFileMetadata>
+    > StoreFormat = new AsvSdrListDataStoreFormat();
 
+    public AsvSdrStore(string rootFolder, TimeSpan? fileCacheTime)
+        : base(rootFolder, StoreFormat, fileCacheTime) { }
+}

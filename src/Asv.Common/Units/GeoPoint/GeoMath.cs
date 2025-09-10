@@ -23,11 +23,27 @@ namespace Asv.Common
         /// The azimuth from 0,0 to 1,0 is 0 degrees. From 0,0 to 0,1 is 90
         /// degrees (due east). The range of the result is [-180, 180].
         /// </example>
-        public static double Azimuth(double latitude1, double longitude1, double latitude2, double longitude2)
+        public static double Azimuth(
+            double latitude1,
+            double longitude1,
+            double latitude2,
+            double longitude2
+        )
         {
             var measurement = Calculator.CalculateGeodeticMeasurement(
-                new GlobalPosition(new GlobalCoordinates(new Geodesy.Angle(latitude1), new Geodesy.Angle(longitude1))),
-                new GlobalPosition(new GlobalCoordinates(new Geodesy.Angle(latitude2), new Geodesy.Angle(longitude2))));
+                new GlobalPosition(
+                    new GlobalCoordinates(
+                        new Geodesy.Angle(latitude1),
+                        new Geodesy.Angle(longitude1)
+                    )
+                ),
+                new GlobalPosition(
+                    new GlobalCoordinates(
+                        new Geodesy.Angle(latitude2),
+                        new Geodesy.Angle(longitude2)
+                    )
+                )
+            );
 
             return measurement.Azimuth.Degrees;
         }
@@ -42,12 +58,23 @@ namespace Asv.Common
         /// <exception cref="ArgumentNullException">point1 or point2 is null.</exception>
         public static double Distance(GeoPoint point1, GeoPoint point2)
         {
-            return Distance(point1.Latitude, point1.Longitude, point1.Altitude, point2.Latitude, point2.Longitude, point2.Altitude);
+            return Distance(
+                point1.Latitude,
+                point1.Longitude,
+                point1.Altitude,
+                point2.Latitude,
+                point2.Longitude,
+                point2.Altitude
+            );
         }
-        
+
         public static double Distance(GeoPoint? point1, GeoPoint? point2)
         {
-            if (point1 == null || point2 == null) return Double.NaN;
+            if (point1 == null || point2 == null)
+            {
+                return double.NaN;
+            }
+
             return Distance(point1.Value, point2.Value);
         }
 
@@ -61,11 +88,27 @@ namespace Asv.Common
         /// <param name="longitude2">The longitude of the second point.</param>
         /// <returns>The great circle distance in meters.</returns>
         /// <remarks>The antemeridian is not considered.</remarks>
-        public static double Distance(double latitude1, double longitude1, double latitude2, double longitude2)
+        public static double Distance(
+            double latitude1,
+            double longitude1,
+            double latitude2,
+            double longitude2
+        )
         {
             var measurement = Calculator.CalculateGeodeticMeasurement(
-                new GlobalPosition(new GlobalCoordinates(new Geodesy.Angle(latitude1), new Geodesy.Angle(longitude1))),
-                new GlobalPosition(new GlobalCoordinates(new Geodesy.Angle(latitude2), new Geodesy.Angle(longitude2))));
+                new GlobalPosition(
+                    new GlobalCoordinates(
+                        new Geodesy.Angle(latitude1),
+                        new Geodesy.Angle(longitude1)
+                    )
+                ),
+                new GlobalPosition(
+                    new GlobalCoordinates(
+                        new Geodesy.Angle(latitude2),
+                        new Geodesy.Angle(longitude2)
+                    )
+                )
+            );
 
             return measurement.EllipsoidalDistance;
         }
@@ -82,18 +125,45 @@ namespace Asv.Common
         /// <param name="altitude2">The altitude of the second point.</param>
         /// <returns>The great circle distance in meters.</returns>
         /// <remarks>The antemeridian is not considered.</remarks>
-        public static double Distance(double latitude1, double longitude1, double altitude1, double latitude2, double longitude2, double altitude2)
+        public static double Distance(
+            double latitude1,
+            double longitude1,
+            double altitude1,
+            double latitude2,
+            double longitude2,
+            double altitude2
+        )
         {
             var measurement = Calculator.CalculateGeodeticMeasurement(
-                new GlobalPosition(new GlobalCoordinates(new Geodesy.Angle(latitude1), new Geodesy.Angle(longitude1)), altitude1),
-                new GlobalPosition(new GlobalCoordinates(new Geodesy.Angle(latitude2), new Geodesy.Angle(longitude2)), altitude2));
-            
+                new GlobalPosition(
+                    new GlobalCoordinates(
+                        new Geodesy.Angle(latitude1),
+                        new Geodesy.Angle(longitude1)
+                    ),
+                    altitude1
+                ),
+                new GlobalPosition(
+                    new GlobalCoordinates(
+                        new Geodesy.Angle(latitude2),
+                        new Geodesy.Angle(longitude2)
+                    ),
+                    altitude2
+                )
+            );
+
             return measurement.PointToPointDistance;
         }
 
         public static double Elevation(GeoPoint p1, GeoPoint p2)
         {
-            return Elevation(p1.Latitude, p1.Longitude, p1.Altitude, p2.Latitude, p2.Longitude, p2.Altitude);
+            return Elevation(
+                p1.Latitude,
+                p1.Longitude,
+                p1.Altitude,
+                p2.Latitude,
+                p2.Longitude,
+                p2.Altitude
+            );
         }
 
         /// <summary>
@@ -115,7 +185,14 @@ namespace Asv.Common
         /// The returned angle from (37.00, -121.98, 600) to a point about 1778
         /// meters west, 400 meters below at (37.00, -122.00, 200) is -12.7 degrees.
         /// </example>
-        public static double Elevation(double latitude1, double longitude1, double altitude1, double latitude2, double longitude2, double altitude2)
+        public static double Elevation(
+            double latitude1,
+            double longitude1,
+            double altitude1,
+            double latitude2,
+            double longitude2,
+            double altitude2
+        )
         {
             double surfaceDistance = Distance(latitude1, longitude1, latitude2, longitude2);
             return RadiansToDegrees(Math.Atan2(altitude2 - altitude1, surfaceDistance));
@@ -177,9 +254,16 @@ namespace Asv.Common
         /// <summary>
         /// Находит точку на заданной линии, являющуюся пересечением перпендикуляра опущенного из заданной точки к прямой (высота не учитывается)
         /// </summary>
-        public static GeoPoint IntersectionLineAndPerpendicularFromPoint(GeoPoint lineX, GeoPoint lineY, GeoPoint p)
+        public static GeoPoint IntersectionLineAndPerpendicularFromPoint(
+            GeoPoint lineX,
+            GeoPoint lineY,
+            GeoPoint p
+        )
         {
-            if (lineX.Equals(lineY)) return p; // если прямая задана одинаковыми точками
+            if (lineX.Equals(lineY))
+            {
+                return p; // если прямая задана одинаковыми точками
+            }
 
             var azimuth = DegreesToRadians(lineX.Azimuth(lineY) - lineX.Azimuth(p));
             var d = Distance(lineX, p);
@@ -190,7 +274,11 @@ namespace Asv.Common
         /// <summary>
         /// Находит точку, являющуюся пересечением перпендикуляра опущенного от заданной точки к прямой, проходящей на заданном углу (высота не учитывается)
         /// </summary>
-        public static GeoPoint IntersectionLineAndPerpendicularFromPoint(GeoPoint lineX, GeoPoint lineY, double alpha)
+        public static GeoPoint IntersectionLineAndPerpendicularFromPoint(
+            GeoPoint lineX,
+            GeoPoint lineY,
+            double alpha
+        )
         {
             var azimuth = lineX.Azimuth(lineY) + alpha;
             var b = Distance(lineX, lineY);
@@ -223,13 +311,26 @@ namespace Asv.Common
         /// calculated point.
         /// </returns>
         /// <remarks>The antemeridian is not considered.</remarks>
-        public static GeoPoint RadialPoint(double latitude, double longitude, double altitude, double distance, double radialDeg)
+        public static GeoPoint RadialPoint(
+            double latitude,
+            double longitude,
+            double altitude,
+            double distance,
+            double radialDeg
+        )
         {
             radialDeg = !double.IsNaN(radialDeg) ? radialDeg : 0;
             var coordinates = Calculator.CalculateEndingGlobalCoordinates(
-                new GlobalCoordinates(new Geodesy.Angle(latitude), new Geodesy.Angle(longitude)), new Geodesy.Angle(radialDeg), distance);
+                new GlobalCoordinates(new Geodesy.Angle(latitude), new Geodesy.Angle(longitude)),
+                new Geodesy.Angle(radialDeg),
+                distance
+            );
 
-            return new GeoPoint(coordinates.Latitude.Degrees, coordinates.Longitude.Degrees, altitude);
+            return new GeoPoint(
+                coordinates.Latitude.Degrees,
+                coordinates.Longitude.Degrees,
+                altitude
+            );
         }
 
         /// <summary>Converts the specified value in radians to degrees.</summary>
@@ -239,6 +340,7 @@ namespace Asv.Common
         {
             return radians * 180.0 / Math.PI;
         }
+
         /// <summary>Converts the specified value in degrees to radians.</summary>
         /// <param name="degrees">The angle in degrees.</param>
         /// <returns>The specified angle converted to radians.</returns>
@@ -259,12 +361,22 @@ namespace Asv.Common
         /// <param name="waggingCountsValue"></param>
         /// <param name="deviationFromCenterLineInMeters"></param>
         /// <returns></returns>
-        public static IEnumerable<GeoPoint> GenerateWaggingLatLonPoints(GeoPoint start, GeoPoint stop, GeoPoint convergencePoint, int waggingCountsValue, double deviationFromCenterLineInMeters, double minAltitudeInMeters)
+        public static IEnumerable<GeoPoint> GenerateWaggingLatLonPoints(
+            GeoPoint start,
+            GeoPoint stop,
+            GeoPoint convergencePoint,
+            int waggingCountsValue,
+            double deviationFromCenterLineInMeters,
+            double minAltitudeInMeters
+        )
         {
             var distanceToStart = convergencePoint.DistanceTo(start);
             var distanceToStop = convergencePoint.DistanceTo(stop);
-            var factor = distanceToStart > distanceToStop ? deviationFromCenterLineInMeters / distanceToStart : deviationFromCenterLineInMeters / distanceToStop;
-            
+            var factor =
+                distanceToStart > distanceToStop
+                    ? deviationFromCenterLineInMeters / distanceToStart
+                    : deviationFromCenterLineInMeters / distanceToStop;
+
             if (waggingCountsValue <= 0 || deviationFromCenterLineInMeters <= 0)
             {
                 // this is simple path from start to stop without sub points
@@ -279,7 +391,7 @@ namespace Asv.Common
                 var incDistance = distance / (waggingCountsValue + 1);
                 var incAlt = altDiff / (waggingCountsValue + 1);
                 var m = distanceToStart > distanceToStop ? -1 : 1;
-                
+
                 yield return start;
                 var currentDist = 0.0;
                 var currentAlt = 0.0;
@@ -289,14 +401,17 @@ namespace Asv.Common
                     currentAlt += incAlt;
                     var alt = start.Altitude + currentAlt;
                     alt = alt < minAltitudeInMeters ? minAltitudeInMeters : alt;
-                    yield return start.RadialPoint(currentDist, azimuth)
-                        .RadialPoint((distanceToStart + m * currentDist) * factor, azimuth + (i % 2 == 0 ? -90 : 90))
+                    yield return start
+                        .RadialPoint(currentDist, azimuth)
+                        .RadialPoint(
+                            (distanceToStart + (m * currentDist)) * factor,
+                            azimuth + (i % 2 == 0 ? -90 : 90)
+                        )
                         .SetAltitude(alt);
                 }
                 yield return stop;
             }
         }
-
 
         /// <summary>
         /// Generate wagging path points
@@ -311,10 +426,15 @@ namespace Asv.Common
         /// <param name="deviationFromCenterLineInMeters"></param>
         /// <param name="minAltitudeInMeters"></param>
         /// <returns></returns>
-        public static IEnumerable<GeoPoint> GenerateWaggingAltPoints(GeoPoint start, GeoPoint stop,
-            GeoPoint convergencePoint, int waggingCountsValue, double deviationFromCenterLineInMeters, double minAltitudeInMeters)
+        public static IEnumerable<GeoPoint> GenerateWaggingAltPoints(
+            GeoPoint start,
+            GeoPoint stop,
+            GeoPoint convergencePoint,
+            int waggingCountsValue,
+            double deviationFromCenterLineInMeters,
+            double minAltitudeInMeters
+        )
         {
-
             if (waggingCountsValue <= 0 || deviationFromCenterLineInMeters <= 0)
             {
                 // this is simple path from start to stop without sub points
@@ -353,7 +473,6 @@ namespace Asv.Common
                 var incUpAlt = upAltDiff / (waggingCountsValue + 1);
                 var incDownAlt = downAltDiff / (waggingCountsValue + 1);
 
-
                 yield return start;
                 var currentDist = 0.0;
                 var currentUpAlt = 0.0;
@@ -368,10 +487,15 @@ namespace Asv.Common
                         currentDist += incDistance;
                         currentUpAlt += incUpAlt;
                         currentDownAlt += incDownAlt;
-                        var alt = i % 2 == 0
-                            ? startDownAltitude - currentDownAlt
-                            : startUpAltitude - currentUpAlt;
-                        if (alt < minAltitudeInMeters) alt = minAltitudeInMeters;
+                        var alt =
+                            i % 2 == 0
+                                ? startDownAltitude - currentDownAlt
+                                : startUpAltitude - currentUpAlt;
+                        if (alt < minAltitudeInMeters)
+                        {
+                            alt = minAltitudeInMeters;
+                        }
+
                         yield return start.RadialPoint(currentDist, azimuth).SetAltitude(alt);
                     }
                 }
@@ -384,14 +508,19 @@ namespace Asv.Common
                         currentDist += incDistance;
                         currentUpAlt += incUpAlt;
                         currentDownAlt += incDownAlt;
-                        var alt = i % 2 == 0
-                            ? startDownAltitude + currentDownAlt
-                            : startUpAltitude + currentUpAlt;
-                        if (alt < minAltitudeInMeters) alt = minAltitudeInMeters;
+                        var alt =
+                            i % 2 == 0
+                                ? startDownAltitude + currentDownAlt
+                                : startUpAltitude + currentUpAlt;
+                        if (alt < minAltitudeInMeters)
+                        {
+                            alt = minAltitudeInMeters;
+                        }
+
                         yield return start.RadialPoint(currentDist, azimuth).SetAltitude(alt);
                     }
                 }
-                
+
                 yield return stop;
             }
         }
@@ -408,7 +537,13 @@ namespace Asv.Common
 
         public static GeoPoint RadialPoint(this GeoPoint point, double distance, double radialDeg)
         {
-            return GeoMath.RadialPoint(point.Latitude, point.Longitude, point.Altitude, distance, radialDeg);
+            return GeoMath.RadialPoint(
+                point.Latitude,
+                point.Longitude,
+                point.Altitude,
+                distance,
+                radialDeg
+            );
         }
 
         public static double AngleBetween(this GeoPoint a, GeoPoint b)
@@ -420,7 +555,7 @@ namespace Asv.Common
         {
             double dx = a.Latitude - b.Latitude;
             double dy = a.Longitude - b.Longitude;
-            return (double)Math.Sqrt(dx * dx + dy * dy);
+            return (double)Math.Sqrt((dx * dx) + (dy * dy));
         }
 
         public static double PlanarDistanceSquared(this GeoPoint a, GeoPoint b)
@@ -428,7 +563,7 @@ namespace Asv.Common
             double dx = a.Latitude - b.Latitude;
             double dy = a.Longitude - b.Longitude;
 
-            return dx * dx + dy * dy;
+            return (dx * dx) + (dy * dy);
         }
 
         public static GeoPoint AddAltitude(this GeoPoint point, double alt)

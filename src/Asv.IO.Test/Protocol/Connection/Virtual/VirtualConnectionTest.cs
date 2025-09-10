@@ -31,12 +31,14 @@ public class VirtualConnectionTest
         // Arrange
         var fixture = new Fixture();
         var tcs = new TaskCompletionSource();
-        var link = Protocol.Create(builder =>
-        {
-            builder.SetLog(new TestLoggerFactory(_output, TimeProvider.System, "ROUTER"));
-            builder.Protocols.RegisterExampleProtocol();
-        }).CreateVirtualConnection();
-        
+        var link = Protocol
+            .Create(builder =>
+            {
+                builder.SetLog(new TestLoggerFactory(_output, TimeProvider.System, "ROUTER"));
+                builder.Protocols.RegisterExampleProtocol();
+            })
+            .CreateVirtualConnection();
+
         var sendArray1 = new ExampleMessage1[count];
         for (var i = 0; i < count; i++)
         {
@@ -50,26 +52,28 @@ public class VirtualConnectionTest
         }
 
         var all = 0;
-        link.SetClientToServerFilter(x=>
+        link.SetClientToServerFilter(x =>
         {
             all++;
             return x is ExampleMessage1;
         });
         var msg1 = 0;
         var msg2 = 0;
-        link.Server.RxFilterByType<ExampleMessage1>().Subscribe(x =>
-        {
-            msg1++;
-            if (msg1 == count)
+        link.Server.RxFilterByType<ExampleMessage1>()
+            .Subscribe(x =>
             {
-                tcs.TrySetResult();
-            }
-        });
-        link.Server.RxFilterByType<ExampleMessage2>().Subscribe(x =>
-        {
-            msg2++;
-        });
-        
+                msg1++;
+                if (msg1 == count)
+                {
+                    tcs.TrySetResult();
+                }
+            });
+        link.Server.RxFilterByType<ExampleMessage2>()
+            .Subscribe(x =>
+            {
+                msg2++;
+            });
+
         // Act
         foreach (var message1 in sendArray1)
         {
@@ -81,15 +85,14 @@ public class VirtualConnectionTest
         }
 
         await tcs.Task;
-        
+
         // Assert
-        
-        Assert.Equal(count*2,all);
-        Assert.Equal(count,msg1);
-        Assert.Equal(0,msg2);
-        
+
+        Assert.Equal(count * 2, all);
+        Assert.Equal(count, msg1);
+        Assert.Equal(0, msg2);
     }
-    
+
     [Theory]
     [InlineData(1)]
     [InlineData(10)]
@@ -100,12 +103,14 @@ public class VirtualConnectionTest
         // Arrange
         var fixture = new Fixture();
         var tcs = new TaskCompletionSource();
-        var link = Protocol.Create(builder =>
-        {
-            builder.SetLog(new TestLoggerFactory(_output, TimeProvider.System, "ROUTER"));
-            builder.Protocols.RegisterExampleProtocol();
-        }).CreateVirtualConnection();
-        
+        var link = Protocol
+            .Create(builder =>
+            {
+                builder.SetLog(new TestLoggerFactory(_output, TimeProvider.System, "ROUTER"));
+                builder.Protocols.RegisterExampleProtocol();
+            })
+            .CreateVirtualConnection();
+
         var sendArray1 = new ExampleMessage1[count];
         for (var i = 0; i < count; i++)
         {
@@ -119,26 +124,28 @@ public class VirtualConnectionTest
         }
 
         var all = 0;
-        link.SetServerToClientFilter(x=>
+        link.SetServerToClientFilter(x =>
         {
             all++;
             return x is ExampleMessage1;
         });
         var msg1 = 0;
         var msg2 = 0;
-        link.Client.OnRxMessage.FilterByType<ExampleMessage1>().Subscribe(x =>
-        {
-            msg1++;
-            if (msg1 == count)
+        link.Client.OnRxMessage.FilterByType<ExampleMessage1>()
+            .Subscribe(x =>
             {
-                tcs.TrySetResult();
-            }
-        });
-        link.Client.OnRxMessage.FilterByType<ExampleMessage2>().Subscribe(x =>
-        {
-            msg2++;
-        });
-        
+                msg1++;
+                if (msg1 == count)
+                {
+                    tcs.TrySetResult();
+                }
+            });
+        link.Client.OnRxMessage.FilterByType<ExampleMessage2>()
+            .Subscribe(x =>
+            {
+                msg2++;
+            });
+
         // Act
         foreach (var message1 in sendArray1)
         {
@@ -149,17 +156,13 @@ public class VirtualConnectionTest
             await link.Server.Send(message2, CancellationToken.None);
         }
 
-        
-        
         // Assert
-        
-        Assert.Equal(count*2,all);
-        Assert.Equal(count,msg1);
-        Assert.Equal(0,msg2);
-        
+
+        Assert.Equal(count * 2, all);
+        Assert.Equal(count, msg1);
+        Assert.Equal(0, msg2);
     }
-    
-    
+
     [Theory]
     [InlineData(1)]
     [InlineData(10)]
@@ -170,12 +173,14 @@ public class VirtualConnectionTest
         // Arrange
 
         var fixture = new Fixture();
-        var link = Protocol.Create(builder =>
-        {
-            builder.SetLog(new TestLoggerFactory(_output, TimeProvider.System, "ROUTER"));
-            builder.Protocols.RegisterExampleProtocol();
-            builder.Formatters.RegisterSimpleFormatter();
-        }).CreateVirtualConnection();
+        var link = Protocol
+            .Create(builder =>
+            {
+                builder.SetLog(new TestLoggerFactory(_output, TimeProvider.System, "ROUTER"));
+                builder.Protocols.RegisterExampleProtocol();
+                builder.Formatters.RegisterSimpleFormatter();
+            })
+            .CreateVirtualConnection();
 
         var sendArray1 = new ExampleMessage1[count];
         for (int i = 0; i < count; i++)
@@ -244,12 +249,14 @@ public class VirtualConnectionTest
         // Arrange
 
         var fixture = new Fixture();
-        var link = Protocol.Create(builder =>
-        {
-            builder.SetLog(new TestLoggerFactory(_output, TimeProvider.System, "ROUTER"));
-            builder.Protocols.RegisterExampleProtocol();
-            builder.Formatters.RegisterSimpleFormatter();
-        }).CreateVirtualConnection();
+        var link = Protocol
+            .Create(builder =>
+            {
+                builder.SetLog(new TestLoggerFactory(_output, TimeProvider.System, "ROUTER"));
+                builder.Protocols.RegisterExampleProtocol();
+                builder.Formatters.RegisterSimpleFormatter();
+            })
+            .CreateVirtualConnection();
 
         var sendArray1 = new ExampleMessage1[count];
         for (int i = 0; i < count; i++)
@@ -314,12 +321,14 @@ public class VirtualConnectionTest
     {
         //Arrange
         uint count = 10;
-        var link = Protocol.Create(builder =>
-        {
-            builder.SetLog(new TestLoggerFactory(_output, TimeProvider.System, "ROUTER"));
-            builder.Protocols.RegisterExampleProtocol();
-            builder.Formatters.RegisterSimpleFormatter();
-        }).CreateVirtualConnection();
+        var link = Protocol
+            .Create(builder =>
+            {
+                builder.SetLog(new TestLoggerFactory(_output, TimeProvider.System, "ROUTER"));
+                builder.Protocols.RegisterExampleProtocol();
+                builder.Formatters.RegisterSimpleFormatter();
+            })
+            .CreateVirtualConnection();
         var fixture = new Fixture();
         var sendArray1 = new ExampleMessage1[10];
         var tcs = new TaskCompletionSource();
@@ -356,12 +365,14 @@ public class VirtualConnectionTest
     {
         //Arrange
         uint count = 10;
-        var link = Protocol.Create(builder =>
-        {
-            builder.SetLog(new TestLoggerFactory(_output, TimeProvider.System, "ROUTER"));
-            builder.Protocols.RegisterExampleProtocol();
-            builder.Formatters.RegisterSimpleFormatter();
-        }).CreateVirtualConnection();
+        var link = Protocol
+            .Create(builder =>
+            {
+                builder.SetLog(new TestLoggerFactory(_output, TimeProvider.System, "ROUTER"));
+                builder.Protocols.RegisterExampleProtocol();
+                builder.Formatters.RegisterSimpleFormatter();
+            })
+            .CreateVirtualConnection();
         var fixture = new Fixture();
         var sendArray1 = new ExampleMessage1[10];
         var tcs = new TaskCompletionSource();
@@ -397,17 +408,18 @@ public class VirtualConnectionTest
     public async Task Statistic_SendNullMessage_Fail()
     {
         //Arrange
-        var link = Protocol.Create(builder =>
-        {
-            builder.SetLog(new TestLoggerFactory(_output, TimeProvider.System, "ROUTER"));
-            builder.Protocols.RegisterExampleProtocol();
-            builder.Formatters.RegisterSimpleFormatter();
-        }).CreateVirtualConnection();
-        
+        var link = Protocol
+            .Create(builder =>
+            {
+                builder.SetLog(new TestLoggerFactory(_output, TimeProvider.System, "ROUTER"));
+                builder.Protocols.RegisterExampleProtocol();
+                builder.Formatters.RegisterSimpleFormatter();
+            })
+            .CreateVirtualConnection();
+
         //Assert
         // ReSharper disable once AssignNullToNotNullAttribute
         await Assert.ThrowsAsync<ArgumentNullException>(async () => await link.Server.Send(null));
-
     }
 
     [Fact]
@@ -415,12 +427,14 @@ public class VirtualConnectionTest
     {
         //Arrange
         uint count = 10;
-        var link = Protocol.Create(builder =>
-        {
-            builder.SetLog(new TestLoggerFactory(_output, TimeProvider.System, "ROUTER"));
-            builder.Protocols.RegisterExampleProtocol();
-            builder.Formatters.RegisterSimpleFormatter();
-        }).CreateVirtualConnection();
+        var link = Protocol
+            .Create(builder =>
+            {
+                builder.SetLog(new TestLoggerFactory(_output, TimeProvider.System, "ROUTER"));
+                builder.Protocols.RegisterExampleProtocol();
+                builder.Formatters.RegisterSimpleFormatter();
+            })
+            .CreateVirtualConnection();
         var fixture = new Fixture();
         var sendArray1 = new ExampleMessage1[count];
         var tcs = new TaskCompletionSource();
@@ -432,6 +446,7 @@ public class VirtualConnectionTest
         }
 
         var size = 0;
+
         //Act
         foreach (var message1 in sendArray1)
         {

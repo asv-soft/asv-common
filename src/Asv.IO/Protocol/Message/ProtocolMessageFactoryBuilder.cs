@@ -4,7 +4,8 @@ using System.Collections.Immutable;
 namespace Asv.IO;
 
 public interface IProtocolMessageFactoryBuilder<TProtocolMessageBase, TMessageId>
-    where TProtocolMessageBase : IProtocolMessage<TMessageId> where TMessageId : notnull
+    where TProtocolMessageBase : IProtocolMessage<TMessageId>
+    where TMessageId : notnull
 {
     ProtocolMessageFactoryBuilder<TProtocolMessageBase, TMessageId> Add<TMessage>()
         where TMessage : TProtocolMessageBase, new();
@@ -17,17 +18,20 @@ public class ProtocolMessageFactoryBuilder<TProtocolMessageBase, TMessageId>(Pro
     where TProtocolMessageBase : IProtocolMessage<TMessageId>
     where TMessageId : notnull
 {
-    private readonly ImmutableDictionary<TMessageId, Func<TProtocolMessageBase>>.Builder _builder
-        = ImmutableDictionary.CreateBuilder<TMessageId, Func<TProtocolMessageBase>>();
+    private readonly ImmutableDictionary<TMessageId, Func<TProtocolMessageBase>>.Builder _builder =
+        ImmutableDictionary.CreateBuilder<TMessageId, Func<TProtocolMessageBase>>();
 
-    public ProtocolMessageFactoryBuilder<TProtocolMessageBase, TMessageId> Add<TMessage>(TMessageId id)
+    public ProtocolMessageFactoryBuilder<TProtocolMessageBase, TMessageId> Add<TMessage>(
+        TMessageId id
+    )
         where TMessage : TProtocolMessageBase, new()
     {
         _builder.Add(id, () => new TMessage());
         return this;
     }
 
-    public ProtocolMessageFactoryBuilder<TProtocolMessageBase, TMessageId> Add<TMessage>() where TMessage : TProtocolMessageBase, new()
+    public ProtocolMessageFactoryBuilder<TProtocolMessageBase, TMessageId> Add<TMessage>()
+        where TMessage : TProtocolMessageBase, new()
     {
         var temp = new TMessage();
         _builder.Add(temp.Id, () => new TMessage());
@@ -46,6 +50,9 @@ public class ProtocolMessageFactoryBuilder<TProtocolMessageBase, TMessageId>(Pro
 
     public IProtocolMessageFactory<TProtocolMessageBase, TMessageId> Build()
     {
-        return new ProtocolMessageFactory<TProtocolMessageBase, TMessageId>(info, _builder.ToImmutable());
+        return new ProtocolMessageFactory<TProtocolMessageBase, TMessageId>(
+            info,
+            _builder.ToImmutable()
+        );
     }
 }

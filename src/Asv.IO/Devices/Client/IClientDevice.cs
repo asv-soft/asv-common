@@ -8,7 +8,7 @@ using R3;
 
 namespace Asv.IO;
 
-public interface IClientDevice:IDisposable, IAsyncDisposable
+public interface IClientDevice : IDisposable, IAsyncDisposable
 {
     /// <summary>
     /// This method is used to initialize the device.
@@ -23,27 +23,45 @@ public interface IClientDevice:IDisposable, IAsyncDisposable
 
 public static class ClientDeviceHelper
 {
-    public static T? GetMicroservice<T>(this IClientDevice src) where T : class
+    public static T? GetMicroservice<T>(this IClientDevice src)
+        where T : class
     {
         return src.Microservices.OfType<T>().FirstOrDefault();
     }
-    public static async Task WaitUntilConnect(this IClientDevice src, int timeoutMs, TimeProvider timeProvider)
+
+    public static async Task WaitUntilConnect(
+        this IClientDevice src,
+        int timeoutMs,
+        TimeProvider timeProvider
+    )
     {
-        using var cancel = new CancellationTokenSource(TimeSpan.FromMilliseconds(timeoutMs),timeProvider);
+        using var cancel = new CancellationTokenSource(
+            TimeSpan.FromMilliseconds(timeoutMs),
+            timeProvider
+        );
         var tcs = new TaskCompletionSource();
         cancel.Token.Register(() => tcs.TrySetCanceled());
-        using var c = src.Link.State.Where(s => s == LinkState.Connected)
+        using var c = src
+            .Link.State.Where(s => s == LinkState.Connected)
             .Subscribe(x => tcs.TrySetResult());
         await tcs.Task.ConfigureAwait(false);
     }
-    
-    public static async Task WaitUntilConnectAndInit(this IClientDevice src, int timeoutMs, TimeProvider timeProvider)
+
+    public static async Task WaitUntilConnectAndInit(
+        this IClientDevice src,
+        int timeoutMs,
+        TimeProvider timeProvider
+    )
     {
-        await src.WaitUntilConnect(timeoutMs,timeProvider).ConfigureAwait(false);
-        using var cancel = new CancellationTokenSource(TimeSpan.FromMilliseconds(timeoutMs),timeProvider);
+        await src.WaitUntilConnect(timeoutMs, timeProvider).ConfigureAwait(false);
+        using var cancel = new CancellationTokenSource(
+            TimeSpan.FromMilliseconds(timeoutMs),
+            timeProvider
+        );
         var tcs = new TaskCompletionSource();
         cancel.Token.Register(() => tcs.TrySetCanceled());
-        using var c = src.State.Where(s => s == ClientDeviceState.Complete)
+        using var c = src
+            .State.Where(s => s == ClientDeviceState.Complete)
             .Subscribe(x => tcs.TrySetResult());
         await tcs.Task.ConfigureAwait(false);
     }
@@ -52,7 +70,7 @@ public static class ClientDeviceHelper
 public enum ClientDeviceState
 {
     /// <summary>
-    /// Represent 
+    /// Represent
     /// </summary>
     Uninitialized,
 
@@ -69,5 +87,5 @@ public enum ClientDeviceState
     /// <summary>
     /// Represents the initialization state of a process.
     /// </summary>
-    Complete
+    Complete,
 }

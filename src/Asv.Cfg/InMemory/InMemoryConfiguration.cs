@@ -15,8 +15,6 @@ namespace Asv.Cfg
 {
     public class InMemoryConfiguration(ILogger? logger = null) : ConfigurationBase
     {
-        
-
         private readonly Dictionary<string, JToken> _values = new();
         private readonly ReaderWriterLockSlim _rw = new(LockRecursionPolicy.SupportsRecursion);
         private readonly ILogger _logger = logger ?? NullLogger.Instance;
@@ -29,7 +27,7 @@ namespace Asv.Cfg
             try
             {
                 _rw.EnterReadLock();
-                return [.._values.Keys];
+                return [.. _values.Keys];
             }
             finally
             {
@@ -48,10 +46,12 @@ namespace Asv.Cfg
             {
                 _rw.ExitReadLock();
             }
-            
         }
 
-        protected override TPocoType InternalSafeGet<TPocoType>(string key, Lazy<TPocoType> defaultValue)
+        protected override TPocoType InternalSafeGet<TPocoType>(
+            string key,
+            Lazy<TPocoType> defaultValue
+        )
         {
             _rw.EnterUpgradeableReadLock();
             try
@@ -70,16 +70,16 @@ namespace Asv.Cfg
             {
                 _rw.ExitUpgradeableReadLock();
             }
-            
         }
-
 
         protected override void InternalSafeSave<TPocoType>(string key, TPocoType value)
         {
             try
             {
                 _rw.EnterWriteLock();
-                var jValue = JsonConvert.DeserializeObject<JToken>(JsonConvert.SerializeObject(value));
+                var jValue = JsonConvert.DeserializeObject<JToken>(
+                    JsonConvert.SerializeObject(value)
+                );
                 Debug.Assert(jValue != null, nameof(jValue) + " != null");
                 _logger.ZLogTrace($"Set configuration key [{key}]");
                 _values[key] = jValue;
@@ -96,14 +96,13 @@ namespace Asv.Cfg
             {
                 _rw.EnterWriteLock();
                 _values.Remove(key);
-                
             }
             finally
             {
                 _rw.ExitWriteLock();
             }
         }
-        
+
         #region Dispose
 
         protected override void Dispose(bool disposing)
@@ -129,9 +128,13 @@ namespace Asv.Cfg
             static async ValueTask CastAndDispose(IDisposable resource)
             {
                 if (resource is IAsyncDisposable resourceAsyncDisposable)
+                {
                     await resourceAsyncDisposable.DisposeAsync();
+                }
                 else
+                {
                     resource.Dispose();
+                }
             }
         }
 

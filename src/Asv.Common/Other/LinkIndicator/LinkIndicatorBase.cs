@@ -11,12 +11,14 @@ public class LinkIndicatorBase(int downgradeErrors = 3) : AsyncDisposableOnce, I
     private readonly Lock _sync = new();
     private readonly ReactiveProperty<LinkState> _state = new(LinkState.Disconnected);
 
-
     protected virtual void InternalUpgrade()
     {
-        if (IsDisposed) return;
+        if (IsDisposed)
+        {
+            return;
+        }
 
-        using(_sync.EnterScope())
+        using (_sync.EnterScope())
         {
             _connErrors = 0;
             _state.Value = LinkState.Connected;
@@ -25,18 +27,33 @@ public class LinkIndicatorBase(int downgradeErrors = 3) : AsyncDisposableOnce, I
 
     protected void InternalDowngrade()
     {
-        if (IsDisposed) return;
-        using(_sync.EnterScope())
+        if (IsDisposed)
+        {
+            return;
+        }
+
+        using (_sync.EnterScope())
         {
             _connErrors++;
-            if (_connErrors >= 1 && _connErrors <= downgradeErrors) _state.Value = LinkState.Downgrade;
-            if (_connErrors >= downgradeErrors) _state.Value = LinkState.Disconnected;
+            if (_connErrors >= 1 && _connErrors <= downgradeErrors)
+            {
+                _state.Value = LinkState.Downgrade;
+            }
+
+            if (_connErrors >= downgradeErrors)
+            {
+                _state.Value = LinkState.Disconnected;
+            }
         }
     }
-        
+
     public void ForceDisconnected()
     {
-        if (IsDisposed) return;
+        if (IsDisposed)
+        {
+            return;
+        }
+
         _state.Value = LinkState.Disconnected;
     }
 
@@ -57,9 +74,13 @@ public class LinkIndicatorBase(int downgradeErrors = 3) : AsyncDisposableOnce, I
     protected override async ValueTask DisposeAsyncCore()
     {
         if (_state is IAsyncDisposable stateAsyncDisposable)
+        {
             await stateAsyncDisposable.DisposeAsync();
+        }
         else
+        {
             _state.Dispose();
+        }
 
         await base.DisposeAsyncCore();
     }

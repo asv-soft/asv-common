@@ -5,11 +5,24 @@ namespace Asv.IO;
 public abstract class DeviceId : IEquatable<DeviceId>
 {
     public string DeviceClass { get; }
+
     public bool Equals(DeviceId? other)
     {
-        if (other is null) return false;
-        if (ReferenceEquals(this, other)) return true;
-        return string.Equals(DeviceClass, other.DeviceClass, StringComparison.InvariantCultureIgnoreCase);
+        if (other is null)
+        {
+            return false;
+        }
+
+        if (ReferenceEquals(this, other))
+        {
+            return true;
+        }
+
+        return string.Equals(
+            DeviceClass,
+            other.DeviceClass,
+            StringComparison.InvariantCultureIgnoreCase
+        );
     }
 
     public override bool Equals(object? obj)
@@ -37,8 +50,8 @@ public abstract class DeviceId : IEquatable<DeviceId>
         DeviceClass = deviceClass;
     }
 
-    
     public abstract string AsString();
+
     public override string ToString()
     {
         return AsString();

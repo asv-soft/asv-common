@@ -15,11 +15,13 @@ namespace Asv.Common
         /// <returns></returns>
         public static string Progress(double value, int width, string fill, string empty)
         {
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(value,1);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(value, 1);
             const int labelWidth = 4;
             const int minWidth = labelWidth + 2;
             if (width < minWidth)
-                ArgumentOutOfRangeException.ThrowIfLessThan(width,minWidth);
+            {
+                ArgumentOutOfRangeException.ThrowIfLessThan(width, minWidth);
+            }
 
             var realWidth = width - labelWidth;
             var w1 = (int)(value * realWidth);
@@ -33,9 +35,10 @@ namespace Asv.Common
             {
                 sb.Append(empty);
             }
-            sb.Append(((int) (value * 100) + "%").PadLeft(labelWidth));
+            sb.Append(((int)(value * 100) + "%").PadLeft(labelWidth));
             return sb.ToString();
         }
+
         /// <summary>
         /// Example: ██████░░░░░░ 50%")]
         /// </summary>
@@ -46,7 +49,5 @@ namespace Asv.Common
         {
             return Progress(value, width, "█", "░");
         }
-        
-
     }
 }

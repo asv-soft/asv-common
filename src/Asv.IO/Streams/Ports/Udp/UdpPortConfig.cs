@@ -18,7 +18,7 @@ namespace Asv.IO
                 opt = null;
                 return false;
             }
-            
+
             var coll = PortFactory.ParseQueryString(uri.Query);
 
             opt = new UdpPortConfig
@@ -51,7 +51,6 @@ namespace Asv.IO
             {
                 return $"UDP {LocalHost}:{LocalPort}=>{RemoteHost}:{RemotePort}";
             }
-            //return $"udp://{LocalHost}:{LocalPort}?rhost={RemoteHost}&rport={RemotePort}";
         }
     }
 }

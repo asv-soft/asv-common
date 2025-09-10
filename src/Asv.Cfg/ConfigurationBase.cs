@@ -9,9 +9,11 @@ using ZLogger;
 
 namespace Asv.Cfg;
 
-public abstract class ConfigurationBase(ILogger? logger = null) : AsyncDisposableOnce, IConfiguration
+public abstract class ConfigurationBase(ILogger? logger = null)
+    : AsyncDisposableOnce,
+        IConfiguration
 {
-    protected readonly ILogger Logger = logger ?? NullLogger.Instance;
+    protected ILogger Logger { get; } = logger ?? NullLogger.Instance;
     private readonly Subject<ConfigurationException> _onError = new();
     private readonly Subject<KeyValuePair<string, object?>> _onChanged = new();
 
@@ -25,7 +27,9 @@ public abstract class ConfigurationBase(ILogger? logger = null) : AsyncDisposabl
             }
             catch (Exception e)
             {
-                throw InternalPublishError(new ConfigurationException($"Error to get reserved parts:{e.Message}",e));
+                throw InternalPublishError(
+                    new ConfigurationException($"Error to get reserved parts:{e.Message}", e)
+                );
             }
         }
     }
@@ -41,9 +45,10 @@ public abstract class ConfigurationBase(ILogger? logger = null) : AsyncDisposabl
             }
             catch (Exception e)
             {
-                throw InternalPublishError(new ConfigurationException($"Error to get available parts",e));
+                throw InternalPublishError(
+                    new ConfigurationException($"Error to get available parts", e)
+                );
             }
-            
         }
     }
 
@@ -58,7 +63,9 @@ public abstract class ConfigurationBase(ILogger? logger = null) : AsyncDisposabl
         }
         catch (Exception e)
         {
-            throw InternalPublishError(new ConfigurationException($"Error to check exist '{key}' part:{e.Message}"));
+            throw InternalPublishError(
+                new ConfigurationException($"Error to check exist '{key}' part:{e.Message}")
+            );
         }
     }
 
@@ -73,19 +80,24 @@ public abstract class ConfigurationBase(ILogger? logger = null) : AsyncDisposabl
             {
                 if (defaultValue.Value is ICustomConfigurable cfg)
                 {
-                    cfg.Load(key,this);
+                    cfg.Load(key, this);
                     return defaultValue.Value;
                 }
             }
-            return InternalSafeGet(key,defaultValue);  
+            return InternalSafeGet(key, defaultValue);
         }
         catch (Exception e)
         {
-            throw InternalPublishError(new ConfigurationException($"Error to get exist '{key}' part",e));
+            throw InternalPublishError(
+                new ConfigurationException($"Error to get exist '{key}' part", e)
+            );
         }
     }
 
-    protected abstract TPocoType InternalSafeGet<TPocoType>(string key, Lazy<TPocoType> defaultValue);
+    protected abstract TPocoType InternalSafeGet<TPocoType>(
+        string key,
+        Lazy<TPocoType> defaultValue
+    );
 
     public void Set<TPocoType>(string key, TPocoType value)
     {
@@ -94,16 +106,18 @@ public abstract class ConfigurationBase(ILogger? logger = null) : AsyncDisposabl
             ConfigurationMixin.ValidateKey(key);
             if (value is ICustomConfigurable cfg)
             {
-                cfg.Save(key,this);
+                cfg.Save(key, this);
                 return;
             }
-            InternalSafeSave(key,value);
+            InternalSafeSave(key, value);
             Logger.ZLogTrace($"Set configuration key [{key}]");
-            _onChanged.OnNext(new KeyValuePair<string, object?>(key,value));
+            _onChanged.OnNext(new KeyValuePair<string, object?>(key, value));
         }
         catch (Exception e)
         {
-            throw InternalPublishError(new ConfigurationException($"Error to set exist '{key}' part",e)); 
+            throw InternalPublishError(
+                new ConfigurationException($"Error to set exist '{key}' part", e)
+            );
         }
     }
 
@@ -116,11 +130,13 @@ public abstract class ConfigurationBase(ILogger? logger = null) : AsyncDisposabl
             ConfigurationMixin.ValidateKey(key);
             InternalSafeRemove(key);
             Logger.ZLogTrace($"Remove configuration key [{key}]");
-            _onChanged.OnNext(new KeyValuePair<string, object?>(key,null));
+            _onChanged.OnNext(new KeyValuePair<string, object?>(key, null));
         }
         catch (Exception e)
         {
-            throw InternalPublishError(new ConfigurationException($"Error to remove exist '{key}' part",e));
+            throw InternalPublishError(
+                new ConfigurationException($"Error to remove exist '{key}' part", e)
+            );
         }
     }
 
@@ -128,11 +144,11 @@ public abstract class ConfigurationBase(ILogger? logger = null) : AsyncDisposabl
 
     protected ConfigurationException InternalPublishError(ConfigurationException e)
     {
-        Logger.ZLogError(e,$"{this} error: {e.Message}");
+        Logger.ZLogError(e, $"{this} error: {e.Message}");
         _onError.OnNext(e);
         return e;
     }
-    
+
     public Observable<ConfigurationException> OnError => _onError;
     public Observable<KeyValuePair<string, object?>> OnChanged => _onChanged;
 

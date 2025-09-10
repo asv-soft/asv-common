@@ -14,7 +14,7 @@ using Xunit.Abstractions;
 namespace Asv.Cfg.Test
 {
     [TestSubject(typeof(JsonOneFileConfiguration))]
-    public class JsonOneFileConfigurationTest(ITestOutputHelper log) 
+    public class JsonOneFileConfigurationTest(ITestOutputHelper log)
         : ConfigurationBaseTest<JsonOneFileConfiguration>(log)
     {
         private readonly IFileSystem _fileSystem = new MockFileSystem();
@@ -26,10 +26,10 @@ namespace Asv.Cfg.Test
                 filePath,
                 true,
                 null,
-                logger:LogFactory.CreateLogger("JSON_ONE_FILE"),
+                logger: LogFactory.CreateLogger("JSON_ONE_FILE"),
                 fileSystem: _fileSystem
             );
-            
+
             var cfg = configuration;
             return Disposable.Create(() =>
             {
@@ -44,9 +44,8 @@ namespace Asv.Cfg.Test
         private string GenerateTempFilePath()
         {
             return _fileSystem.Path.Combine(
-                _fileSystem.Path.GetTempPath(), 
-                _fileSystem.Path.GetFileNameWithoutExtension(
-                    _fileSystem.Path.GetRandomFileName()),
+                _fileSystem.Path.GetTempPath(),
+                _fileSystem.Path.GetFileNameWithoutExtension(_fileSystem.Path.GetRandomFileName()),
                 $"{_fileSystem.Path.GetFileNameWithoutExtension(_fileSystem.Path.GetRandomFileName())}.json"
             );
         }
@@ -91,7 +90,10 @@ namespace Asv.Cfg.Test
 
             cfg.Set(new TestClass() { Name = "Test" });
             var dir = _fileSystem.Path.GetDirectoryName(cfg.FileName);
-            var fileName = _fileSystem.Directory.GetFiles(dir ?? throw new InvalidOperationException(), "*.json");
+            var fileName = _fileSystem.Directory.GetFiles(
+                dir ?? throw new InvalidOperationException(),
+                "*.json"
+            );
 
             Assert.Equal(cfg.FileName, fileName.FirstOrDefault());
         }
@@ -102,7 +104,9 @@ namespace Asv.Cfg.Test
             using var cleanup = CreateForTest(out var cfg);
             cfg.Set(new TestClass() { Name = "Test" });
             var dir = _fileSystem.Path.GetDirectoryName(cfg.FileName);
-            var fileName = _fileSystem.Directory.GetFiles(dir ?? throw new InvalidOperationException(), "*.json").FirstOrDefault();
+            var fileName = _fileSystem
+                .Directory.GetFiles(dir ?? throw new InvalidOperationException(), "*.json")
+                .FirstOrDefault();
 
             Assert.Equal(cfg.FileName, fileName);
 
@@ -125,11 +129,11 @@ namespace Asv.Cfg.Test
                     null,
                     fileSystem: _fileSystem
                 );
-                
+
                 cfg.Set(new TestClass() { Name = "Test" });
             });
         }
-        
+
         [Fact]
         public void Json_Enum_Should_Deserialized_With_Integers()
         {
@@ -143,8 +147,7 @@ namespace Asv.Cfg.Test
                 dict.Add("test", new TestClassWithEnums { Enum = EnumTest.Test3, Name = "Test" });
                 var stringWithEnumAsDigit = JsonConvert.SerializeObject(dict, Formatting.Indented);
                 _fileSystem.File.WriteAllText(file, stringWithEnumAsDigit);
-                var cfg = new JsonOneFileConfiguration(file, false,
-                    null, fileSystem: _fileSystem);
+                var cfg = new JsonOneFileConfiguration(file, false, null, fileSystem: _fileSystem);
                 var result = cfg.Get<TestClassWithEnums>("test");
                 Assert.Equal(EnumTest.Test3, result.Enum);
             }
@@ -153,7 +156,7 @@ namespace Asv.Cfg.Test
                 _fileSystem.Directory.Delete(dir, true);
             }
         }
-        
+
         [Fact]
         public void Json_Enum_Should_Deserialized_With_Names_Success()
         {
@@ -165,10 +168,13 @@ namespace Asv.Cfg.Test
             {
                 var dict = new Dictionary<string, TestClassWithEnums>();
                 dict.Add("test", new TestClassWithEnums { Enum = EnumTest.Test3, Name = "Test" });
-                var stringWithEnumAsDigit = JsonConvert.SerializeObject(dict, Formatting.Indented, new StringEnumConverter());
+                var stringWithEnumAsDigit = JsonConvert.SerializeObject(
+                    dict,
+                    Formatting.Indented,
+                    new StringEnumConverter()
+                );
                 _fileSystem.File.WriteAllText(file, stringWithEnumAsDigit);
-                var cfg = new JsonOneFileConfiguration(file, false,
-                    null, fileSystem: _fileSystem);
+                var cfg = new JsonOneFileConfiguration(file, false, null, fileSystem: _fileSystem);
                 var result = cfg.Get<TestClassWithEnums>("test");
                 Assert.Equal(EnumTest.Test3, result.Enum);
             }
@@ -177,7 +183,7 @@ namespace Asv.Cfg.Test
                 _fileSystem.Directory.Delete(dir, true);
             }
         }
-        
+
         [Fact]
         public void Json_Enum_Should_Serialized_With_Names()
         {
@@ -185,16 +191,10 @@ namespace Asv.Cfg.Test
             {
                 var file = GenerateTempFilePath();
                 _fileSystem.File.WriteAllText(file, "{\"Enum\":3}");
-                var cfg = new JsonOneFileConfiguration(file, false,
-                    null, fileSystem: _fileSystem);
+                var cfg = new JsonOneFileConfiguration(file, false, null, fileSystem: _fileSystem);
                 var result = cfg.Get<TestClassWithEnums>();
                 Assert.Equal(EnumTest.Test3, result.Enum);
-                
             });
         }
     }
-
-
-
-
 }

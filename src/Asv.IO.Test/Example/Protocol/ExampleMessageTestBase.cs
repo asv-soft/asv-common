@@ -9,7 +9,6 @@ namespace Asv.IO.Test.Example.Protocol;
 public abstract class ExampleMessageTestBase<T>(ITestOutputHelper output)
     where T : IProtocolMessage, IVisitable, new()
 {
-    
     [Fact]
     public void SerializeDeserialize_RandomizedMessage_RestoresOriginalAndConsumesSpan()
     {
@@ -19,7 +18,7 @@ public abstract class ExampleMessageTestBase<T>(ITestOutputHelper output)
         {
             // Arrange: Initialize and randomize an ExampleMessage1 instance
             var origin = new T().Randomize(random);
-        
+
             // Act: Serialize the instance into the byte array
             var arr = origin.Serialize();
 
@@ -31,7 +30,7 @@ public abstract class ExampleMessageTestBase<T>(ITestOutputHelper output)
 
             // Assert: Ensure the entire span was consumed and instances match
             Assert.Equal(arr.Length, wSize);
-        
+
             origin.ShouldDeepEqual(restored);
         }
         catch (Exception e)
@@ -39,6 +38,5 @@ public abstract class ExampleMessageTestBase<T>(ITestOutputHelper output)
             output.WriteLine($"Random seed: {seed}");
             throw;
         }
-        
     }
 }

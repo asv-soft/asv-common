@@ -2,12 +2,22 @@ using System;
 
 namespace Asv.IO.Device;
 
-public class ExampleDeviceId(string @class, byte targetId) : DeviceId(@class), IEquatable<ExampleDeviceId>
+public class ExampleDeviceId(string @class, byte targetId)
+    : DeviceId(@class),
+        IEquatable<ExampleDeviceId>
 {
     public bool Equals(ExampleDeviceId? other)
     {
-        if (other is null) return false;
-        if (ReferenceEquals(this, other)) return true;
+        if (other is null)
+        {
+            return false;
+        }
+
+        if (ReferenceEquals(this, other))
+        {
+            return true;
+        }
+
         return base.Equals(other) && TargetId == other.TargetId;
     }
 

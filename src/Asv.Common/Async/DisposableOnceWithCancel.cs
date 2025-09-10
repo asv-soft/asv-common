@@ -33,7 +33,7 @@ namespace Asv.Common
         }
 
         protected T AddToDispose<T>(T value)
-            where T:IDisposable
+            where T : IDisposable
         {
             Disposable.Add(value);
             return value;
@@ -43,10 +43,18 @@ namespace Asv.Common
         {
             get
             {
-                if (_dispose != null) return _dispose;
+                if (_dispose != null)
+                {
+                    return _dispose;
+                }
+
                 lock (_sync1)
                 {
-                    if (_dispose != null) return _dispose;
+                    if (_dispose != null)
+                    {
+                        return _dispose;
+                    }
+
                     var dispose = new CompositeDisposable();
                     _dispose = dispose;
                     return dispose;
@@ -57,7 +65,10 @@ namespace Asv.Common
         protected override void InternalDisposeOnce()
         {
             if (_cancel?.Token.CanBeCanceled == true)
+            {
                 _cancel.Cancel(false);
+            }
+
             _cancel?.Dispose();
             _dispose?.Dispose();
         }

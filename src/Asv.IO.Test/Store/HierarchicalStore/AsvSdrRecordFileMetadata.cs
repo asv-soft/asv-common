@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace Asv.IO.Test.HierarchicalStore;
 
-public class AsvSdrRecordFileMetadata:ISizedSpanSerializable
+public class AsvSdrRecordFileMetadata : ISizedSpanSerializable
 {
     public ExampleMessage2 Info { get; } = new();
 
@@ -26,7 +26,7 @@ public class AsvSdrRecordFileMetadata:ISizedSpanSerializable
     public void Serialize(ref Span<byte> buffer)
     {
         Info.Serialize(ref buffer);
-        BinSerialize.WriteUShort(ref buffer,(ushort)Tags.Count);
+        BinSerialize.WriteUShort(ref buffer, (ushort)Tags.Count);
         foreach (var tag in Tags)
         {
             tag.Serialize(ref buffer);
@@ -35,7 +35,7 @@ public class AsvSdrRecordFileMetadata:ISizedSpanSerializable
 
     public int GetByteSize()
     {
-        var size = Info.GetByteSize()  + sizeof(ushort);
+        var size = Info.GetByteSize() + sizeof(ushort);
         if (Tags != null)
         {
             size += Tags.Sum(x => x.GetByteSize());

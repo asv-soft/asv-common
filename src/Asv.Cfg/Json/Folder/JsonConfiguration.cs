@@ -12,16 +12,22 @@ using ZLogger;
 
 namespace Asv.Cfg
 {
-    public class JsonConfiguration: ConfigurationBase
+    public class JsonConfiguration : ConfigurationBase
     {
         private readonly string _folderPath;
         private const string FixedSearchPattern = "*.json";
-        private readonly LockByKeyExecutor<string> _lock = new(ConfigurationMixin.DefaultKeyComparer);
+        private readonly LockByKeyExecutor<string> _lock = new(
+            ConfigurationMixin.DefaultKeyComparer
+        );
         private readonly ILogger _logger;
         private readonly JsonSerializer _serializer;
         private readonly IFileSystem _fileSystem;
 
-        public JsonConfiguration(string folderPath, ILogger? logger = null, IFileSystem? fileSystem = null)
+        public JsonConfiguration(
+            string folderPath,
+            ILogger? logger = null,
+            IFileSystem? fileSystem = null
+        )
         {
             _logger = logger ?? NullLogger.Instance;
             _fileSystem = fileSystem ?? new FileSystem();
@@ -48,30 +54,34 @@ namespace Asv.Cfg
 
         protected override IEnumerable<string> InternalSafeGetAvailableParts()
         {
-            return _fileSystem.Directory.EnumerateFiles(_folderPath, FixedSearchPattern)
+            return _fileSystem
+                .Directory.EnumerateFiles(_folderPath, FixedSearchPattern)
                 .Select(_fileSystem.Path.GetFileNameWithoutExtension)
                 .Select(x => x ?? string.Empty);
         }
-      
 
         protected override bool InternalSafeExist(string key)
         {
-            return _lock.Execute(key,GetFilePath(key),path=>_fileSystem.File.Exists(path));
+            return _lock.Execute(key, GetFilePath(key), path => _fileSystem.File.Exists(path));
         }
 
-        protected override TPocoType InternalSafeGet<TPocoType>(string key, Lazy<TPocoType> defaultValue)
+        protected override TPocoType InternalSafeGet<TPocoType>(
+            string key,
+            Lazy<TPocoType> defaultValue
+        )
         {
-            return _lock.Execute(key,GetFilePath(key),defaultValue,InternalGet);
+            return _lock.Execute(key, GetFilePath(key), defaultValue, InternalGet);
         }
 
-        private TPocoType InternalGet<TPocoType>(string path,Lazy<TPocoType> defaultValue)
+        private TPocoType InternalGet<TPocoType>(string path, Lazy<TPocoType> defaultValue)
         {
             if (_fileSystem.File.Exists(path))
             {
                 using var stream = _fileSystem.File.OpenRead(path);
                 using var reader = new StreamReader(stream);
                 using var jsonReader = new JsonTextReader(reader);
-                return _serializer.Deserialize<TPocoType>(jsonReader) ?? throw new InvalidOperationException();
+                return _serializer.Deserialize<TPocoType>(jsonReader)
+                    ?? throw new InvalidOperationException();
             }
             var value = defaultValue.Value;
             InternalSet(path, value);
@@ -80,13 +90,13 @@ namespace Asv.Cfg
 
         protected override void InternalSafeSave<TPocoType>(string key, TPocoType value)
         {
-            _lock.Execute(key, GetFilePath(key),value, InternalSet);
+            _lock.Execute(key, GetFilePath(key), value, InternalSet);
         }
 
         private void InternalSet<TPocoType>(string filepath, TPocoType value)
         {
             InternalRemove(filepath);
-            
+
             using var file = _fileSystem.File.CreateText(filepath);
             _serializer.Serialize(file, value);
             file.Flush();
@@ -94,12 +104,16 @@ namespace Asv.Cfg
 
         protected override void InternalSafeRemove(string key)
         {
-            _lock.Execute(key,GetFilePath(key),InternalRemove);
+            _lock.Execute(key, GetFilePath(key), InternalRemove);
         }
 
         private void InternalRemove(string path)
         {
-            if (!_fileSystem.File.Exists(path)) return;
+            if (!_fileSystem.File.Exists(path))
+            {
+                return;
+            }
+
             _fileSystem.File.Delete(path);
         }
 

@@ -8,7 +8,7 @@ namespace Asv.IO
 {
     public interface IDataStream
     {
-        Observable<byte[]> OnReceive { get; } 
+        Observable<byte[]> OnReceive { get; }
         string Name { get; }
         Task<bool> Send(byte[] data, int count, CancellationToken cancel);
         Task<bool> Send(ReadOnlyMemory<byte> data, CancellationToken cancel);
@@ -18,16 +18,25 @@ namespace Asv.IO
 
     public static class DataStreamHelper
     {
-        public static Task<bool> Send(this IDataStream src, ISizedSpanSerializable data,  CancellationToken cancel = default)
+        public static Task<bool> Send(
+            this IDataStream src,
+            ISizedSpanSerializable data,
+            CancellationToken cancel = default
+        )
         {
             return Send(src, data, out _, cancel);
         }
 
-        public static Task<bool> Send(this IDataStream src, ISizedSpanSerializable data,out int byteSent, CancellationToken cancel = default)
+        public static Task<bool> Send(
+            this IDataStream src,
+            ISizedSpanSerializable data,
+            out int byteSent,
+            CancellationToken cancel = default
+        )
         {
             var size = data.GetByteSize();
             var array = ArrayPool<byte>.Shared.Rent(size);
-            var span = new Span<byte>(array,0,size);
+            var span = new Span<byte>(array, 0, size);
             try
             {
                 byteSent = span.Length;
@@ -41,5 +50,4 @@ namespace Asv.IO
             }
         }
     }
-
 }

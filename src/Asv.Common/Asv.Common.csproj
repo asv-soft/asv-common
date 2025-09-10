@@ -10,13 +10,31 @@
     <PackageProjectUrl>https://github.com/asv-soft/asv-common</PackageProjectUrl>
     <RepositoryUrl>https://github.com/asv-soft/asv-common</RepositoryUrl>
     <PackageTags />
-    
     <Description>Provides common types and extensions for asv-based libraries</Description>
     <PackageIcon>asv-common-128.png</PackageIcon>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
+    <CodeAnalysisRuleSet>../CodeStyle.ruleset</CodeAnalysisRuleSet>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <WarningsAsErrors>
+          CS0169,
+          CS0618,
+          CS1502,
+          CS1503,
+          CS8524,
+          CS8600,
+          CS8601,
+          CS8602,
+          CS8603,
+          CS8604,
+          CS8625,
+          CS8629,
+          CS8762,
+          CA1510,
+          CA1851
+      </WarningsAsErrors>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
     <DocumentationFile>bin\Release\Asv.Common.xml</DocumentationFile>
@@ -34,7 +52,14 @@
   <ItemGroup>
     <PackageReference Include="R3" Version="$(R3Version)" />
     <PackageReference Include="Geodesy" Version="$(GeodesyVersion)" />
-    
+    <PackageReference Include="Roslynator.Analyzers" Version="4.14.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="StyleCop.Analyzers" Version="1.1.118">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Update="RS.resx">

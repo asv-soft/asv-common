@@ -20,8 +20,10 @@ namespace Asv.IO;
 /// </summary>
 public static class ConsoleAppHelper
 {
-
-    public static ILoggerFactory CreateDefaultLog(LogLevel logLevel = LogLevel.Trace, string? folder = null)
+    public static ILoggerFactory CreateDefaultLog(
+        LogLevel logLevel = LogLevel.Trace,
+        string? folder = null
+    )
     {
         return LoggerFactory.Create(builder =>
         {
@@ -30,25 +32,36 @@ public static class ConsoleAppHelper
             builder.AddZLoggerConsole(options =>
             {
                 options.IncludeScopes = true;
-                
+
                 options.UsePlainTextFormatter(formatter =>
                 {
-                    formatter.SetPrefixFormatter($"{0:HH:mm:ss.fff} | ={1:short}= | {2,-40} ", (in MessageTemplate template, in LogInfo info) => template.Format(info.Timestamp, info.LogLevel,info.Category));
-                    formatter.SetExceptionFormatter((writer, ex) => Utf8StringInterpolation.Utf8String.Format(writer, $"{ex.Message}"));
+                    formatter.SetPrefixFormatter(
+                        $"{0:HH:mm:ss.fff} | ={1:short}= | {2, -40} ",
+                        (in MessageTemplate template, in LogInfo info) =>
+                            template.Format(info.Timestamp, info.LogLevel, info.Category)
+                    );
+                    formatter.SetExceptionFormatter(
+                        (writer, ex) =>
+                            Utf8StringInterpolation.Utf8String.Format(writer, $"{ex.Message}")
+                    );
                 });
             });
             if (folder != null)
             {
-                builder.AddZLoggerRollingFile((dt, index) => $"{folder}/{dt:yyyy-MM-dd}_{index}.logs", 1024 * 1024);    
+                builder.AddZLoggerRollingFile(
+                    (dt, index) => $"{folder}/{dt:yyyy-MM-dd}_{index}.logs",
+                    1024 * 1024
+                );
             }
         });
     }
-    
+
     public static IDisposable WaitCancelPressOrProcessExit(ILogger? logger = null)
     {
         var waitForProcessShutdownStart = new ManualResetEventSlim();
-        logger??=NullLogger.Instance;
-        AppDomain.CurrentDomain.ProcessExit += (_, _) => {
+        logger ??= NullLogger.Instance;
+        AppDomain.CurrentDomain.ProcessExit += (_, _) =>
+        {
             // We got a SIGTERM, signal that graceful shutdown has started
             logger.LogInformation("Receive ProcessExit event => shutdown app...");
             waitForProcessShutdownStart.Set();
@@ -59,35 +72,40 @@ public static class ConsoleAppHelper
             logger.LogInformation("Cancel key pressed => shutdown app...");
             waitForProcessShutdownStart.Set();
         };
+
         // Wait for shutdown to start
         waitForProcessShutdownStart.Wait();
         return waitForProcessShutdownStart;
     }
+
     public static void HandleExceptions(ILogger logger)
     {
         ObservableSystem.RegisterUnhandledExceptionHandler(ex =>
         {
             {
-                logger.ZLogCritical(ex,
-                    $"R3 unobserved exception: {ex.Message}");
+                logger.ZLogCritical(ex, $"R3 unobserved exception: {ex.Message}");
                 Debug.Fail($"R3 unobserved exception: {ex.Message}");
-            };
+            }
+            ;
         });
-        TaskScheduler.UnobservedTaskException +=
-            (sender, args) =>
-            {
-                logger.ZLogCritical(args.Exception,
-                    $"Task scheduler unobserved task exception from '{sender}': {args.Exception.Message}");
-                Debug.Fail($"R3 unobserved exception: {args.Exception.Message}");
-            };
+        TaskScheduler.UnobservedTaskException += (sender, args) =>
+        {
+            logger.ZLogCritical(
+                args.Exception,
+                $"Task scheduler unobserved task exception from '{sender}': {args.Exception.Message}"
+            );
+            Debug.Fail($"R3 unobserved exception: {args.Exception.Message}");
+        };
 
-        AppDomain.CurrentDomain.UnhandledException +=
-            (sender, eventArgs) =>
-            {
-                logger.ZLogCritical($"Unhandled AppDomain exception. Sender '{sender}'. Args: {eventArgs.ExceptionObject}");
-                Debug.Fail($"R3 unobserved exception: {eventArgs.ExceptionObject}");
-            };
+        AppDomain.CurrentDomain.UnhandledException += (sender, eventArgs) =>
+        {
+            logger.ZLogCritical(
+                $"Unhandled AppDomain exception. Sender '{sender}'. Args: {eventArgs.ExceptionObject}"
+            );
+            Debug.Fail($"R3 unobserved exception: {eventArgs.ExceptionObject}");
+        };
     }
+
     /// <summary>
     /// Retrieves the version of the specified assembly.
     /// </summary>
@@ -105,9 +123,12 @@ public static class ConsoleAppHelper
     /// <returns>The informational version of the assembly. Returns an empty string if no informational version attribute is found.</returns>
     public static string GetInformationalVersion(this Assembly src)
     {
-        var attributes = src.GetCustomAttributes(typeof(AssemblyInformationalVersionAttribute), false);
+        var attributes = src.GetCustomAttributes(
+            typeof(AssemblyInformationalVersionAttribute),
+            false
+        );
         return attributes.Length == 0
-            ? ""
+            ? string.Empty
             : ((AssemblyInformationalVersionAttribute)attributes[0]).InformationalVersion;
     }
 
@@ -122,7 +143,10 @@ public static class ConsoleAppHelper
         if (attributes.Length > 0)
         {
             var titleAttribute = (AssemblyTitleAttribute)attributes[0];
-            if (titleAttribute.Title.Length > 0) return titleAttribute.Title;
+            if (titleAttribute.Title.Length > 0)
+            {
+                return titleAttribute.Title;
+            }
         }
         return src.GetName().Name;
     }
@@ -135,7 +159,9 @@ public static class ConsoleAppHelper
     public static string GetProductName(this Assembly src)
     {
         var attributes = src.GetCustomAttributes(typeof(AssemblyProductAttribute), false);
-        return attributes.Length == 0 ? string.Empty : ((AssemblyProductAttribute)attributes[0]).Product;
+        return attributes.Length == 0
+            ? string.Empty
+            : ((AssemblyProductAttribute)attributes[0]).Product;
     }
 
     /// <summary>
@@ -146,7 +172,9 @@ public static class ConsoleAppHelper
     public static string GetDescription(this Assembly src)
     {
         var attributes = src.GetCustomAttributes(typeof(AssemblyDescriptionAttribute), false);
-        return attributes.Length == 0 ? string.Empty : ((AssemblyDescriptionAttribute)attributes[0]).Description;
+        return attributes.Length == 0
+            ? string.Empty
+            : ((AssemblyDescriptionAttribute)attributes[0]).Description;
     }
 
     /// <summary>
@@ -157,7 +185,9 @@ public static class ConsoleAppHelper
     public static string GetCopyrightHolder(this Assembly src)
     {
         var attributes = src.GetCustomAttributes(typeof(AssemblyCopyrightAttribute), false);
-        return attributes.Length == 0 ? string.Empty : ((AssemblyCopyrightAttribute)attributes[0]).Copyright;
+        return attributes.Length == 0
+            ? string.Empty
+            : ((AssemblyCopyrightAttribute)attributes[0]).Copyright;
     }
 
     /// <summary>
@@ -168,7 +198,9 @@ public static class ConsoleAppHelper
     public static string GetCompanyName(this Assembly src)
     {
         var attributes = src.GetCustomAttributes(typeof(AssemblyCompanyAttribute), false);
-        return attributes.Length == 0 ? string.Empty : ((AssemblyCompanyAttribute)attributes[0]).Company;
+        return attributes.Length == 0
+            ? string.Empty
+            : ((AssemblyCompanyAttribute)attributes[0]).Company;
     }
 
     /// <summary>
@@ -177,23 +209,30 @@ public static class ConsoleAppHelper
     /// <param name="src">The assembly object.</param>
     /// <param name="color">The color of the message. The default value is ConsoleColor.Cyan.</param>
     /// <param name="additionalValues">Additional key-value pairs to include in the welcome message.</param>
-    public static void PrintWelcomeToConsole(this Assembly src, ConsoleColor color = ConsoleColor.Cyan,
-        params KeyValuePair<string, string>[] additionalValues)
+    public static void PrintWelcomeToConsole(
+        this Assembly src,
+        ConsoleColor color = ConsoleColor.Cyan,
+        params KeyValuePair<string, string>[] additionalValues
+    )
     {
         var old = Console.ForegroundColor;
         Console.ForegroundColor = color;
         Console.WriteLine(src.PrintWelcome(additionalValues));
         Console.ForegroundColor = old;
     }
-    
-   
-    public static void PrintWelcomeToLog(this Assembly src, ILogger logger,
-        params KeyValuePair<string, string>[] additionalValues)
+
+    public static void PrintWelcomeToLog(
+        this Assembly src,
+        ILogger logger,
+        params KeyValuePair<string, string>[] additionalValues
+    )
     {
-        using var rdr = new StreamReader(new MemoryStream(Encoding.UTF8.GetBytes(src.PrintWelcome(additionalValues))));
+        using var rdr = new StreamReader(
+            new MemoryStream(Encoding.UTF8.GetBytes(src.PrintWelcome(additionalValues)))
+        );
         while (rdr.EndOfStream == false)
         {
-            logger.LogInformation(rdr.ReadLine());    
+            logger.LogInformation(rdr.ReadLine());
         }
     }
 
@@ -203,8 +242,10 @@ public static class ConsoleAppHelper
     /// <param name="src">The source assembly.</param>
     /// <param name="additionalValues">The additional key-value pairs to include in the welcome message.</param>
     /// <returns>The welcome message as a string.</returns>
-    public static string PrintWelcome(this Assembly src,
-        IEnumerable<KeyValuePair<string, string>>? additionalValues = null)
+    public static string PrintWelcome(
+        this Assembly src,
+        IEnumerable<KeyValuePair<string, string>>? additionalValues = null
+    )
     {
         var header = new[]
         {
@@ -218,7 +259,7 @@ public static class ConsoleAppHelper
 #if DEBUG
             new("Build", "Debug"),
 #else
-                new KeyValuePair<string, string>("Build", "Release"),
+            new KeyValuePair<string, string>("Build", "Release"),
 #endif
             new("Process", Process.GetCurrentProcess().Id.ToString()),
             new("OS", Environment.OSVersion.ToString()),
@@ -227,11 +268,13 @@ public static class ConsoleAppHelper
             new("Is64BitProcess", Environment.Is64BitProcess.ToString()),
         };
 
-        if (additionalValues != null) values.AddRange(additionalValues);
+        if (additionalValues != null)
+        {
+            values.AddRange(additionalValues);
+        }
 
         return PrintWelcome(header, values);
     }
-
 
     /// <summary>
     /// Prints a welcome message with a formatted header and values.
@@ -240,8 +283,11 @@ public static class ConsoleAppHelper
     /// <param name="values">The collection of key-value pairs representing the values.</param>
     /// <param name="padding">The padding to apply between the keys and values. Default is 1.</param>
     /// <returns>A formatted welcome message.</returns>
-    private static string PrintWelcome(IEnumerable<string> header, IEnumerable<KeyValuePair<string, string>> values,
-        int padding = 1)
+    private static string PrintWelcome(
+        IEnumerable<string> header,
+        IEnumerable<KeyValuePair<string, string>> values,
+        int padding = 1
+    )
     {
         var keyValuePairs = values as KeyValuePair<string, string>[] ?? values.ToArray();
         var keysWidth = keyValuePairs.Select(p => p.Key.Length).Max();
@@ -258,34 +304,60 @@ public static class ConsoleAppHelper
     /// <param name="valueWidth">The width of the value column.</param>
     /// <param name="padding">The padding width.</param>
     /// <returns>A string representing the formatted welcome message.</returns>
-    public static string PrintWelcome(IEnumerable<string> header, IEnumerable<KeyValuePair<string, string>> values,
-        int keyWidth, int valueWidth, int padding)
+    public static string PrintWelcome(
+        IEnumerable<string> header,
+        IEnumerable<KeyValuePair<string, string>> values,
+        int keyWidth,
+        int valueWidth,
+        int padding
+    )
     {
         var sb = new StringBuilder();
 
-        var headerWidth = keyWidth + valueWidth + padding * 4 + 1;
+        var headerWidth = keyWidth + valueWidth + (padding * 4) + 1;
 
         sb.Append('╔').Append('═', headerWidth).Append('╗').Append(' ').AppendLine();
         foreach (var hdr in header)
         {
-            sb.Append("║").Append(' ', padding).Append(hdr.PadLeft(headerWidth - padding * 2)).Append(' ', padding)
-                .Append("║▒").AppendLine();
-        }
-
-        sb.Append('╠').Append('═', padding * 2).Append('═', keyWidth).Append('╦').Append('═', valueWidth)
-            .Append('═', padding * 2).Append("╣▒").AppendLine();
-        foreach (var pair in values)
-        {
-            sb.Append('║').Append(' ', padding).Append(pair.Key.PadLeft(keyWidth)).Append(' ', padding).Append('║')
-                .Append(' ', padding).Append(pair.Value.PadRight(valueWidth)).Append(' ', padding).Append("║▒")
+            sb.Append("║")
+                .Append(' ', padding)
+                .Append(hdr.PadLeft(headerWidth - (padding * 2)))
+                .Append(' ', padding)
+                .Append("║▒")
                 .AppendLine();
         }
 
-        sb.Append('╚').Append('═', padding * 2).Append('═', keyWidth).Append('╩').Append('═', valueWidth)
-            .Append('═', padding * 2).Append("╝▒").AppendLine();
+        sb.Append('╠')
+            .Append('═', padding * 2)
+            .Append('═', keyWidth)
+            .Append('╦')
+            .Append('═', valueWidth)
+            .Append('═', padding * 2)
+            .Append("╣▒")
+            .AppendLine();
+        foreach (var pair in values)
+        {
+            sb.Append('║')
+                .Append(' ', padding)
+                .Append(pair.Key.PadLeft(keyWidth))
+                .Append(' ', padding)
+                .Append('║')
+                .Append(' ', padding)
+                .Append(pair.Value.PadRight(valueWidth))
+                .Append(' ', padding)
+                .Append("║▒")
+                .AppendLine();
+        }
+
+        sb.Append('╚')
+            .Append('═', padding * 2)
+            .Append('═', keyWidth)
+            .Append('╩')
+            .Append('═', valueWidth)
+            .Append('═', padding * 2)
+            .Append("╝▒")
+            .AppendLine();
         sb.Append(' ').Append('▒', headerWidth + 2);
         return sb.ToString();
     }
-
-
 }

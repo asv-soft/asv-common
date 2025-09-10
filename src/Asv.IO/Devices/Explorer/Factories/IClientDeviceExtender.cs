@@ -17,7 +17,11 @@ public interface IClientDeviceExtender
     /// <param name="existMicroservices"></param>
     /// <param name="cancel"></param>
     /// <returns></returns>
-    Task Extend(DeviceId deviceId, ImmutableArray<IMicroserviceClient>.Builder existMicroservices, CancellationToken cancel);
+    Task Extend(
+        DeviceId deviceId,
+        ImmutableArray<IMicroserviceClient>.Builder existMicroservices,
+        CancellationToken cancel
+    );
 }
 
 public interface IClientDeviceExtenderBuilder

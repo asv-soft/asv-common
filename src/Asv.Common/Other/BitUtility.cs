@@ -8,31 +8,275 @@ namespace Asv.Common
     public static class BitUtility
     {
         private static ReadOnlySpan<byte> PopcountTable =>
-        [
-            0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4, 1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
-            1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5, 2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
-            1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5, 2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
-            2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6, 3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
-            1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5, 2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
-            2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6, 3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
-            2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6, 3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
-            3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7, 4, 5, 5, 6, 5, 6, 6, 7, 5, 6, 6, 7, 6, 7, 7, 8
-        ];
+            [
+                0,
+                1,
+                1,
+                2,
+                1,
+                2,
+                2,
+                3,
+                1,
+                2,
+                2,
+                3,
+                2,
+                3,
+                3,
+                4,
+                1,
+                2,
+                2,
+                3,
+                2,
+                3,
+                3,
+                4,
+                2,
+                3,
+                3,
+                4,
+                3,
+                4,
+                4,
+                5,
+                1,
+                2,
+                2,
+                3,
+                2,
+                3,
+                3,
+                4,
+                2,
+                3,
+                3,
+                4,
+                3,
+                4,
+                4,
+                5,
+                2,
+                3,
+                3,
+                4,
+                3,
+                4,
+                4,
+                5,
+                3,
+                4,
+                4,
+                5,
+                4,
+                5,
+                5,
+                6,
+                1,
+                2,
+                2,
+                3,
+                2,
+                3,
+                3,
+                4,
+                2,
+                3,
+                3,
+                4,
+                3,
+                4,
+                4,
+                5,
+                2,
+                3,
+                3,
+                4,
+                3,
+                4,
+                4,
+                5,
+                3,
+                4,
+                4,
+                5,
+                4,
+                5,
+                5,
+                6,
+                2,
+                3,
+                3,
+                4,
+                3,
+                4,
+                4,
+                5,
+                3,
+                4,
+                4,
+                5,
+                4,
+                5,
+                5,
+                6,
+                3,
+                4,
+                4,
+                5,
+                4,
+                5,
+                5,
+                6,
+                4,
+                5,
+                5,
+                6,
+                5,
+                6,
+                6,
+                7,
+                1,
+                2,
+                2,
+                3,
+                2,
+                3,
+                3,
+                4,
+                2,
+                3,
+                3,
+                4,
+                3,
+                4,
+                4,
+                5,
+                2,
+                3,
+                3,
+                4,
+                3,
+                4,
+                4,
+                5,
+                3,
+                4,
+                4,
+                5,
+                4,
+                5,
+                5,
+                6,
+                2,
+                3,
+                3,
+                4,
+                3,
+                4,
+                4,
+                5,
+                3,
+                4,
+                4,
+                5,
+                4,
+                5,
+                5,
+                6,
+                3,
+                4,
+                4,
+                5,
+                4,
+                5,
+                5,
+                6,
+                4,
+                5,
+                5,
+                6,
+                5,
+                6,
+                6,
+                7,
+                2,
+                3,
+                3,
+                4,
+                3,
+                4,
+                4,
+                5,
+                3,
+                4,
+                4,
+                5,
+                4,
+                5,
+                5,
+                6,
+                3,
+                4,
+                4,
+                5,
+                4,
+                5,
+                5,
+                6,
+                4,
+                5,
+                5,
+                6,
+                5,
+                6,
+                6,
+                7,
+                3,
+                4,
+                4,
+                5,
+                4,
+                5,
+                5,
+                6,
+                4,
+                5,
+                5,
+                6,
+                5,
+                6,
+                6,
+                7,
+                4,
+                5,
+                5,
+                6,
+                5,
+                6,
+                6,
+                7,
+                5,
+                6,
+                6,
+                7,
+                6,
+                7,
+                7,
+                8,
+            ];
 
-        private static ReadOnlySpan<byte> BitMask =>
-        [
-            1, 2, 4, 8, 16, 32, 64, 128
-        ];
+        private static ReadOnlySpan<byte> BitMask => [1, 2, 4, 8, 16, 32, 64, 128];
 
-        public static bool GetBit(byte data, int index) =>
-            ((data >> index) & 1) != 0;
+        public static bool GetBit(byte data, int index) => ((data >> index) & 1) != 0;
 
         public static bool GetBit(ReadOnlySpan<byte> data, int index) =>
             (data[index / 8] & BitMask[index % 8]) != 0;
 
         public static void ClearBit(Span<byte> data, int index)
         {
-            data[index / 8] &= (byte) ~BitMask[index % 8];
+            data[index / 8] &= (byte)~BitMask[index % 8];
         }
 
         public static void SetBit(Span<byte> data, int index)
@@ -59,10 +303,12 @@ namespace Asv.Common
         internal static void SetBits(Span<byte> data, int index, int length, bool value)
         {
             if (length == 0)
+            {
                 return;
+            }
 
             int endBitIndex = checked(index + length - 1);
-                        
+
             // Use simpler method if there aren't many values
             if (length < 20)
             {
@@ -72,13 +318,13 @@ namespace Asv.Common
                 }
                 return;
             }
-            
+
             // Otherwise do the work to figure out how to copy whole bytes
             int startByteIndex = index / 8;
             int startBitOffset = index % 8;
             int endByteIndex = endBitIndex / 8;
             int endBitOffset = endBitIndex % 8;
-                        
+
             // If the starting index and ending index are not byte-aligned,
             // we'll need to set bits the slow way. If they are
             // byte-aligned, and for all other bytes in the 'middle', we
@@ -91,12 +337,17 @@ namespace Asv.Common
             {
                 Span<byte> slice = data.Slice(startByteIndex, 1);
                 for (int i = startBitOffset; i <= 7; i++)
+                {
                     SetBit(slice, i, value);
+                }
             }
 
             if (fullByteEndIndex >= fullByteStartIndex)
             {
-                Span<byte> slice = data.Slice(fullByteStartIndex, fullByteEndIndex - fullByteStartIndex + 1);
+                Span<byte> slice = data.Slice(
+                    fullByteStartIndex,
+                    fullByteEndIndex - fullByteStartIndex + 1
+                );
                 byte fill = (byte)(value ? 0xFF : 0x00);
 
                 slice.Fill(fill);
@@ -106,7 +357,9 @@ namespace Asv.Common
             {
                 Span<byte> slice = data.Slice(endByteIndex, 1);
                 for (int i = 0; i <= endBitOffset; i++)
+                {
                     SetBit(slice, i, value);
+                }
             }
         }
 
@@ -123,7 +376,7 @@ namespace Asv.Common
         /// <param name="index">Bit index to start counting from.</param>
         /// <returns>Count of set (one) bits.</returns>
         public static int CountBits(ReadOnlySpan<byte> data, int index) =>
-            CountBits(data, index, data.Length * 8 - index);
+            CountBits(data, index, (data.Length * 8) - index);
 
         /// <summary>
         /// Counts the number of set bits in a span of bytes starting
@@ -145,7 +398,9 @@ namespace Asv.Common
             int endBitOffset = endBitIndex % 8;
 
             if (startBitOffset < 0)
+            {
                 return 0;
+            }
 
             int count = 0;
             if (startByteIndex == endByteIndex)
@@ -153,7 +408,9 @@ namespace Asv.Common
                 // Range starts and ends within the same byte.
                 ReadOnlySpan<byte> slice = data.Slice(startByteIndex, 1);
                 for (int i = startBitOffset; i <= endBitOffset; i++)
+                {
                     count += GetBit(slice, i) ? 1 : 0;
+                }
 
                 return count;
             }
@@ -169,12 +426,17 @@ namespace Asv.Common
             {
                 ReadOnlySpan<byte> slice = data.Slice(startByteIndex, 1);
                 for (int i = startBitOffset; i <= 7; i++)
+                {
                     count += GetBit(slice, i) ? 1 : 0;
+                }
             }
 
             if (fullByteEndIndex >= fullByteStartIndex)
             {
-                ReadOnlySpan<byte> slice = data.Slice(fullByteStartIndex, fullByteEndIndex - fullByteStartIndex + 1);
+                ReadOnlySpan<byte> slice = data.Slice(
+                    fullByteStartIndex,
+                    fullByteEndIndex - fullByteStartIndex + 1
+                );
                 count += CountBits(slice);
             }
 
@@ -182,7 +444,9 @@ namespace Asv.Common
             {
                 ReadOnlySpan<byte> slice = data.Slice(endByteIndex, 1);
                 for (int i = 0; i <= endBitOffset; i++)
+                {
                     count += GetBit(slice, i) ? 1 : 0;
+                }
             }
 
             return count;
@@ -197,7 +461,10 @@ namespace Asv.Common
         {
             int count = 0;
             foreach (byte t in data)
+            {
                 count += PopcountTable[t];
+            }
+
             return count;
         }
 
@@ -206,16 +473,14 @@ namespace Asv.Common
         /// </summary>
         /// <param name="n">Integer to round.</param>
         /// <returns>Integer rounded to the nearest multiple of 64.</returns>
-        public static long RoundUpToMultipleOf64(long n) =>
-            RoundUpToMultiplePowerOfTwo(n, 64);
+        public static long RoundUpToMultipleOf64(long n) => RoundUpToMultiplePowerOfTwo(n, 64);
 
         /// <summary>
         /// Rounds an integer to the nearest multiple of 8.
         /// </summary>
         /// <param name="n">Integer to round.</param>
         /// <returns>Integer rounded to the nearest multiple of 8.</returns>
-        public static long RoundUpToMultipleOf8(long n) =>
-            RoundUpToMultiplePowerOfTwo(n, 8);
+        public static long RoundUpToMultipleOf8(long n) => RoundUpToMultiplePowerOfTwo(n, 8);
 
         /// <summary>
         /// Rounds an integer up to the nearest multiple of factor, where
@@ -243,7 +508,7 @@ namespace Asv.Common
         public static int ByteCount(int n)
         {
             Debug.Assert(n >= 0);
-            return n / 8 + (n % 8 != 0 ? 1 : 0); // ceil(n / 8)
+            return (n / 8) + (n % 8 != 0 ? 1 : 0); // ceil(n / 8)
         }
 
         internal static int ReadInt32(ReadOnlyMemory<byte> value)

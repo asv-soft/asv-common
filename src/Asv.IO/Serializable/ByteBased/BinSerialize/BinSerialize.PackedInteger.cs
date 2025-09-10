@@ -62,12 +62,15 @@ public static partial class BinSerialize
     public static bool ReadPackedInteger(ref SequenceReader<byte> reader, ref int value)
     {
         var zigzagged = 0U;
-        if (TryReadPackedUnsignedInteger(ref reader, ref zigzagged) == false) return false;
+        if (TryReadPackedUnsignedInteger(ref reader, ref zigzagged) == false)
+        {
+            return false;
+        }
+
         value = FromZigZagEncoding(zigzagged);
         return true;
-
     }
-        
+
     /// <summary>
     /// Check how many bytes it will take to write the given value as a packed integer.
     /// </summary>
@@ -87,6 +90,7 @@ public static partial class BinSerialize
         var zigzagged = ToZigZagEncoding(value);
         WritePackedUnsignedInteger(stream, zigzagged);
     }
+
     /// <summary>
     /// Pack a integer and write it.
     /// Uses a variable-length encoding scheme.
@@ -110,7 +114,7 @@ public static partial class BinSerialize
         var zigzagged = ToZigZagEncoding(value);
         WritePackedUnsignedInteger(ref span, zigzagged);
     }
-        
+
     public static void WritePackedInteger(ref Memory<byte> span, int value)
     {
         var zigzagged = ToZigZagEncoding(value);

@@ -15,10 +15,8 @@ public static class WellKnownTags
         src.Tags[PortIdTag] = id;
     }
 
-
     public static void SetPortName(this ISupportTag src, string name)
     {
         src.Tags[PortNameTag] = name;
     }
-
 }

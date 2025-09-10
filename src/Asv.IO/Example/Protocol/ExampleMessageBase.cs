@@ -1,6 +1,7 @@
 using System;
 
 namespace Asv.IO;
+
 /// <summary>
 /// Example message base class
 /// [SYNC:1][SENDER_ID:1][MSG_ID:1][PAYLOAD_SIZE:1][PAYLOAD:SIZE][CRC:1, RANGE=1..^1]
@@ -25,9 +26,9 @@ public abstract class ExampleMessageBase : IProtocolMessage<byte>, IVisitable
         }
         return crc;
     }
-    
+
     public void Deserialize(ref ReadOnlySpan<byte> buffer)
-    { 
+    {
         if (buffer[0] != ExampleParser.SyncByte)
         {
             throw new ProtocolDeserializeMessageException(Protocol, this, "Invalid sync byte");
@@ -35,7 +36,11 @@ public abstract class ExampleMessageBase : IProtocolMessage<byte>, IVisitable
         SenderId = buffer[1];
         if (buffer[2] != Id)
         {
-            throw new ProtocolDeserializeMessageException(Protocol, this, $"Invalid message id: want {Id}, got {buffer[1]}");
+            throw new ProtocolDeserializeMessageException(
+                Protocol,
+                this,
+                $"Invalid message id: want {Id}, got {buffer[1]}"
+            );
         }
         if (buffer.Length < 5)
         {
@@ -44,14 +49,18 @@ public abstract class ExampleMessageBase : IProtocolMessage<byte>, IVisitable
         var calcCrc = CalcCrc(buffer[1..^1]);
         if (calcCrc != buffer[^1])
         {
-            throw new ProtocolDeserializeMessageException(Protocol, this, $"Invalid crc: want {calcCrc}, got {buffer[^1]}");
+            throw new ProtocolDeserializeMessageException(
+                Protocol,
+                this,
+                $"Invalid crc: want {calcCrc}, got {buffer[^1]}"
+            );
         }
         var size = buffer[3];
         var internalBuffer = buffer[4..^1];
         InternalDeserialize(ref internalBuffer);
         buffer = buffer[(5 + size)..];
     }
-    
+
     public void Serialize(ref Span<byte> buffer)
     {
         var origin = buffer;
@@ -67,21 +76,27 @@ public abstract class ExampleMessageBase : IProtocolMessage<byte>, IVisitable
         var forCrc = origin[1..(size + 4)];
         BinSerialize.WriteByte(ref buffer, CalcCrc(forCrc));
     }
+
     protected abstract void InternalDeserialize(ref ReadOnlySpan<byte> buffer);
     protected abstract void InternalSerialize(ref Span<byte> buffer);
     protected abstract int InternalGetByteSize();
-    
-    public virtual int GetByteSize() => 5 /*SYNC + SENDER_ID + ID + SIZE + CRC*/ + InternalGetByteSize();
-    
+
+    public virtual int GetByteSize() =>
+        5 /*SYNC + SENDER_ID + ID + SIZE + CRC*/
+        + InternalGetByteSize();
+
     public ProtocolInfo Protocol => ExampleProtocol.Info;
-    
+
     public abstract string Name { get; }
+
     public string GetIdAsString() => Id.ToString();
+
     public abstract byte Id { get; }
+
     [Newtonsoft.Json.JsonIgnore]
     [System.Text.Json.Serialization.JsonIgnore]
     public ref ProtocolTags Tags => ref _tags;
     public byte SenderId { get; set; }
-    
+
     public abstract void Accept(IVisitor visitor);
 }

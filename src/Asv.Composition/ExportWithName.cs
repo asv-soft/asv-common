@@ -4,13 +4,16 @@ namespace Asv.Composition;
 
 [MetadataAttribute]
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
-public class ExportWithNameAttribute : ExportAttribute,INameMetadata
+public class ExportWithNameAttribute : ExportAttribute, INameMetadata
 {
     public ExportWithNameAttribute(Type type, string name, int priority)
-        :base(type)
+        : base(type)
     {
         if (string.IsNullOrWhiteSpace(name))
+        {
             ArgumentException.ThrowIfNullOrWhiteSpace(nameof(name));
+        }
+
         Name = name;
         Priority = priority;
     }
@@ -21,13 +24,16 @@ public class ExportWithNameAttribute : ExportAttribute,INameMetadata
 
 [MetadataAttribute]
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
-public class ExportWithNameAsContractAttribute : ExportAttribute,INameMetadata
+public class ExportWithNameAsContractAttribute : ExportAttribute, INameMetadata
 {
     public ExportWithNameAsContractAttribute(Type type, string name, int priority)
-        :base(name,type)
+        : base(name, type)
     {
         if (string.IsNullOrWhiteSpace(name))
+        {
             ArgumentException.ThrowIfNullOrWhiteSpace(nameof(name));
+        }
+
         Name = name;
         Priority = priority;
     }

@@ -15,8 +15,12 @@ public abstract class AsyncDisposableOnce : IDisposable, IAsyncDisposable
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     protected void ThrowIfDisposed()
     {
-        if (_isDisposed == 0) return;
-        throw new ObjectDisposedException(this?.GetType().FullName); 
+        if (_isDisposed == 0)
+        {
+            return;
+        }
+
+        throw new ObjectDisposedException(this?.GetType().FullName);
     }
 
     public void Dispose()
@@ -30,10 +34,7 @@ public abstract class AsyncDisposableOnce : IDisposable, IAsyncDisposable
         GC.SuppressFinalize(this);
     }
 
-    protected virtual void Dispose(bool disposing)
-    {
-        
-    }
+    protected virtual void Dispose(bool disposing) { }
 
     protected virtual ValueTask DisposeAsyncCore()
     {
@@ -50,6 +51,6 @@ public abstract class AsyncDisposableOnce : IDisposable, IAsyncDisposable
         await DisposeAsyncCore();
         GC.SuppressFinalize(this);
     }
-        
+
     #endregion
 }

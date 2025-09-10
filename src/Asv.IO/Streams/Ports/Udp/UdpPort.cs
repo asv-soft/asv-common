@@ -19,15 +19,25 @@ namespace Asv.IO
         private readonly Subject<IPEndPoint> _onReceiveNewClientSubject;
         private Thread? _receiveThread;
 
-        public UdpPort(UdpPortConfig config, TimeProvider? timeProvider = null, ILogger? logger = null)
+        public UdpPort(
+            UdpPortConfig config,
+            TimeProvider? timeProvider = null,
+            ILogger? logger = null
+        )
             : base(timeProvider, logger)
         {
             _config = config;
-            _receiveEndPoint = new IPEndPoint(IPAddress.Parse(config.LocalHost ?? throw new InvalidOperationException()), config.LocalPort);
-                
+            _receiveEndPoint = new IPEndPoint(
+                IPAddress.Parse(config.LocalHost ?? throw new InvalidOperationException()),
+                config.LocalPort
+            );
+
             if (!string.IsNullOrWhiteSpace(config.RemoteHost) && config.RemotePort != 0)
             {
-                _sendEndPoint = new IPEndPoint(IPAddress.Parse(config.RemoteHost), config.RemotePort);
+                _sendEndPoint = new IPEndPoint(
+                    IPAddress.Parse(config.RemoteHost),
+                    config.RemotePort
+                );
             }
 
             _onReceiveNewClientSubject = new Subject<IPEndPoint>();
@@ -38,15 +48,27 @@ namespace Asv.IO
         public override PortType PortType => PortType.Udp;
 
         public override string PortLogName => _config.ToString();
-        protected override async Task InternalSend(ReadOnlyMemory<byte> data, CancellationToken cancel)
+
+        protected override async Task InternalSend(
+            ReadOnlyMemory<byte> data,
+            CancellationToken cancel
+        )
         {
-            if (_udp?.Client == null || _udp.Client.Connected == false) return;
+            if (_udp?.Client == null || _udp.Client.Connected == false)
+            {
+                return;
+            }
+
             await _udp.SendAsync(data, cancel);
         }
 
         protected override Task InternalSend(byte[] data, int count, CancellationToken cancel)
         {
-            if (_udp?.Client == null || _udp.Client.Connected == false) return Task.CompletedTask;
+            if (_udp?.Client == null || _udp.Client.Connected == false)
+            {
+                return Task.CompletedTask;
+            }
+
             return _udp.SendAsync(data, count);
         }
 
@@ -66,7 +88,6 @@ namespace Asv.IO
             _stop = new CancellationTokenSource();
             _receiveThread = new Thread(ListenAsync) { IsBackground = true };
             _receiveThread.Start();
-            
         }
 
         private void ListenAsync(object? obj)
@@ -77,7 +98,11 @@ namespace Asv.IO
                 while (_stop != null || _stop?.IsCancellationRequested == false)
                 {
                     var udp = _udp;
-                    if (udp == null) break;
+                    if (udp == null)
+                    {
+                        break;
+                    }
+
                     var bytes = udp.Receive(ref anyEp);
                     if (_lastReceiveEndpoint == null && udp.Client.Connected == false)
                     {
@@ -90,7 +115,11 @@ namespace Asv.IO
             }
             catch (SocketException ex)
             {
-                if (ex.SocketErrorCode == SocketError.Interrupted) return;
+                if (ex.SocketErrorCode == SocketError.Interrupted)
+                {
+                    return;
+                }
+
                 InternalOnError(ex);
             }
             catch (Exception e)
@@ -103,7 +132,7 @@ namespace Asv.IO
         {
             return $"UDP {_config.LocalHost}:{_config.LocalPort}\n Remote IP:{_config.RemoteHost}:{_config.RemotePort}";
         }
-        
+
         #region Dispose
 
         protected override void Dispose(bool disposing)
@@ -144,9 +173,13 @@ namespace Asv.IO
             static async ValueTask CastAndDispose(IDisposable resource)
             {
                 if (resource is IAsyncDisposable resourceAsyncDisposable)
+                {
                     await resourceAsyncDisposable.DisposeAsync();
+                }
                 else
+                {
                     resource.Dispose();
+                }
             }
         }
 

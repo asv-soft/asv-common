@@ -6,19 +6,20 @@ using Microsoft.Extensions.Logging;
 
 namespace Asv.Cfg
 {
-    public class ZipJsonVersionedFile: ZipJsonConfiguration,IVersionedFile
+    public class ZipJsonVersionedFile : ZipJsonConfiguration, IVersionedFile
     {
         private readonly SemVersion _version;
         private const string InfoKey = "FileInfo";
 
         public ZipJsonVersionedFile(
             Stream stream,
-            SemVersion lastVersion, 
-            string fileType, 
+            SemVersion lastVersion,
+            string fileType,
             bool createIfNotExist,
-            bool leaveOpen = false, 
-            ILogger? logger = null )
-            :base(stream, leaveOpen,logger)
+            bool leaveOpen = false,
+            ILogger? logger = null
+        )
+            : base(stream, leaveOpen, logger)
         {
             var info = Get(InfoKey, new Lazy<ZipJsonFileInfo>(ZipJsonFileInfo.Empty));
             string type;
@@ -26,7 +27,10 @@ namespace Asv.Cfg
             {
                 if (createIfNotExist)
                 {
-                    Set(InfoKey, new ZipJsonFileInfo(fileVersion: lastVersion.ToString(), fileType: fileType));
+                    Set(
+                        InfoKey,
+                        new ZipJsonFileInfo(fileVersion: lastVersion.ToString(), fileType: fileType)
+                    );
                     _version = lastVersion;
                     type = fileType;
                 }
@@ -39,19 +43,25 @@ namespace Asv.Cfg
             {
                 if (SemVersion.TryParse(info.FileVersion, out var version) == false)
                 {
-                    throw new ConfigurationException($"Can't read file version. (Want 'X.X.X', got '{info.FileVersion}')");
+                    throw new ConfigurationException(
+                        $"Can't read file version. (Want 'X.X.X', got '{info.FileVersion}')"
+                    );
                 }
 
                 _version = version ?? throw new InvalidOperationException();
                 if (_version > lastVersion)
                 {
-                    throw new ConfigurationException($"Unsupported file version. (Want '{lastVersion}', got '{_version}')");
+                    throw new ConfigurationException(
+                        $"Unsupported file version. (Want '{lastVersion}', got '{_version}')"
+                    );
                 }
                 type = info.FileType;
             }
             if (type.Equals(fileType, StringComparison.CurrentCultureIgnoreCase) == false)
             {
-                throw new ConfigurationException($"Unsupported file type. (Want '{fileType}', got '{type}')");
+                throw new ConfigurationException(
+                    $"Unsupported file type. (Want '{fileType}', got '{type}')"
+                );
             }
         }
 

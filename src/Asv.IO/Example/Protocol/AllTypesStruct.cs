@@ -8,298 +8,552 @@ public record AllTypesStruct : IVisitable
         .Name(nameof(BoolValue))
         .DataType(BoolType.Default)
         .Title("Title  message  bool field")
-        .Description("Description message bool field").Build();
-    public bool BoolValue;
-    
+        .Description("Description message bool field")
+        .Build();
+    private bool _boolValue;
+    public bool BoolValue
+    {
+        get => _boolValue;
+        set => _boolValue = value;
+    }
+
     public static readonly Field ByteField = new Field.Builder()
         .Name(nameof(ByteValue))
         .DataType(UInt8Type.Default)
         .Title("Title  message  byte field")
-        .Description("Description message byte field").Build();
-    public byte ByteValue;
-    
+        .Description("Description message byte field")
+        .Build();
+    private byte _byteValue;
+
+    public byte ByteValue
+    {
+        get => _byteValue;
+        set => _byteValue = value;
+    }
+
     public static readonly Field SByteField = new Field.Builder()
         .Name(nameof(SByteValue))
         .DataType(Int8Type.Default)
         .Title("Title  message  sbyte field")
-        .Description("Description message sbyte field").Build();
-    public sbyte SByteValue;
-    
+        .Description("Description message sbyte field")
+        .Build();
+    private sbyte _sByteValue;
+
+    public sbyte SByteValue
+    {
+        get => _sByteValue;
+        set => _sByteValue = value;
+    }
+
     public static readonly Field UShortField = new Field.Builder()
         .Name(nameof(UShortValue))
         .DataType(UInt16Type.Default)
         .Title("Title  message  ushort field")
-        .Description("Description message ushort field").Build();
-    public short ShortValue;
-    
+        .Description("Description message ushort field")
+        .Build();
+
+    private short _shortValue;
+
+    public short ShortValue
+    {
+        get => _shortValue;
+        set => _shortValue = value;
+    }
+
     public static readonly Field ShortField = new Field.Builder()
         .Name(nameof(ShortValue))
         .DataType(Int16Type.Default)
         .Title("Title  message  short field")
-        .Description("Description message short field").Build();
-    public ushort UShortValue;
-    
+        .Description("Description message short field")
+        .Build();
+    private ushort _uShortValue;
+
+    public ushort UShortValue
+    {
+        get => _uShortValue;
+        set => _uShortValue = value;
+    }
+
     public static readonly Field IntField = new Field.Builder()
         .Name(nameof(IntValue))
         .DataType(Int32Type.Default)
         .Title("Title  message  int field")
-        .Description("Description message int field").Build();
-    public int IntValue;
-    
+        .Description("Description message int field")
+        .Build();
+    private int _intValue;
+
+    public int IntValue
+    {
+        get => _intValue;
+        set => _intValue = value;
+    }
+
     public static readonly Field UIntField = new Field.Builder()
         .Name(nameof(UIntValue))
         .DataType(UInt32Type.Default)
         .Title("Title  message  uint field")
-        .Description("Description message uint field").Build();
-    public uint UIntValue;
-    
+        .Description("Description message uint field")
+        .Build();
+    private uint _uIntValue;
+
+    public uint UIntValue
+    {
+        get => _uIntValue;
+        set => _uIntValue = value;
+    }
+
     public static readonly Field LongField = new Field.Builder()
         .Name(nameof(LongValue))
         .DataType(Int64Type.Default)
         .Title("Title  message  long field")
-        .Description("Description message long field").Build();
-    public long LongValue;
-    
+        .Description("Description message long field")
+        .Build();
+    private long _longValue;
+
+    public long LongValue
+    {
+        get => _longValue;
+        set => _longValue = value;
+    }
+
     public static readonly Field ULongField = new Field.Builder()
         .Name(nameof(ULongValue))
         .DataType(UInt64Type.Default)
         .Title("Title  message  ulong field")
-        .Description("Description message ulong field").Build();
-    public ulong ULongValue;
-    
+        .Description("Description message ulong field")
+        .Build();
+    private ulong _uLongValue;
+
+    public ulong ULongValue
+    {
+        get => _uLongValue;
+        set => _uLongValue = value;
+    }
+
     public static readonly Field FloatField = new Field.Builder()
         .Name(nameof(FloatValue))
         .DataType(FloatType.Default)
         .Title("Title  message  float field")
-        .Description("Description message float field").Build();
-    public float FloatValue;
-    
+        .Description("Description message float field")
+        .Build();
+    private float _floatValue;
+
+    public float FloatValue
+    {
+        get => _floatValue;
+        set => _floatValue = value;
+    }
+
     public static readonly Field DoubleField = new Field.Builder()
         .Name(nameof(DoubleValue))
         .DataType(DoubleType.Default)
         .Title("Title  message  double field")
-        .Description("Description message double field").Build();
-    public double DoubleValue;
-    
+        .Description("Description message double field")
+        .Build();
+    private double _doubleValue;
+
+    public double DoubleValue
+    {
+        get => _doubleValue;
+        set => _doubleValue = value;
+    }
+
     public static readonly Field StringField = new Field.Builder()
         .Name(nameof(StringValue))
         .DataType(StringType.Ascii)
         .Title("Title  message  string field")
-        .Description("Description message string field").Build();
-    
-    public string StringValue = String.Empty;
-    
+        .Description("Description message string field")
+        .Build();
+    private string _stringValue = string.Empty;
+
+    public string StringValue
+    {
+        get => _stringValue;
+        set => _stringValue = value;
+    }
+
     public static readonly Field DateTimeField = new Field.Builder()
         .Name(nameof(DateTimeValue))
         .DataType(DateTimeType.Default)
         .Title("Title  message  datetime field")
-        .Description("Description message datetime field").Build();
-    public DateTime DateTimeValue;
-    
+        .Description("Description message datetime field")
+        .Build();
+    private DateTime _dateTimeValue;
+
+    public DateTime DateTimeValue
+    {
+        get => _dateTimeValue;
+        set => _dateTimeValue = value;
+    }
+
     public static readonly Field TimeSpanField = new Field.Builder()
         .Name(nameof(TimeSpanValue))
         .DataType(TimeSpanType.Default)
         .Title("Title  message  timespan field")
-        .Description("Description message timespan field").Build();
-    public TimeSpan TimeSpanValue;
-    
+        .Description("Description message timespan field")
+        .Build();
+    private TimeSpan _timeSpanValue;
+
+    public TimeSpan TimeSpanValue
+    {
+        get => _timeSpanValue;
+        set => _timeSpanValue = value;
+    }
+
     public static readonly Field TimeOnlyField = new Field.Builder()
         .Name(nameof(TimeOnlyValue))
         .DataType(TimeOnlyType.Default)
         .Title("Title  message  timeonly field")
-        .Description("Description message timeonly field").Build();
-    public TimeOnly TimeOnlyValue;
-    
+        .Description("Description message timeonly field")
+        .Build();
+    private TimeOnly _timeOnlyValue;
+
+    public TimeOnly TimeOnlyValue
+    {
+        get => _timeOnlyValue;
+        set => _timeOnlyValue = value;
+    }
+
     public static readonly Field DateOnlyField = new Field.Builder()
         .Name(nameof(DateOnlyValue))
         .DataType(DateOnlyType.Default)
         .Title("Title  message  dateonly field")
-        .Description("Description message dateonly field").Build();
-    public DateOnly DateOnlyValue;
-    
+        .Description("Description message dateonly field")
+        .Build();
+    private DateOnly _dateOnlyValue;
+
+    public DateOnly DateOnlyValue
+    {
+        get => _dateOnlyValue;
+        set => _dateOnlyValue = value;
+    }
+
     public static readonly Field UInt8ArrayField = new Field.Builder()
         .Name(nameof(UInt8ArrayValue))
-        .DataType(new ArrayType(UInt8Type.Default,10))
+        .DataType(new ArrayType(UInt8Type.Default, 10))
         .Title("Title  message  byte array field")
-        .Description("Description message byte array field").Build();
-    public byte[] UInt8ArrayValue = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-    
+        .Description("Description message byte array field")
+        .Build();
+    private byte[] _uInt8ArrayValue = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
+    public byte[] UInt8ArrayValue
+    {
+        get => _uInt8ArrayValue;
+        set => _uInt8ArrayValue = value;
+    }
+
     public static readonly Field StructField = new Field.Builder()
         .Name(nameof(StructValue))
         .DataType(SubObject.StructType)
         .Title("Title  message  subobject field")
-        .Description("Description message subobject field").Build();
-    public SubObject StructValue = new();
-    
-    
+        .Description("Description message subobject field")
+        .Build();
+    private SubObject _structValue = new();
+
+    public SubObject StructValue
+    {
+        get => _structValue;
+        set => _structValue = value;
+    }
+
     public static readonly Field BoolOptionalField = new Field.Builder()
         .Name(nameof(BoolOptionalValue))
         .DataType(BoolOptionalType.Default)
         .Title("Title  message  bool nullable field")
-        .Description("Description message bool nullable field").Build();
-    public bool? BoolOptionalValue;
-    
+        .Description("Description message bool nullable field")
+        .Build();
+    private bool? _boolOptionalValue;
+
+    public bool? BoolOptionalValue
+    {
+        get => _boolOptionalValue;
+        set => _boolOptionalValue = value;
+    }
+
     public static readonly Field UInt8OptionalField = new Field.Builder()
         .Name(nameof(UInt8OptionalValue))
         .DataType(UInt8OptionalType.Default)
         .Title("Title  message  byte nullable field")
-        .Description("Description message byte nullable field").Build();
-    public byte? UInt8OptionalValue;
-    
+        .Description("Description message byte nullable field")
+        .Build();
+    private byte? _uInt8OptionalValue;
+
+    public byte? UInt8OptionalValue
+    {
+        get => _uInt8OptionalValue;
+        set => _uInt8OptionalValue = value;
+    }
+
     public static readonly Field Int8OptionalField = new Field.Builder()
         .Name(nameof(Int8OptionalValue))
         .DataType(Int8OptionalType.Default)
         .Title("Title  message  sbyte nullable field")
-        .Description("Description message sbyte nullable field").Build();
-    public sbyte? Int8OptionalValue;
-    
+        .Description("Description message sbyte nullable field")
+        .Build();
+    private sbyte? _int8OptionalValue;
+
+    public sbyte? Int8OptionalValue
+    {
+        get => _int8OptionalValue;
+        set => _int8OptionalValue = value;
+    }
+
     public static readonly Field Uint16OptionalField = new Field.Builder()
         .Name(nameof(Uint16OptionalValue))
         .DataType(UInt16OptionalType.Default)
         .Title("Title  message  ushort nullable field")
-        .Description("Description message ushort nullable field").Build();
-    public ushort? Uint16OptionalValue;
-   
+        .Description("Description message ushort nullable field")
+        .Build();
+    private ushort? _uint16OptionalValue;
+
+    public ushort? Uint16OptionalValue
+    {
+        get => _uint16OptionalValue;
+        set => _uint16OptionalValue = value;
+    }
+
     public static readonly Field Int16OptionalField = new Field.Builder()
         .Name(nameof(Int16OptionalValue))
         .DataType(Int16OptionalType.Default)
         .Title("Title  message  short nullable field")
-        .Description("Description message short nullable field").Build();
-    public short? Int16OptionalValue;
-    
+        .Description("Description message short nullable field")
+        .Build();
+    private short? _int16OptionalValue;
+
+    public short? Int16OptionalValue
+    {
+        get => _int16OptionalValue;
+        set => _int16OptionalValue = value;
+    }
+
     public static readonly Field Int32OptionalField = new Field.Builder()
         .Name(nameof(Int32OptionalValue))
         .DataType(Int32OptionalType.Default)
         .Title("Title  message  int nullable field")
-        .Description("Description message int nullable field").Build();
-    public int? Int32OptionalValue;
-    
+        .Description("Description message int nullable field")
+        .Build();
+    private int? _int32OptionalValue;
+
+    public int? Int32OptionalValue
+    {
+        get => _int32OptionalValue;
+        set => _int32OptionalValue = value;
+    }
+
     public static readonly Field UInt32OptionalField = new Field.Builder()
         .Name(nameof(UInt32OptionalValue))
         .DataType(UInt32OptionalType.Default)
         .Title("Title  message  uint nullable field")
-        .Description("Description message uint nullable field").Build();
-    public uint? UInt32OptionalValue;
-    
+        .Description("Description message uint nullable field")
+        .Build();
+    private uint? _uInt32OptionalValue;
+
+    public uint? UInt32OptionalValue
+    {
+        get => _uInt32OptionalValue;
+        set => _uInt32OptionalValue = value;
+    }
+
     public static readonly Field Int64OptionalField = new Field.Builder()
         .Name(nameof(Int64OptionalValue))
         .DataType(Int64OptionalType.Default)
         .Title("Title  message  long nullable field")
-        .Description("Description message long nullable field").Build();
-    public long? Int64OptionalValue;
-    
+        .Description("Description message long nullable field")
+        .Build();
+    private long? _int64OptionalValue;
+
+    public long? Int64OptionalValue
+    {
+        get => _int64OptionalValue;
+        set => _int64OptionalValue = value;
+    }
+
     public static readonly Field UInt64OptionalField = new Field.Builder()
         .Name(nameof(UInt64OptionalValue))
         .DataType(UInt64OptionalType.Default)
         .Title("Title  message  ulong nullable field")
-        .Description("Description message ulong nullable field").Build();
-    public ulong? UInt64OptionalValue;
-    
+        .Description("Description message ulong nullable field")
+        .Build();
+    private ulong? _uInt64OptionalValue;
+
+    public ulong? UInt64OptionalValue
+    {
+        get => _uInt64OptionalValue;
+        set => _uInt64OptionalValue = value;
+    }
+
     public static readonly Field FloatOptionalField = new Field.Builder()
         .Name(nameof(FloatOptionalValue))
         .DataType(FloatOptionalType.Default)
         .Title("Title  message  float nullable field")
-        .Description("Description message float nullable field").Build();
-    public float? FloatOptionalValue;
-    
+        .Description("Description message float nullable field")
+        .Build();
+    private float? _floatOptionalValue;
+
+    public float? FloatOptionalValue
+    {
+        get => _floatOptionalValue;
+        set => _floatOptionalValue = value;
+    }
+
     public static readonly Field DoubleOptionalField = new Field.Builder()
         .Name(nameof(DoubleOptionalValue))
         .DataType(DoubleOptionalType.Default)
         .Title("Title  message  double nullable field")
-        .Description("Description message double nullable field").Build();
-    public double? DoubleOptionalValue;
-    
+        .Description("Description message double nullable field")
+        .Build();
+    private double? _doubleOptionalValue;
+
+    public double? DoubleOptionalValue
+    {
+        get => _doubleOptionalValue;
+        set => _doubleOptionalValue = value;
+    }
+
     public static readonly Field StringOptionalField = new Field.Builder()
         .Name(nameof(StringOptionalValue))
         .DataType(StringOptionalType.Ascii)
         .Title("Title  message  string nullable field")
-        .Description("Description message string nullable field").Build();
-    public string? StringOptionalValue;
-    
+        .Description("Description message string nullable field")
+        .Build();
+    private string? _stringOptionalValue;
+
+    public string? StringOptionalValue
+    {
+        get => _stringOptionalValue;
+        set => _stringOptionalValue = value;
+    }
+
     public static readonly Field DateTimeOptionalField = new Field.Builder()
         .Name(nameof(DateTimeOptionalValue))
         .DataType(DateTimeOptionalType.Default)
         .Title("Title  message  datetime nullable field")
-        .Description("Description message datetime nullable field").Build();
-    public DateTime? DateTimeOptionalValue;
-    
+        .Description("Description message datetime nullable field")
+        .Build();
+    private DateTime? _dateTimeOptionalValue;
+
+    public DateTime? DateTimeOptionalValue
+    {
+        get => _dateTimeOptionalValue;
+        set => _dateTimeOptionalValue = value;
+    }
+
     public static readonly Field TimeSpanOptionalField = new Field.Builder()
         .Name(nameof(TimeSpanOptionalValue))
         .DataType(TimeSpanOptionalType.Default)
         .Title("Title  message  timespan nullable field")
-        .Description("Description message timespan nullable field").Build();
-    public TimeSpan? TimeSpanOptionalValue;
-    
+        .Description("Description message timespan nullable field")
+        .Build();
+    private TimeSpan? _timeSpanOptionalValue;
+
+    public TimeSpan? TimeSpanOptionalValue
+    {
+        get => _timeSpanOptionalValue;
+        set => _timeSpanOptionalValue = value;
+    }
+
     public static readonly Field TimeOnlyOptionalField = new Field.Builder()
         .Name(nameof(TimeOnlyOptionalValue))
         .DataType(TimeOnlyOptionalType.Default)
         .Title("Title  message  timeonly nullable field")
-        .Description("Description message timeonly nullable field").Build();
-    public TimeOnly? TimeOnlyOptionalValue;
-    
+        .Description("Description message timeonly nullable field")
+        .Build();
+    private TimeOnly? _timeOnlyOptionalValue;
+
+    public TimeOnly? TimeOnlyOptionalValue
+    {
+        get => _timeOnlyOptionalValue;
+        set => _timeOnlyOptionalValue = value;
+    }
+
     public static readonly Field DateOnlyOptionalField = new Field.Builder()
         .Name(nameof(DateOnlyOptionalValue))
         .DataType(DateOnlyOptionalType.Default)
         .Title("Title  message  dateonly nullable field")
-        .Description("Description message dateonly nullable field").Build();
-    public DateOnly? DateOnlyOptionalValue;
-    
+        .Description("Description message dateonly nullable field")
+        .Build();
+    private DateOnly? _dateOnlyOptionalValue;
+
+    public DateOnly? DateOnlyOptionalValue
+    {
+        get => _dateOnlyOptionalValue;
+        set => _dateOnlyOptionalValue = value;
+    }
+
     public static readonly Field UInt8OptionalArrayField = new Field.Builder()
         .Name(nameof(UInt8ArrayValue))
-        .DataType(new ArrayType(UInt8OptionalType.Default,5))
+        .DataType(new ArrayType(UInt8OptionalType.Default, 5))
         .Title("Title  message  byte array field")
-        .Description("Description message byte array field").Build();
-    public readonly byte?[] UInt8OptionalArrayValue = [null, 1, 2, 3, null];
+        .Description("Description message byte array field")
+        .Build();
+    private byte?[] _uInt8OptionalArrayValue = [null, 1, 2, 3, null];
 
-    
+    public byte?[] UInt8OptionalArrayValue
+    {
+        get => _uInt8OptionalArrayValue;
+        set => _uInt8OptionalArrayValue = value;
+    }
+
     public static readonly Field StructOptionalField = new Field.Builder()
         .Name(nameof(StructOptionalValue))
         .DataType(new OptionalStructType(SubObject.StructType))
         .Title("Title  message  struct field")
-        .Description("Description message struct field").Build();
-    public SubObject? StructOptionalValue;
-    
-    
-    
+        .Description("Description message struct field")
+        .Build();
+    private SubObject? _structOptionalValue;
+    public SubObject? StructOptionalValue
+    {
+        get => _structOptionalValue;
+        set => _structOptionalValue = value;
+    }
+
     public void Accept(IVisitor visitor)
     {
-        BoolType.Accept(visitor, BoolField,  ref BoolValue);
-        UInt8Type.Accept(visitor, ByteField,  ref ByteValue);
-        Int8Type.Accept(visitor, SByteField, ref SByteValue);
-        UInt16Type.Accept(visitor, UShortField,  ref UShortValue);
-        Int16Type.Accept(visitor, ShortField,  ref ShortValue);
-        Int32Type.Accept(visitor, IntField,  ref IntValue);
-        UInt32Type.Accept(visitor, UIntField,  ref UIntValue);
-        Int64Type.Accept(visitor, LongField,  ref LongValue);
-        UInt64Type.Accept(visitor, ULongField,  ref ULongValue);
-        FloatType.Accept(visitor, FloatField,  ref FloatValue);
-        DoubleType.Accept(visitor, DoubleField,  ref DoubleValue);
-        StringType.Accept(visitor,StringField, ref StringValue);
-        DateTimeType.Accept(visitor, DateTimeField, ref DateTimeValue);
-        TimeSpanType.Accept(visitor, TimeSpanField, ref TimeSpanValue);
-        TimeOnlyType.Accept(visitor, TimeOnlyField, ref TimeOnlyValue);
-        DateOnlyType.Accept(visitor, DateOnlyField, ref DateOnlyValue);
-        ArrayType.Accept(visitor, UInt8ArrayField, (index, v, f, t) => UInt8Type.Accept(v,f,t, ref UInt8ArrayValue[index]));
-        StructType.Accept(visitor, StructField, StructValue);
-        
-        BoolOptionalType.Accept(visitor, BoolOptionalField, ref BoolOptionalValue);
-        UInt8OptionalType.Accept(visitor, UInt8OptionalField,  ref UInt8OptionalValue);
-        Int8OptionalType.Accept(visitor, Int8OptionalField, ref Int8OptionalValue);
-        UInt16OptionalType.Accept(visitor, Uint16OptionalField,  ref Uint16OptionalValue);
-        Int16OptionalType.Accept(visitor, Int16OptionalField, ref Int16OptionalValue);
-        Int32OptionalType.Accept(visitor, Int32OptionalField, ref Int32OptionalValue);
-        UInt32OptionalType.Accept(visitor, UInt32OptionalField, ref UInt32OptionalValue);
-        Int64OptionalType.Accept(visitor, Int64OptionalField, ref Int64OptionalValue);
-        UInt64OptionalType.Accept(visitor, UInt64OptionalField, ref UInt64OptionalValue);
-        FloatOptionalType.Accept(visitor, FloatOptionalField, ref FloatOptionalValue);
-        DoubleOptionalType.Accept(visitor, DoubleOptionalField, ref DoubleOptionalValue);
-        StringOptionalType.Accept(visitor, StringOptionalField, ref StringOptionalValue);
-        DateTimeOptionalType.Accept(visitor, DateTimeOptionalField, ref DateTimeOptionalValue);
-        TimeSpanOptionalType.Accept(visitor, TimeSpanOptionalField, ref TimeSpanOptionalValue);
-        TimeOnlyOptionalType.Accept(visitor, TimeOnlyOptionalField, ref TimeOnlyOptionalValue);
-        DateOnlyOptionalType.Accept(visitor, DateOnlyOptionalField, ref DateOnlyOptionalValue);
-        ArrayType.Accept(visitor, UInt8OptionalArrayField, (index, v, f, t) => UInt8OptionalType.Accept(v,f,t, ref UInt8OptionalArrayValue[index]));
-        OptionalStructType.Accept(visitor, StructOptionalField, ref StructOptionalValue);
+        BoolType.Accept(visitor, BoolField, ref _boolValue);
+        UInt8Type.Accept(visitor, ByteField, ref _byteValue);
+        Int8Type.Accept(visitor, SByteField, ref _sByteValue);
+        UInt16Type.Accept(visitor, UShortField, ref _uShortValue);
+        Int16Type.Accept(visitor, ShortField, ref _shortValue);
+        Int32Type.Accept(visitor, IntField, ref _intValue);
+        UInt32Type.Accept(visitor, UIntField, ref _uIntValue);
+        Int64Type.Accept(visitor, LongField, ref _longValue);
+        UInt64Type.Accept(visitor, ULongField, ref _uLongValue);
+        FloatType.Accept(visitor, FloatField, ref _floatValue);
+        DoubleType.Accept(visitor, DoubleField, ref _doubleValue);
+        StringType.Accept(visitor, StringField, ref _stringValue);
+        DateTimeType.Accept(visitor, DateTimeField, ref _dateTimeValue);
+        TimeSpanType.Accept(visitor, TimeSpanField, ref _timeSpanValue);
+        TimeOnlyType.Accept(visitor, TimeOnlyField, ref _timeOnlyValue);
+        DateOnlyType.Accept(visitor, DateOnlyField, ref _dateOnlyValue);
+        ArrayType.Accept(
+            visitor,
+            UInt8ArrayField,
+            (index, v, f, t) => UInt8Type.Accept(v, f, t, ref _uInt8ArrayValue[index])
+        );
+        StructType.Accept(visitor, StructField, _structValue);
 
+        BoolOptionalType.Accept(visitor, BoolOptionalField, ref _boolOptionalValue);
+        UInt8OptionalType.Accept(visitor, UInt8OptionalField, ref _uInt8OptionalValue);
+        Int8OptionalType.Accept(visitor, Int8OptionalField, ref _int8OptionalValue);
+        UInt16OptionalType.Accept(visitor, Uint16OptionalField, ref _uint16OptionalValue);
+        Int16OptionalType.Accept(visitor, Int16OptionalField, ref _int16OptionalValue);
+        Int32OptionalType.Accept(visitor, Int32OptionalField, ref _int32OptionalValue);
+        UInt32OptionalType.Accept(visitor, UInt32OptionalField, ref _uInt32OptionalValue);
+        Int64OptionalType.Accept(visitor, Int64OptionalField, ref _int64OptionalValue);
+        UInt64OptionalType.Accept(visitor, UInt64OptionalField, ref _uInt64OptionalValue);
+        FloatOptionalType.Accept(visitor, FloatOptionalField, ref _floatOptionalValue);
+        DoubleOptionalType.Accept(visitor, DoubleOptionalField, ref _doubleOptionalValue);
+        StringOptionalType.Accept(visitor, StringOptionalField, ref _stringOptionalValue);
+        DateTimeOptionalType.Accept(visitor, DateTimeOptionalField, ref _dateTimeOptionalValue);
+        TimeSpanOptionalType.Accept(visitor, TimeSpanOptionalField, ref _timeSpanOptionalValue);
+        TimeOnlyOptionalType.Accept(visitor, TimeOnlyOptionalField, ref _timeOnlyOptionalValue);
+        DateOnlyOptionalType.Accept(visitor, DateOnlyOptionalField, ref _dateOnlyOptionalValue);
+        ArrayType.Accept(
+            visitor,
+            UInt8OptionalArrayField,
+            (index, v, f, t) =>
+                UInt8OptionalType.Accept(v, f, t, ref _uInt8OptionalArrayValue[index])
+        );
+        OptionalStructType.Accept(visitor, StructOptionalField, ref _structOptionalValue);
     }
 }

@@ -9,9 +9,11 @@ using ZLogger;
 
 namespace Asv.IO;
 
-public class TcpServerProtocolPortConfig(Uri connectionString) : ProtocolPortConfig(connectionString)
+public class TcpServerProtocolPortConfig(Uri connectionString)
+    : ProtocolPortConfig(connectionString)
 {
-    public static TcpServerProtocolPortConfig CreateDefault() => new(new Uri($"{TcpServerProtocolPort.Scheme}://127.0.0.1:7341"));
+    public static TcpServerProtocolPortConfig CreateDefault() =>
+        new(new Uri($"{TcpServerProtocolPort.Scheme}://127.0.0.1:7341"));
 
     public const string MaxConnectionKey = "maxConnection";
     public int? MaxConnection
@@ -19,7 +21,10 @@ public class TcpServerProtocolPortConfig(Uri connectionString) : ProtocolPortCon
         get
         {
             var maxConnection = Query.Get(MaxConnectionKey);
-            if (string.IsNullOrWhiteSpace(maxConnection) || !int.TryParse(maxConnection, out var port))
+            if (
+                string.IsNullOrWhiteSpace(maxConnection)
+                || !int.TryParse(maxConnection, out var port)
+            )
             {
                 return null;
             }
@@ -41,7 +46,7 @@ public class TcpServerProtocolPortConfig(Uri connectionString) : ProtocolPortCon
     public override object Clone() => new TcpServerProtocolPortConfig(AsUri());
 }
 
-public class TcpServerProtocolPort:ProtocolPort<TcpServerProtocolPortConfig>
+public class TcpServerProtocolPort : ProtocolPort<TcpServerProtocolPortConfig>
 {
     public const string Scheme = "tcps";
     public static PortTypeInfo Info => new(Scheme, "Tcp server port");
@@ -53,10 +58,17 @@ public class TcpServerProtocolPort:ProtocolPort<TcpServerProtocolPortConfig>
     private readonly IPEndPoint _bindEndpoint;
 
     public TcpServerProtocolPort(
-        TcpServerProtocolPortConfig config, 
+        TcpServerProtocolPortConfig config,
         IProtocolContext context,
-        IStatisticHandler statistic) 
-        : base(ProtocolHelper.NormalizeId($"{Scheme}_{config.Host}_{config.Port}"), config, context, false, statistic)
+        IStatisticHandler statistic
+    )
+        : base(
+            ProtocolHelper.NormalizeId($"{Scheme}_{config.Host}_{config.Port}"),
+            config,
+            context,
+            false,
+            statistic
+        )
     {
         ArgumentNullException.ThrowIfNull(config);
         ArgumentNullException.ThrowIfNull(context);
@@ -68,12 +80,11 @@ public class TcpServerProtocolPort:ProtocolPort<TcpServerProtocolPortConfig>
 
     public override PortTypeInfo TypeInfo => Info;
 
-
     protected override void InternalSafeEnable(CancellationToken token)
     {
         _socket?.Close();
         _socket?.Dispose();
-        
+
         _socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
         _socket.Bind(_bindEndpoint);
         if (_config.MaxConnection == null)
@@ -84,12 +95,19 @@ public class TcpServerProtocolPort:ProtocolPort<TcpServerProtocolPortConfig>
         {
             _socket.Listen(_config.MaxConnection.Value);
         }
-        Task.Factory.StartNew(AcceptNewEndpoint,token,token, TaskCreationOptions.LongRunning | TaskCreationOptions.DenyChildAttach,TaskScheduler.Default);
+        Task.Factory.StartNew(
+            AcceptNewEndpoint,
+            token,
+            token,
+            TaskCreationOptions.LongRunning | TaskCreationOptions.DenyChildAttach,
+            TaskScheduler.Default
+        );
     }
+
     private void AcceptNewEndpoint(object? state)
     {
         // ReSharper disable once NullableWarningSuppressionIsUsed
-        var cancel = (CancellationToken) state!;
+        var cancel = (CancellationToken)state!;
         try
         {
             while (_socket != null && cancel is { IsCancellationRequested: false })
@@ -97,10 +115,16 @@ public class TcpServerProtocolPort:ProtocolPort<TcpServerProtocolPortConfig>
                 try
                 {
                     var socket = _socket.Accept();
-                    InternalAddEndpoint(new TcpServerSocketProtocolEndpoint( 
-                        socket,
-                        ProtocolHelper.NormalizeId($"{Id}_{_socket.RemoteEndPoint}"),
-                        _config,InternalCreateParsers(),_context,StatisticHandler));
+                    InternalAddEndpoint(
+                        new TcpServerSocketProtocolEndpoint(
+                            socket,
+                            ProtocolHelper.NormalizeId($"{Id}_{_socket.RemoteEndPoint}"),
+                            _config,
+                            InternalCreateParsers(),
+                            _context,
+                            StatisticHandler
+                        )
+                    );
                 }
                 catch (SocketException ex) when (ex.SocketErrorCode == SocketError.Interrupted)
                 {
@@ -124,10 +148,14 @@ public class TcpServerProtocolPort:ProtocolPort<TcpServerProtocolPortConfig>
         }
         catch (Exception ex)
         {
-            _logger.ZLogDebug(ex, $"Unhandled exception on {nameof(AcceptNewEndpoint)}:{ex.Message}");
+            _logger.ZLogDebug(
+                ex,
+                $"Unhandled exception on {nameof(AcceptNewEndpoint)}:{ex.Message}"
+            );
             InternalRisePortErrorAndReconnect(ex);
         }
     }
+
     protected override void InternalSafeDisable()
     {
         if (_socket != null)
@@ -168,21 +196,26 @@ public class TcpServerProtocolPort:ProtocolPort<TcpServerProtocolPortConfig>
     }
 
     #endregion
-
 }
 
 public static class TcpServerProtocolPortHelper
 {
-    public static IProtocolPort AddTcpServerPort(this IProtocolRouter src, Action<TcpServerProtocolPortConfig> edit)
+    public static IProtocolPort AddTcpServerPort(
+        this IProtocolRouter src,
+        Action<TcpServerProtocolPortConfig> edit
+    )
     {
         var cfg = TcpServerProtocolPortConfig.CreateDefault();
         edit(cfg);
         return src.AddPort(cfg.AsUri());
     }
+
     public static void RegisterTcpServerPort(this IProtocolPortBuilder builder)
     {
-        builder.Register(TcpServerProtocolPort.Info, 
-            (cs, context,stat) 
-                => new TcpServerProtocolPort(new TcpServerProtocolPortConfig(cs), context,stat));
+        builder.Register(
+            TcpServerProtocolPort.Info,
+            (cs, context, stat) =>
+                new TcpServerProtocolPort(new TcpServerProtocolPortConfig(cs), context, stat)
+        );
     }
 }

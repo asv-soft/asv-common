@@ -3,7 +3,6 @@ using System.Diagnostics;
 
 namespace Asv.Common
 {
-
     // Source: https://github.com/csharpvitamins/CSharpVitamins.ShortGuid
     [DebuggerDisplay("{Value}")]
     public struct ShortGuid
@@ -14,10 +13,11 @@ namespace Asv.Common
         /// </summary>
         public static readonly ShortGuid Empty = new ShortGuid(Guid.Empty);
 
-        readonly Guid underlyingGuid;
-        readonly string encodedString;
+        readonly Guid _underlyingGuid;
+        readonly string _encodedString;
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="ShortGuid"/> struct.
         /// Creates a new instance with the given URL-safe Base64 encoded string.
         /// <para>See also <seealso cref="ShortGuid.TryParse(string, out ShortGuid)"/> which will try to coerce the
         /// the value from URL-safe Base64 or normal Guid string.</para>
@@ -25,35 +25,35 @@ namespace Asv.Common
         /// <param name="value">A 22 character URL-safe Base64 encoded string to decode.</param>
         public ShortGuid(string value)
         {
-            encodedString = value;
-            underlyingGuid = Decode(value);
+            _encodedString = value;
+            _underlyingGuid = Decode(value);
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="ShortGuid"/> struct.
         /// Creates a new instance with the given <see cref="System.Guid"/>.
         /// </summary>
         /// <param name="guid">The <see cref="System.Guid"/> to encode.</param>
         public ShortGuid(Guid guid)
         {
-            encodedString = Encode(guid);
-            underlyingGuid = guid;
+            _encodedString = Encode(guid);
+            _underlyingGuid = guid;
         }
 
         /// <summary>
         /// Gets the underlying <see cref="System.Guid"/> for the encoded ShortGuid.
         /// </summary>
-        public Guid Guid => underlyingGuid;
+        public Guid Guid => _underlyingGuid;
 
         /// <summary>
         /// Gets the encoded string value of the <see cref="Guid"/> as a URL-safe Base64 string.
         /// </summary>
-        public string Value => encodedString;
+        public string Value => _encodedString;
 
         /// <summary>
         /// Returns the encoded URL-safe Base64 string.
         /// </summary>
-        /// <returns></returns>
-        public override string ToString() => encodedString;
+        public override string ToString() => _encodedString;
 
         /// <summary>
         /// Returns a value indicating whether this instance and a specified object represent the same type and value.
@@ -65,23 +65,27 @@ namespace Asv.Common
         {
             if (obj is ShortGuid shortGuid)
             {
-                return underlyingGuid.Equals(shortGuid.underlyingGuid);
+                return _underlyingGuid.Equals(shortGuid._underlyingGuid);
             }
 
             if (obj is Guid guid)
             {
-                return underlyingGuid.Equals(guid);
+                return _underlyingGuid.Equals(guid);
             }
 
             if (obj is string str)
             {
                 // Try a ShortGuid string.
                 if (TryDecode(str, out guid))
-                    return underlyingGuid.Equals(guid);
+                {
+                    return _underlyingGuid.Equals(guid);
+                }
 
                 // Try a guid string.
                 if (Guid.TryParse(str, out guid))
-                    return underlyingGuid.Equals(guid);
+                {
+                    return _underlyingGuid.Equals(guid);
+                }
             }
 
             return false;
@@ -91,7 +95,7 @@ namespace Asv.Common
         /// Returns the hash code for the underlying <see cref="System.Guid"/>.
         /// </summary>
         /// <returns></returns>
-        public override int GetHashCode() => underlyingGuid.GetHashCode();
+        public override int GetHashCode() => _underlyingGuid.GetHashCode();
 
         /// <summary>
         /// Initialises a new instance of a ShortGuid using <see cref="Guid.NewGuid()"/>.
@@ -123,9 +127,7 @@ namespace Asv.Common
         {
             var encoded = Convert.ToBase64String(guid.ToByteArray());
 
-            encoded = encoded
-                .Replace("/", "_")
-                .Replace("+", "-");
+            encoded = encoded.Replace("/", "_").Replace("+", "-");
 
             return encoded.Substring(0, 22);
         }
@@ -152,9 +154,7 @@ namespace Asv.Common
                 );
             }
 
-            var base64 = value
-                .Replace("_", "/")
-                .Replace("-", "+") + "==";
+            var base64 = value.Replace("_", "/").Replace("-", "+") + "==";
 
             var blob = Convert.FromBase64String(base64);
             var guid = new Guid(blob);
@@ -163,8 +163,8 @@ namespace Asv.Common
             if (sanityCheck != value)
             {
                 throw new FormatException(
-                    $"Invalid strict ShortGuid encoded string. The string '{value}' is valid URL-safe Base64, " +
-                    $"but failed a round-trip test expecting '{sanityCheck}'."
+                    $"Invalid strict ShortGuid encoded string. The string '{value}' is valid URL-safe Base64, "
+                        + $"but failed a round-trip test expecting '{sanityCheck}'."
                 );
             }
 
@@ -295,11 +295,15 @@ namespace Asv.Common
         {
             // Try a ShortGuid string.
             if (ShortGuid.TryDecode(value, out guid))
+            {
                 return true;
+            }
 
             // Try a Guid string.
             if (Guid.TryParse(value, out guid))
+            {
                 return true;
+            }
 
             guid = Guid.Empty;
             return false;
@@ -312,7 +316,7 @@ namespace Asv.Common
         /// </summary>
         public static bool operator ==(ShortGuid x, ShortGuid y)
         {
-            return x.underlyingGuid == y.underlyingGuid;
+            return x._underlyingGuid == y._underlyingGuid;
         }
 
         /// <summary>
@@ -320,7 +324,7 @@ namespace Asv.Common
         /// </summary>
         public static bool operator ==(ShortGuid x, Guid y)
         {
-            return x.underlyingGuid == y;
+            return x._underlyingGuid == y;
         }
 
         /// <summary>
@@ -346,12 +350,12 @@ namespace Asv.Common
         /// <summary>
         /// Implicitly converts the ShortGuid to its string equivalent.
         /// </summary>
-        public static implicit operator string(ShortGuid shortGuid) => shortGuid.encodedString;
+        public static implicit operator string(ShortGuid shortGuid) => shortGuid._encodedString;
 
         /// <summary>
         /// Implicitly converts the ShortGuid to its <see cref="System.Guid"/> equivalent.
         /// </summary>
-        public static implicit operator Guid(ShortGuid shortGuid) => shortGuid.underlyingGuid;
+        public static implicit operator Guid(ShortGuid shortGuid) => shortGuid._underlyingGuid;
 
         /// <summary>
         /// Implicitly converts the string to a ShortGuid.
@@ -359,13 +363,19 @@ namespace Asv.Common
         public static implicit operator ShortGuid(string value)
         {
             if (string.IsNullOrEmpty(value))
+            {
                 return ShortGuid.Empty;
+            }
 
             if (TryParse(value, out ShortGuid shortGuid))
+            {
                 return shortGuid;
+            }
 
-            throw new FormatException("ShortGuid should contain 22 Base64 characters or "
-                                      + "Guid should contain 32 digits with 4 dashes (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx).");
+            throw new FormatException(
+                "ShortGuid should contain 22 Base64 characters or "
+                    + "Guid should contain 32 digits with 4 dashes (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)."
+            );
         }
 
         /// <summary>
@@ -374,7 +384,9 @@ namespace Asv.Common
         public static implicit operator ShortGuid(Guid guid)
         {
             if (guid == Guid.Empty)
+            {
                 return ShortGuid.Empty;
+            }
 
             return new ShortGuid(guid);
         }
@@ -382,4 +394,3 @@ namespace Asv.Common
         #endregion
     }
 }
-

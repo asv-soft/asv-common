@@ -37,24 +37,31 @@ public class Statistic : IStatisticHandler
     public uint BadCrcError => _badCrc;
     public uint DeserializeError => _deserializeError;
     public uint MessageReadNotAllData => _messageReadNotAllData;
-    
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void AddRxBytes(int size) => Interlocked.Add(ref _rxBytes, (uint)size);
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void AddTxBytes(int size) => Interlocked.Add(ref _txBytes, (uint)size);
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void IncrementRxMessage() => Interlocked.Increment(ref _rxMessages);
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void IncrementTxMessage() => Interlocked.Increment(ref _txMessages);
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void IncrementRxError() => Interlocked.Increment(ref _rxError);
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void IncrementTxError() => Interlocked.Increment(ref _txError);
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void AddParserBytes(int size) => Interlocked.Add(ref _parsedBytes, (uint)size);
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void IncrementParsedMessage() => Interlocked.Increment(ref _parsedMessages);
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void IncrementParserUnknownMessageError() => Interlocked.Increment(ref _unknownMessages);
 
@@ -65,18 +72,17 @@ public class Statistic : IStatisticHandler
     public void IncrementParserDeserializeError() => Interlocked.Increment(ref _deserializeError);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void IncrementParserReadNotAllDataError() => Interlocked.Increment(ref _messageReadNotAllData);
+    public void IncrementParserReadNotAllDataError() =>
+        Interlocked.Increment(ref _messageReadNotAllData);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void IncrementParserPublishError() => Interlocked.Increment(ref _messagePublishError);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void IncrementDropRxMessage() => Interlocked.Increment(ref _dropedRxMessages);
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void IncrementDropTxMessage() => Interlocked.Increment(ref _dropedTxMessages);
-
-    
 }
 
 public class InheritedStatistic(IStatisticHandler parent) : IStatisticHandler
@@ -112,7 +118,7 @@ public class InheritedStatistic(IStatisticHandler parent) : IStatisticHandler
     public uint BadCrcError => _badCrc;
     public uint DeserializeError => _deserializeError;
     public uint MessageReadNotAllData => _messageReadNotAllData;
-    
+
     public void AddRxBytes(int size)
     {
         Interlocked.Add(ref _rxBytes, (uint)size);
@@ -205,11 +211,11 @@ public class InheritedStatistic(IStatisticHandler parent) : IStatisticHandler
 
     public override string ToString()
     {
-        return $"RxBytes: {_rxBytes}, TxBytes: {_txBytes}, RxMessages: {_rxMessages}, TxMessages: {_txMessages}, " +
-               $"RxError: {_rxError}, TxError: {_txError}, ParsedBytes: {_parsedBytes}, ParsedMessages: {_parsedMessages}, " +
-               $"UnknownMessages: {_unknownMessages}, MessagePublishError: {_messagePublishError}, BadCrcError: {_badCrc}, " +
-               $"DeserializeError: {_deserializeError}, MessageReadNotAllData: {_messageReadNotAllData}, " +
-               $"DroppedRxMessages: {_dropedRxMessages}, DroppedTxMessages: {_dropedTxMessages}";
+        return $"RxBytes: {_rxBytes}, TxBytes: {_txBytes}, RxMessages: {_rxMessages}, TxMessages: {_txMessages}, "
+            + $"RxError: {_rxError}, TxError: {_txError}, ParsedBytes: {_parsedBytes}, ParsedMessages: {_parsedMessages}, "
+            + $"UnknownMessages: {_unknownMessages}, MessagePublishError: {_messagePublishError}, BadCrcError: {_badCrc}, "
+            + $"DeserializeError: {_deserializeError}, MessageReadNotAllData: {_messageReadNotAllData}, "
+            + $"DroppedRxMessages: {_dropedRxMessages}, DroppedTxMessages: {_dropedTxMessages}";
     }
 }
 
@@ -221,10 +227,11 @@ public enum ParserStatistic
     BadCrcError,
     DeserializeError,
     ReadNotAllDataError,
-    PublishError
+    PublishError,
 }
 
-public struct ParserStatisticKey(ProtocolInfo info, ParserStatistic statistic) : IEquatable<ParserStatisticKey>
+public struct ParserStatisticKey(ProtocolInfo info, ParserStatistic statistic)
+    : IEquatable<ParserStatisticKey>
 {
     public ProtocolInfo Info { get; } = info;
     public ParserStatistic Statistic { get; } = statistic;

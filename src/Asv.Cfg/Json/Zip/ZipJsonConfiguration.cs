@@ -13,7 +13,7 @@ using ZLogger;
 
 namespace Asv.Cfg
 {
-    public class ZipJsonConfiguration:ConfigurationBase
+    public class ZipJsonConfiguration : ConfigurationBase
     {
         private readonly ZipArchive _archive;
         private readonly Lock _sync = new();
@@ -21,12 +21,7 @@ namespace Asv.Cfg
         private readonly ILogger _logger;
         private const string FixedFileExt = ".json";
 
-        public ZipJsonConfiguration
-        (
-            Stream stream,
-            bool leaveOpen = false, 
-            ILogger? logger = null
-        )
+        public ZipJsonConfiguration(Stream stream, bool leaveOpen = false, ILogger? logger = null)
         {
             ArgumentNullException.ThrowIfNull(stream);
             _logger = logger ?? NullLogger.Instance;
@@ -36,8 +31,12 @@ namespace Asv.Cfg
 
         public override string ToString()
         {
-            if (IsDisposed) return string.Empty;
-            using(_sync.EnterScope())
+            if (IsDisposed)
+            {
+                return string.Empty;
+            }
+
+            using (_sync.EnterScope())
             {
                 return $"{nameof(ZipJsonConfiguration)}:{_archive}";
             }
@@ -50,11 +49,13 @@ namespace Asv.Cfg
 
         protected override IEnumerable<string> InternalSafeGetAvailableParts()
         {
-            using(_sync.EnterScope())
+            using (_sync.EnterScope())
             {
-                return [
-                    .._archive.Entries.Where(x => Path.GetExtension(x.Name) == FixedFileExt)
-                        .Select(x => Path.GetFileNameWithoutExtension(x.Name))
+                return
+                [
+                    .. _archive
+                        .Entries.Where(x => Path.GetExtension(x.Name) == FixedFileExt)
+                        .Select(x => Path.GetFileNameWithoutExtension(x.Name)),
                 ];
             }
         }
@@ -62,24 +63,33 @@ namespace Asv.Cfg
         protected override bool InternalSafeExist(string key)
         {
             var fileName = GetFilePath(key);
-            using(_sync.EnterScope())
+            using (_sync.EnterScope())
             {
-                return _archive.Entries.Any(x => ConfigurationMixin.DefaultKeyComparer.Equals(x.Name, fileName));
+                return _archive.Entries.Any(x =>
+                    ConfigurationMixin.DefaultKeyComparer.Equals(x.Name, fileName)
+                );
             }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private string GetFilePath(string key) => $"{key}{FixedFileExt}";
 
-        protected override TPocoType InternalSafeGet<TPocoType>(string key, Lazy<TPocoType> defaultValue)
+        protected override TPocoType InternalSafeGet<TPocoType>(
+            string key,
+            Lazy<TPocoType> defaultValue
+        )
         {
             var fileName = GetFilePath(key);
-            using(_sync.EnterScope())
+            using (_sync.EnterScope())
             {
-                var entry = _archive.Entries.FirstOrDefault(x => ConfigurationMixin.DefaultKeyComparer.Equals(x.Name, fileName));
+                var entry = _archive.Entries.FirstOrDefault(x =>
+                    ConfigurationMixin.DefaultKeyComparer.Equals(x.Name, fileName)
+                );
                 if (entry == null)
                 {
-                    _logger.ZLogTrace($"Configuration key [{key}] not found. Create new with default value");
+                    _logger.ZLogTrace(
+                        $"Configuration key [{key}] not found. Create new with default value"
+                    );
                     var inst = defaultValue.Value;
                     var stream2 = _archive.CreateEntry(fileName);
                     using var file = stream2.Open();
@@ -88,19 +98,19 @@ namespace Asv.Cfg
                     _serializer.Serialize(wrt, inst);
                     return inst;
                 }
-                
+
                 using var stream = entry.Open();
                 using var streamReader = new StreamReader(stream);
                 using var rdr = new JsonTextReader(streamReader);
-                return _serializer.Deserialize<TPocoType>(rdr) ?? throw new InvalidOperationException();
+                return _serializer.Deserialize<TPocoType>(rdr)
+                    ?? throw new InvalidOperationException();
             }
         }
-
 
         protected override void InternalSafeSave<TPocoType>(string key, TPocoType value)
         {
             var fileName = GetFilePath(key);
-            using(_sync.EnterScope())
+            using (_sync.EnterScope())
             {
                 _archive.GetEntry(fileName)?.Delete();
                 var entry = _archive.CreateEntry(fileName);
@@ -111,11 +121,10 @@ namespace Asv.Cfg
             }
         }
 
-
         protected override void InternalSafeRemove(string key)
         {
             var fileName = GetFilePath(key);
-            using(_sync.EnterScope())
+            using (_sync.EnterScope())
             {
                 _logger.ZLogTrace($"Remove configuration key [{key}]");
                 var entry = _archive.GetEntry(fileName);
@@ -129,7 +138,7 @@ namespace Asv.Cfg
         {
             if (disposing)
             {
-                using(_sync.EnterScope())
+                using (_sync.EnterScope())
                 {
                     _archive.Dispose();
                 }
@@ -140,7 +149,7 @@ namespace Asv.Cfg
 
         protected override async ValueTask DisposeAsyncCore()
         {
-            using(_sync.EnterScope())
+            using (_sync.EnterScope())
             {
                 _archive.Dispose();
             }

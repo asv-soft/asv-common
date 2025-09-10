@@ -3,14 +3,23 @@ using System.Collections.Generic;
 
 namespace Asv.IO;
 
-public sealed class ListType(IFieldType elementType, int minSize = 0, int maxSize = 100) : FieldType, INestedWithSameType
+public sealed class ListType(IFieldType elementType, int minSize = 0, int maxSize = 100)
+    : FieldType,
+        INestedWithSameType
 {
     public const string TypeId = "list";
     public override string Name => TypeId;
     public IFieldType ElementType => elementType;
     public int MaxSize => maxSize;
     public int MinSize => minSize;
-    public static void Accept<TElement>(Asv.IO.IVisitor visitor, Field field, IFieldType type, IList<TElement> list, ElementDelegate callback) 
+
+    public static void Accept<TElement>(
+        Asv.IO.IVisitor visitor,
+        Field field,
+        IFieldType type,
+        IList<TElement> list,
+        ElementDelegate callback
+    )
         where TElement : new()
     {
         if (visitor is IVisitor accept)
@@ -38,17 +47,20 @@ public sealed class ListType(IFieldType elementType, int minSize = 0, int maxSiz
         }
     }
 
-    public static void Accept<TElement>(Asv.IO.IVisitor visitor, Field field, IList<TElement> list,
-        ElementDelegate callback) where TElement : new()
+    public static void Accept<TElement>(
+        Asv.IO.IVisitor visitor,
+        Field field,
+        IList<TElement> list,
+        ElementDelegate callback
+    )
+        where TElement : new()
     {
         Accept(visitor, field, field.DataType, list, callback);
     }
 
-    public interface IVisitor: Asv.IO.IVisitor
+    public interface IVisitor : Asv.IO.IVisitor
     {
         void BeginList(Field field, ListType type, ref uint size);
         void EndList();
     }
-    
 }
-

@@ -3,11 +3,12 @@ using System.Buffers;
 
 namespace Asv.IO;
 
-public class SimpleBinarySerialize(IBufferWriter<byte> buffer, bool skipUnknown) : FullVisitorBase(skipUnknown)
+public class SimpleBinarySerialize(IBufferWriter<byte> buffer, bool skipUnknown)
+    : FullVisitorBase(skipUnknown)
 {
     public override void Visit(Field field, UInt8Type type, ref byte value)
     {
-       BinSerialize.WriteByte(buffer, value);
+        BinSerialize.WriteByte(buffer, value);
     }
 
     public override void Visit(Field field, HalfFloatType type, ref Half value)
@@ -36,7 +37,7 @@ public class SimpleBinarySerialize(IBufferWriter<byte> buffer, bool skipUnknown)
         BinSerialize.WriteInt(buffer, value);
     }
 
-    public override void Visit(Field field, UInt32Type type,ref uint value)
+    public override void Visit(Field field, UInt32Type type, ref uint value)
     {
         BinSerialize.WriteUInt(buffer, value);
     }
@@ -361,10 +362,15 @@ public class SimpleBinarySerialize(IBufferWriter<byte> buffer, bool skipUnknown)
         // fixed size struct => skip
     }
 
-    public override void BeginOptionalStruct(Field field, OptionalStructType type, bool isPresent, out bool createNew)
+    public override void BeginOptionalStruct(
+        Field field,
+        OptionalStructType type,
+        bool isPresent,
+        out bool createNew
+    )
     {
         BinSerialize.WriteBool(buffer, isPresent);
-        createNew = false; 
+        createNew = false;
     }
 
     public override void EndOptionalStruct(bool isPresent)
@@ -377,8 +383,5 @@ public class SimpleBinarySerialize(IBufferWriter<byte> buffer, bool skipUnknown)
         BinSerialize.WriteUInt(buffer, size);
     }
 
-    public override void EndList()
-    {
-        
-    }
+    public override void EndList() { }
 }

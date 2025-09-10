@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace Asv.Common;
 
-public abstract class AsyncDisposableWithCancel: AsyncDisposableOnce
+public abstract class AsyncDisposableWithCancel : AsyncDisposableOnce
 {
     private CancellationTokenSource? _cancel;
     private readonly object _sync2 = new();
@@ -33,11 +33,11 @@ public abstract class AsyncDisposableWithCancel: AsyncDisposableOnce
     {
         if (disposing)
         {
-            if ( _cancel != null)
+            if (_cancel != null)
             {
                 if (_cancel.Token.CanBeCanceled)
                 {
-                    _cancel.Cancel(false);    
+                    _cancel.Cancel(false);
                 }
                 _cancel.Dispose();
             }

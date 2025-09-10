@@ -15,10 +15,10 @@ public static class DigitHelper
         {
             0 => 1,
             < 0 => CountDecDigits((uint)-value) + 1,
-            _ => CountDecDigits((uint)value)
+            _ => CountDecDigits((uint)value),
         };
     }
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int CountDecDigits(this uint value)
     {
@@ -56,15 +56,18 @@ public static class DigitHelper
             41949672960,
             41949672960,
             42949672960,
-            42949672960
+            42949672960,
         ];
-        Debug.Assert(table.Length == 32, "Every result of uint.Log2(value) needs a long entry in the table.");
+        Debug.Assert(
+            table.Length == 32,
+            "Every result of uint.Log2(value) needs a long entry in the table."
+        );
 
         // TODO: Replace with table[uint.Log2(value)] once https://github.com/dotnet/runtime/issues/79257 is fixed
         var tableValue = Unsafe.Add(ref MemoryMarshal.GetReference(table), uint.Log2(value));
         return (int)((value + tableValue) >> 32);
     }
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int CountHexDigits(this int value)
     {
@@ -74,9 +77,10 @@ public static class DigitHelper
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int CountHexDigits(this uint value)
     {
-        
         if (value == 0)
+        {
             return 1;
+        }
 
         var bits = BitOperations.Log2(value) + 1;
         return (bits + 3) / 4;

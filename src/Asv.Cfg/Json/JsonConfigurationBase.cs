@@ -21,27 +21,42 @@ public abstract class JsonConfigurationBase : ConfigurationBase
     private readonly IDisposable _saveSubscribe;
     private readonly bool _deferredFlush;
 
-    protected JsonConfigurationBase(Func<Stream> loadCallback, TimeSpan? flushToFileDelayMs = null, bool sortKeysInFile = false, TimeProvider? timeProvider = null)
+    protected JsonConfigurationBase(
+        Func<Stream> loadCallback,
+        TimeSpan? flushToFileDelayMs = null,
+        bool sortKeysInFile = false,
+        TimeProvider? timeProvider = null
+    )
     {
         _sortKeysInFile = sortKeysInFile;
         _serializer = JsonHelper.CreateDefaultJsonSerializer();
         _serializer.Converters.Add(new StringEnumConverter());
-        
+
         timeProvider ??= TimeProvider.System;
         _deferredFlush = flushToFileDelayMs != null;
-        _saveSubscribe = flushToFileDelayMs == null
-            ? _onNeedToSave.Subscribe(InternalSaveChanges)
-            : _onNeedToSave.ThrottleLast(flushToFileDelayMs.Value,timeProvider).Subscribe(InternalSaveChanges, x=> InternalSaveChanges(Unit.Default));
-        
+        _saveSubscribe =
+            flushToFileDelayMs == null
+                ? _onNeedToSave.Subscribe(InternalSaveChanges)
+                : _onNeedToSave
+                    .ThrottleLast(flushToFileDelayMs.Value, timeProvider)
+                    .Subscribe(InternalSaveChanges, x => InternalSaveChanges(Unit.Default));
+
         using var stream = loadCallback();
         using var reader = new StreamReader(stream);
         _values = new ConcurrentDictionary<string, JToken>(ConfigurationMixin.DefaultKeyComparer);
         _serializer.Populate(reader, _values);
     }
+
     protected int Count => _values.Count;
+
     protected override IEnumerable<string> InternalSafeGetAvailableParts() => _values.Keys;
-    protected override bool InternalSafeExist(string key)=> _values.ContainsKey(key);
-    protected override TPocoType InternalSafeGet<TPocoType>(string key, Lazy<TPocoType> defaultValue)
+
+    protected override bool InternalSafeExist(string key) => _values.ContainsKey(key);
+
+    protected override TPocoType InternalSafeGet<TPocoType>(
+        string key,
+        Lazy<TPocoType> defaultValue
+    )
     {
         if (_values.TryGetValue(key, out var value))
         {
@@ -49,7 +64,7 @@ public abstract class JsonConfigurationBase : ConfigurationBase
         }
 
         var inst = defaultValue.Value;
-        Set(key,inst);
+        Set(key, inst);
         return inst;
     }
 
@@ -60,11 +75,12 @@ public abstract class JsonConfigurationBase : ConfigurationBase
         using var jsonTextWriter = new JsonTextWriter(writer);
         jsonTextWriter.Formatting = _serializer.Formatting;
         _serializer.Serialize(jsonTextWriter, value, typeof(TPocoType));
-        writer.Flush();          
+        writer.Flush();
         stream.Position = 0;
         using var jsonReader = new JsonTextReader(new StreamReader(stream));
-        var jValue = _serializer.Deserialize<JToken>(jsonReader) ?? throw new InvalidOperationException();
-        _values.AddOrUpdate(key,jValue , (_, _) => jValue);
+        var jValue =
+            _serializer.Deserialize<JToken>(jsonReader) ?? throw new InvalidOperationException();
+        _values.AddOrUpdate(key, jValue, (_, _) => jValue);
         _onNeedToSave.OnNext(Unit.Default);
     }
 
@@ -75,10 +91,10 @@ public abstract class JsonConfigurationBase : ConfigurationBase
             _onNeedToSave.OnNext(Unit.Default);
         }
     }
-    
+
     private void InternalSaveChanges(Unit unit)
     {
-        using(_sync.EnterScope())
+        using (_sync.EnterScope())
         {
             try
             {
@@ -96,8 +112,12 @@ public abstract class JsonConfigurationBase : ConfigurationBase
             catch (Exception e)
             {
                 var ex = InternalPublishError(
-                    new ConfigurationException($"Error to serialize configuration and save it", e));
-                if (!_deferredFlush) throw ex;
+                    new ConfigurationException($"Error to serialize configuration and save it", e)
+                );
+                if (!_deferredFlush)
+                {
+                    throw ex;
+                }
             }
             finally
             {
@@ -105,6 +125,7 @@ public abstract class JsonConfigurationBase : ConfigurationBase
             }
         }
     }
+
     protected abstract void EndSaveChanges();
     protected abstract Stream BeginSaveChanges();
 
@@ -131,9 +152,13 @@ public abstract class JsonConfigurationBase : ConfigurationBase
         static async ValueTask CastAndDispose(IDisposable resource)
         {
             if (resource is IAsyncDisposable resourceAsyncDisposable)
+            {
                 await resourceAsyncDisposable.DisposeAsync();
+            }
             else
+            {
                 resource.Dispose();
+            }
         }
     }
 }

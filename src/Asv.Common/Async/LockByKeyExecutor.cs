@@ -7,23 +7,25 @@ namespace Asv.Common
     /// <summary>
     /// This class implement lock by TKey behavior (for example lock by string)
     /// </summary>
-    public class LockByKeyExecutor<TKey> 
+    public class LockByKeyExecutor<TKey>
         where TKey : notnull
     {
         private readonly ConcurrentDictionary<TKey, object> _lockDictionary;
 
         public LockByKeyExecutor(IEqualityComparer<TKey> comparer)
         {
-            if (comparer == null) throw new ArgumentNullException(nameof(comparer));
+            ArgumentNullException.ThrowIfNull(comparer);
+
             _lockDictionary = new ConcurrentDictionary<TKey, object>(comparer);
         }
+
         public LockByKeyExecutor()
         {
             _lockDictionary = new ConcurrentDictionary<TKey, object>();
         }
 
         /// <summary>
-        /// Execute action with lock by TKey: if TKey is equal then action will be executed in one thread 
+        /// Execute action with lock by TKey: if TKey is equal then action will be executed in one thread
         /// </summary>
         /// <param name="lockString"></param>
         /// <param name="action"></param>
@@ -31,7 +33,7 @@ namespace Asv.Common
         {
             ArgumentNullException.ThrowIfNull(lockString);
             ArgumentNullException.ThrowIfNull(action);
-            
+
             var thisThreadSyncObject = new object();
             lock (thisThreadSyncObject)
             {
@@ -39,9 +41,14 @@ namespace Asv.Common
                 {
                     for (; ; )
                     {
-                        var runningThreadSyncObject = _lockDictionary.GetOrAdd(lockString, thisThreadSyncObject);
+                        var runningThreadSyncObject = _lockDictionary.GetOrAdd(
+                            lockString,
+                            thisThreadSyncObject
+                        );
                         if (runningThreadSyncObject == thisThreadSyncObject)
+                        {
                             break;
+                        }
 
                         lock (runningThreadSyncObject)
                         {
@@ -57,12 +64,12 @@ namespace Asv.Common
                 }
             }
         }
-        
+
         public void Execute<TArg>(TKey lockString, TArg arg, Action<TArg> action)
         {
             ArgumentNullException.ThrowIfNull(lockString);
             ArgumentNullException.ThrowIfNull(action);
-            
+
             var thisThreadSyncObject = new object();
             lock (thisThreadSyncObject)
             {
@@ -70,9 +77,14 @@ namespace Asv.Common
                 {
                     for (; ; )
                     {
-                        var runningThreadSyncObject = _lockDictionary.GetOrAdd(lockString, thisThreadSyncObject);
+                        var runningThreadSyncObject = _lockDictionary.GetOrAdd(
+                            lockString,
+                            thisThreadSyncObject
+                        );
                         if (runningThreadSyncObject == thisThreadSyncObject)
+                        {
                             break;
+                        }
 
                         lock (runningThreadSyncObject)
                         {
@@ -88,12 +100,17 @@ namespace Asv.Common
                 }
             }
         }
-        
-        public void Execute<TArg1,TArg2>(TKey lockString, TArg1 arg1, TArg2 arg2, Action<TArg1,TArg2> action)
+
+        public void Execute<TArg1, TArg2>(
+            TKey lockString,
+            TArg1 arg1,
+            TArg2 arg2,
+            Action<TArg1, TArg2> action
+        )
         {
             ArgumentNullException.ThrowIfNull(lockString);
             ArgumentNullException.ThrowIfNull(action);
-            
+
             var thisThreadSyncObject = new object();
             lock (thisThreadSyncObject)
             {
@@ -101,16 +118,21 @@ namespace Asv.Common
                 {
                     for (; ; )
                     {
-                        var runningThreadSyncObject = _lockDictionary.GetOrAdd(lockString, thisThreadSyncObject);
+                        var runningThreadSyncObject = _lockDictionary.GetOrAdd(
+                            lockString,
+                            thisThreadSyncObject
+                        );
                         if (runningThreadSyncObject == thisThreadSyncObject)
+                        {
                             break;
+                        }
 
                         lock (runningThreadSyncObject)
                         {
                             // Wait for the currently processing thread to finish and try inserting into the dictionary again.
                         }
                     }
-                    action(arg1,arg2);
+                    action(arg1, arg2);
                 }
                 finally
                 {
@@ -119,13 +141,12 @@ namespace Asv.Common
                 }
             }
         }
-        
 
         public TResult Execute<TResult>(TKey lockString, Func<TResult> action)
         {
             ArgumentNullException.ThrowIfNull(lockString);
             ArgumentNullException.ThrowIfNull(action);
-            
+
             var thisThreadSyncObject = new object();
             lock (thisThreadSyncObject)
             {
@@ -133,9 +154,14 @@ namespace Asv.Common
                 {
                     for (; ; )
                     {
-                        var runningThreadSyncObject = _lockDictionary.GetOrAdd(lockString, thisThreadSyncObject);
+                        var runningThreadSyncObject = _lockDictionary.GetOrAdd(
+                            lockString,
+                            thisThreadSyncObject
+                        );
                         if (runningThreadSyncObject == thisThreadSyncObject)
+                        {
                             break;
+                        }
 
                         lock (runningThreadSyncObject)
                         {
@@ -151,12 +177,12 @@ namespace Asv.Common
                 }
             }
         }
-        
-        public TResult Execute<TResult,TArg>(TKey lockString, TArg arg, Func<TArg,TResult> action)
+
+        public TResult Execute<TResult, TArg>(TKey lockString, TArg arg, Func<TArg, TResult> action)
         {
             ArgumentNullException.ThrowIfNull(lockString);
             ArgumentNullException.ThrowIfNull(action);
-            
+
             var thisThreadSyncObject = new object();
             lock (thisThreadSyncObject)
             {
@@ -164,9 +190,14 @@ namespace Asv.Common
                 {
                     for (; ; )
                     {
-                        var runningThreadSyncObject = _lockDictionary.GetOrAdd(lockString, thisThreadSyncObject);
+                        var runningThreadSyncObject = _lockDictionary.GetOrAdd(
+                            lockString,
+                            thisThreadSyncObject
+                        );
                         if (runningThreadSyncObject == thisThreadSyncObject)
+                        {
                             break;
+                        }
 
                         lock (runningThreadSyncObject)
                         {
@@ -182,11 +213,17 @@ namespace Asv.Common
                 }
             }
         }
-        public TResult Execute<TResult,TArg1,TArg2>(TKey lockString, TArg1 arg1, TArg2 arg2, Func<TArg1, TArg2,TResult> action)
+
+        public TResult Execute<TResult, TArg1, TArg2>(
+            TKey lockString,
+            TArg1 arg1,
+            TArg2 arg2,
+            Func<TArg1, TArg2, TResult> action
+        )
         {
             ArgumentNullException.ThrowIfNull(lockString);
             ArgumentNullException.ThrowIfNull(action);
-            
+
             var thisThreadSyncObject = new object();
             lock (thisThreadSyncObject)
             {
@@ -194,16 +231,21 @@ namespace Asv.Common
                 {
                     for (; ; )
                     {
-                        var runningThreadSyncObject = _lockDictionary.GetOrAdd(lockString, thisThreadSyncObject);
+                        var runningThreadSyncObject = _lockDictionary.GetOrAdd(
+                            lockString,
+                            thisThreadSyncObject
+                        );
                         if (runningThreadSyncObject == thisThreadSyncObject)
+                        {
                             break;
+                        }
 
                         lock (runningThreadSyncObject)
                         {
                             // Wait for the currently processing thread to finish and try inserting into the dictionary again.
                         }
                     }
-                    return action(arg1,arg2);
+                    return action(arg1, arg2);
                 }
                 finally
                 {

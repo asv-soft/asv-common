@@ -8,7 +8,10 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Asv.IO;
 
-public class DeviceExplorerBuilder : IDeviceExplorerBuilder,IClientDeviceExtenderBuilder,IClientDeviceFactoryBuilder
+public class DeviceExplorerBuilder
+    : IDeviceExplorerBuilder,
+        IClientDeviceExtenderBuilder,
+        IClientDeviceFactoryBuilder
 {
     private readonly IProtocolConnection _connection;
     private ILoggerFactory _loggerFactory;
@@ -16,7 +19,8 @@ public class DeviceExplorerBuilder : IDeviceExplorerBuilder,IClientDeviceExtende
     private IMeterFactory _meterFactory;
     private ClientDeviceBrowserConfig _config = new();
     private readonly List<IClientDeviceFactory> _factories = [];
-    private readonly ImmutableArray<IClientDeviceExtender>.Builder _extenders = ImmutableArray.CreateBuilder<IClientDeviceExtender>();
+    private readonly ImmutableArray<IClientDeviceExtender>.Builder _extenders =
+        ImmutableArray.CreateBuilder<IClientDeviceExtender>();
 
     public DeviceExplorerBuilder(IProtocolConnection connection)
     {
@@ -25,18 +29,20 @@ public class DeviceExplorerBuilder : IDeviceExplorerBuilder,IClientDeviceExtende
         _timeProvider = TimeProvider.System;
         _meterFactory = new DefaultMeterFactory();
     }
+
     public void SetConfig(ClientDeviceBrowserConfig config)
     {
         ArgumentNullException.ThrowIfNull(config);
         _config = config;
     }
+
     public void SetDefaultConfig()
     {
         _config = new ClientDeviceBrowserConfig();
     }
 
     public IClientDeviceExtenderBuilder Extenders => this;
-    
+
     public IClientDeviceFactoryBuilder Factories => this;
 
     public void SetLog(ILoggerFactory loggerFactory)
@@ -71,10 +77,15 @@ public class DeviceExplorerBuilder : IDeviceExplorerBuilder,IClientDeviceExtende
     {
         _meterFactory = new DefaultMeterFactory();
     }
-    
+
     public IDeviceExplorer Build()
     {
-        return new DeviceExplorer(_config, _factories, _extenders.ToImmutable(), new MicroserviceContext(_connection, _loggerFactory, _timeProvider, _meterFactory));
+        return new DeviceExplorer(
+            _config,
+            _factories,
+            _extenders.ToImmutable(),
+            new MicroserviceContext(_connection, _loggerFactory, _timeProvider, _meterFactory)
+        );
     }
 
     public void Register(IClientDeviceExtender extender)

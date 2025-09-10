@@ -6,7 +6,6 @@ namespace Asv.Common.Test.Other;
 [TestSubject(typeof(DigitHelper))]
 public class DigitHelperTest
 {
-
     [Theory]
     [InlineData(0, 1)]
     [InlineData(9, 1)]
@@ -18,7 +17,7 @@ public class DigitHelperTest
         var digits = input.CountDecDigits();
         Assert.Equal(expectedDigits, digits);
     }
-    
+
     [Theory]
     [InlineData(0, 1)]
     [InlineData(9, 1)]
@@ -52,13 +51,13 @@ public class DigitHelperTest
 
     [Theory]
     [InlineData(0, 1)]
-    [InlineData(15, 1)]           // 0xF
-    [InlineData(16, 2)]           // 0x10
-    [InlineData(255, 2)]          // 0xFF
-    [InlineData(4096, 4)]         // 0x1000
+    [InlineData(15, 1)] // 0xF
+    [InlineData(16, 2)] // 0x10
+    [InlineData(255, 2)] // 0xFF
+    [InlineData(4096, 4)] // 0x1000
     [InlineData(int.MaxValue, 8)] // 0x7FFFFFFF
-    [InlineData(-1, 8)]           // 0xFFFFFFFF (uint: 4294967295)
-    [InlineData(-255, 8)]         // 0xFFFFFF01
+    [InlineData(-1, 8)] // 0xFFFFFFFF (uint: 4294967295)
+    [InlineData(-255, 8)] // 0xFFFFFF01
     public void CountHexDigits_Int32_ReturnsCorrectDigits(int value, int expectedDigits)
     {
         var result = value.CountHexDigits();

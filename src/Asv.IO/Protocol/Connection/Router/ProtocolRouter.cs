@@ -8,9 +8,7 @@ using ZLogger;
 
 namespace Asv.IO;
 
-
-
-public sealed class ProtocolRouter:ProtocolConnection, IProtocolRouter
+public sealed class ProtocolRouter : ProtocolConnection, IProtocolRouter
 {
     private readonly ILogger<ProtocolRouter> _logger;
     private ImmutableArray<IProtocolPort> _ports = [];
@@ -18,23 +16,34 @@ public sealed class ProtocolRouter:ProtocolConnection, IProtocolRouter
     private readonly Subject<IProtocolPort> _portRemoved = new();
     private readonly Subject<IProtocolPort> _portUpdated = new();
 
-    internal ProtocolRouter(string id, IProtocolContext context, IStatisticHandler? statistic = null) 
+    internal ProtocolRouter(
+        string id,
+        IProtocolContext context,
+        IStatisticHandler? statistic = null
+    )
         : base(id, context, statistic)
     {
         _logger = context.LoggerFactory.CreateLogger<ProtocolRouter>();
     }
 
-    public override async ValueTask Send(IProtocolMessage message, CancellationToken cancel = default)
+    public override async ValueTask Send(
+        IProtocolMessage message,
+        CancellationToken cancel = default
+    )
     {
         ArgumentNullException.ThrowIfNull(message);
         if (IsDisposed)
         {
             return;
         }
-        
+
         cancel.ThrowIfCancellationRequested();
         var newMessage = await InternalFilterTxMessage(message);
-        if (newMessage == null) return;
+        if (newMessage == null)
+        {
+            return;
+        }
+
         var ports = _ports;
         foreach (var port in ports)
         {
@@ -52,19 +61,22 @@ public sealed class ProtocolRouter:ProtocolConnection, IProtocolRouter
             throw new InvalidOperationException($"Port scheme {connectionString.Scheme} not found");
         }
         var port = factory(connectionString, Context, StatisticHandler);
-        
+
         // we don't need to dispose the port because it will be disposed when the router or port is disposed
         port.OnRxMessage.Subscribe(InternalPublishRxMessage);
         port.IsEnabled.Subscribe(port, (_, value) => _portUpdated.OnNext(value));
-        
-        ImmutableArray<IProtocolPort> after, before;
+
+        ImmutableArray<IProtocolPort> after,
+            before;
         do
         {
             before = _ports;
-            after = before.Add(port);    
+            after = before.Add(port);
         }
         // check if the value is changed by another thread while we are adding the endpoint
-        while (ImmutableInterlocked.InterlockedCompareExchange(ref _ports, after, before) != before);
+        while (
+            ImmutableInterlocked.InterlockedCompareExchange(ref _ports, after, before) != before
+        );
         _logger.ZLogInformation($"{this} add {port}");
         if (port.Config.IsEnabled == true)
         {
@@ -74,18 +86,19 @@ public sealed class ProtocolRouter:ProtocolConnection, IProtocolRouter
         return port;
     }
 
-    
-
     public void RemovePort(IProtocolPort port)
     {
-        ImmutableArray<IProtocolPort> before,after;
+        ImmutableArray<IProtocolPort> before,
+            after;
         do
         {
             before = _ports;
-            after = before.Remove(port);    
+            after = before.Remove(port);
         }
         // check if the value is changed by another thread while we are removing the endpoint
-        while (ImmutableInterlocked.InterlockedCompareExchange(ref _ports, after, before) != before);
+        while (
+            ImmutableInterlocked.InterlockedCompareExchange(ref _ports, after, before) != before
+        );
         _portRemoved.OnNext(port);
         port.Dispose();
         _logger.ZLogInformation($"{this} remove {port}");
@@ -109,15 +122,18 @@ public sealed class ProtocolRouter:ProtocolConnection, IProtocolRouter
     {
         if (disposing)
         {
-            ImmutableArray<IProtocolPort> before, after;
+            ImmutableArray<IProtocolPort> before,
+                after;
             do
             {
                 before = _ports;
                 after = ImmutableArray<IProtocolPort>.Empty;
             }
             // check if the value is changed by another thread while we are removing the endpoint
-            while (ImmutableInterlocked.InterlockedCompareExchange(ref _ports, after, before) != before);
-            
+            while (
+                ImmutableInterlocked.InterlockedCompareExchange(ref _ports, after, before) != before
+            );
+
             foreach (var port in _ports)
             {
                 _portRemoved.OnNext(port);
@@ -134,15 +150,17 @@ public sealed class ProtocolRouter:ProtocolConnection, IProtocolRouter
 
     protected override async ValueTask DisposeAsyncCore()
     {
-       
-        ImmutableArray<IProtocolPort> before,after;
+        ImmutableArray<IProtocolPort> before,
+            after;
         do
         {
             before = _ports;
             after = ImmutableArray<IProtocolPort>.Empty;
         }
         // check if the value is changed by another thread while we are removing the endpoint
-        while (ImmutableInterlocked.InterlockedCompareExchange(ref _ports, after, before) != before);
+        while (
+            ImmutableInterlocked.InterlockedCompareExchange(ref _ports, after, before) != before
+        );
         foreach (var port in _ports)
         {
             _portRemoved.OnNext(port);
@@ -154,8 +172,5 @@ public sealed class ProtocolRouter:ProtocolConnection, IProtocolRouter
         await base.DisposeAsyncCore();
     }
 
-
     #endregion
-    
-   
 }

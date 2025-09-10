@@ -23,13 +23,16 @@ public class DeviceExplorer : AsyncDisposableOnce, IDeviceExplorer
 {
     #region Static
 
-    public static IDeviceExplorer Create(IProtocolConnection connection, Action<IDeviceExplorerBuilder> configure)
+    public static IDeviceExplorer Create(
+        IProtocolConnection connection,
+        Action<IDeviceExplorerBuilder> configure
+    )
     {
         var builder = new DeviceExplorerBuilder(connection);
         configure(builder);
         return builder.Build();
     }
-    
+
     #endregion
 
     private readonly ImmutableArray<IClientDeviceExtender> _extenders;
@@ -38,7 +41,7 @@ public class DeviceExplorer : AsyncDisposableOnce, IDeviceExplorer
     private readonly IDisposable _sub1;
     private readonly ReaderWriterLockSlim _lock = new();
     private readonly ObservableDictionary<DeviceId, IClientDevice> _devices = new();
-    private readonly ConcurrentDictionary<DeviceId,long> _lastSeen = new();
+    private readonly ConcurrentDictionary<DeviceId, long> _lastSeen = new();
     private readonly ILogger<DeviceExplorer> _logger;
     private readonly ITimer _timer;
     private readonly TimeSpan _deviceTimeout;
@@ -46,7 +49,12 @@ public class DeviceExplorer : AsyncDisposableOnce, IDeviceExplorer
     private readonly IDisposable _sub2;
     private readonly IDisposable _sub3;
 
-    internal DeviceExplorer(ClientDeviceBrowserConfig config, IEnumerable<IClientDeviceFactory> providers, ImmutableArray<IClientDeviceExtender> extenders, IMicroserviceContext context)
+    internal DeviceExplorer(
+        ClientDeviceBrowserConfig config,
+        IEnumerable<IClientDeviceFactory> providers,
+        ImmutableArray<IClientDeviceExtender> extenders,
+        IMicroserviceContext context
+    )
     {
         ArgumentNullException.ThrowIfNull(config);
         ArgumentNullException.ThrowIfNull(providers);
@@ -54,16 +62,21 @@ public class DeviceExplorer : AsyncDisposableOnce, IDeviceExplorer
         _extenders = extenders;
         _context = context;
         _logger = _context.LoggerFactory.CreateLogger<DeviceExplorer>();
-        _providers = [..providers.OrderBy(x=>x.Order)];
+        _providers = [.. providers.OrderBy(x => x.Order)];
         _sub1 = context.Connection.OnRxMessage.Subscribe(CheckNewDevice);
         _deviceTimeout = TimeSpan.FromMilliseconds(config.DeviceTimeoutMs);
-        _timer = context.TimeProvider.CreateTimer(RemoveOldDevices, null, TimeSpan.FromMilliseconds(config.DeviceCheckIntervalMs), TimeSpan.FromMilliseconds(config.DeviceCheckIntervalMs));
+        _timer = context.TimeProvider.CreateTimer(
+            RemoveOldDevices,
+            null,
+            TimeSpan.FromMilliseconds(config.DeviceCheckIntervalMs),
+            TimeSpan.FromMilliseconds(config.DeviceCheckIntervalMs)
+        );
         _deviceList = [];
         _sub2 = _devices.ObserveAdd().Subscribe(OnAddNewDevice);
         _sub3 = _devices.ObserveRemove().Subscribe(OnDeviceRemove);
     }
 
-    private void OnDeviceRemove(CollectionRemoveEvent<KeyValuePair<DeviceId,IClientDevice>> e)
+    private void OnDeviceRemove(CollectionRemoveEvent<KeyValuePair<DeviceId, IClientDevice>> e)
     {
         _deviceList.Remove(e.Value.Value);
     }
@@ -71,7 +84,9 @@ public class DeviceExplorer : AsyncDisposableOnce, IDeviceExplorer
     private void OnAddNewDevice(CollectionAddEvent<KeyValuePair<DeviceId, IClientDevice>> e)
     {
         // we don't need to unsubscribe from this subscription because it will be disposed with Device itself
-        e.Value.Value.State.Where(x=>x == ClientDeviceState.Complete).Take(1).Subscribe(e.Value.Value,(x,dev)=> _deviceList.Add(dev)); 
+        e.Value.Value.State.Where(x => x == ClientDeviceState.Complete)
+            .Take(1)
+            .Subscribe(e.Value.Value, (x, dev) => _deviceList.Add(dev));
     }
 
     public IReadOnlyObservableDictionary<DeviceId, IClientDevice> Devices => _devices;
@@ -81,8 +96,13 @@ public class DeviceExplorer : AsyncDisposableOnce, IDeviceExplorer
     private void RemoveOldDevices(object? state)
     {
         var itemsToDelete = _lastSeen
-            .Where(x => _context.TimeProvider.GetElapsedTime(x.Value) >= _deviceTimeout).ToImmutableArray();
-        if (itemsToDelete.Length == 0) return;
+            .Where(x => _context.TimeProvider.GetElapsedTime(x.Value) >= _deviceTimeout)
+            .ToImmutableArray();
+        if (itemsToDelete.Length == 0)
+        {
+            return;
+        }
+
         _lock.EnterWriteLock();
         try
         {
@@ -107,13 +127,11 @@ public class DeviceExplorer : AsyncDisposableOnce, IDeviceExplorer
         catch (Exception e)
         {
             _logger.LogError(e, "Error on remove old devices");
-            
         }
         finally
         {
             _lock.ExitWriteLock();
         }
-        
     }
 
     private void CheckNewDevice(IProtocolMessage msg)
@@ -129,8 +147,16 @@ public class DeviceExplorer : AsyncDisposableOnce, IDeviceExplorer
                 break;
             }
         }
-        if (deviceId == null || currentProvider == null) return;
-        _lastSeen.AddOrUpdate(deviceId, _context.TimeProvider.GetTimestamp(), (_, _) => _context.TimeProvider.GetTimestamp());
+        if (deviceId == null || currentProvider == null)
+        {
+            return;
+        }
+
+        _lastSeen.AddOrUpdate(
+            deviceId,
+            _context.TimeProvider.GetTimestamp(),
+            (_, _) => _context.TimeProvider.GetTimestamp()
+        );
         _lock.EnterUpgradeableReadLock();
         try
         {
@@ -147,7 +173,7 @@ public class DeviceExplorer : AsyncDisposableOnce, IDeviceExplorer
                     currentProvider.UpdateDevice(device2, msg);
                     return;
                 }
-                var device = currentProvider.CreateDevice(msg, deviceId, _context, _extenders );
+                var device = currentProvider.CreateDevice(msg, deviceId, _context, _extenders);
                 _logger.ZLogInformation($"New device {deviceId} created by {currentProvider}");
                 device.Initialize();
                 _devices.Add(deviceId, device);
@@ -161,7 +187,6 @@ public class DeviceExplorer : AsyncDisposableOnce, IDeviceExplorer
         {
             _lock.ExitUpgradeableReadLock();
         }
-        
     }
 
     #region Dispose
@@ -177,7 +202,7 @@ public class DeviceExplorer : AsyncDisposableOnce, IDeviceExplorer
             _lock.Dispose();
             _timer.Dispose();
             _lastSeen.Clear();
-            
+
             foreach (var device in _devices)
             {
                 device.Value.Dispose();
@@ -209,13 +234,15 @@ public class DeviceExplorer : AsyncDisposableOnce, IDeviceExplorer
         static async ValueTask CastAndDispose(IDisposable resource)
         {
             if (resource is IAsyncDisposable resourceAsyncDisposable)
+            {
                 await resourceAsyncDisposable.DisposeAsync();
+            }
             else
+            {
                 resource.Dispose();
+            }
         }
     }
 
     #endregion
-
-
 }

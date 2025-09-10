@@ -39,7 +39,6 @@ namespace Asv.IO
             {
                 return $"TCP_C {Host}:{Port}";
             }
-            
         }
     }
 }

@@ -15,7 +15,7 @@ namespace Asv.IO.Test.Connection;
 [TestSubject(typeof(ProtocolConnection))]
 public class ProtocolConnectionTests
 {
-    private IProtocolRouter _serverRouter;
+    private readonly IProtocolRouter _serverRouter;
     private IProtocolRouter _clientRouter;
 
     private readonly ManualTimeProvider _timeProvider = new();
@@ -34,7 +34,7 @@ public class ProtocolConnectionTests
         _serverRouter = protocol.CreateRouter("Server");
         _clientRouter = protocol.CreateRouter("Client");
         _link = protocol.CreateVirtualConnection();
-        
+
         _serverRouter.AddPort("tcps://127.0.0.1:5760");
         _clientRouter.AddPort("tcp://127.0.0.1:5760");
     }
@@ -59,7 +59,7 @@ public class ProtocolConnectionTests
                         $"TestPacketWithInlineFormating:{packet.Name} {packet.Protocol} {packet}",
                     PacketFormatting.Indented =>
                         $"TestPacketWithIndentedFormating:{packet.Name} {packet.Protocol} {packet}",
-                    _ => $"TestPacketWithNoFormating:{packet.Name} {packet.Protocol} {packet}"
+                    _ => $"TestPacketWithNoFormating:{packet.Name} {packet.Protocol} {packet}",
                 };
             }
 
@@ -81,7 +81,7 @@ public class ProtocolConnectionTests
         using var sub = _clientRouter.OnRxMessage.Subscribe(_ =>
         {
             received++;
-            
+
             if (received >= maxCount)
             {
                 tcs.TrySetResult();
@@ -105,11 +105,7 @@ public class ProtocolConnectionTests
     public void Connection_MessagePacketPrintInDifferentFormats_Success()
     {
         //Arrange
-        var message = new ExampleMessage1()
-        {
-            Value1 = 100,
-            Tags = [],
-        };
+        var message = new ExampleMessage1() { Value1 = 100, Tags = [] };
 
         //Act
 
@@ -119,11 +115,18 @@ public class ProtocolConnectionTests
         Assert.Equal(messageSimpleFormat, messageSimplePrintedInline);
 
         //packet custom type formatter
-        _clientRouter = IO.Protocol.Create(_ => { _.Formatters.Register(new NewPacketMessageFormater()); })
+        _clientRouter = IO
+            .Protocol.Create(_ =>
+            {
+                _.Formatters.Register(new NewPacketMessageFormater());
+            })
             .CreateRouter("Client");
         NewPacketMessageFormater formater = new();
         var message2 = new ExampleMessage2();
-        Assert.Throws<ArgumentOutOfRangeException>(() => { formater.Print(message2, PacketFormatting.Indented); });
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+        {
+            formater.Print(message2, PacketFormatting.Indented);
+        });
         var result = formater.Print(message, PacketFormatting.Inline);
         var clientResult = _clientRouter.PrintMessage(message);
         Assert.Equal(result, clientResult);
@@ -140,7 +143,12 @@ public class ProtocolConnectionTests
     public void Connection_RegisterSpecifiedFeature_Success()
     {
         IProtocolFeature feature = new BroadcastingFeature<ExampleMessage1>();
-        _clientRouter = IO.Protocol.Create(_ => { _.Features.Register(feature); }).CreateRouter("Client");
+        _clientRouter = IO
+            .Protocol.Create(_ =>
+            {
+                _.Features.Register(feature);
+            })
+            .CreateRouter("Client");
         Assert.NotNull(_clientRouter);
     }
 
@@ -150,8 +158,12 @@ public class ProtocolConnectionTests
         IProtocolFeature feature = null;
         Assert.Throws<ArgumentNullException>(() =>
         {
-            _clientRouter = IO.Protocol.Create(_ => { _.Features.Register(feature); }).CreateRouter("Client");
+            _clientRouter = IO
+                .Protocol.Create(_ =>
+                {
+                    _.Features.Register(feature);
+                })
+                .CreateRouter("Client");
         });
     }
-
 }

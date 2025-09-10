@@ -10,8 +10,8 @@ namespace Asv.IO;
 /// Then the data starts in the form of a list. Each element of the list has a fixed length and is signed with a checksum.
 /// </summary>
 /// <typeparam name="TMetadata"></typeparam>
-public interface IListDataFile<out TMetadata>:IDisposable
-    where TMetadata:ISpanSerializable
+public interface IListDataFile<out TMetadata> : IDisposable
+    where TMetadata : ISpanSerializable
 {
     IListDataFileFormat Header { get; }
     object? Tag { get; set; }
@@ -33,7 +33,7 @@ public interface IListDataFile<out TMetadata>:IDisposable
     void EditMetadata(Action<TMetadata> editCallback);
 
     /// <summary>
-    /// Thread safe method to read metadata. Return copy of metadata 
+    /// Thread safe method to read metadata. Return copy of metadata
     /// </summary>
     /// <returns></returns>
     TMetadata ReadMetadata();
@@ -63,20 +63,27 @@ public interface IListDataFile<out TMetadata>:IDisposable
 
 public static class ListDataFileHelper
 {
-    public static uint GetItemsCount<TMetadata>(this IListDataFile<TMetadata> self, uint skip,uint take)
+    public static uint GetItemsCount<TMetadata>(
+        this IListDataFile<TMetadata> self,
+        uint skip,
+        uint take
+    )
         where TMetadata : ISizedSpanSerializable, new()
     {
         var temp = (int)self.Count - skip;
-        return (uint)(temp < 0 ? 0 : Math.Min(temp,(int) take));
+        return (uint)(temp < 0 ? 0 : Math.Min(temp, (int)take));
     }
-    
+
     public struct Chunk
     {
         public uint Skip { get; set; }
         public uint Take { get; set; }
     }
-    
-    public static IEnumerable<Chunk> GetEmptyChunks<TMetadata,TKey>(this IListDataFile<TMetadata> src, int maxPageSize) 
+
+    public static IEnumerable<Chunk> GetEmptyChunks<TMetadata, TKey>(
+        this IListDataFile<TMetadata> src,
+        int maxPageSize
+    )
         where TMetadata : ISpanSerializable
     {
         var count = src.Count;
@@ -88,10 +95,10 @@ public static class ListDataFileHelper
             //simplify logic
             if (take >= maxPageSize)
             {
-                yield return new Chunk{ Skip = skip, Take = take}; 
+                yield return new Chunk { Skip = skip, Take = take };
                 startedChunk = false;
             }
-            
+
             if (startedChunk == false)
             {
                 if (src.Exist(i) == false)
@@ -105,7 +112,7 @@ public static class ListDataFileHelper
             {
                 if (src.Exist(i))
                 {
-                    yield return new Chunk{ Skip = skip, Take = take}; 
+                    yield return new Chunk { Skip = skip, Take = take };
                 }
                 else
                 {
@@ -115,4 +122,3 @@ public static class ListDataFileHelper
         }
     }
 }
-

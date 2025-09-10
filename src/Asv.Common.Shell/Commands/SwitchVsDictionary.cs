@@ -10,11 +10,13 @@ public class SwitchVsDictionary
     [GlobalSetup]
     public void Setup()
     {
-        _dictionary = ImmutableDictionary.CreateRange([
-            new KeyValuePair<int, string>(1, "One"),
-            new KeyValuePair<int, string>(2, "Two"),
-            new KeyValuePair<int, string>(3, "Three")
-        ]);
+        _dictionary = ImmutableDictionary.CreateRange(
+            [
+                new KeyValuePair<int, string>(1, "One"),
+                new KeyValuePair<int, string>(2, "Two"),
+                new KeyValuePair<int, string>(3, "Three"),
+            ]
+        );
     }
 
     [Benchmark]
@@ -26,7 +28,7 @@ public class SwitchVsDictionary
             1 => "One",
             2 => "Two",
             3 => "Three",
-            _ => "Default"
+            _ => "Default",
         };
     }
 

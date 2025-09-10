@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Asv.IO;
 
-public sealed class Protocol: IProtocolFactory, IProtocolContext
+public sealed class Protocol : IProtocolFactory, IProtocolContext
 {
     #region Static
 
@@ -20,15 +20,16 @@ public sealed class Protocol: IProtocolFactory, IProtocolContext
     #endregion
 
     internal Protocol(
-        ImmutableArray<IProtocolFeature> features, 
-        ImmutableDictionary<string,ParserFactoryDelegate> parserFactory, 
-        ImmutableArray<ProtocolInfo> availableProtocols, 
-        ImmutableDictionary<string,PortFactoryDelegate> portFactory, 
+        ImmutableArray<IProtocolFeature> features,
+        ImmutableDictionary<string, ParserFactoryDelegate> parserFactory,
+        ImmutableArray<ProtocolInfo> availableProtocols,
+        ImmutableDictionary<string, PortFactoryDelegate> portFactory,
         ImmutableArray<PortTypeInfo> availablePortTypes,
-        ImmutableArray<IProtocolMessageFormatter> formatters, 
-        ILoggerFactory loggerFactory, 
-        TimeProvider timeProvider, 
-        IMeterFactory meterFactory)
+        ImmutableArray<IProtocolMessageFormatter> formatters,
+        ILoggerFactory loggerFactory,
+        TimeProvider timeProvider,
+        IMeterFactory meterFactory
+    )
     {
         Features = features;
         ParserFactory = parserFactory;
@@ -47,6 +48,7 @@ public sealed class Protocol: IProtocolFactory, IProtocolContext
     public IMeterFactory MeterFactory { get; }
     public ImmutableDictionary<string, ParserFactoryDelegate> ParserFactory { get; }
     public ImmutableArray<IProtocolFeature> Features { get; }
+
     public IProtocolParser CreateParser(string protocolId) => ParserFactory[protocolId](this, null);
 
     public ImmutableArray<ProtocolInfo> AvailableProtocols { get; }
@@ -58,13 +60,24 @@ public sealed class Protocol: IProtocolFactory, IProtocolContext
         return new ProtocolRouter(ProtocolHelper.NormalizeId(id), this);
     }
 
-    public IVirtualConnection CreateVirtualConnection(Func<IProtocolMessage, bool>? clientToServerFilter = null, Func<IProtocolMessage, bool>? serverToClientFilter = null,
-        bool printMessagesToLog = true)
+    public IVirtualConnection CreateVirtualConnection(
+        Func<IProtocolMessage, bool>? clientToServerFilter = null,
+        Func<IProtocolMessage, bool>? serverToClientFilter = null,
+        bool printMessagesToLog = true
+    )
     {
-        return new VirtualConnection(clientToServerFilter,serverToClientFilter,this,printMessagesToLog);
+        return new VirtualConnection(
+            clientToServerFilter,
+            serverToClientFilter,
+            this,
+            printMessagesToLog
+        );
     }
 
-    public string? PrintMessage(IProtocolMessage message, PacketFormatting formatting = PacketFormatting.Inline)
+    public string? PrintMessage(
+        IProtocolMessage message,
+        PacketFormatting formatting = PacketFormatting.Inline
+    )
     {
         return Formatters
             .Where(x => x.CanPrint(message))

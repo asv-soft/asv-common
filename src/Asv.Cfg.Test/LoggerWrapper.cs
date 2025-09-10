@@ -7,24 +7,19 @@ using Xunit.Abstractions;
 
 namespace Asv.Cfg.Test;
 
-public class TestLoggerFactory(ITestOutputHelper testOutputHelper, TimeProvider time, string prefix) : ILoggerFactory
+public class TestLoggerFactory(ITestOutputHelper testOutputHelper, TimeProvider time, string prefix)
+    : ILoggerFactory
 {
     public TimeProvider Time { get; } = time;
 
-    public void Dispose()
-    {
-        
-    }
+    public void Dispose() { }
 
     public ILogger CreateLogger(string categoryName)
     {
-        return new TestLogger(testOutputHelper,Time, $"{prefix}.{categoryName}");
+        return new TestLogger(testOutputHelper, Time, $"{prefix}.{categoryName}");
     }
 
-    public void AddProvider(ILoggerProvider provider)
-    {
-        
-    }
+    public void AddProvider(ILoggerProvider provider) { }
 }
 
 public class TestLogger : ILogger
@@ -44,14 +39,23 @@ public class TestLogger : ILogger
 
     public bool IsEnabled(LogLevel logLevel) => logLevel != LogLevel.None;
 
-    public IDisposable BeginScope<TState>(TState state) where TState : notnull => Disposable.Empty;
+    public IDisposable BeginScope<TState>(TState state)
+        where TState : notnull => Disposable.Empty;
 
-    public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+    public void Log<TState>(
+        LogLevel logLevel,
+        EventId eventId,
+        TState state,
+        Exception? exception,
+        Func<TState, Exception?, string> formatter
+    )
     {
         try
         {
             var t = _time.GetElapsedTime(_start);
-            _testOutputHelper.WriteLine($"+{t.TotalSeconds:000.000} |{Thread.CurrentThread.ManagedThreadId:00}|={ConvertToStr(logLevel)}=| {_categoryName,-20} | {formatter(state, exception)}");
+            _testOutputHelper.WriteLine(
+                $"+{t.TotalSeconds:000.000} |{Thread.CurrentThread.ManagedThreadId:00}|={ConvertToStr(logLevel)}=| {_categoryName, -20} | {formatter(state, exception)}"
+            );
         }
         catch
         {
@@ -70,7 +74,7 @@ public class TestLogger : ILogger
             LogLevel.Error => "ERR",
             LogLevel.Critical => "CRT",
             LogLevel.None => "NON",
-            _ => throw new ArgumentOutOfRangeException(nameof(logLevel), logLevel, null)
+            _ => throw new ArgumentOutOfRangeException(nameof(logLevel), logLevel, null),
         };
     }
 }

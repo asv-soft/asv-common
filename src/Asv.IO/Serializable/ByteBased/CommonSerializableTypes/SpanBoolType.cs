@@ -4,10 +4,7 @@ namespace Asv.IO
 {
     public class SpanBoolType : ISizedSpanSerializable
     {
-        public SpanBoolType()
-        {
-
-        }
+        public SpanBoolType() { }
 
         public SpanBoolType(bool value)
         {
@@ -23,7 +20,7 @@ namespace Asv.IO
 
         public void Serialize(ref Span<byte> buffer)
         {
-            BinSerialize.WriteByte(ref buffer, (byte)(Value ? 1:0));
+            BinSerialize.WriteByte(ref buffer, (byte)(Value ? 1 : 0));
         }
 
         public int GetByteSize() => sizeof(byte);
@@ -34,6 +31,7 @@ namespace Asv.IO
         }
 
         public static explicit operator SpanBoolType(bool value) => new(value);
+
         public static implicit operator bool(SpanBoolType value) => value.Value;
     }
 }

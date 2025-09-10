@@ -31,21 +31,29 @@ public static class GuidHierarchicalStoreFormat
 
     public const string DisplayNameOfFolderRegexString = @"[A-Za-z][A-Za-z0-9_\- +]{0,28}";
 
-    public static readonly Regex DisplayNameOfFolderRegex =
-        new($"^{DisplayNameOfFolderRegexString}$", RegexOptions.Compiled);
+    public static readonly Regex DisplayNameOfFolderRegex = new(
+        $"^{DisplayNameOfFolderRegexString}$",
+        RegexOptions.Compiled
+    );
 
     public const string DisplayNameOfFileRegexString = @"[A-Za-z][A-Za-z0-9_\- +]{0,28}";
 
-    public static readonly Regex DisplayNameOfFileRegex =
-        new($"^{DisplayNameOfFileRegexString}$", RegexOptions.Compiled);
+    public static readonly Regex DisplayNameOfFileRegex = new(
+        $"^{DisplayNameOfFileRegexString}$",
+        RegexOptions.Compiled
+    );
 
     public const string GuidOfFolderOrFileRegexString = @"[0-9a-zA-Z_-]{22}";
 
-    public static readonly Regex FileSystemNameOfFolderRegex =
-        new($"^({DisplayNameOfFolderRegexString}) #({GuidOfFolderOrFileRegexString})$", RegexOptions.Compiled);
+    public static readonly Regex FileSystemNameOfFolderRegex = new(
+        $"^({DisplayNameOfFolderRegexString}) #({GuidOfFolderOrFileRegexString})$",
+        RegexOptions.Compiled
+    );
 
-    public static readonly Regex FileSystemNameOfFileRegex =
-        new($"^({DisplayNameOfFileRegexString}) #({GuidOfFolderOrFileRegexString})$", RegexOptions.Compiled);
+    public static readonly Regex FileSystemNameOfFileRegex = new(
+        $"^({DisplayNameOfFileRegexString}) #({GuidOfFolderOrFileRegexString})$",
+        RegexOptions.Compiled
+    );
 
     public static IEqualityComparer<Guid> GuidComparer { get; } = new Comp();
 }
@@ -54,7 +62,6 @@ public abstract class GuidHierarchicalStoreFormat<TFile> : IHierarchicalStoreFor
     where TFile : IDisposable
 {
     private readonly string _defaultFileExt;
-
 
     public GuidHierarchicalStoreFormat(string defaultFileExt)
     {
@@ -73,7 +80,9 @@ public abstract class GuidHierarchicalStoreFormat<TFile> : IHierarchicalStoreFor
             return false;
         }
 
-        var matches = GuidHierarchicalStoreFormat.FileSystemNameOfFolderRegex.Match(folderInfo.Name);
+        var matches = GuidHierarchicalStoreFormat.FileSystemNameOfFolderRegex.Match(
+            folderInfo.Name
+        );
         if (matches.Groups.Count != 3)
         {
             id = default;
@@ -134,7 +143,6 @@ public abstract class GuidHierarchicalStoreFormat<TFile> : IHierarchicalStoreFor
         return GuidHierarchicalStoreFormat.DisplayNameOfFileRegex.IsMatch(displayName);
     }
 
-
     public abstract TFile OpenFile(Stream stream);
     public abstract TFile CreateFile(Stream stream, Guid id, string name);
 
@@ -143,7 +151,8 @@ public abstract class GuidHierarchicalStoreFormat<TFile> : IHierarchicalStoreFor
         if (GuidHierarchicalStoreFormat.DisplayNameOfFolderRegex.IsMatch(name) == false)
         {
             throw new ArgumentException(
-                $"Folder name '{name}' is invalid. Must match '{GuidHierarchicalStoreFormat.DisplayNameOfFolderRegexString}'");
+                $"Folder name '{name}' is invalid. Must match '{GuidHierarchicalStoreFormat.DisplayNameOfFolderRegexString}'"
+            );
         }
     }
 

@@ -27,8 +27,6 @@ namespace Asv.IO.Test
             Assert.Equal(133337, BinSerialize.ReadInt(ref readSpan));
         }
 
-        
-
         [Theory]
         [InlineData(uint.MinValue)]
         [InlineData(uint.MaxValue)]
@@ -210,7 +208,11 @@ namespace Asv.IO.Test
             BinSerialize.Write8BitRange(ref writeSpan, min, max, val);
 
             var readSpan = new ReadOnlySpan<byte>(buffer);
-            Assert.Equal(expectedVal, BinSerialize.Read8BitRange(ref readSpan, min, max), precision: 2);
+            Assert.Equal(
+                expectedVal,
+                BinSerialize.Read8BitRange(ref readSpan, min, max),
+                precision: 2
+            );
         }
 
         [Theory]
@@ -230,7 +232,11 @@ namespace Asv.IO.Test
             BinSerialize.Write16BitRange(ref writeSpan, min, max, val);
 
             var readSpan = new ReadOnlySpan<byte>(buffer);
-            Assert.Equal(expectedVal, BinSerialize.Read16BitRange(ref readSpan, min, max), precision: 4);
+            Assert.Equal(
+                expectedVal,
+                BinSerialize.Read16BitRange(ref readSpan, min, max),
+                precision: 4
+            );
         }
 
         [Theory]
@@ -552,8 +558,13 @@ namespace Asv.IO.Test
             int memStreamBytesWritten;
             using (var memStream = new MemoryStream())
             {
-                using (var binaryWriter = new BinaryWriter(memStream, Encoding.UTF8, leaveOpen: true))
+                using (
+                    var binaryWriter = new BinaryWriter(memStream, Encoding.UTF8, leaveOpen: true)
+                )
+                {
                     binaryWriter.Write(val);
+                }
+
                 memStreamBytesWritten = (int)memStream.Length;
             }
 
@@ -564,7 +575,11 @@ namespace Asv.IO.Test
 
             Assert.Equal(memStreamBytesWritten, writtenBytes);
             Assert.True(
-                memStreamBuffer.AsSpan().Slice(memStreamBytesWritten).SequenceEqual(buffer.AsSpan().Slice(writtenBytes)));
+                memStreamBuffer
+                    .AsSpan()
+                    .Slice(memStreamBytesWritten)
+                    .SequenceEqual(buffer.AsSpan().Slice(writtenBytes))
+            );
         }
 
         [Theory]
@@ -624,7 +639,7 @@ namespace Asv.IO.Test
             var read = BinSerialize.ReadPackedInteger(stream);
             Assert.Equal(value, read);
         }
-        
+
         [Theory]
         [InlineData(int.MaxValue, 5)]
         [InlineData(int.MinValue, 5)]
@@ -654,7 +669,7 @@ namespace Asv.IO.Test
             var readSpan = new ReadOnlySpan<byte>(buffer);
             Assert.Equal(val, BinSerialize.ReadPackedInteger(ref readSpan));
         }
-        
+
         [Theory]
         [InlineData(int.MaxValue, 5)]
         [InlineData(int.MinValue, 5)]

@@ -8,10 +8,9 @@ namespace Asv.Common;
 
 public class DefaultMeterFactory : IMeterFactory
 {
-    
-    
     private readonly Dictionary<string, List<FactoryMeter>> _cachedMeters = new();
     private bool _disposed;
+
     public void Dispose()
     {
         lock (_cachedMeters)
@@ -34,10 +33,7 @@ public class DefaultMeterFactory : IMeterFactory
 
     public Meter Create(MeterOptions options)
     {
-        if (options is null)
-        {
-            throw new ArgumentNullException(nameof(options));
-        }
+        ArgumentNullException.ThrowIfNull(options);
 
         if (options.Scope is not null && !object.ReferenceEquals(options.Scope, this))
         {
@@ -57,7 +53,13 @@ public class DefaultMeterFactory : IMeterFactory
             {
                 foreach (var meter in meterList)
                 {
-                    if (meter.Version == options.Version && CompareTags(meter.Tags as IList<KeyValuePair<string, object?>>, options.Tags))
+                    if (
+                        meter.Version == options.Version
+                        && CompareTags(
+                            meter.Tags as IList<KeyValuePair<string, object?>>,
+                            options.Tags
+                        )
+                    )
                     {
                         return meter;
                     }
@@ -79,8 +81,10 @@ public class DefaultMeterFactory : IMeterFactory
         }
     }
 
-    static bool CompareTags(IList<KeyValuePair<string, object?>>? sortedTags,
-        IEnumerable<KeyValuePair<string, object?>>? tags2)
+    static bool CompareTags(
+        IList<KeyValuePair<string, object?>>? sortedTags,
+        IEnumerable<KeyValuePair<string, object?>>? tags2
+    )
     {
         if (sortedTags == tags2)
         {
@@ -93,7 +97,7 @@ public class DefaultMeterFactory : IMeterFactory
         }
 
         var count = sortedTags.Count;
-        var size = count / (sizeof(ulong) * 8) + 1;
+        var size = (count / (sizeof(ulong) * 8)) + 1;
         var bitMapper = new BitMapper(size <= 100 ? stackalloc ulong[size] : new ulong[size]);
 
         if (tags2 is ICollection<KeyValuePair<string, object?>> tagsCol)
@@ -202,7 +206,7 @@ public class DefaultMeterFactory : IMeterFactory
         private static void GetIndexAndMask(int index, out int bitIndex, out ulong mask)
         {
             bitIndex = index >> 6; // divide by 64 == (sizeof(ulong) * 8) bits
-            var bit = index & (sizeof(ulong) * 8 - 1);
+            var bit = index & ((sizeof(ulong) * 8) - 1);
             mask = 1UL << bit;
         }
 

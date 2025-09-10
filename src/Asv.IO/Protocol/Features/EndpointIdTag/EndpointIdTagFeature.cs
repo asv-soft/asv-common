@@ -9,8 +9,12 @@ public class EndpointIdTagFeature : IProtocolFeature
     public string Description => "Set tag of endpoint id for every received message";
     public string Id => nameof(EndpointIdTagFeature);
     public int Priority => 0;
-    
-    public ValueTask<IProtocolMessage?> ProcessRx(IProtocolMessage message, IProtocolConnection connection, CancellationToken cancel)
+
+    public ValueTask<IProtocolMessage?> ProcessRx(
+        IProtocolMessage message,
+        IProtocolConnection connection,
+        CancellationToken cancel
+    )
     {
         if (connection is IProtocolEndpoint endpoint)
         {
@@ -20,7 +24,11 @@ public class EndpointIdTagFeature : IProtocolFeature
         return ValueTask.FromResult<IProtocolMessage?>(message);
     }
 
-    public ValueTask<IProtocolMessage?> ProcessTx(IProtocolMessage message, IProtocolConnection connection, CancellationToken cancel)
+    public ValueTask<IProtocolMessage?> ProcessTx(
+        IProtocolMessage message,
+        IProtocolConnection connection,
+        CancellationToken cancel
+    )
     {
         return ValueTask.FromResult<IProtocolMessage?>(message);
     }
@@ -33,10 +41,5 @@ public class EndpointIdTagFeature : IProtocolFeature
         }
     }
 
-    public void Unregister(IProtocolConnection connection)
-    {
-        
-    }
-
-    
+    public void Unregister(IProtocolConnection connection) { }
 }

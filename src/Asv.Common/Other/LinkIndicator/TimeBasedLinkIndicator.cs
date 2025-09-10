@@ -4,8 +4,11 @@ using R3;
 
 namespace Asv.Common;
 
-public class TimeBasedLinkIndicator(TimeSpan timeout, int downgradeErrors = 3, TimeProvider? timeProvider = null)
-    : TimeBasedLinkIndicatorBase(timeout, downgradeErrors, timeProvider)
+public class TimeBasedLinkIndicator(
+    TimeSpan timeout,
+    int downgradeErrors = 3,
+    TimeProvider? timeProvider = null
+) : TimeBasedLinkIndicatorBase(timeout, downgradeErrors, timeProvider)
 {
     public void Upgrade()
     {
@@ -16,12 +19,16 @@ public class TimeBasedLinkIndicator(TimeSpan timeout, int downgradeErrors = 3, T
 public class TimeBasedObservableLinkIndicator<T> : TimeBasedLinkIndicatorBase
 {
     private readonly IDisposable _sub1;
-    public TimeBasedObservableLinkIndicator(Observable<T> inputStream,
+
+    public TimeBasedObservableLinkIndicator(
+        Observable<T> inputStream,
         TimeSpan timeout,
         int downgradeErrors = 3,
-        TimeProvider? timeProvider = null) : base(timeout, downgradeErrors, timeProvider)
+        TimeProvider? timeProvider = null
+    )
+        : base(timeout, downgradeErrors, timeProvider)
     {
-        _sub1 = inputStream.Subscribe(x=>InternalUpgrade());
+        _sub1 = inputStream.Subscribe(x => InternalUpgrade());
     }
 
     #region Dispose
@@ -39,13 +46,16 @@ public class TimeBasedObservableLinkIndicator<T> : TimeBasedLinkIndicatorBase
     protected override async ValueTask DisposeAsyncCore()
     {
         if (_sub1 is IAsyncDisposable sub1AsyncDisposable)
+        {
             await sub1AsyncDisposable.DisposeAsync();
+        }
         else
+        {
             _sub1.Dispose();
+        }
 
         await base.DisposeAsyncCore();
     }
 
     #endregion
-
 }

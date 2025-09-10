@@ -3,7 +3,13 @@ namespace Asv.IO;
 
 public class FileSystemHierarchicalStoreEntry<TKey> : IHierarchicalStoreEntry<TKey>
 {
-    public FileSystemHierarchicalStoreEntry(TKey id, string name, FolderStoreEntryType type, TKey parentId, string fullPath)
+    public FileSystemHierarchicalStoreEntry(
+        TKey id,
+        string name,
+        FolderStoreEntryType type,
+        TKey parentId,
+        string fullPath
+    )
     {
         Id = id;
         Name = name;

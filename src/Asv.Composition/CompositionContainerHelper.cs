@@ -16,10 +16,14 @@ public static class CompositionHostHelper
     /// <param name="container">The CompositionHost containing the exports.</param>
     /// <returns>A sorted collection of items based on their dependencies.</returns>
     /// <exception cref="Exception">Thrown if there is a circular dependency or a missing dependency.</exception>
-    public static IEnumerable<Lazy<T, DependencyMetadata>> ExportWithDependencies<T>(this CompositionHost container)
+    public static IEnumerable<Lazy<T, DependencyMetadata>> ExportWithDependencies<T>(
+        this CompositionHost container
+    )
         where T : IDisposable
     {
-        return container.GetExports<Lazy<T, DependencyMetadata>>().ExportWithDependencies(x=>x.Name,x=>x.Dependencies);
+        return container
+            .GetExports<Lazy<T, DependencyMetadata>>()
+            .ExportWithDependencies(x => x.Name, x => x.Dependencies);
     }
 
     /// <summary>
@@ -30,11 +34,13 @@ public static class CompositionHostHelper
     /// <returns>A sorted collection of items based on their dependencies.</returns>
     /// <exception cref="Exception">Thrown if there is a circular dependency or a missing dependency.</exception>
     public static IEnumerable<Lazy<T, DependencyMetadata>> ExportWithDependencies<T>(
-        this IEnumerable<Lazy<T, DependencyMetadata>> items)
+        this IEnumerable<Lazy<T, DependencyMetadata>> items
+    )
         where T : IDisposable
     {
-        return ExportWithDependencies(items,x=>x.Name,x=>x.Dependencies);
+        return ExportWithDependencies(items, x => x.Name, x => x.Dependencies);
     }
+
     /// <summary>
     /// Sorts and retrieves the exports from the provided CompositionHost based on their dependencies.
     /// </summary>
@@ -45,11 +51,16 @@ public static class CompositionHostHelper
     /// <param name="getDeps">A function to retrieve the dependencies from the metadata.</param>
     /// <returns>A sorted collection of items based on their dependencies.</returns>
     /// <exception cref="Exception">Thrown if there is a circular dependency or a missing dependency.</exception>
-    public static IEnumerable<Lazy<T, TMetadata>> ExportWithDependencies<T,TMetadata>(this CompositionHost container,Func<TMetadata,string> getName,Func<TMetadata,string[]> getDeps)
+    public static IEnumerable<Lazy<T, TMetadata>> ExportWithDependencies<T, TMetadata>(
+        this CompositionHost container,
+        Func<TMetadata, string> getName,
+        Func<TMetadata, string[]> getDeps
+    )
         where T : IDisposable
     {
-        return container.GetExports<Lazy<T, TMetadata>>().ExportWithDependencies(getName,getDeps);
+        return container.GetExports<Lazy<T, TMetadata>>().ExportWithDependencies(getName, getDeps);
     }
+
     /// <summary>
     /// Sorts and retrieves the exports from the provided collection of items based on their dependencies.
     /// </summary>
@@ -61,23 +72,42 @@ public static class CompositionHostHelper
     /// <param name="getDeps">A function to retrieve the dependencies from the metadata.</param>
     /// <returns>A sorted collection of items based on their dependencies.</returns>
     /// <exception cref="Exception">Thrown if there is a circular dependency or a missing dependency.</exception>
-    public static IEnumerable<Lazy<T, TMetadata>> ExportWithDependencies<T,TMetadata,TId>(this IEnumerable<Lazy<T, TMetadata>> items,Func<TMetadata,TId> getName,Func<TMetadata,TId[]> getDeps)
-        where T:IDisposable where TId : notnull
+    public static IEnumerable<Lazy<T, TMetadata>> ExportWithDependencies<T, TMetadata, TId>(
+        this IEnumerable<Lazy<T, TMetadata>> items,
+        Func<TMetadata, TId> getName,
+        Func<TMetadata, TId[]> getDeps
+    )
+        where T : IDisposable
+        where TId : notnull
     {
         var itemsArray = items.ToImmutableArray();
-        var itemsDict = itemsArray.ToImmutableDictionary(x =>getName(x.Metadata), x => getDeps(x.Metadata));
+        var itemsDict = itemsArray.ToImmutableDictionary(
+            x => getName(x.Metadata),
+            x => getDeps(x.Metadata)
+        );
+
         // Sort items by dependencies
         foreach (var item in DepthFirstSearch.Sort(itemsDict))
         {
             yield return itemsArray.First(x => getName(x.Metadata).Equals(item));
         }
     }
-    
-    
+
     public static Lazy<TInterface, NameMetadata> GetExportFromConfig<TInterface>(
-        this CompositionHost container, Dictionary<string, bool> config, out bool configUpdated, ILogger? logger = null)
+        this CompositionHost container,
+        Dictionary<string, bool> config,
+        out bool configUpdated,
+        ILogger? logger = null
+    )
     {
-        return GetExportFromConfig(container.GetExports<Lazy<TInterface, NameMetadata>>(), config, x=>x.Name, out configUpdated, x=>x.Priority, logger);
+        return GetExportFromConfig(
+            container.GetExports<Lazy<TInterface, NameMetadata>>(),
+            config,
+            x => x.Name,
+            out configUpdated,
+            x => x.Priority,
+            logger
+        );
     }
 
     /// <summary>
@@ -98,11 +128,23 @@ public static class CompositionHostHelper
     /// Thrown if no implementations are found, if multiple implementations are enabled,
     /// or if all implementations are disabled.
     /// </exception>
-    public static Lazy<TInterface, TMetadata> GetExportFromConfig<TInterface,TMetadata>(
-        this CompositionHost container, Dictionary<string, bool> config,
-        Func<TMetadata, string> getName, out bool configUpdated,Func<TMetadata, int>? getPriority = null, ILogger? logger = null) 
+    public static Lazy<TInterface, TMetadata> GetExportFromConfig<TInterface, TMetadata>(
+        this CompositionHost container,
+        Dictionary<string, bool> config,
+        Func<TMetadata, string> getName,
+        out bool configUpdated,
+        Func<TMetadata, int>? getPriority = null,
+        ILogger? logger = null
+    )
     {
-        return GetExportFromConfig(container.GetExports<Lazy<TInterface, TMetadata>>(), config, getName, out configUpdated, getPriority, logger);
+        return GetExportFromConfig(
+            container.GetExports<Lazy<TInterface, TMetadata>>(),
+            config,
+            getName,
+            out configUpdated,
+            getPriority,
+            logger
+        );
     }
 
     /// <summary>
@@ -124,44 +166,62 @@ public static class CompositionHostHelper
     /// Thrown if no implementations are found, if multiple implementations are enabled,
     /// or if all implementations are disabled.
     /// </exception>
-    public static Lazy<TInterface,TMetadata> GetExportFromConfig<TInterface, TMetadata,TKey>(this IEnumerable<Lazy<TInterface, TMetadata>> items,Dictionary<TKey, bool> config,Func<TMetadata,TKey> getId,  out bool configUpdated,Func<TMetadata,int>? getPriority = null, ILogger? logger = null) where TKey : notnull
+    public static Lazy<TInterface, TMetadata> GetExportFromConfig<TInterface, TMetadata, TKey>(
+        this IEnumerable<Lazy<TInterface, TMetadata>> items,
+        Dictionary<TKey, bool> config,
+        Func<TMetadata, TKey> getId,
+        out bool configUpdated,
+        Func<TMetadata, int>? getPriority = null,
+        ILogger? logger = null
+    )
+        where TKey : notnull
     {
         configUpdated = false;
         logger ??= NullLogger.Instance;
         var foundImpl = items.ToImmutableArray();
-        var foundNames = foundImpl.Select(x=>getId(x.Metadata)).ToImmutableHashSet();
+        var foundNames = foundImpl.Select(x => getId(x.Metadata)).ToImmutableHashSet();
         if (foundNames.IsEmpty)
         {
             throw new Exception($"Implementation of '{nameof(TInterface)}' not found.");
         }
+
         // create implementation that not found at config
         foreach (var name in foundNames.Where(name => !config.TryGetValue(name, out _)))
         {
             logger.ZLogDebug($"Add new implementation '{name}' of {nameof(TInterface)} to config");
-            config.Add(name,false);
+            config.Add(name, false);
             configUpdated = true;
         }
+
         // check not exist implementation at config
         var foundAtConfig = config.Keys.ToImmutableHashSet();
         foreach (var name in foundAtConfig.Where(name => !foundNames.Contains(name)))
         {
             config.Remove(name);
             configUpdated = true;
-            logger.ZLogDebug($"Remove not found implementation '{name}' of {nameof(TInterface)} from config");
+            logger.ZLogDebug(
+                $"Remove not found implementation '{name}' of {nameof(TInterface)} from config"
+            );
         }
 
         var enabledCount = config.Count(x => x.Value);
         if (enabledCount > 1)
         {
-            var enabledItems = config.Where(x => x.Value).Select(x=>x.Key).ToHashSet();
+            var enabledItems = config.Where(x => x.Value).Select(x => x.Key).ToHashSet();
             if (getPriority == null)
             {
-                throw new Exception($"Found several enabled implementations of '{nameof(TInterface)}': " +
-                                    $"{string.Join(",", enabledItems)}. Edit config and enable only one...");
+                throw new Exception(
+                    $"Found several enabled implementations of '{nameof(TInterface)}': "
+                        + $"{string.Join(",", enabledItems)}. Edit config and enable only one..."
+                );
             }
-            var first = foundImpl.Where(x=>enabledItems.Contains(getId(x.Metadata))).OrderBy(x => getPriority(x.Metadata)).First();
+            var first = foundImpl
+                .Where(x => enabledItems.Contains(getId(x.Metadata)))
+                .OrderBy(x => getPriority(x.Metadata))
+                .First();
             logger.ZLogWarning(
-                $"Found several enabled implementations of '{nameof(TInterface)}': {string.Join(",", enabledItems)}. Try select by priority '{first.Metadata}' ({getPriority(first.Metadata)})");
+                $"Found several enabled implementations of '{nameof(TInterface)}': {string.Join(",", enabledItems)}. Try select by priority '{first.Metadata}' ({getPriority(first.Metadata)})"
+            );
             foreach (var cfg in config)
             {
                 config[cfg.Key] = false;
@@ -173,10 +233,14 @@ public static class CompositionHostHelper
         {
             if (getPriority == null)
             {
-                throw new Exception($"All implementation of '{nameof(TInterface)}' is disabled. Edit config and enable one...");    
+                throw new Exception(
+                    $"All implementation of '{nameof(TInterface)}' is disabled. Edit config and enable one..."
+                );
             }
             var first = foundImpl.OrderBy(x => getPriority(x.Metadata)).First();
-            logger.ZLogWarning($"All implementation of '{nameof(TInterface)}' is disabled. Try select by priority '{first.Metadata}' ({getPriority(first.Metadata)})");
+            logger.ZLogWarning(
+                $"All implementation of '{nameof(TInterface)}' is disabled. Try select by priority '{first.Metadata}' ({getPriority(first.Metadata)})"
+            );
             config[getId(first.Metadata)] = true;
             configUpdated = true;
         }

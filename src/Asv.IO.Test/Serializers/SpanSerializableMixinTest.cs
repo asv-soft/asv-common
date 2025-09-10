@@ -1,4 +1,3 @@
-
 using System;
 using System.Buffers;
 using System.IO;
@@ -20,7 +19,10 @@ public class SpanSerializableMixinTest
         {
             if (buffer.Length < Data.Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(buffer), "Buffer is too small to serialize the data.");
+                throw new ArgumentOutOfRangeException(
+                    nameof(buffer),
+                    "Buffer is too small to serialize the data."
+                );
             }
             var spanLength = Math.Min(buffer.Length, Data.Length);
             Data.AsSpan(0, spanLength).CopyTo(buffer);
@@ -206,5 +208,4 @@ public class SpanSerializableMixinTest
     }
 
     #endregion
-    
 }

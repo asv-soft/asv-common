@@ -49,13 +49,16 @@ public interface IListDataFileFormat
     /// <value>
     /// The maximum size of an item.
     /// </value>
-    ushort ItemMaxSize { get;  }
+    ushort ItemMaxSize { get; }
 }
 
 /// <summary>
 /// Represents a file format for storing list data.
 /// </summary>
-public class ListDataFileFormat:ISizedSpanSerializable, IEquatable<ListDataFileFormat>,IListDataFileFormat
+public class ListDataFileFormat
+    : ISizedSpanSerializable,
+        IEquatable<ListDataFileFormat>,
+        IListDataFileFormat
 {
     /// <summary>
     /// The maximum size allowed for a HEADER.
@@ -118,10 +121,10 @@ public class ListDataFileFormat:ISizedSpanSerializable, IEquatable<ListDataFileF
     /// <param name="buffer">The byte buffer to serialize the data into.</param>
     public void Serialize(ref Span<byte> buffer)
     {
-        BinSerialize.WriteString(ref buffer,Type);
-        BinSerialize.WriteString(ref buffer,Version.ToString());
-        BinSerialize.WriteUShort(ref buffer,MetadataMaxSize);
-        BinSerialize.WriteUShort(ref buffer,ItemMaxSize);
+        BinSerialize.WriteString(ref buffer, Type);
+        BinSerialize.WriteString(ref buffer, Version.ToString());
+        BinSerialize.WriteUShort(ref buffer, MetadataMaxSize);
+        BinSerialize.WriteUShort(ref buffer, ItemMaxSize);
     }
 
     /// <summary>
@@ -130,10 +133,10 @@ public class ListDataFileFormat:ISizedSpanSerializable, IEquatable<ListDataFileF
     /// <returns>The byte size of the object.</returns>
     public int GetByteSize()
     {
-        return BinSerialize.GetSizeForString(Type) + 
-               BinSerialize.GetSizeForString(Version.ToString()) + 
-               sizeof(ushort) + 
-               sizeof(ushort);
+        return BinSerialize.GetSizeForString(Type)
+            + BinSerialize.GetSizeForString(Version.ToString())
+            + sizeof(ushort)
+            + sizeof(ushort);
     }
 
     /// <summary>
@@ -143,9 +146,20 @@ public class ListDataFileFormat:ISizedSpanSerializable, IEquatable<ListDataFileF
     /// <returns>True if the current instance is equal to the other instance; otherwise, false.</returns>
     public bool Equals(ListDataFileFormat? other)
     {
-        if (ReferenceEquals(null, other)) return false;
-        if (ReferenceEquals(this, other)) return true;
-        return Version == other.Version && Type == other.Type && MetadataMaxSize == other.MetadataMaxSize && ItemMaxSize == other.ItemMaxSize;
+        if (ReferenceEquals(null, other))
+        {
+            return false;
+        }
+
+        if (ReferenceEquals(this, other))
+        {
+            return true;
+        }
+
+        return Version == other.Version
+            && Type == other.Type
+            && MetadataMaxSize == other.MetadataMaxSize
+            && ItemMaxSize == other.ItemMaxSize;
     }
 
     /// <summary>
@@ -158,9 +172,21 @@ public class ListDataFileFormat:ISizedSpanSerializable, IEquatable<ListDataFileF
     /// </returns>
     public override bool Equals(object? obj)
     {
-        if (ReferenceEquals(null, obj)) return false;
-        if (ReferenceEquals(this, obj)) return true;
-        if (obj.GetType() != this.GetType()) return false;
+        if (ReferenceEquals(null, obj))
+        {
+            return false;
+        }
+
+        if (ReferenceEquals(this, obj))
+        {
+            return true;
+        }
+
+        if (obj.GetType() != this.GetType())
+        {
+            return false;
+        }
+
         return Equals((ListDataFileFormat)obj);
     }
 
@@ -213,12 +239,32 @@ public class ListDataFileFormat:ISizedSpanSerializable, IEquatable<ListDataFileF
     public void Validate()
     {
         //validate fields
-        if (Version == null!) throw new InvalidOperationException("Version is null");
-        if (string.IsNullOrWhiteSpace(Type)) throw new InvalidOperationException("Type is null or empty");
-        if (MetadataMaxSize == 0) throw new InvalidOperationException("MetadataMaxSize is 0");
-        if (ItemMaxSize == 0) throw new InvalidOperationException("ItemMaxSize is 0");
-        if (GetByteSize() + 2 /*CRC*/ >= MaxSize) throw new InvalidOperationException("Header size is too big");
-    }
+        if (Version == null!)
+        {
+            throw new InvalidOperationException("Version is null");
+        }
 
-    
+        if (string.IsNullOrWhiteSpace(Type))
+        {
+            throw new InvalidOperationException("Type is null or empty");
+        }
+
+        if (MetadataMaxSize == 0)
+        {
+            throw new InvalidOperationException("MetadataMaxSize is 0");
+        }
+
+        if (ItemMaxSize == 0)
+        {
+            throw new InvalidOperationException("ItemMaxSize is 0");
+        }
+
+        if (
+            GetByteSize() + 2 /*CRC*/
+            >= MaxSize
+        )
+        {
+            throw new InvalidOperationException("Header size is too big");
+        }
+    }
 }

@@ -11,12 +11,14 @@ public class ProtocolPortException : ProtocolException
         Port = port;
     }
 
-    public ProtocolPortException(IProtocolPort port, string message) : base(message)
+    public ProtocolPortException(IProtocolPort port, string message)
+        : base(message)
     {
         Port = port;
     }
 
-    public ProtocolPortException(IProtocolPort port, string message, Exception inner) : base(message, inner)
+    public ProtocolPortException(IProtocolPort port, string message, Exception inner)
+        : base(message, inner)
     {
         Port = port;
     }

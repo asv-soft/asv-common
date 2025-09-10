@@ -11,7 +11,7 @@ namespace Asv.IO
     {
         private readonly CancellationTokenSource _disposeCancel = new();
         private readonly Subject<Exception> _onErrorSubject = new();
-        
+
         private readonly ITextStream _textStream;
         private readonly bool _disposeStream;
         private readonly TimeSpan _requestTimeout;
@@ -25,7 +25,11 @@ namespace Asv.IO
             _disposeStream = disposeStream;
             _requestTimeout = requestTimeout;
             _sub1 = _textStream.OnError.Subscribe(_onErrorSubject.AsObserver());
-            _sub2 = _textStream.OnReceive.Select(SafeConvert).Where(x => x != null).Cast<JObject?,JObject>().Subscribe(_onData.AsObserver());
+            _sub2 = _textStream
+                .OnReceive.Select(SafeConvert)
+                .Where(x => x != null)
+                .Cast<JObject?, JObject>()
+                .Subscribe(_onData.AsObserver());
         }
 
         private JObject? SafeConvert(string s)
@@ -57,8 +61,11 @@ namespace Asv.IO
             }
         }
 
-        public async Task<JObject> RequestText(string request, Func<JObject, bool> responseFilter,
-            CancellationToken cancel)
+        public async Task<JObject> RequestText(
+            string request,
+            Func<JObject, bool> responseFilter,
+            CancellationToken cancel
+        )
         {
             using var linkedCancel = CancellationTokenSource.CreateLinkedTokenSource(cancel);
             linkedCancel.CancelAfter(_requestTimeout);
@@ -66,7 +73,7 @@ namespace Asv.IO
             using var c1 = linkedCancel.Token.Register(tcs.SetCanceled);
             using var subscribe = _onData.Where(responseFilter).Take(1).Subscribe(tcs.SetResult);
             await SendText(request, linkedCancel.Token).ConfigureAwait(false);
-            return  await tcs.Task.ConfigureAwait(false);
+            return await tcs.Task.ConfigureAwait(false);
         }
 
         public async Task SendText(string data, CancellationToken cancel)
@@ -81,10 +88,14 @@ namespace Asv.IO
             }
         }
 
-        public async Task<JObject> Request<TRequest>(TRequest request, Func<JObject, bool> responseFilter,
-            CancellationToken cancel)
+        public async Task<JObject> Request<TRequest>(
+            TRequest request,
+            Func<JObject, bool> responseFilter,
+            CancellationToken cancel
+        )
         {
-            using CancellationTokenSource linkedCancel = CancellationTokenSource.CreateLinkedTokenSource(cancel);
+            using CancellationTokenSource linkedCancel =
+                CancellationTokenSource.CreateLinkedTokenSource(cancel);
             linkedCancel.CancelAfter(_requestTimeout);
             var tcs = new TaskCompletionSource<JObject>();
             using var c1 = linkedCancel.Token.Register(tcs.SetCanceled);
@@ -102,7 +113,10 @@ namespace Asv.IO
             _onErrorSubject.Dispose();
             _onData.Dispose();
             if (_disposeStream)
+            {
                 _textStream.Dispose();
+            }
+
             _sub1.Dispose();
             _sub2.Dispose();
         }
@@ -114,7 +128,10 @@ namespace Asv.IO
             await CastAndDispose(_onErrorSubject);
             await CastAndDispose(_onData);
             if (_disposeStream)
+            {
                 await _textStream.DisposeAsync();
+            }
+
             await CastAndDispose(_sub1);
             await CastAndDispose(_sub2);
 
@@ -123,9 +140,13 @@ namespace Asv.IO
             static async ValueTask CastAndDispose(IDisposable resource)
             {
                 if (resource is IAsyncDisposable resourceAsyncDisposable)
+                {
                     await resourceAsyncDisposable.DisposeAsync();
+                }
                 else
+                {
                     resource.Dispose();
+                }
             }
         }
 
@@ -136,5 +157,4 @@ namespace Asv.IO
             throw new NotImplementedException();
         }
     }
-
 }

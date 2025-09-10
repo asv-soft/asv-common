@@ -11,12 +11,18 @@ public class ProtocolConnectionException : ProtocolException
         Connection = connection;
     }
 
-    public ProtocolConnectionException(IProtocolConnection connection, string message) : base(message)
+    public ProtocolConnectionException(IProtocolConnection connection, string message)
+        : base(message)
     {
         Connection = connection;
     }
 
-    public ProtocolConnectionException(IProtocolConnection connection, string message, Exception inner) : base(message, inner)
+    public ProtocolConnectionException(
+        IProtocolConnection connection,
+        string message,
+        Exception inner
+    )
+        : base(message, inner)
     {
         Connection = connection;
     }

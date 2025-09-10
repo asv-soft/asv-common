@@ -15,17 +15,19 @@ public class UdpSocketProtocolEndpoint(
     ProtocolPortConfig config,
     ImmutableArray<IProtocolParser> parsers,
     IProtocolContext context,
-    IStatisticHandler statisticHandler)
-    : ProtocolEndpoint(id, config, parsers, context, statisticHandler)
+    IStatisticHandler statisticHandler
+) : ProtocolEndpoint(id, config, parsers, context, statisticHandler)
 {
-    private readonly IProtocolContext _context = context ?? throw new ArgumentNullException(nameof(context));
+    private readonly IProtocolContext _context =
+        context ?? throw new ArgumentNullException(nameof(context));
     private byte[] _buffer = [];
     private int _readSize;
     private readonly AutoResetEvent _waitDataRead = new(false);
     private long _lastDataReceivedOrSentSuccess = context.TimeProvider.GetTimestamp();
-    private readonly TimeSpan _reconnectTimeout = config.ReconnectTimeoutMs <= 0 ?
-        Timeout.InfiniteTimeSpan :
-        TimeSpan.FromMilliseconds(config.ReconnectTimeoutMs);
+    private readonly TimeSpan _reconnectTimeout =
+        config.ReconnectTimeoutMs <= 0
+            ? Timeout.InfiniteTimeSpan
+            : TimeSpan.FromMilliseconds(config.ReconnectTimeoutMs);
 
     public IPEndPoint RemoteEndPoint { get; } = recvAddr;
 
@@ -39,10 +41,15 @@ public class UdpSocketProtocolEndpoint(
         }
 
         // If no data is available, check if the socket is still connected
-        if (_reconnectTimeout != Timeout.InfiniteTimeSpan 
-            && _context.TimeProvider.GetElapsedTime(_lastDataReceivedOrSentSuccess) > _reconnectTimeout)
+        if (
+            _reconnectTimeout != Timeout.InfiniteTimeSpan
+            && _context.TimeProvider.GetElapsedTime(_lastDataReceivedOrSentSuccess)
+                > _reconnectTimeout
+        )
         {
-            throw new TimeoutException($"UDP socket didn't send or receive any data with {_reconnectTimeout}");
+            throw new TimeoutException(
+                $"UDP socket didn't send or receive any data with {_reconnectTimeout}"
+            );
         }
         return 0;
     }
@@ -57,9 +64,12 @@ public class UdpSocketProtocolEndpoint(
         return ValueTask.FromResult(span.Length);
     }
 
-    protected override ValueTask<int> InternalWrite(ReadOnlyMemory<byte> memory, CancellationToken cancel)
+    protected override ValueTask<int> InternalWrite(
+        ReadOnlyMemory<byte> memory,
+        CancellationToken cancel
+    )
     {
-        var count = socket.SendToAsync(memory, SocketFlags.None, RemoteEndPoint,cancel);
+        var count = socket.SendToAsync(memory, SocketFlags.None, RemoteEndPoint, cancel);
         _lastDataReceivedOrSentSuccess = _context.TimeProvider.GetTimestamp();
         return count;
     }

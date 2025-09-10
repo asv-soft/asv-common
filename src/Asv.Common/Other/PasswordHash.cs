@@ -1,28 +1,28 @@
-/* 
+/*
  * Password Hashing With PBKDF2 (http://crackstation.net/hashing-security.htm).
  * Copyright (c) 2013, Taylor Hornby
  * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
+ * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
  *
- * 1. Redistributions of source code must retain the above copyright notice, 
+ * 1. Redistributions of source code must retain the above copyright notice,
  * this list of conditions and the following disclaimer.
  *
  * 2. Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation 
+ * this list of conditions and the following disclaimer in the documentation
  * and/or other materials provided with the distribution.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE 
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR 
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF 
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN 
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) 
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
@@ -40,14 +40,14 @@ namespace Asv.Common
     public class PasswordHash
     {
         // The following constants may be changed without breaking existing hashes.
-        public const int SALT_BYTE_SIZE = 24;
-        public const int HASH_BYTE_SIZE = 24;
-        public const int PBKDF2_ITERATIONS = 1000;
+        public const int SaltByteSize = 24;
+        public const int HashByteSize = 24;
+        public const int Pbkdf2Iterations = 1000;
 
-        public const int ITERATION_INDEX = 0;
-        public const int SALT_INDEX = 1;
-        public const int PBKDF2_INDEX = 2;
-              
+        public const int IterationIndex = 0;
+        public const int SaltIndex = 1;
+        public const int Pbkdf2Index = 2;
+
         /// <summary>
         /// Creates a salted PBKDF2 hash of the password.
         /// </summary>
@@ -57,14 +57,16 @@ namespace Asv.Common
         {
             // Generate a random salt
             var csprng = RandomNumberGenerator.Create();
-            var salt = new byte[SALT_BYTE_SIZE];
+            var salt = new byte[SaltByteSize];
             csprng.GetBytes(salt);
 
             // Hash the password and encode the parameters
-            var hash = PBKDF2(password, salt, PBKDF2_ITERATIONS, HASH_BYTE_SIZE);
-            return PBKDF2_ITERATIONS + ":" +
-                Convert.ToBase64String(salt) + ":" +
-                Convert.ToBase64String(hash);
+            var hash = Pbkdf2(password, salt, Pbkdf2Iterations, HashByteSize);
+            return Pbkdf2Iterations
+                + ":"
+                + Convert.ToBase64String(salt)
+                + ":"
+                + Convert.ToBase64String(hash);
         }
 
         /// <summary>
@@ -78,11 +80,11 @@ namespace Asv.Common
             // Extract the parameters from the hash
             char[] delimiter = [':'];
             string[] split = correctHash.Split(delimiter);
-            var iterations = int.Parse(split[ITERATION_INDEX]);
-            var salt = Convert.FromBase64String(split[SALT_INDEX]);
-            var hash = Convert.FromBase64String(split[PBKDF2_INDEX]);
+            var iterations = int.Parse(split[IterationIndex]);
+            var salt = Convert.FromBase64String(split[SaltIndex]);
+            var hash = Convert.FromBase64String(split[Pbkdf2Index]);
 
-            var testHash = PBKDF2(password, salt, iterations, hash.Length);
+            var testHash = Pbkdf2(password, salt, iterations, hash.Length);
             return SlowEquals(hash, testHash);
         }
 
@@ -98,7 +100,10 @@ namespace Asv.Common
         {
             var diff = (uint)a.Length ^ (uint)b.Length;
             for (var i = 0; i < a.Length && i < b.Length; i++)
+            {
                 diff |= (uint)(a[i] ^ b[i]);
+            }
+
             return diff == 0;
         }
 
@@ -110,11 +115,11 @@ namespace Asv.Common
         /// <param name="iterations">The PBKDF2 iteration count.</param>
         /// <param name="outputBytes">The length of the hash to generate, in bytes.</param>
         /// <returns>A hash of the password.</returns>
-        private static byte[] PBKDF2(string password, byte[] salt, int iterations, int outputBytes)
+        private static byte[] Pbkdf2(string password, byte[] salt, int iterations, int outputBytes)
         {
             var pbkdf2 = new Rfc2898DeriveBytes(password, salt);
             pbkdf2.IterationCount = iterations;
             return pbkdf2.GetBytes(outputBytes);
         }
     }
-} 
+}

@@ -11,12 +11,14 @@ public class ProtocolParserException : Exception
         Parser = parser;
     }
 
-    public ProtocolParserException(ProtocolInfo parser,string message) : base(message)
+    public ProtocolParserException(ProtocolInfo parser, string message)
+        : base(message)
     {
         Parser = parser;
     }
 
-    public ProtocolParserException(ProtocolInfo parser, string message, Exception inner) : base(message, inner)
+    public ProtocolParserException(ProtocolInfo parser, string message, Exception inner)
+        : base(message, inner)
     {
         Parser = parser;
     }

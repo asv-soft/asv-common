@@ -10,7 +10,7 @@ namespace Asv.IO;
 /// </summary>
 /// <typeparam name="TKey">The type of the key for identifying entries.</typeparam>
 /// <typeparam name="TFile">The type of the file.</typeparam>
-public interface IHierarchicalStore<TKey, out TFile>: IDisposable 
+public interface IHierarchicalStore<TKey, out TFile> : IDisposable
     where TFile : IDisposable
 {
     /// <summary>
@@ -54,7 +54,7 @@ public interface IHierarchicalStore<TKey, out TFile>: IDisposable
     bool EntryExists(TKey id);
 
     #endregion
-    
+
     #region Folders
 
     /// <summary>
@@ -117,9 +117,9 @@ public interface IHierarchicalStore<TKey, out TFile>: IDisposable
     /// <param name="id">The identifier of the folder to be moved.</param>
     /// <param name="newParentId">The identifier of the new parent folder.</param>
     void MoveFolder(TKey id, TKey newParentId);
-    
+
     #endregion
-    
+
     #region Files
 
     /// <summary>
@@ -162,9 +162,9 @@ public interface IHierarchicalStore<TKey, out TFile>: IDisposable
     /// This method moves the file specified by <paramref name="id"/> to the new parent folder specified by <paramref name="newParentId"/>.
     /// </remarks>
     void MoveFile(TKey id, TKey newParentId);
-    
+
     #endregion
-    
+
     #region Open/Create
 
     /// <summary>
@@ -195,8 +195,8 @@ public interface IHierarchicalStore<TKey, out TFile>: IDisposable
 /// </summary>
 /// <typeparam name="TKey">The type of the parent ID and ID.</typeparam>
 /// <typeparam name="TObject">The type of the file content.</typeparam>
-public interface ICachedFile<out TKey, out TObject>:IDisposable
-    where TObject:IDisposable
+public interface ICachedFile<out TKey, out TObject> : IDisposable
+    where TObject : IDisposable
 {
     /// <summary>
     /// Gets the parent identifier.
@@ -231,7 +231,6 @@ public interface ICachedFile<out TKey, out TObject>:IDisposable
     /// A reference to a TObject representing a file.
     /// </returns>
     TObject File { get; }
-    
 }
 
 /// <summary>
@@ -252,7 +251,7 @@ public static class HierarchicalStoreHelper
     /// The method deletes a file or a folder from the hierarchical store based on the entry type.
     /// If the entry is not found, an <see cref="InvalidOperationException"/> is thrown.
     /// </remarks>
-    public static void DeleteEntry<TKey,TFile>(this IHierarchicalStore<TKey,TFile> self, TKey id) 
+    public static void DeleteEntry<TKey, TFile>(this IHierarchicalStore<TKey, TFile> self, TKey id)
         where TFile : IDisposable
     {
         if (!self.TryGetEntry(id, out var entry))
@@ -261,8 +260,10 @@ public static class HierarchicalStoreHelper
         }
 
         if (entry == null)
+        {
             throw new InvalidOperationException($"Entry with id {id} not found");
-        
+        }
+
         switch (entry.Type)
         {
             case FolderStoreEntryType.File:
@@ -291,7 +292,11 @@ public static class HierarchicalStoreHelper
     /// - If the entry is found, it will be checked for nullity.
     /// - Depending on the type of the entry (file or folder), the corresponding method (`RenameFile` or `RenameFolder`) is called on the hierarchical store.
     /// /
-    public static void RenameEntry<TKey,TFile>(this IHierarchicalStore<TKey,TFile> self,TKey id, string newName) 
+    public static void RenameEntry<TKey, TFile>(
+        this IHierarchicalStore<TKey, TFile> self,
+        TKey id,
+        string newName
+    )
         where TFile : IDisposable
     {
         if (!self.TryGetEntry(id, out var entry))
@@ -300,21 +305,22 @@ public static class HierarchicalStoreHelper
         }
 
         if (entry == null)
+        {
             throw new InvalidOperationException($"Entry with id {id} not found");
-        
+        }
+
         switch (entry.Type)
         {
             case FolderStoreEntryType.File:
-                self.RenameFile(id,newName);
+                self.RenameFile(id, newName);
                 break;
             case FolderStoreEntryType.Folder:
-                self.RenameFolder(id,newName);
+                self.RenameFolder(id, newName);
                 break;
             default:
                 throw new ArgumentOutOfRangeException();
         }
     }
-
 
     /// <summary>
     /// Moves an entry identified by its ID to a new parent entry identified by its newParentId.
@@ -326,7 +332,11 @@ public static class HierarchicalStoreHelper
     /// <param name="newParentId">The ID of the new parent entry.</param>
     /// <exception cref="InvalidOperationException">Thrown if the entry with the provided id is not found.</exception>
     /// <exception cref="ArgumentOutOfRangeException">Thrown if the entry type is neither Folder nor File.</exception>
-    public static void MoveEntry<TKey,TFile>(this IHierarchicalStore<TKey,TFile> self,TKey id, TKey newParentId) 
+    public static void MoveEntry<TKey, TFile>(
+        this IHierarchicalStore<TKey, TFile> self,
+        TKey id,
+        TKey newParentId
+    )
         where TFile : IDisposable
     {
         if (!self.TryGetEntry(id, out var entry))
@@ -335,15 +345,17 @@ public static class HierarchicalStoreHelper
         }
 
         if (entry == null)
+        {
             throw new InvalidOperationException($"Entry with id {id} not found");
-        
+        }
+
         switch (entry.Type)
         {
             case FolderStoreEntryType.File:
-                self.MoveFile(id,newParentId);
+                self.MoveFile(id, newParentId);
                 break;
             case FolderStoreEntryType.Folder:
-                self.MoveFolder(id,newParentId);
+                self.MoveFolder(id, newParentId);
                 break;
             default:
                 throw new ArgumentOutOfRangeException();
@@ -397,5 +409,5 @@ public enum FolderStoreEntryType
     /// <summary>
     /// Represents the type of entry in the folder store.
     /// </summary>
-    Folder
+    Folder,
 }

@@ -14,7 +14,6 @@ namespace Asv.IO;
 /// </summary>
 public class ProtocolPortConfig(Uri connectionString) : ICloneable
 {
-
     public const string NameQueryKey = "name";
     public string? Name
     {
@@ -23,7 +22,7 @@ public class ProtocolPortConfig(Uri connectionString) : ICloneable
     }
 
     public string Scheme { get; set; } = connectionString.Scheme;
-    
+
     public const string ProtocolQueryKey = "protocols";
     public string[]? EnabledProtocols
     {
@@ -38,8 +37,8 @@ public class ProtocolPortConfig(Uri connectionString) : ICloneable
             {
                 foreach (var s in value)
                 {
-                    Fragment.Add(ProtocolQueryKey,s);
-                }    
+                    Fragment.Add(ProtocolQueryKey, s);
+                }
             }
         }
     }
@@ -59,7 +58,10 @@ public class ProtocolPortConfig(Uri connectionString) : ICloneable
     public const int ReconnectTimeoutDefault = 5000;
     public int ReconnectTimeoutMs
     {
-        get => int.TryParse(Query[ReconnectTimeoutKey], out var value) ? value : ReconnectTimeoutDefault;
+        get =>
+            int.TryParse(Query[ReconnectTimeoutKey], out var value)
+                ? value
+                : ReconnectTimeoutDefault;
         set => Query.Set(ReconnectTimeoutKey, value.ToString());
     }
 
@@ -75,7 +77,10 @@ public class ProtocolPortConfig(Uri connectionString) : ICloneable
     private const int ReadEmptyLoopDelayMsDefault = 30;
     public int ReadEmptyLoopDelayMs
     {
-        get => int.TryParse(Query[ReadEmptyLoopDelayMsKey], out var value) ? value : ReadEmptyLoopDelayMsDefault;
+        get =>
+            int.TryParse(Query[ReadEmptyLoopDelayMsKey], out var value)
+                ? value
+                : ReadEmptyLoopDelayMsDefault;
         set => Query.Set(ReadEmptyLoopDelayMsKey, value.ToString());
     }
     private const string DropMessageWhenFullTxQueueKey = "tx_drop";
@@ -102,7 +107,8 @@ public class ProtocolPortConfig(Uri connectionString) : ICloneable
     private const int SendBufferSizeDefault = 64 * 1024;
     public int SendBufferSize
     {
-        get => int.TryParse(Query[SendBufferSizeKey], out var value) ? value : SendBufferSizeDefault;
+        get =>
+            int.TryParse(Query[SendBufferSizeKey], out var value) ? value : SendBufferSizeDefault;
         set => Query.Set(SendBufferSizeKey, value.ToString());
     }
     private const string SendTimeoutKey = "tx_timout";
@@ -112,13 +118,16 @@ public class ProtocolPortConfig(Uri connectionString) : ICloneable
         get => int.TryParse(Query[SendTimeoutKey], out var value) ? value : SendTimeoutDefault;
         set => Query.Set(SendTimeoutKey, value.ToString());
     }
-    
+
     private const string ReceiveBufferSizeKey = "rx_size";
     private const int ReceiveBufferSizeDefault = 64 * 1024;
 
     public int ReadBufferSize
     {
-        get=> int.TryParse(Query[ReceiveBufferSizeKey], out var value) ? value : ReceiveBufferSizeDefault;
+        get =>
+            int.TryParse(Query[ReceiveBufferSizeKey], out var value)
+                ? value
+                : ReceiveBufferSizeDefault;
         set => Query.Set(ReceiveBufferSizeKey, value.ToString());
     }
     private const string ReceiveTimeoutKey = "rx_timout";
@@ -126,12 +135,15 @@ public class ProtocolPortConfig(Uri connectionString) : ICloneable
 
     public int ReadTimeout
     {
-        get => int.TryParse(Query[ReceiveTimeoutKey], out var value) ? value : ReceiveTimeoutDefault;
+        get =>
+            int.TryParse(Query[ReceiveTimeoutKey], out var value) ? value : ReceiveTimeoutDefault;
         set => Query.Set(ReceiveTimeoutKey, value.ToString());
     }
-    
-    public NameValueCollection Query { get; } = HttpUtility.ParseQueryString(connectionString.Query);
-    public NameValueCollection Fragment { get; } = HttpUtility.ParseQueryString(connectionString.Fragment.Trim('#'));
+
+    public NameValueCollection Query { get; } =
+        HttpUtility.ParseQueryString(connectionString.Query);
+    public NameValueCollection Fragment { get; } =
+        HttpUtility.ParseQueryString(connectionString.Fragment.Trim('#'));
 
     public Uri AsUri()
     {
@@ -142,7 +154,7 @@ public class ProtocolPortConfig(Uri connectionString) : ICloneable
             Path = Path,
             Host = Host,
             Scheme = Scheme,
-            UserName = UserInfo
+            UserName = UserInfo,
         };
         if (Port.HasValue)
         {
@@ -155,7 +167,7 @@ public class ProtocolPortConfig(Uri connectionString) : ICloneable
     {
         return CheckIpEndpoint(Host, Port);
     }
-    
+
     public static IPEndPoint CheckIpEndpoint(string? host, int? port)
     {
         ArgumentNullException.ThrowIfNull(host);
@@ -163,9 +175,13 @@ public class ProtocolPortConfig(Uri connectionString) : ICloneable
 
         if (port < IPEndPoint.MinPort && port > IPEndPoint.MaxPort)
         {
-            throw new ArgumentOutOfRangeException(nameof(port), port, $"Port must be in range {IPEndPoint.MinPort}..{IPEndPoint.MaxPort}");
+            throw new ArgumentOutOfRangeException(
+                nameof(port),
+                port,
+                $"Port must be in range {IPEndPoint.MinPort}..{IPEndPoint.MaxPort}"
+            );
         }
-        
+
         if (IPAddress.TryParse(host, out var ipAddress))
         {
             return new IPEndPoint(ipAddress, port.Value);
@@ -175,11 +191,8 @@ public class ProtocolPortConfig(Uri connectionString) : ICloneable
             var addresses = Dns.GetHostAddresses(host);
             return new IPEndPoint(addresses[0], port.Value);
         }
-       
     }
 
-    
-    
     public override string ToString()
     {
         return AsUri().ToString();

@@ -9,8 +9,6 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Asv.IO;
 
-
-
 public interface IProtocolBuilder
 {
     void SetLog(ILoggerFactory loggerFactory);
@@ -26,18 +24,26 @@ public interface IProtocolBuilder
     void ClearAll();
 }
 
-
-
-internal class ProtocolBuilder : IProtocolBuilder,IProtocolFeatureBuilder,IProtocolMessageFormatterBuilder,IProtocolParserBuilder,IProtocolPortBuilder
+internal class ProtocolBuilder
+    : IProtocolBuilder,
+        IProtocolFeatureBuilder,
+        IProtocolMessageFormatterBuilder,
+        IProtocolParserBuilder,
+        IProtocolPortBuilder
 {
     private ILoggerFactory _loggerFactory;
     private TimeProvider _timeProvider;
     private IMeterFactory _meterFactory;
-    private readonly ImmutableArray<IProtocolFeature>.Builder _featureBuilder = ImmutableArray.CreateBuilder<IProtocolFeature>();
-    private readonly ImmutableDictionary<string, ParserFactoryDelegate>.Builder _parserBuilder = ImmutableDictionary.CreateBuilder<string, ParserFactoryDelegate>();
-    private readonly ImmutableArray<ProtocolInfo>.Builder _protocolInfoBuilder = ImmutableArray.CreateBuilder<ProtocolInfo>();
-    private readonly ImmutableDictionary<string, PortFactoryDelegate>.Builder _portBuilder = ImmutableDictionary.CreateBuilder<string, PortFactoryDelegate>();
-    private readonly ImmutableArray<PortTypeInfo>.Builder _portTypeInfoBuilder = ImmutableArray.CreateBuilder<PortTypeInfo>();
+    private readonly ImmutableArray<IProtocolFeature>.Builder _featureBuilder =
+        ImmutableArray.CreateBuilder<IProtocolFeature>();
+    private readonly ImmutableDictionary<string, ParserFactoryDelegate>.Builder _parserBuilder =
+        ImmutableDictionary.CreateBuilder<string, ParserFactoryDelegate>();
+    private readonly ImmutableArray<ProtocolInfo>.Builder _protocolInfoBuilder =
+        ImmutableArray.CreateBuilder<ProtocolInfo>();
+    private readonly ImmutableDictionary<string, PortFactoryDelegate>.Builder _portBuilder =
+        ImmutableDictionary.CreateBuilder<string, PortFactoryDelegate>();
+    private readonly ImmutableArray<PortTypeInfo>.Builder _portTypeInfoBuilder =
+        ImmutableArray.CreateBuilder<PortTypeInfo>();
     private readonly List<IProtocolMessageFormatter> _formatters = [];
 
     internal ProtocolBuilder()
@@ -110,10 +116,11 @@ internal class ProtocolBuilder : IProtocolBuilder,IProtocolFeatureBuilder,IProto
             _protocolInfoBuilder.ToImmutable(),
             _portBuilder.ToImmutable(),
             _portTypeInfoBuilder.ToImmutable(),
-            [.._formatters.OrderBy(x => x.Order)],
+            [.. _formatters.OrderBy(x => x.Order)],
             _loggerFactory,
             _timeProvider,
-            _meterFactory);
+            _meterFactory
+        );
     }
 
     void IProtocolFeatureBuilder.Clear()

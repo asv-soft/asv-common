@@ -7,17 +7,19 @@ namespace Asv.IO;
 
 public delegate IProtocolPort PortFactoryDelegate(
     Uri connectionString,
-    IProtocolContext context, 
-    IStatisticHandler statistic);
+    IProtocolContext context,
+    IStatisticHandler statistic
+);
 
 public enum ProtocolPortStatus
 {
     Disconnected,
     InProgress,
     Connected,
-    Error
+    Error,
 }
-public interface IProtocolPort:IProtocolConnection
+
+public interface IProtocolPort : IProtocolConnection
 {
     ProtocolPortConfig Config { get; }
     PortTypeInfo TypeInfo { get; }
@@ -37,6 +39,7 @@ public class PortTypeInfo(string scheme, string name)
 {
     public string Scheme { get; set; } = scheme;
     public string Name { get; set; } = name;
+
     public override string ToString()
     {
         return $"{Scheme}[{Name}]";

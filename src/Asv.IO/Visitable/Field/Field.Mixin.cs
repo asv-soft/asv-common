@@ -27,45 +27,57 @@ public static class FieldMixin
     private const string UnitsKey = "units";
     private const string FormatStringKey = "format";
     private const string EnumKey = "enum";
-    
-    public static string? GetDescription(this Field src) => CollectionExtensions.GetValueOrDefault(src.Metadata, DescriptionKey) as string;
-    public static string? GetUnits(this Field src) => CollectionExtensions.GetValueOrDefault(src.Metadata, UnitsKey) as string;
-    public static string? GetTitle(this Field src) => CollectionExtensions.GetValueOrDefault(src.Metadata, TitleKey) as string;
-    public static string? GetFormatString(this Field src) => CollectionExtensions.GetValueOrDefault(src.Metadata, FormatStringKey) as string;
-    
-    public static ImmutableDictionary<T,EnumValue<T>> GetEnum<T>(this Field src) 
+
+    public static string? GetDescription(this Field src) =>
+        CollectionExtensions.GetValueOrDefault(src.Metadata, DescriptionKey) as string;
+
+    public static string? GetUnits(this Field src) =>
+        CollectionExtensions.GetValueOrDefault(src.Metadata, UnitsKey) as string;
+
+    public static string? GetTitle(this Field src) =>
+        CollectionExtensions.GetValueOrDefault(src.Metadata, TitleKey) as string;
+
+    public static string? GetFormatString(this Field src) =>
+        CollectionExtensions.GetValueOrDefault(src.Metadata, FormatStringKey) as string;
+
+    public static ImmutableDictionary<T, EnumValue<T>> GetEnum<T>(this Field src)
         where T : notnull
     {
-        return CollectionExtensions.GetValueOrDefault(src.Metadata, EnumKey) as ImmutableDictionary<T, EnumValue<T>> ?? ImmutableDictionary<T, EnumValue<T>>.Empty;
+        return CollectionExtensions.GetValueOrDefault(src.Metadata, EnumKey)
+                as ImmutableDictionary<T, EnumValue<T>>
+            ?? ImmutableDictionary<T, EnumValue<T>>.Empty;
     }
-    
+
     public static Field.Builder Title(this Field.Builder src, string value)
     {
         src.Metadata(TitleKey, value);
         return src;
     }
-        
-    public static Field.Builder Description(this Field.Builder src,string value)
+
+    public static Field.Builder Description(this Field.Builder src, string value)
     {
         src.Metadata(DescriptionKey, value);
         return src;
     }
 
-    public static Field.Builder Units(this Field.Builder src,string value)
+    public static Field.Builder Units(this Field.Builder src, string value)
     {
         src.Metadata(UnitsKey, value);
         return src;
     }
 
-    public static Field.Builder FormatString(this Field.Builder src,string value)
+    public static Field.Builder FormatString(this Field.Builder src, string value)
     {
         src.Metadata(FormatStringKey, value);
         return src;
     }
-    
-    public static Field.Builder Enum<T>(this Field.Builder src, params IEnumerable<EnumValue<T>> values)
+
+    public static Field.Builder Enum<T>(
+        this Field.Builder src,
+        params IEnumerable<EnumValue<T>> values
+    )
     {
-        src.Metadata(EnumKey, values.ToImmutableDictionary(x=>x.Name));
+        src.Metadata(EnumKey, values.ToImmutableDictionary(x => x.Name));
         return src;
     }
 }

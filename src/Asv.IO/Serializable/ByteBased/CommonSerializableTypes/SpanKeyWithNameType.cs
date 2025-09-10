@@ -2,7 +2,7 @@ using System;
 
 namespace Asv.IO
 {
-    public abstract class SpanKeyWithNameType<TKey>:ISizedSpanSerializable
+    public abstract class SpanKeyWithNameType<TKey> : ISizedSpanSerializable
     {
         private string? _name;
 
@@ -37,13 +37,13 @@ namespace Asv.IO
 
         public virtual int GetByteSize()
         {
-            return BinSerialize.GetSizeForString(_name) + InternalGetSizeKey(Id ?? throw new InvalidOperationException());
+            return BinSerialize.GetSizeForString(_name)
+                + InternalGetSizeKey(Id ?? throw new InvalidOperationException());
         }
 
         public override string ToString()
         {
             return $"[{Id}] {Name}";
         }
-
     }
 }

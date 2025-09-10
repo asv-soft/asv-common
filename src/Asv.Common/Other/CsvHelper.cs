@@ -24,7 +24,13 @@ namespace Asv.Common
 
     public static class CsvHelper
     {
-        public static void SaveToCsv<T>(IEnumerable<T> items, string fileName, string separator, string shieldSymbol, params CsvColumn<T>[] columns)
+        public static void SaveToCsv<T>(
+            IEnumerable<T> items,
+            string fileName,
+            string separator,
+            string shieldSymbol,
+            params CsvColumn<T>[] columns
+        )
         {
             using (var file = new StreamWriter(File.OpenWrite(fileName), Encoding.UTF8))
             {

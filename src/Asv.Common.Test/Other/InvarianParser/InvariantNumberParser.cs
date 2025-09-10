@@ -7,7 +7,6 @@ namespace Asv.Common.Test.Other.InvarianParser;
 [TestSubject(typeof(InvariantNumberParser))]
 public class InvariantNumberParserTest
 {
-
     #region TryParse(string? input, out double value)
 
     [Theory]
@@ -33,7 +32,10 @@ public class InvariantNumberParserTest
     [InlineData("1M", 1_000_000)]
     [InlineData("2b", 2_000_000_000)]
     [InlineData("  15.5К ", 15_500)] // Spaces and the Russian 'К'
-    public void TryParseDouble_ValidInput_ReturnsSuccessAndCorrectValue(string input, double expected)
+    public void TryParseDouble_ValidInput_ReturnsSuccessAndCorrectValue(
+        string input,
+        double expected
+    )
     {
         // Arrange & Act
         var result = InvariantNumberParser.TryParse(input, out double parsedValue);
@@ -66,15 +68,23 @@ public class InvariantNumberParserTest
     [Theory]
     [InlineData("500", 100, 400)]
     [InlineData("5K", 1_000, 4_000)]
-    public void TryParseDouble_WithRange_OutOfRangeValue_ReturnsFailAsOutOfRange(string input, double min, double max)
+    public void TryParseDouble_WithRange_OutOfRangeValue_ReturnsFailAsOutOfRange(
+        string input,
+        double min,
+        double max
+    )
     {
         // Arrange & Act
         var result = InvariantNumberParser.TryParse(input, out double parsedValue, min, max);
 
         // Assert
-        Assert.False(result.IsSuccess, "Expected IsSuccess == false when the value is out of range");
+        Assert.False(
+            result.IsSuccess,
+            "Expected IsSuccess == false when the value is out of range"
+        );
         Assert.NotNull(result.ValidationException);
         Assert.Contains("Value is out of range", result.ValidationException!.Message);
+
         // We still attempt to parse the value – parsedValue holds the parsed number,
         // but IsSuccess=false indicates it's invalid in terms of the specified range.
     }
@@ -82,7 +92,12 @@ public class InvariantNumberParserTest
     [Theory]
     [InlineData("300", 100, 400, 300)]
     [InlineData("350K", 300_000, 400_000, 350_000)]
-    public void TryParseDouble_WithRange_ValidValue_ReturnsSuccess(string input, double min, double max, double expected)
+    public void TryParseDouble_WithRange_ValidValue_ReturnsSuccess(
+        string input,
+        double min,
+        double max,
+        double expected
+    )
     {
         // Arrange & Act
         var result = InvariantNumberParser.TryParse(input, out double parsedValue, min, max);
@@ -180,7 +195,11 @@ public class InvariantNumberParserTest
     [Theory]
     [InlineData("50", 100, 200)]
     [InlineData("300", 100, 200)]
-    public void TryParseInt_WithRange_OutOfRangeValue_ReturnsFailAsOutOfRange(string input, int min, int max)
+    public void TryParseInt_WithRange_OutOfRangeValue_ReturnsFailAsOutOfRange(
+        string input,
+        int min,
+        int max
+    )
     {
         // Arrange
         int intValue;
@@ -189,16 +208,25 @@ public class InvariantNumberParserTest
         var result = InvariantNumberParser.TryParse(input, out intValue, min, max);
 
         // Assert
-        Assert.False(result.IsSuccess, "Expected IsSuccess == false when the value is out of the specified range");
+        Assert.False(
+            result.IsSuccess,
+            "Expected IsSuccess == false when the value is out of the specified range"
+        );
         Assert.NotNull(result.ValidationException);
         Assert.Contains("Value is out of range", result.ValidationException!.Message);
+
         // intValue should not be set to a successful state if it's out of range.
     }
 
     [Theory]
     [InlineData("150", 100, 200, 150)]
     [InlineData("1k", 500, 2000, 1000)]
-    public void TryParseInt_WithRange_ValidValue_ReturnsSuccess(string input, int min, int max, int expected)
+    public void TryParseInt_WithRange_ValidValue_ReturnsSuccess(
+        string input,
+        int min,
+        int max,
+        int expected
+    )
     {
         // Arrange
         int intValue;
@@ -207,7 +235,10 @@ public class InvariantNumberParserTest
         var result = InvariantNumberParser.TryParse(input, out intValue, min, max);
 
         // Assert
-        Assert.True(result.IsSuccess, "Expected successful parsing for a valid number within the specified range");
+        Assert.True(
+            result.IsSuccess,
+            "Expected successful parsing for a valid number within the specified range"
+        );
         Assert.Null(result.ValidationException);
         Assert.Equal(expected, intValue);
     }
@@ -289,9 +320,13 @@ public class InvariantNumberParserTest
     }
 
     [Theory]
-    [InlineData("9999", 1000, 9000)]     // value=9999, range=[1000..9000]
+    [InlineData("9999", 1000, 9000)] // value=9999, range=[1000..9000]
     [InlineData("150", 200, 500)]
-    public void TryParseDouble_OutOfRange_ShouldFailAsOutOfRange(string input, double min, double max)
+    public void TryParseDouble_OutOfRange_ShouldFailAsOutOfRange(
+        string input,
+        double min,
+        double max
+    )
     {
         var result = InvariantNumberParser.TryParse(input, out double value, min, max);
         Assert.False(result.IsSuccess);
@@ -356,7 +391,10 @@ public class InvariantNumberParserTest
     [InlineData("2g", 2_000_000_000)]
     // Check that exceeding int.MaxValue when multiplying
     // by 1000 or 1_000_000 returns FailAsOutOfRange during double->int casting
-    public void TryParseInt_WithSuffix_ShouldSuccessOrFailIfOverflow(string input, int expectedOrOverflow)
+    public void TryParseInt_WithSuffix_ShouldSuccessOrFailIfOverflow(
+        string input,
+        int expectedOrOverflow
+    )
     {
         var result = InvariantNumberParser.TryParse(input, out int value);
 
@@ -368,9 +406,13 @@ public class InvariantNumberParserTest
         }
         else
         {
-            Assert.Equal(ValidationResult.FailAsOutOfRange(int.MinValue.ToString(CultureInfo.InvariantCulture),
-                                                          int.MaxValue.ToString(CultureInfo.InvariantCulture)),
-                         result);
+            Assert.Equal(
+                ValidationResult.FailAsOutOfRange(
+                    int.MinValue.ToString(CultureInfo.InvariantCulture),
+                    int.MaxValue.ToString(CultureInfo.InvariantCulture)
+                ),
+                result
+            );
         }
     }
 

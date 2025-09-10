@@ -8,14 +8,14 @@ namespace Asv.IO.Test.ListDataFile;
 
 public class ListDataFileTests
 {
-    private static MockFileSystem _fileSystem = new();
+    private static readonly MockFileSystem _fileSystem = new();
 
     public static readonly ListDataFileFormat FileFormat1 = new()
     {
         Version = "1.0.0",
         Type = "TestFile1",
         MetadataMaxSize = 1024 * 4,
-        ItemMaxSize = 256
+        ItemMaxSize = 256,
     };
 
     public static readonly ListDataFileFormat FileFormat2 = new()
@@ -23,7 +23,7 @@ public class ListDataFileTests
         Version = "1.0.0",
         Type = "TestFile2",
         MetadataMaxSize = 1024 * 4,
-        ItemMaxSize = 256
+        ItemMaxSize = 256,
     };
 
     [Fact]
@@ -32,34 +32,56 @@ public class ListDataFileTests
         using var strm = new MemoryStream();
         Assert.Throws<ArgumentNullException>(() =>
         {
-            using var file = new ListDataFile<AsvSdrRecordFileMetadata>(null, FileFormat1, false, _fileSystem);
+            using var file = new ListDataFile<AsvSdrRecordFileMetadata>(
+                null,
+                FileFormat1,
+                false,
+                _fileSystem
+            );
         });
         Assert.Throws<ArgumentNullException>(() =>
         {
-            using var file = new ListDataFile<AsvSdrRecordFileMetadata>(new MemoryStream(), null, false, _fileSystem);
+            using var file = new ListDataFile<AsvSdrRecordFileMetadata>(
+                new MemoryStream(),
+                null,
+                false,
+                _fileSystem
+            );
         });
     }
-
-    
 
     [Fact]
     public static void EditMetadata_Null_Argument_Fail()
     {
         using var strm = new MemoryStream();
-        IListDataFile<AsvSdrRecordFileMetadata> file =
-            new ListDataFile<AsvSdrRecordFileMetadata>(strm, FileFormat1, false, _fileSystem);
+        IListDataFile<AsvSdrRecordFileMetadata> file = new ListDataFile<AsvSdrRecordFileMetadata>(
+            strm,
+            FileFormat1,
+            false,
+            _fileSystem
+        );
 
-        Assert.Throws<NullReferenceException>(() => { file.EditMetadata(null); });
+        Assert.Throws<NullReferenceException>(() =>
+        {
+            file.EditMetadata(null);
+        });
     }
 
     [Fact]
     public static void Write_Null_Argument_Fail()
     {
         using var strm = new MemoryStream();
-        IListDataFile<AsvSdrRecordFileMetadata> file =
-            new ListDataFile<AsvSdrRecordFileMetadata>(strm, FileFormat1, false, _fileSystem);
+        IListDataFile<AsvSdrRecordFileMetadata> file = new ListDataFile<AsvSdrRecordFileMetadata>(
+            strm,
+            FileFormat1,
+            false,
+            _fileSystem
+        );
 
-        Assert.Throws<NullReferenceException>(() => { file.Write(0, null); });
+        Assert.Throws<NullReferenceException>(() =>
+        {
+            file.Write(0, null);
+        });
     }
 
     [Fact]
@@ -67,13 +89,23 @@ public class ListDataFileTests
     {
         using var strm = new MemoryStream();
 
-        var file1 = new ListDataFile<AsvSdrRecordFileMetadata>(strm, FileFormat1, false, _fileSystem);
+        var file1 = new ListDataFile<AsvSdrRecordFileMetadata>(
+            strm,
+            FileFormat1,
+            false,
+            _fileSystem
+        );
 
         file1.Dispose();
 
         Assert.Throws<Exception>(() =>
         {
-            var file2 = new ListDataFile<AsvSdrRecordFileMetadata>(strm, FileFormat2, false, _fileSystem);
+            var file2 = new ListDataFile<AsvSdrRecordFileMetadata>(
+                strm,
+                FileFormat2,
+                false,
+                _fileSystem
+            );
         });
     }
 
@@ -88,7 +120,7 @@ public class ListDataFileTests
                 Version = "aboba",
                 Type = "type",
                 MetadataMaxSize = 1234,
-                ItemMaxSize = 567
+                ItemMaxSize = 567,
             };
         });
     }
@@ -103,12 +135,17 @@ public class ListDataFileTests
             Version = null,
             Type = "type",
             MetadataMaxSize = 1234,
-            ItemMaxSize = 567
+            ItemMaxSize = 567,
         };
 
         Assert.Throws<InvalidOperationException>(() =>
         {
-            using var file = new ListDataFile<AsvSdrRecordFileMetadata>(strm, format, false, _fileSystem);
+            using var file = new ListDataFile<AsvSdrRecordFileMetadata>(
+                strm,
+                format,
+                false,
+                _fileSystem
+            );
         });
     }
 
@@ -122,12 +159,17 @@ public class ListDataFileTests
             Version = "1.0.0",
             Type = "",
             MetadataMaxSize = 1234,
-            ItemMaxSize = 567
+            ItemMaxSize = 567,
         };
 
         Assert.Throws<InvalidOperationException>(() =>
         {
-            using var file = new ListDataFile<AsvSdrRecordFileMetadata>(strm, format, false, _fileSystem);
+            using var file = new ListDataFile<AsvSdrRecordFileMetadata>(
+                strm,
+                format,
+                false,
+                _fileSystem
+            );
         });
     }
 
@@ -141,19 +183,29 @@ public class ListDataFileTests
             Version = "1.0.0",
             Type = null,
             MetadataMaxSize = 1234,
-            ItemMaxSize = 567
+            ItemMaxSize = 567,
         };
 
         Assert.Throws<InvalidOperationException>(() =>
         {
-            using var file = new ListDataFile<AsvSdrRecordFileMetadata>(strm, format, false, _fileSystem);
+            using var file = new ListDataFile<AsvSdrRecordFileMetadata>(
+                strm,
+                format,
+                false,
+                _fileSystem
+            );
         });
     }
 
     [Theory]
     [InlineData("1.0.0", "type", 0, 53)]
     [InlineData("1.0.0", "type", 1241, 0)]
-    public static void Max_Size_Header_Fail(string version, string type, ushort metadataMaxSize, ushort itemMaxSize)
+    public static void Max_Size_Header_Fail(
+        string version,
+        string type,
+        ushort metadataMaxSize,
+        ushort itemMaxSize
+    )
     {
         using var strm = new MemoryStream();
 
@@ -162,14 +214,17 @@ public class ListDataFileTests
             Version = version,
             Type = type,
             MetadataMaxSize = metadataMaxSize,
-            ItemMaxSize = itemMaxSize
+            ItemMaxSize = itemMaxSize,
         };
 
         Assert.Throws<InvalidOperationException>(() =>
         {
-            using var file = new ListDataFile<AsvSdrRecordFileMetadata>(strm, format, false, _fileSystem);
+            using var file = new ListDataFile<AsvSdrRecordFileMetadata>(
+                strm,
+                format,
+                false,
+                _fileSystem
+            );
         });
     }
-
-    
 }

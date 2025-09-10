@@ -1,6 +1,6 @@
 namespace Asv.IO;
 
-public interface IStatisticHandler:IStatistic
+public interface IStatisticHandler : IStatistic
 {
     void AddRxBytes(int size);
     void AddTxBytes(int size);

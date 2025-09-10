@@ -18,6 +18,7 @@ public class PrintValueVisitor(StringBuilder sb, bool skipUnknown) : FullVisitor
             sb.Append(", ");
         }
     }
+
     public override void Visit(Field field, UInt8Type type, ref byte value)
     {
         CheckFirst();
@@ -30,27 +31,30 @@ public class PrintValueVisitor(StringBuilder sb, bool skipUnknown) : FullVisitor
         sb.Append(value);
     }
 
-
     public override void Visit(Field field, Int8Type type, ref sbyte value)
     {
         CheckFirst();
         sb.Append(value);
     }
+
     public override void Visit(Field field, Int16Type type, ref short value)
     {
         CheckFirst();
         sb.Append(value);
     }
+
     public override void Visit(Field field, UInt16Type type, ref ushort value)
     {
         CheckFirst();
         sb.Append(value);
     }
+
     public override void Visit(Field field, Int32Type type, ref int value)
     {
         CheckFirst();
         sb.Append(value);
     }
+
     public override void Visit(Field field, UInt32Type type, ref uint value)
     {
         CheckFirst();
@@ -80,8 +84,6 @@ public class PrintValueVisitor(StringBuilder sb, bool skipUnknown) : FullVisitor
         CheckFirst();
         sb.Append(value);
     }
-
-    
 
     public override void Visit(Field field, StringType type, ref string value)
     {
@@ -347,7 +349,12 @@ public class PrintValueVisitor(StringBuilder sb, bool skipUnknown) : FullVisitor
         if (value.HasValue)
         {
             sb.Append('\'');
-            sb.Append(value.Value.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture));
+            sb.Append(
+                value.Value.ToString(
+                    "yyyy-MM-dd",
+                    System.Globalization.CultureInfo.InvariantCulture
+                )
+            );
             sb.Append('\'');
         }
         else
@@ -370,7 +377,9 @@ public class PrintValueVisitor(StringBuilder sb, bool skipUnknown) : FullVisitor
         if (value.HasValue)
         {
             sb.Append('\'');
-            sb.Append(value.Value.ToString("HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture));
+            sb.Append(
+                value.Value.ToString("HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture)
+            );
             sb.Append('\'');
         }
         else
@@ -410,7 +419,12 @@ public class PrintValueVisitor(StringBuilder sb, bool skipUnknown) : FullVisitor
         sb.Append('}');
     }
 
-    public override void BeginOptionalStruct(Field field, OptionalStructType type, bool isPresent, out bool createNew)
+    public override void BeginOptionalStruct(
+        Field field,
+        OptionalStructType type,
+        bool isPresent,
+        out bool createNew
+    )
     {
         CheckFirst();
         _first = true;
@@ -442,7 +456,6 @@ public class PrintValueVisitor(StringBuilder sb, bool skipUnknown) : FullVisitor
         sb.Append('<');
     }
 
-    
     public override void EndList()
     {
         _first = false;

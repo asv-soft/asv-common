@@ -21,7 +21,8 @@ namespace Asv.IO;
 /// </summary>
 /// <typeparam name="TKey">Type of key identifying each file or folder</typeparam>
 /// <typeparam name="TFile">Type of file</typeparam>
-public interface IHierarchicalStoreFormat<TKey, out TFile> : IDisposable where TFile : IDisposable
+public interface IHierarchicalStoreFormat<TKey, out TFile> : IDisposable
+    where TFile : IDisposable
 {
     /// <summary>
     /// Gets the Identifier of the root folder.
@@ -73,44 +74,57 @@ public interface IHierarchicalStoreFormat<TKey, out TFile> : IDisposable where T
     void CheckFolderDisplayName(string name);
 }
 
-public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel, IHierarchicalStore<TKey, TFile>
+public class FileSystemHierarchicalStore<TKey, TFile>
+    : DisposableOnceWithCancel,
+        IHierarchicalStore<TKey, TFile>
     where TKey : notnull
     where TFile : IDisposable
 {
     private readonly string _rootFolder;
-    private readonly IHierarchicalStoreFormat<TKey,TFile> _format;
+    private readonly IHierarchicalStoreFormat<TKey, TFile> _format;
     private readonly TimeProvider _timeProvider;
     private readonly ILogger _logger;
     private readonly Lock _sync = new();
     private readonly ReactiveProperty<ushort> _count;
     private readonly ReactiveProperty<ulong> _size;
-    private readonly Dictionary<TKey,FileSystemHierarchicalStoreEntry<TKey>> _entries;
-    private readonly List<CachedFile<TKey,TFile>> _fileCache = [];
+    private readonly Dictionary<TKey, FileSystemHierarchicalStoreEntry<TKey>> _entries;
+    private readonly List<CachedFile<TKey, TFile>> _fileCache = [];
     private int _checkCacheInProgress;
     private readonly TimeSpan _fileCacheTime;
     private readonly IFileSystem _fileSystem;
 
-    public FileSystemHierarchicalStore(string rootFolder, IHierarchicalStoreFormat<TKey, TFile> format,
-        TimeSpan? fileCacheTime, ILoggerFactory? logFactory = null,TimeProvider? timeProvider = null, IFileSystem? fileSystem = null)
+    public FileSystemHierarchicalStore(
+        string rootFolder,
+        IHierarchicalStoreFormat<TKey, TFile> format,
+        TimeSpan? fileCacheTime,
+        ILoggerFactory? logFactory = null,
+        TimeProvider? timeProvider = null,
+        IFileSystem? fileSystem = null
+    )
     {
         logFactory ??= NullLoggerFactory.Instance;
         _logger = logFactory.CreateLogger<FileSystemHierarchicalStore<TKey, TFile>>();
         fileSystem ??= new FileSystem();
-        if (format == null) throw new ArgumentNullException(nameof(format));
+        ArgumentNullException.ThrowIfNull(format);
+
         _timeProvider = timeProvider ?? TimeProvider.System;
         format.DisposeItWith(Disposable);
         ArgumentException.ThrowIfNullOrEmpty(rootFolder);
         _fileCacheTime = fileCacheTime ?? TimeSpan.Zero;
         if (_fileCacheTime != TimeSpan.Zero)
         {
-            _timeProvider.CreateTimer(CheckFileCacheForRottenFiles,null,_fileCacheTime,_fileCacheTime).DisposeItWith(Disposable);
+            _timeProvider
+                .CreateTimer(CheckFileCacheForRottenFiles, null, _fileCacheTime, _fileCacheTime)
+                .DisposeItWith(Disposable);
         }
 
         _rootFolder = rootFolder;
         _fileSystem = fileSystem;
         _fileSystem.Directory.CreateDirectory(_rootFolder);
         _format = format ?? throw new ArgumentNullException(nameof(format));
-        _entries = new Dictionary<TKey, FileSystemHierarchicalStoreEntry<TKey>>(_format.KeyComparer);
+        _entries = new Dictionary<TKey, FileSystemHierarchicalStoreEntry<TKey>>(
+            _format.KeyComparer
+        );
         if (Directory.Exists(rootFolder) == false)
         {
             _logger.ZLogWarning($"Directory '{rootFolder}' not exist. Try create");
@@ -118,13 +132,12 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
         }
         _count = new ReactiveProperty<ushort>().DisposeItWith(Disposable);
         _size = new ReactiveProperty<ulong>().DisposeItWith(Disposable);
-        
-        InternalUpdateEntries();
-        
-        Disposable.AddAction(ClearFileCache);
 
+        InternalUpdateEntries();
+
+        Disposable.AddAction(ClearFileCache);
     }
-    
+
     public ReadOnlyReactiveProperty<ushort> Count => _count;
 
     /// <summary>
@@ -137,12 +150,12 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
 
     public void UpdateEntries()
     {
-        using(_sync.EnterScope())
+        using (_sync.EnterScope())
         {
             InternalUpdateEntries();
-        }    
+        }
     }
-    
+
     #region Internal update items
 
     /// <summary>
@@ -160,20 +173,30 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
     }
 
     private IEnumerable<FileSystemHierarchicalStoreEntry<TKey>> InternalGetEntries(
-        FileSystemHierarchicalStoreEntry<TKey>? parentFolder)
+        FileSystemHierarchicalStoreEntry<TKey>? parentFolder
+    )
     {
-        foreach (var directory in _fileSystem.Directory.EnumerateDirectories(parentFolder?.FullPath ?? _rootFolder))
+        foreach (
+            var directory in _fileSystem.Directory.EnumerateDirectories(
+                parentFolder?.FullPath ?? _rootFolder
+            )
+        )
         {
             var folderInfo = _fileSystem.DirectoryInfo.New(directory);
             Debug.Assert(folderInfo.Exists);
-            if (_format.TryGetFolderInfo(folderInfo,out var id, out var displayName) == false)
+            if (_format.TryGetFolderInfo(folderInfo, out var id, out var displayName) == false)
             {
                 _logger.ZLogWarning($"Skip store folder '{folderInfo.FullName}'");
                 continue;
             }
             Debug.Assert(displayName != null && displayName.IsNullOrWhiteSpace() == false);
-            var entry = new FileSystemHierarchicalStoreEntry<TKey>(id, displayName, FolderStoreEntryType.Folder,
-                parentFolder == null ? _format.RootFolderId : parentFolder.Id, folderInfo.FullName);
+            var entry = new FileSystemHierarchicalStoreEntry<TKey>(
+                id,
+                displayName,
+                FolderStoreEntryType.Folder,
+                parentFolder == null ? _format.RootFolderId : parentFolder.Id,
+                folderInfo.FullName
+            );
             yield return entry;
             foreach (var subEntry in InternalGetEntries(entry))
             {
@@ -181,10 +204,12 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
             }
         }
 
-        foreach (var file in _fileSystem.Directory.EnumerateFiles(parentFolder?.FullPath ?? _rootFolder))
+        foreach (
+            var file in _fileSystem.Directory.EnumerateFiles(parentFolder?.FullPath ?? _rootFolder)
+        )
         {
             var fileInfo = _fileSystem.FileInfo.Wrap(new FileInfo(file));
-            
+
             Debug.Assert(fileInfo.Exists);
             if (_format.TryGetFileInfo(fileInfo, out var id, out var displayName) == false)
             {
@@ -193,8 +218,13 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
             }
 
             Debug.Assert(displayName.IsNullOrWhiteSpace() == false);
-            var entry = new FileSystemHierarchicalStoreEntry<TKey>(id, displayName, FolderStoreEntryType.File,
-                parentFolder == null ? _format.RootFolderId : parentFolder.Id, fileInfo.FullName);
+            var entry = new FileSystemHierarchicalStoreEntry<TKey>(
+                id,
+                displayName,
+                FolderStoreEntryType.File,
+                parentFolder == null ? _format.RootFolderId : parentFolder.Id,
+                fileInfo.FullName
+            );
             yield return entry;
         }
     }
@@ -202,8 +232,11 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
     private void InternalUpdateStatistics()
     {
         _count.Value = (ushort)_entries.Count(x => x.Value.Type == FolderStoreEntryType.File);
-        _size.Value = (ulong)_entries.Where(x => x.Value.Type == FolderStoreEntryType.File)
-            .Sum(x => _fileSystem.FileInfo.Wrap( new FileInfo(x.Value.FullPath)).Length);
+        _size.Value = (ulong)
+            _entries
+                .Where(x => x.Value.Type == FolderStoreEntryType.File)
+                .Sum(x => _fileSystem.FileInfo.Wrap(new FileInfo(x.Value.FullPath)).Length);
+
         //Logger.Info($"Update statistics: items:{_count.Value}, size:{_size.Value}");
     }
 
@@ -221,10 +254,18 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
     /// <returns>An <see cref="IEnumerable{T}"/> of <typeparamref name="TKey"/>.</returns>
     private IEnumerable<TKey> InternalGetSubFiles(TKey folderId)
     {
-        if (_entries.TryGetValue(folderId, out var folder) == false) yield break;
+        if (_entries.TryGetValue(folderId, out var folder) == false)
+        {
+            yield break;
+        }
+
         foreach (var item in _entries)
         {
-            if (item.Value.ParentId.Equals(folder.Id) == false) continue;
+            if (item.Value.ParentId.Equals(folder.Id) == false)
+            {
+                continue;
+            }
+
             if (item.Value.Type == FolderStoreEntryType.File)
             {
                 yield return item.Value.Id;
@@ -237,16 +278,15 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
                 }
             }
         }
-        
     }
-    
+
     #endregion
 
     #region Entries
 
     public IReadOnlyList<IHierarchicalStoreEntry<TKey>> GetEntries()
     {
-        using(_sync.EnterScope())
+        using (_sync.EnterScope())
         {
             return _entries.Values.ToImmutableList();
         }
@@ -262,7 +302,7 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
     public bool TryGetEntry(TKey id, out IHierarchicalStoreEntry<TKey>? entry)
     {
         entry = null;
-        using(_sync.EnterScope())
+        using (_sync.EnterScope())
         {
             if (_entries.TryGetValue(id, out var localEntry))
             {
@@ -276,23 +316,25 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
 
     public bool EntryExists(TKey id)
     {
-        using(_sync.EnterScope())
+        using (_sync.EnterScope())
         {
             return _entries.ContainsKey(id);
         }
     }
 
     #endregion
-   
+
     #region Folders
 
     public TKey RootFolderId => _format.RootFolderId;
-    
+
     public IReadOnlyList<IHierarchicalStoreEntry<TKey>> GetFolders()
     {
-        using(_sync.EnterScope())
+        using (_sync.EnterScope())
         {
-            return _entries.Where(x => x.Value.Type == FolderStoreEntryType.Folder).Select(x => x.Value)
+            return _entries
+                .Where(x => x.Value.Type == FolderStoreEntryType.Folder)
+                .Select(x => x.Value)
                 .ToImmutableList();
         }
     }
@@ -318,12 +360,18 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
     public TKey CreateFolder(TKey id, string name, TKey parentId)
     {
         if (string.IsNullOrEmpty(name))
+        {
             throw new ArgumentException("Folder name cannot be null or empty.", nameof(name));
+        }
+
         _format.CheckFolderDisplayName(name);
-        using(_sync.EnterScope())
+        using (_sync.EnterScope())
         {
             var rootFolder = _rootFolder;
-            if (!_entries.ContainsKey(parentId) && !_format.KeyComparer.Equals(parentId, RootFolderId))
+            if (
+                !_entries.ContainsKey(parentId)
+                && !_format.KeyComparer.Equals(parentId, RootFolderId)
+            )
             {
                 _logger.ZLogError($"Folder with id {parentId} does not exist");
                 throw new HierarchicalStoreException(name);
@@ -341,8 +389,11 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
 
             var newFolderNameInFileSystem = _format.GetFileSystemFolderName(id, name);
 
-            if (_entries.Where(x => _format.KeyComparer.Equals(x.Value.ParentId, parentId))
-                .Any(x => x.Value.Name == name))
+            if (
+                _entries
+                    .Where(x => _format.KeyComparer.Equals(x.Value.ParentId, parentId))
+                    .Any(x => x.Value.Name == name)
+            )
             {
                 _logger.ZLogError($"Folder with name='{name}' already exist at {rootFolder}");
                 throw new HierarchicalStoreFolderAlreadyExistException(name);
@@ -354,9 +405,13 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
             Debug.Assert(_format.TryGetFolderInfo(info, out var newId, out var displayName));
             Debug.Assert(_format.KeyComparer.Equals(newId, id));
             Debug.Assert(displayName == name);
-            var newEntry =
-                new FileSystemHierarchicalStoreEntry<TKey>(id, name, FolderStoreEntryType.Folder, parentId,
-                    newFolderPath);
+            var newEntry = new FileSystemHierarchicalStoreEntry<TKey>(
+                id,
+                name,
+                FolderStoreEntryType.Folder,
+                parentId,
+                newFolderPath
+            );
             _logger.ZLogInformation($"Create folder {name}");
             _entries.Add(id, newEntry);
             return id;
@@ -365,7 +420,7 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
 
     public void DeleteFolder(TKey id)
     {
-        using(_sync.EnterScope())
+        using (_sync.EnterScope())
         {
             _logger.ZLogInformation($"Delete folder {id}");
             if (_entries.TryGetValue(id, out var entry) == false)
@@ -383,7 +438,9 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
             {
                 if (TryImmediatelyRemoveFromCache(file) == false)
                 {
-                    throw new HierarchicalStoreException("Can't rename folder: file in folder currently in use");
+                    throw new HierarchicalStoreException(
+                        "Can't rename folder: file in folder currently in use"
+                    );
                 }
             }
 
@@ -399,21 +456,29 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
     /// <returns>True if the folder exists, otherwise false.</returns>
     public bool FolderExists(TKey id)
     {
-        using(_sync.EnterScope())
+        using (_sync.EnterScope())
         {
-            if (_entries.TryGetValue(id, out var entry) == false) return false;
-            if (entry.Type != FolderStoreEntryType.Folder) return false;
+            if (_entries.TryGetValue(id, out var entry) == false)
+            {
+                return false;
+            }
+
+            if (entry.Type != FolderStoreEntryType.Folder)
+            {
+                return false;
+            }
+
             return true;
         }
     }
 
     public void RenameFolder(TKey id, string newName)
     {
-        using(_sync.EnterScope())
+        using (_sync.EnterScope())
         {
             _logger.ZLogInformation($"Rename folder {id} to {newName}");
             if (_entries.TryGetValue(id, out var entry) == false)
-            {   
+            {
                 throw new HierarchicalStoreException($"Folder with id '{id}' not found");
             }
 
@@ -440,7 +505,8 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
                 if (TryImmediatelyRemoveFromCache(file) == false)
                 {
                     throw new HierarchicalStoreException(
-                        $"Can't rename folder: file '{file}' in folder currently in use");
+                        $"Can't rename folder: file '{file}' in folder currently in use"
+                    );
                 }
             }
 
@@ -463,7 +529,7 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
     /// </exception>
     public void MoveFolder(TKey id, TKey newParentId)
     {
-        using(_sync.EnterScope())
+        using (_sync.EnterScope())
         {
             _logger.ZLogInformation($"Move folder '{id}' to '{newParentId}'");
             if (_entries.TryGetValue(id, out var entry) == false)
@@ -492,37 +558,46 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
             InternalUpdateEntries();
         }
     }
-    
+
     #endregion
-    
+
     #region Files
-    
+
     public IReadOnlyList<IHierarchicalStoreEntry<TKey>> GetFiles()
     {
-        using(_sync.EnterScope())
+        using (_sync.EnterScope())
         {
-            return _entries.Where(x => x.Value.Type == FolderStoreEntryType.File)
-                .Select(x => x.Value).ToImmutableList();
+            return _entries
+                .Where(x => x.Value.Type == FolderStoreEntryType.File)
+                .Select(x => x.Value)
+                .ToImmutableList();
         }
     }
 
     public bool TryGetFile(TKey id, out IHierarchicalStoreEntry<TKey>? entry)
     {
         entry = null;
-        using(_sync.EnterScope())
+        using (_sync.EnterScope())
         {
-            if (!_entries.TryGetValue(id, out var commonEntry)) return false;
-            if (commonEntry.Type != FolderStoreEntryType.File) return false;
+            if (!_entries.TryGetValue(id, out var commonEntry))
+            {
+                return false;
+            }
+
+            if (commonEntry.Type != FolderStoreEntryType.File)
+            {
+                return false;
+            }
+
             entry = commonEntry;
             return true;
-
         }
     }
 
     public void DeleteFile(TKey id)
     {
-        using(_sync.EnterScope())
-        {   
+        using (_sync.EnterScope())
+        {
             _logger.ZLogInformation($"Delete file {id}");
             if (_entries.TryGetValue(id, out var entry) == false)
             {
@@ -533,10 +608,13 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
             {
                 throw new HierarchicalStoreException($"Entry '{id}' is not file");
             }
+
             // we need to remove file from cache, if we want to modify it
             if (TryImmediatelyRemoveFromCache(id) == false)
             {
-                throw new HierarchicalStoreException($"Can't delete file '{id}': it is currently in use");
+                throw new HierarchicalStoreException(
+                    $"Can't delete file '{id}': it is currently in use"
+                );
             }
 
             _fileSystem.File.Delete(entry.FullPath);
@@ -546,9 +624,13 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
 
     public bool FileExists(TKey id)
     {
-        using(_sync.EnterScope())
+        using (_sync.EnterScope())
         {
-            if (_entries.TryGetValue(id, out var entry) == false) return false;
+            if (_entries.TryGetValue(id, out var entry) == false)
+            {
+                return false;
+            }
+
             return entry.Type == FolderStoreEntryType.File;
         }
     }
@@ -561,7 +643,7 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
     /// <returns>The ID of the renamed file.</returns>
     public TKey RenameFile(TKey id, string newName)
     {
-        using(_sync.EnterScope())
+        using (_sync.EnterScope())
         {
             _logger.ZLogInformation($"Rename file {id} to {newName}");
             if (_entries.TryGetValue(id, out var entry) == false)
@@ -585,6 +667,7 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
 
             var nameAtFileSystem = _format.GetFileSystemFileName(id, newName);
             var newFilePath = _fileSystem.Path.Combine(parentFolder, nameAtFileSystem);
+
             // we need to remove file from cache, if we want to modify it
             if (TryImmediatelyRemoveFromCache(id) == false)
             {
@@ -596,9 +679,16 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
                 _fileSystem.File.Move(entry.FullPath, newFilePath);
             }
             _entries.Remove(id);
-            _entries.Add(id,
-                new FileSystemHierarchicalStoreEntry<TKey>(id, newName, FolderStoreEntryType.File, entry.ParentId,
-                    newFilePath));
+            _entries.Add(
+                id,
+                new FileSystemHierarchicalStoreEntry<TKey>(
+                    id,
+                    newName,
+                    FolderStoreEntryType.File,
+                    entry.ParentId,
+                    newFilePath
+                )
+            );
             return id;
         }
     }
@@ -613,7 +703,7 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
     /// if the entry with the given ID is not a file, or if the parent entry is not a folder.</exception>
     public void MoveFile(TKey id, TKey newParentId)
     {
-        using(_sync.EnterScope())
+        using (_sync.EnterScope())
         {
             _logger.ZLogInformation($"Move file {id} to {newParentId}");
             if (_entries.TryGetValue(id, out var entry) == false)
@@ -637,12 +727,13 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
 
             var nameAtFileSystem = _format.GetFileSystemFileName(id, entry.Name);
             var newFilePath = _fileSystem.Path.Combine(parentPath, nameAtFileSystem);
+
             // we need to remove file from cache, if we want to modify it
             if (TryImmediatelyRemoveFromCache(id) == false)
             {
                 throw new HierarchicalStoreException("Can't rename file: it is currently in use");
             }
-           
+
             if (newFilePath.Equals(entry.FullPath) == false)
             {
                 _fileSystem.File.Move(entry.FullPath, newFilePath);
@@ -653,7 +744,7 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
 
     public ICachedFile<TKey, TFile> OpenFile(TKey id)
     {
-        using(_sync.EnterScope())
+        using (_sync.EnterScope())
         {
             if (_entries.TryGetValue(id, out var entry) == false)
             {
@@ -661,11 +752,14 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
                 throw new FileNotFoundException($"File with [{id}] not found");
             }
 
-            var fileInfo =_fileSystem.FileInfo.Wrap( new FileInfo(entry.FullPath));
+            var fileInfo = _fileSystem.FileInfo.Wrap(new FileInfo(entry.FullPath));
             if (fileInfo.Exists == false)
             {
                 _logger.ZLogError($"File with [{id}]{fileInfo.FullName} not found");
-                throw new FileNotFoundException($"File with [{id}]{fileInfo.FullName} not found", fileInfo.FullName);
+                throw new FileNotFoundException(
+                    $"File with [{id}]{fileInfo.FullName} not found",
+                    fileInfo.FullName
+                );
             }
 
             return GetOrAddFileToCache(entry);
@@ -684,14 +778,14 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
     /// <exception cref="HierarchicalStoreException">Thrown when the ID or file name already exists.</exception>
     public ICachedFile<TKey, TFile> CreateFile(TKey id, string name, TKey parentId)
     {
-        using(_sync.EnterScope())
+        using (_sync.EnterScope())
         {
             if (_entries.ContainsKey(id))
             {
                 _logger.ZLogError($"Entry '{id}' already exist");
                 throw new HierarchicalStoreException($"Entry {id} already exist");
             }
-            
+
             var rootFolder = _rootFolder;
             if (_entries.TryGetValue(parentId, out var parent) == false)
             {
@@ -709,14 +803,35 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
             if (fileInfo.Exists)
             {
                 _logger.ZLogError($"File [{id}]{fileInfo.FullName} already exist");
-                throw new HierarchicalStoreException($"File [{id}]{fileInfo.FullName} already exist");
+                throw new HierarchicalStoreException(
+                    $"File [{id}]{fileInfo.FullName} already exist"
+                );
             }
 
             var file = _format.CreateFile(
-                _fileSystem.File.Open(fileInfo.FullName, FileMode.OpenOrCreate, FileAccess.ReadWrite), id, name);
-            var wrapper = new CachedFile<TKey, TFile>(id, name, parentId, file, OnFileDisposed, _timeProvider);
-            var entry = new FileSystemHierarchicalStoreEntry<TKey>(id, name, FolderStoreEntryType.File, parentId,
-                fileInfo.FullName);
+                _fileSystem.File.Open(
+                    fileInfo.FullName,
+                    FileMode.OpenOrCreate,
+                    FileAccess.ReadWrite
+                ),
+                id,
+                name
+            );
+            var wrapper = new CachedFile<TKey, TFile>(
+                id,
+                name,
+                parentId,
+                file,
+                OnFileDisposed,
+                _timeProvider
+            );
+            var entry = new FileSystemHierarchicalStoreEntry<TKey>(
+                id,
+                name,
+                FolderStoreEntryType.File,
+                parentId,
+                fileInfo.FullName
+            );
             _entries.Add(id, entry);
             return AddFileToCache(entry, wrapper);
         }
@@ -737,51 +852,82 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
 
     private bool TryImmediatelyRemoveFromCache(TKey id)
     {
-        if (_fileCache.Count == 0) return true;
-        var item = _fileCache.FirstOrDefault(file => file.Id.Equals(id));
-        if (item == null) return true;
+        if (_fileCache.Count == 0)
+        {
+            return true;
+        }
 
-        if (item.RefCount != 0) return false;
+        var item = _fileCache.FirstOrDefault(file => file.Id.Equals(id));
+        if (item == null)
+        {
+            return true;
+        }
+
+        if (item.RefCount != 0)
+        {
+            return false;
+        }
+
         _logger.ZLogTrace($"Immediately remove file from cache: '{item.Id}'");
         item.ImmediateDispose();
         _fileCache.Remove(item);
         return true;
     }
 
-    private ICachedFile<TKey, TFile> GetOrAddFileToCache(FileSystemHierarchicalStoreEntry<TKey> entry)
+    private ICachedFile<TKey, TFile> GetOrAddFileToCache(
+        FileSystemHierarchicalStoreEntry<TKey> entry
+    )
     {
         var exist = _fileCache.FirstOrDefault(f => f.Id.Equals(entry.Id));
         if (exist != null)
         {
             exist.AddRef();
-            _logger.ZLogTrace($"Return file '{entry.Name}'[{entry.Id}] from cache (ref count={exist.RefCount})");
+            _logger.ZLogTrace(
+                $"Return file '{entry.Name}'[{entry.Id}] from cache (ref count={exist.RefCount})"
+            );
         }
         else
         {
-            var stream = _fileSystem.File.Open(entry.FullPath, FileMode.OpenOrCreate, FileAccess.ReadWrite);
+            var stream = _fileSystem.File.Open(
+                entry.FullPath,
+                FileMode.OpenOrCreate,
+                FileAccess.ReadWrite
+            );
             var file = _format.OpenFile(stream);
-            exist = new CachedFile<TKey, TFile>(entry.Id, entry.Name, entry.ParentId, file, OnFileDisposed, _timeProvider);
+            exist = new CachedFile<TKey, TFile>(
+                entry.Id,
+                entry.Name,
+                entry.ParentId,
+                file,
+                OnFileDisposed,
+                _timeProvider
+            );
             exist.AddRef();
-            _logger.ZLogTrace($"Add file '{entry.Name}'[{entry.Id}] to cache (ref count={exist.RefCount})");
+            _logger.ZLogTrace(
+                $"Add file '{entry.Name}'[{entry.Id}] to cache (ref count={exist.RefCount})"
+            );
             _fileCache.Add(exist);
         }
 
         return exist;
     }
 
-    private ICachedFile<TKey, TFile> AddFileToCache(FileSystemHierarchicalStoreEntry<TKey> entry,
-        CachedFile<TKey, TFile> wrapper)
+    private ICachedFile<TKey, TFile> AddFileToCache(
+        FileSystemHierarchicalStoreEntry<TKey> entry,
+        CachedFile<TKey, TFile> wrapper
+    )
     {
         wrapper.AddRef();
-        _logger.ZLogTrace($"Add file '{entry.Name}'[{entry.Id}] to cache (ref count={wrapper.RefCount})");
+        _logger.ZLogTrace(
+            $"Add file '{entry.Name}'[{entry.Id}] to cache (ref count={wrapper.RefCount})"
+        );
         _fileCache.Add(wrapper);
         return wrapper;
     }
-    
 
     private void OnFileDisposed(CachedFile<TKey, TFile> file)
     {
-        using(_sync.EnterScope())
+        using (_sync.EnterScope())
         {
             // we remove immediately only if file cache time is zero
             // otherwise we wait for check cache timer to delete it
@@ -799,20 +945,39 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
     /// </summary>
     private void CheckFileCacheForRottenFiles(object? state)
     {
-        if (Interlocked.CompareExchange(ref _checkCacheInProgress, 1, 0) != 0) return;
+        if (Interlocked.CompareExchange(ref _checkCacheInProgress, 1, 0) != 0)
+        {
+            return;
+        }
 
         try
         {
             // check before lock (optimization)
-            if (_fileCache.Count == 0) return;
-            using(_sync.EnterScope())
+            if (_fileCache.Count == 0)
+            {
+                return;
+            }
+
+            using (_sync.EnterScope())
             {
                 // check again after lock (for thread safety)
-                if (_fileCache.Count == 0) return;
+                if (_fileCache.Count == 0)
+                {
+                    return;
+                }
+
                 // try to remove all files with ref count == 0 and dead time > cache time
-                var list = _fileCache.Where(file => file.RefCount == 0)
-                    .Where(file => _timeProvider.GetElapsedTime(file.DeadTimeBegin) > _fileCacheTime).ToImmutableList();
-                if (list.Count == 0) return;
+                var list = _fileCache
+                    .Where(file => file.RefCount == 0)
+                    .Where(file =>
+                        _timeProvider.GetElapsedTime(file.DeadTimeBegin) > _fileCacheTime
+                    )
+                    .ToImmutableList();
+                if (list.Count == 0)
+                {
+                    return;
+                }
+
                 foreach (var file in list)
                 {
                     file.ImmediateDispose();
@@ -830,6 +995,6 @@ public class FileSystemHierarchicalStore<TKey, TFile> : DisposableOnceWithCancel
             Interlocked.Exchange(ref _checkCacheInProgress, 0);
         }
     }
-    
+
     #endregion
 }

@@ -38,6 +38,7 @@ public class TcpPortComplexTest
         _serverRouter = _protocol.CreateRouter("Server");
         _clientRouter = _protocol.CreateRouter("Client");
     }
+
     [Theory(Skip = "This test can be performed only on a local machine.")]
     //[Theory]
     [InlineData(100)]
@@ -50,18 +51,18 @@ public class TcpPortComplexTest
             x.Host = "127.0.0.1";
             x.Port = 65500;
         });
-        
+
         await clientPort.Status.FirstAsync(x => x == ProtocolPortStatus.Connected);
-        
+
         var serverPort = _serverRouter.AddTcpClientPort(x =>
         {
             x.Host = "127.0.0.1";
             x.Port = 65500;
         });
         await serverPort.Status.FirstAsync(x => x == ProtocolPortStatus.Connected);
-        
+
         // Act
-        
+
         var tcs = new TaskCompletionSource();
         var cnt = 0;
         serverPort.OnRxMessage.Subscribe(x =>
@@ -88,9 +89,8 @@ public class TcpPortComplexTest
                 while (true)
                 {
                     index++;
-                    await clientPort.Send(new ExampleMessage1{ Value1 = 0});
-                    
-                    
+                    await clientPort.Send(new ExampleMessage1 { Value1 = 0 });
+
                     if (index % 100 == 0)
                     {
                         _logger.LogInformation($"Client send {index} messages");
@@ -100,7 +100,6 @@ public class TcpPortComplexTest
                     }
                     if (index >= messagesCount)
                     {
-                        
                         return;
                     }
                 }
@@ -112,6 +111,7 @@ public class TcpPortComplexTest
         }).Start();
 
         await tcs.Task;
+
         // Assert
         Assert.Equal(_clientRouter.Statistic.TxMessages, (uint)messagesCount);
         Assert.Equal(_serverRouter.Statistic.RxMessages, (uint)messagesCount);
@@ -144,16 +144,23 @@ public class TcpPortComplexTest
     [InlineData("tcp//127.0.0.1:5650")]
     [InlineData("127.0.0:561")]
     [InlineData("thisIsABadValue")]
-    public void Router_AddPortWithInValidConnStringUriFormatException_Failure(string connectionString)
+    public void Router_AddPortWithInValidConnStringUriFormatException_Failure(
+        string connectionString
+    )
     {
         _clientRouter.PortAdded.Subscribe(_ => Assert.False(true));
-        Assert.Throws<UriFormatException>(() => { _clientRouter.AddPort(connectionString); });
+        Assert.Throws<UriFormatException>(() =>
+        {
+            _clientRouter.AddPort(connectionString);
+        });
     }
 
     [Theory(Skip = "This test can be performed only on a local machine.")]
     [InlineData("tcp:/127.0.0.15652?srv=true")]
     [InlineData("tcp:/127.0.0.15652?srvtru")]
-    public void Router_AddPortWithInValidConnStringArgumentOutOfRange_Failure(string connectionString)
+    public void Router_AddPortWithInValidConnStringArgumentOutOfRange_Failure(
+        string connectionString
+    )
     {
         _clientRouter.PortAdded.Subscribe(_ => Assert.False(true));
         Assert.Throws<ArgumentOutOfRangeException>(() => _clientRouter.AddPort(connectionString));
@@ -161,7 +168,9 @@ public class TcpPortComplexTest
 
     [Theory(Skip = "This test can be performed only on a local machine.")]
     [InlineData("udp://1270.0:5651")]
-    public void Router_AddPortWithInValidConnStringNetSocketException_Failure(string connectionString)
+    public void Router_AddPortWithInValidConnStringNetSocketException_Failure(
+        string connectionString
+    )
     {
         _clientRouter.PortAdded.Subscribe(_ => Assert.False(true));
         Assert.Throws<SocketException>(() => _clientRouter.AddPort(connectionString));
@@ -169,7 +178,9 @@ public class TcpPortComplexTest
 
     [Theory(Skip = "This test can be performed only on a local machine.")]
     [InlineData("p://127.0.0:5651")]
-    public void Router_AddPortWithInValidConnStringInvalidOperationException_Failure(string connectionString)
+    public void Router_AddPortWithInValidConnStringInvalidOperationException_Failure(
+        string connectionString
+    )
     {
         _clientRouter.PortAdded.Subscribe(_ => Assert.False(true));
         Assert.Throws<InvalidOperationException>(() => _clientRouter.AddPort(connectionString));
@@ -196,7 +207,6 @@ public class TcpPortComplexTest
         var port = _clientRouter.AddPort(validConnString);
         _serverRouter.AddPort("tcps://127.0.0.1:5650");
         _clientRouter.OnRxMessage.Subscribe();
-        
     }
 
     //[Fact]
@@ -206,6 +216,5 @@ public class TcpPortComplexTest
         const string validConnString = "tcp://127.0.0.1:5650";
         var port = _clientRouter.AddPort(validConnString);
         _serverRouter.AddPort("tcps://127.0.0.1:5650");
-        
     }
 }

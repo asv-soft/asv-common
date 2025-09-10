@@ -10,13 +10,17 @@ public class TimeBasedLinkIndicatorBase : LinkIndicatorBase
     private readonly ITimer _timer;
     private long _lastTime;
 
-    public TimeBasedLinkIndicatorBase(TimeSpan timeout,int downgradeErrors = 3,TimeProvider? timeProvider = null) : base(downgradeErrors)
+    public TimeBasedLinkIndicatorBase(
+        TimeSpan timeout,
+        int downgradeErrors = 3,
+        TimeProvider? timeProvider = null
+    )
+        : base(downgradeErrors)
     {
         _timeout = timeout;
         _timeProvider = timeProvider ?? TimeProvider.System;
         _lastTime = _timeProvider.GetTimestamp();
-        _timer = _timeProvider.CreateTimer(CheckTimeout,null, timeout, timeout);
-            
+        _timer = _timeProvider.CreateTimer(CheckTimeout, null, timeout, timeout);
     }
 
     private void CheckTimeout(object? state)
@@ -32,5 +36,4 @@ public class TimeBasedLinkIndicatorBase : LinkIndicatorBase
         base.InternalUpgrade();
         Interlocked.Exchange(ref _lastTime, _timeProvider.GetTimestamp());
     }
-
 }

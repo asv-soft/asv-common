@@ -5,7 +5,7 @@ using System.Threading;
 
 namespace Asv.Common
 {
-    public class ConcurrentCircularTimeBuffer<T>:IDisposable
+    public class ConcurrentCircularTimeBuffer<T> : IDisposable
     {
         private readonly TimeSpan _maxAge;
         private readonly Func<T, DateTime> _getTimeCallback;
@@ -14,7 +14,12 @@ namespace Asv.Common
         private readonly LinkedList<T> _items = [];
         private readonly ReaderWriterLockSlim _lock = new(LockRecursionPolicy.NoRecursion);
 
-        public ConcurrentCircularTimeBuffer(TimeSpan maxAge, Func<T,DateTime> getTimeCallback, int maxCount = int.MaxValue , ITimeService? timeService = default)
+        public ConcurrentCircularTimeBuffer(
+            TimeSpan maxAge,
+            Func<T, DateTime> getTimeCallback,
+            int maxCount = int.MaxValue,
+            ITimeService? timeService = default
+        )
         {
             _maxAge = maxAge;
             _getTimeCallback = getTimeCallback;
@@ -40,10 +45,14 @@ namespace Asv.Common
                     {
                         result.Add(lastElement.Value);
                         if (lastElement.Previous == null)
+                        {
                             break;
+                        }
+
                         lastElement = lastElement.Previous;
                         continue;
                     }
+
                     break;
                 }
             }
@@ -56,7 +65,6 @@ namespace Asv.Common
         {
             _lock.EnterWriteLock();
             var currentTime = _getTimeCallback(item);
-            DateTime lastTime;
             var lastElement = _items.Last;
             if (lastElement == null)
             {
@@ -66,33 +74,40 @@ namespace Asv.Common
             {
                 while (true)
                 {
-                    lastTime = _getTimeCallback(lastElement.Value);
+                    var lastTime = _getTimeCallback(lastElement.Value);
                     if (lastTime < currentTime)
                     {
                         _items.AddAfter(lastElement, item);
                         break;
                     }
+
                     // если дошли до начала, вставляем вперед как самый старый
                     if (lastElement.Previous == null)
                     {
                         _items.AddFirst(item);
                         break;
                     }
+
                     lastElement = lastElement.Previous;
                 }
             }
-            
+
             // remove items by max count
             while (_items.Count > _maxCount)
             {
                 _items.RemoveFirst();
             }
+
             _lock.ExitWriteLock();
         }
 
         public void ClearOld()
         {
-            if (_items.Count == 0) return;
+            if (_items.Count == 0)
+            {
+                return;
+            }
+
             var now = _timeService.Now;
             _lock.EnterUpgradeableReadLock();
             var current = _items.First;
@@ -100,15 +115,18 @@ namespace Asv.Common
             while (current != null)
             {
                 var rcvTime = _getTimeCallback(current.Value);
-                if (rcvTime > now || // Элемент из будущего!!! Вдруг системные часы резко ушли, поэтому заглядываем и проверяем, что элементы из будущего. Их тоже удаляем.
-                    now - rcvTime >= _maxAge) // старый пакет
+                if (
+                    rcvTime > now
+                    || // Элемент из будущего!!! Вдруг системные часы резко ушли, поэтому заглядываем и проверяем, что элементы из будущего. Их тоже удаляем.
+                    now - rcvTime >= _maxAge
+                )
                 {
                     itemsToDeleteFromFirst++;
                     current = current.Next;
                 }
                 else
                 {
-                    // если первый(самый старый) нормальный, то остальные тоже, так как добавляются в конец очереди (т.е. сортированы по времени)
+                    // Если первый(самый старый) нормальный, то остальные тоже, так как добавляются в конец очереди (т.е. сортированы по времени)
                     current = null;
                 }
             }
@@ -120,14 +138,20 @@ namespace Asv.Common
                 {
                     _items.RemoveFirst();
                 }
+
                 _lock.ExitWriteLock();
             }
+
             _lock.ExitUpgradeableReadLock();
         }
 
         public List<T> ClearOldAndGetRemaining()
         {
-            if (_items.Count == 0) return [];
+            if (_items.Count == 0)
+            {
+                return [];
+            }
+
             var now = _timeService.Now;
             _lock.EnterUpgradeableReadLock();
             var current = _items.First;
@@ -135,8 +159,11 @@ namespace Asv.Common
             while (current != null)
             {
                 var rcvTime = _getTimeCallback(current.Value);
-                if (rcvTime > now || // Элемент из будущего!!! Вдруг системные часы резко ушли, поэтому заглядываем и проверяем, что элементы из будущего. Их тоже удаляем.
-                    now - rcvTime >= _maxAge) // старый пакет
+                if (
+                    rcvTime > now
+                    || // Элемент из будущего!!! Вдруг системные часы резко ушли, поэтому заглядываем и проверяем, что элементы из будущего. Их тоже удаляем.
+                    now - rcvTime >= _maxAge
+                ) // старый пакет
                 {
                     itemsToDeleteFromFirst++;
                     current = current.Next;
@@ -155,8 +182,10 @@ namespace Asv.Common
                 {
                     _items.RemoveFirst();
                 }
+
                 _lock.ExitWriteLock();
             }
+
             var result = _items.ToList();
             _lock.ExitUpgradeableReadLock();
             return result;
@@ -166,7 +195,6 @@ namespace Asv.Common
         {
             _lock.Dispose();
         }
-
 
         public List<T> GetAll()
         {

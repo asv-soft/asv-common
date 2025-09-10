@@ -11,6 +11,7 @@ namespace Asv.Common
     {
         private Process? _process;
         private readonly BlockingCollection<string?> _output = new();
+
         // ReSharper disable once NullableWarningSuppressionIsUsed
         private StreamWriter _input = null!;
         private readonly Subject<string> _inputSubject = new();
@@ -26,20 +27,24 @@ namespace Asv.Common
 
         public void Start(string filePath, string args, bool createNoWindow = false)
         {
-            _process = Process.Start(new ProcessStartInfo(filePath, args)
-            {
-                RedirectStandardError = true,
-                RedirectStandardInput = true,
-                RedirectStandardOutput = true,
-                CreateNoWindow = createNoWindow,
-                UseShellExecute = false,
-            });
+            _process = Process.Start(
+                new ProcessStartInfo(filePath, args)
+                {
+                    RedirectStandardError = true,
+                    RedirectStandardInput = true,
+                    RedirectStandardOutput = true,
+                    CreateNoWindow = createNoWindow,
+                    UseShellExecute = false,
+                }
+            );
             if (_process == null)
+            {
                 throw new Exception($"Error to run '{filePath}'");
+            }
 
             _process.ErrorDataReceived += (sender, eventArgs) =>
             {
-                if (!_errorSubject.IsDisposed && eventArgs.Data!= null)
+                if (!_errorSubject.IsDisposed && eventArgs.Data != null)
                 {
                     _errorSubject.OnNext(eventArgs.Data);
                 }
@@ -49,7 +54,11 @@ namespace Asv.Common
             {
                 if (!_outputSubject.IsDisposed || _output.IsAddingCompleted == false)
                 {
-                    if (eventArgs.Data == null) return;
+                    if (eventArgs.Data == null)
+                    {
+                        return;
+                    }
+
                     _outputSubject.OnNext(eventArgs.Data);
                     _output.Add(eventArgs.Data);
                 }
@@ -60,14 +69,10 @@ namespace Asv.Common
             _process.EnableRaisingEvents = true;
             _input = _process.StandardInput;
         }
-        
+
         public void ClearOutput()
         {
-            
-            while (_output.TryTake(out _))
-            {
-
-            }
+            while (_output.TryTake(out _)) { }
         }
 
         public IEnumerable<string?> ReadToEnd()
@@ -91,7 +96,9 @@ namespace Asv.Common
             timeoutMs = timeoutMs ?? DefaultTimeoutMs;
             string? val;
             if (!_output.TryTake(out val, timeoutMs.Value))
+            {
                 throw new Exception("Timeout to get output value");
+            }
 
             return val;
         }
@@ -102,11 +109,14 @@ namespace Asv.Common
             _inputSubject.Dispose();
             _outputSubject.Dispose();
             _errorSubject.Dispose();
-            if (_process?.HasExited == false) _process?.Kill();
-            _process?.Dispose();
+            if (_process?.HasExited == false)
+            {
+                _process?.Kill();
+            }
 
+            _process?.Dispose();
         }
-        
+
         public void WaitForExit()
         {
             _process?.WaitForExit();

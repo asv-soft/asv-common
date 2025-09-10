@@ -36,8 +36,8 @@ public class TcpTest
     public async Task<int> Run(
         string server = "tcps://127.0.0.1:7341",
         string client = "tcp://127.0.0.1:7341"
-        /*string server = "serial:COM11?br=57600",
-        string client = "serial:COM45?br=57600"*/
+    /*string server = "serial:COM11?br=57600",
+    string client = "serial:COM45?br=57600"*/
     )
     {
         var loggerFactory = ConsoleAppHelper.CreateDefaultLog();
@@ -55,14 +55,16 @@ public class TcpTest
 
         _clientRouter = _protocol.CreateRouter("Client");
         _clientRouter.AddPort(_client);
-        
+
         var logger = loggerFactory.CreateLogger<TcpTest>();
         _logger = logger;
         Assembly.GetExecutingAssembly().PrintWelcomeToLog(logger);
 
         var result = await CheckResult(Router_RecreatePortWithAddAndRemove_Success());
         result = await CheckResult(Router_ServerAndClientExchangePackets_Success());
-        result = await CheckResult(Router_AddPortWithInValidConnStringInvalidOperationException_Failure());
+        result = await CheckResult(
+            Router_AddPortWithInValidConnStringInvalidOperationException_Failure()
+        );
         return result;
     }
 
@@ -126,9 +128,8 @@ public class TcpTest
             }
         }).Start();
 
-
         await tcs.Task;
-        
+
         serverPort.Dispose();
         clientPort.Dispose();
         return 0;
@@ -157,13 +158,11 @@ public class TcpTest
         var port = _clientRouter.AddPort(validConnString);
         _clientRouter.PortRemoved.Subscribe(_ =>
         {
-            if (port == _)
-            {
-            }
+            if (port == _) { }
         });
         _clientRouter.RemovePort(port);
         var port1 = _clientRouter.AddPort(validConnString);
-        
+
         return Task.FromResult(0);
     }
 

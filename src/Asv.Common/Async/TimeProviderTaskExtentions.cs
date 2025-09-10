@@ -11,7 +11,11 @@ public static class TimeProviderTaskExtensions
     /// <param name="cts">The CancellationTokenSource to cancel.</param>
     /// <param name="delay">The delay after which cancellation should occur.</param>
     /// <param name="timeProvider">The TimeProvider instance to use for timing.</param>
-    public static void CancelAfter(this CancellationTokenSource cts, TimeSpan delay, TimeProvider timeProvider)
+    public static void CancelAfter(
+        this CancellationTokenSource cts,
+        TimeSpan delay,
+        TimeProvider timeProvider
+    )
     {
         if (timeProvider == TimeProvider.System)
         {
@@ -21,11 +25,16 @@ public static class TimeProviderTaskExtensions
         {
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
 #pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
-            var timer = timeProvider.CreateTimer(s => ((CancellationTokenSource)s).Cancel(), cts, delay, Timeout.InfiniteTimeSpan);
+            var timer = timeProvider.CreateTimer(
+                s => ((CancellationTokenSource)s).Cancel(),
+                cts,
+                delay,
+                Timeout.InfiniteTimeSpan
+            );
             cts.Token.Register(t => ((ITimer)t).Dispose(), timer);
 #pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
 #pragma warning restore CS8602 // Dereference of a possibly null reference.
-        }    
+        }
     }
 
     /// <summary>
@@ -34,7 +43,11 @@ public static class TimeProviderTaskExtensions
     /// <param name="cts">The CancellationTokenSource to cancel.</param>
     /// <param name="delayMs">The delay after which cancellation should occur.</param>
     /// <param name="timeProvider">The TimeProvider instance to use for timing.</param>
-    public static void CancelAfter(this CancellationTokenSource cts, int delayMs, TimeProvider timeProvider)
+    public static void CancelAfter(
+        this CancellationTokenSource cts,
+        int delayMs,
+        TimeProvider timeProvider
+    )
     {
         if (timeProvider == TimeProvider.System)
         {
@@ -44,10 +57,15 @@ public static class TimeProviderTaskExtensions
         {
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
 #pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
-            var timer = timeProvider.CreateTimer(s => ((CancellationTokenSource)s).Cancel(), cts, TimeSpan.FromMilliseconds(delayMs), Timeout.InfiniteTimeSpan);
+            var timer = timeProvider.CreateTimer(
+                s => ((CancellationTokenSource)s).Cancel(),
+                cts,
+                TimeSpan.FromMilliseconds(delayMs),
+                Timeout.InfiniteTimeSpan
+            );
             cts.Token.Register(t => ((ITimer)t).Dispose(), timer);
 #pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
 #pragma warning restore CS8602 // Dereference of a possibly null reference.
-        }    
+        }
     }
 }

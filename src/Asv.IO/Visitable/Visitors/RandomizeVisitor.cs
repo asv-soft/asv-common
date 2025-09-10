@@ -3,10 +3,11 @@ using DotNext;
 
 namespace Asv.IO;
 
-public class RandomizeVisitor(Random random, string allowedChars, bool skipUnknown = false) 
+public class RandomizeVisitor(Random random, string allowedChars, bool skipUnknown = false)
     : FullVisitorBase(skipUnknown)
 {
-    public const string AllowedChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    public const string AllowedChars =
+        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     public static RandomizeVisitor Shared { get; } = new(Random.Shared, AllowedChars);
 
     public override void BeginList(Field field, ListType type, ref uint size)
@@ -23,7 +24,7 @@ public class RandomizeVisitor(Random random, string allowedChars, bool skipUnkno
     {
         if (random.NextBoolean())
         {
-            value = type.Min + (type.Max - type.Min) * random.NextDouble();
+            value = type.Min + ((type.Max - type.Min) * random.NextDouble());
         }
         else
         {
@@ -35,7 +36,7 @@ public class RandomizeVisitor(Random random, string allowedChars, bool skipUnkno
     {
         if (random.NextBoolean())
         {
-            value = type.Min + (type.Max - type.Min) * (float)random.NextDouble();
+            value = type.Min + ((type.Max - type.Min) * (float)random.NextDouble());
         }
         else
         {
@@ -47,7 +48,7 @@ public class RandomizeVisitor(Random random, string allowedChars, bool skipUnkno
     {
         if (random.NextBoolean())
         {
-            value = type.Min + (type.Max - type.Min) * (Half)random.NextDouble();
+            value = type.Min + ((type.Max - type.Min) * (Half)random.NextDouble());
         }
         else
         {
@@ -193,7 +194,7 @@ public class RandomizeVisitor(Random random, string allowedChars, bool skipUnkno
     {
         var minTicks = DateTime.MinValue.Ticks;
         var maxTicks = DateTime.MaxValue.Ticks;
-        var randomTicks = (long)(minTicks + (maxTicks - minTicks) * random.NextDouble());
+        var randomTicks = (long)(minTicks + ((maxTicks - minTicks) * random.NextDouble()));
         value = new DateTime(randomTicks, DateTimeKind.Utc);
     }
 
@@ -203,7 +204,7 @@ public class RandomizeVisitor(Random random, string allowedChars, bool skipUnkno
         {
             var minTicks = DateTime.MinValue.Ticks;
             var maxTicks = DateTime.MaxValue.Ticks;
-            var randomTicks = (long)(minTicks + (maxTicks - minTicks) * random.NextDouble());
+            var randomTicks = (long)(minTicks + ((maxTicks - minTicks) * random.NextDouble()));
             value = new DateTime(randomTicks, DateTimeKind.Utc);
         }
         else
@@ -216,7 +217,7 @@ public class RandomizeVisitor(Random random, string allowedChars, bool skipUnkno
     {
         var minTicks = TimeSpan.MinValue.Ticks;
         var maxTicks = TimeSpan.MaxValue.Ticks;
-        var randomTicks = (long)(minTicks + (maxTicks - minTicks) * random.NextDouble());
+        var randomTicks = (long)(minTicks + ((maxTicks - minTicks) * random.NextDouble()));
         value = new TimeSpan(randomTicks);
     }
 
@@ -226,7 +227,7 @@ public class RandomizeVisitor(Random random, string allowedChars, bool skipUnkno
         {
             var minTicks = TimeSpan.MinValue.Ticks;
             var maxTicks = TimeSpan.MaxValue.Ticks;
-            var randomTicks = (long)(minTicks + (maxTicks - minTicks) * random.NextDouble());
+            var randomTicks = (long)(minTicks + ((maxTicks - minTicks) * random.NextDouble()));
             value = new TimeSpan(randomTicks);
         }
         else
@@ -237,18 +238,14 @@ public class RandomizeVisitor(Random random, string allowedChars, bool skipUnkno
 
     public override void Visit(Field field, DateOnlyType type, ref DateOnly value)
     {
-        value = new DateOnly(random.Next(1, 9999),
-                             random.Next(1, 12),
-                             random.Next(1, 28)); 
+        value = new DateOnly(random.Next(1, 9999), random.Next(1, 12), random.Next(1, 28));
     }
 
     public override void Visit(Field field, DateOnlyOptionalType type, ref DateOnly? value)
     {
         if (random.NextBoolean())
         {
-            value = new DateOnly(random.Next(1, 9999),
-                                 random.Next(1, 12),
-                                 random.Next(1, 28));
+            value = new DateOnly(random.Next(1, 9999), random.Next(1, 12), random.Next(1, 28));
         }
         else
         {
@@ -281,17 +278,17 @@ public class RandomizeVisitor(Random random, string allowedChars, bool skipUnkno
 
     public override void Visit(Field field, DoubleType type, ref double value)
     {
-        value = type.Min + (type.Max - type.Min) * random.NextDouble();
+        value = type.Min + ((type.Max - type.Min) * random.NextDouble());
     }
 
     public override void Visit(Field field, FloatType type, ref float value)
     {
-        value = (float)(type.Min + (type.Max - type.Min) * random.NextDouble());
+        value = (float)(type.Min + ((type.Max - type.Min) * random.NextDouble()));
     }
 
     public override void Visit(Field field, HalfFloatType type, ref Half value)
     {
-        value = (Half)(type.Min + (type.Max - type.Min) * (Half)random.NextDouble());
+        value = (Half)(type.Min + ((type.Max - type.Min) * (Half)random.NextDouble()));
     }
 
     public override void Visit(Field field, Int8Type type, ref sbyte value)
@@ -371,7 +368,12 @@ public class RandomizeVisitor(Random random, string allowedChars, bool skipUnkno
         // do nothing
     }
 
-    public override void BeginOptionalStruct(Field field, OptionalStructType type, bool isPresent, out bool createNew)
+    public override void BeginOptionalStruct(
+        Field field,
+        OptionalStructType type,
+        bool isPresent,
+        out bool createNew
+    )
     {
         createNew = random.NextBoolean();
     }

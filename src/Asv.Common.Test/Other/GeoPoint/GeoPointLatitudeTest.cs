@@ -4,7 +4,7 @@ namespace Asv.Common.Test;
 
 public class GeoPointLatitudeTest
 {
-     [Theory]
+    [Theory]
     [InlineData("+0 0 0", 0)]
     [InlineData("0 0 0+", 0)]
     [InlineData("0 0 0 ", 0)]
@@ -85,16 +85,16 @@ public class GeoPointLatitudeTest
     }
 
     [Theory]
-    [InlineData("2 40", 2 + 40d/60d)]
-    [InlineData("15 59 45", 15 + 59d/60d + 45d/3600d)]
-    [InlineData("0 1 0 S", -1d/60d)]
-    [InlineData("15 59 45,15 S", -15 + -59d/60d + -45.15d/3600d)]
+    [InlineData("2 40", 2 + (40d / 60d))]
+    [InlineData("15 59 45", 15 + (59d / 60d) + (45d / 3600d))]
+    [InlineData("0 1 0 S", -1d / 60d)]
+    [InlineData("15 59 45,15 S", -15 + (-59d / 60d) + (-45.15d / 3600d))]
     public void CheckDmsWithShortValues(string input, double expected)
     {
         Assert.True(GeoPointLatitude.TryParse(input, out double value));
         Assert.Equal(expected, value, 6); // using precision of 6 decimal places
     }
-    
+
     [Theory]
     [InlineData("00 00 00 N", 0)]
     [InlineData("00 00 0 N", 0)]
@@ -128,7 +128,7 @@ public class GeoPointLatitudeTest
             Assert.False(result);
         }
     }
-    
+
     [Theory]
     [InlineData("01 00 00 N", 1.0)]
     [InlineData("1 00 00 N", 1.0)]
@@ -147,7 +147,7 @@ public class GeoPointLatitudeTest
     [InlineData("+89 00 00 N", 89.0)]
     [InlineData("+00000N", 0.0)]
     [InlineData("+010000N", 1.0)]
-    [InlineData("+10000N", 10.0)] 
+    [InlineData("+10000N", 10.0)]
     [InlineData("+090000N", 9.0)]
     [InlineData("+90000N", 90.0)]
     [InlineData("+890000N", 89.0)]
@@ -200,11 +200,11 @@ public class GeoPointLatitudeTest
     }
 
     [Theory]
-    [InlineData("00 01 00 N", 1.0/60.0)]
-    [InlineData("00 1 00 N", 1.0/60.0)]
-    [InlineData("00 09 00 N", 9.0/60.0)]
-    [InlineData("00 9 00 N", 9.0/60.0)]
-    [InlineData("00 59 00 N", 59.0/60.0)]
+    [InlineData("00 01 00 N", 1.0 / 60.0)]
+    [InlineData("00 1 00 N", 1.0 / 60.0)]
+    [InlineData("00 09 00 N", 9.0 / 60.0)]
+    [InlineData("00 9 00 N", 9.0 / 60.0)]
+    [InlineData("00 59 00 N", 59.0 / 60.0)]
     public void CheckValidLatitudeMinuteValues(string input, double expected)
     {
         Assert.True(GeoPointLatitude.TryParse(input, out double value));
@@ -212,22 +212,22 @@ public class GeoPointLatitudeTest
     }
 
     [Theory]
-    [InlineData("00 00 01 N", 1.0/3600.0)]
-    [InlineData("00 00 1 N", 1.0/3600.0)]
-    [InlineData("00 00 09 N", 9.0/3600.0)]
-    [InlineData("00 00 9 N", 9.0/3600.0)]
-    [InlineData("00 00 59 N", 59.0/3600.0)]
-    [InlineData("00 00 01.001 N", 1.001/3600.0)]
-    [InlineData("00 00 1.001 N", 1.001/3600.0)]
-    [InlineData("00 00 09.001 N", 9.001/3600.0)]
-    [InlineData("00 00 9.001 N", 9.001/3600.0)]
-    [InlineData("00 00 59.001 N", 59.001/3600.0)]
-    [InlineData("000059N", 59.0/3600.0)]
-    [InlineData("000001.001N", 1.001/3600.0)]
-    [InlineData("00001.001N", 1.001/3600.0)]
-    [InlineData("000009.001N", 9.001/3600.0)]
-    [InlineData("00009.001N", 9.001/3600.0)]
-    [InlineData("000059.001N", 59.001/3600.0)]
+    [InlineData("00 00 01 N", 1.0 / 3600.0)]
+    [InlineData("00 00 1 N", 1.0 / 3600.0)]
+    [InlineData("00 00 09 N", 9.0 / 3600.0)]
+    [InlineData("00 00 9 N", 9.0 / 3600.0)]
+    [InlineData("00 00 59 N", 59.0 / 3600.0)]
+    [InlineData("00 00 01.001 N", 1.001 / 3600.0)]
+    [InlineData("00 00 1.001 N", 1.001 / 3600.0)]
+    [InlineData("00 00 09.001 N", 9.001 / 3600.0)]
+    [InlineData("00 00 9.001 N", 9.001 / 3600.0)]
+    [InlineData("00 00 59.001 N", 59.001 / 3600.0)]
+    [InlineData("000059N", 59.0 / 3600.0)]
+    [InlineData("000001.001N", 1.001 / 3600.0)]
+    [InlineData("00001.001N", 1.001 / 3600.0)]
+    [InlineData("000009.001N", 9.001 / 3600.0)]
+    [InlineData("00009.001N", 9.001 / 3600.0)]
+    [InlineData("000059.001N", 59.001 / 3600.0)]
     public void CheckValidLatitudeSecondValues(string input, double expected)
     {
         Assert.True(GeoPointLatitude.TryParse(input, out double value));
@@ -248,7 +248,7 @@ public class GeoPointLatitudeTest
         Assert.True(GeoPointLatitude.TryParse(input, out var latitude));
         Assert.Equal(expectedLatitude, latitude, 6);
     }
-    
+
     [Theory]
     [InlineData("S89:59 .999")]
     [InlineData("N45 : 00 . 000")]

@@ -24,8 +24,6 @@ namespace Asv.IO
             _input = strm;
             _sub1 = _input.OnReceive.Subscribe(OnData);
         }
-        
-        
 
         private void OnData(byte[] arr)
         {
@@ -34,7 +32,10 @@ namespace Asv.IO
                 if (!_sync)
                 {
                     if (data != _config.StartByte)
+                    {
                         return;
+                    }
+
                     _sync = true;
                     _readIndex = 0;
                 }
@@ -56,28 +57,40 @@ namespace Asv.IO
                     ++_readIndex;
                     if (_readIndex >= _config.MaxMessageSize)
                     {
-                        _onErrorSubject.OnNext(new Exception($"Receive buffer overflow. Max message size={_config.MaxMessageSize}"));
+                        _onErrorSubject.OnNext(
+                            new Exception(
+                                $"Receive buffer overflow. Max message size={_config.MaxMessageSize}"
+                            )
+                        );
                         _sync = false;
                     }
                 }
             }
         }
+
         public Observable<string> OnReceive => _output;
         public Observable<Exception> OnError => _onErrorSubject;
+
         public async Task Send(string value, CancellationToken cancel)
         {
             try
             {
-                using var linkedCancel = CancellationTokenSource.CreateLinkedTokenSource(cancel, DisposeCancel);
-                byte[] data = _config.DefaultEncoding.GetBytes(_config.StartByte + value + _config.StopByte);
+                using var linkedCancel = CancellationTokenSource.CreateLinkedTokenSource(
+                    cancel,
+                    DisposeCancel
+                );
+                byte[] data = _config.DefaultEncoding.GetBytes(
+                    _config.StartByte + value + _config.StopByte
+                );
                 await _input.Send(data, data.Length, linkedCancel.Token).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
-                _onErrorSubject.OnNext(new Exception($"Error to send text stream data '{value}':{ex.Message}", ex));
+                _onErrorSubject.OnNext(
+                    new Exception($"Error to send text stream data '{value}':{ex.Message}", ex)
+                );
                 throw;
             }
-           
         }
 
         #region Dispose
@@ -113,9 +126,13 @@ namespace Asv.IO
             static async ValueTask CastAndDispose(IDisposable resource)
             {
                 if (resource is IAsyncDisposable resourceAsyncDisposable)
+                {
                     await resourceAsyncDisposable.DisposeAsync();
+                }
                 else
+                {
                     resource.Dispose();
+                }
             }
         }
 

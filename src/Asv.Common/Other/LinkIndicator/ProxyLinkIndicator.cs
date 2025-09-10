@@ -23,7 +23,7 @@ public class ProxyLinkIndicator : AsyncDisposableOnce, ILinkIndicator
     public void UpdateSource(ILinkIndicator origin)
     {
         _sub1?.Dispose();
-        _sub1 = origin.State.Subscribe(x=>
+        _sub1 = origin.State.Subscribe(x =>
         {
             if (_state.IsDisposed == false)
             {
@@ -50,7 +50,10 @@ public class ProxyLinkIndicator : AsyncDisposableOnce, ILinkIndicator
         await CastAndDispose(_state);
         await CastAndDispose(_onFound);
         await CastAndDispose(_onLost);
-        if (_sub1 != null) await CastAndDispose(_sub1);
+        if (_sub1 != null)
+        {
+            await CastAndDispose(_sub1);
+        }
 
         await base.DisposeAsyncCore();
 
@@ -59,9 +62,13 @@ public class ProxyLinkIndicator : AsyncDisposableOnce, ILinkIndicator
         static async ValueTask CastAndDispose(IDisposable resource)
         {
             if (resource is IAsyncDisposable resourceAsyncDisposable)
+            {
                 await resourceAsyncDisposable.DisposeAsync();
+            }
             else
+            {
                 resource.Dispose();
+            }
         }
     }
 }

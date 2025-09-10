@@ -13,10 +13,8 @@ using Timeout = System.Threading.Timeout;
 
 namespace Asv.IO;
 
-
-
 public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
-    where TConfig:ProtocolPortConfig
+    where TConfig : ProtocolPortConfig
 {
     private volatile int _isEnableBusy;
     private volatile int _isDisableBusy;
@@ -33,15 +31,21 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
     private readonly Subject<IProtocolEndpoint> _endpointAdded = new();
     private readonly Subject<IProtocolEndpoint> _endpointRemoved = new();
     private readonly TConfig _config;
-    
 
-    protected ProtocolPort(string id,
+    protected ProtocolPort(
+        string id,
         TConfig config,
-        IProtocolContext context, bool reconnectWhenEndpointError,
-        IStatisticHandler? statistic = null):base(id, context, statistic)
+        IProtocolContext context,
+        bool reconnectWhenEndpointError,
+        IStatisticHandler? statistic = null
+    )
+        : base(id, context, statistic)
     {
         if (string.IsNullOrWhiteSpace(id))
+        {
             throw new ArgumentException("Value cannot be null or whitespace.", nameof(id));
+        }
+
         ArgumentNullException.ThrowIfNull(config);
         ArgumentNullException.ThrowIfNull(context);
         _context = context;
@@ -54,31 +58,39 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
         else
         {
             var hash = new HashSet<string>(config.EnabledProtocols);
-            _protocols = [..Context.AvailableProtocols.Where(x => hash.Contains(x.Id))];
+            _protocols = [.. Context.AvailableProtocols.Where(x => hash.Contains(x.Id))];
         }
-        
+
         foreach (var protocol in _protocols)
         {
             if (context.ParserFactory.ContainsKey(protocol.Id) == false)
+            {
                 throw new ArgumentException($"Parser for protocol {protocol} not found");
+            }
         }
         _logger = context.LoggerFactory.CreateLogger<ProtocolPort<TConfig>>();
         _logger.ZLogInformation($"Create port {this} with config {config}");
-        
     }
 
     private void ClearAndDisposeAllEndpoints()
     {
-        if (_endpoints.Length == 0) return;
+        if (_endpoints.Length == 0)
+        {
+            return;
+        }
+
         _logger.ZLogTrace($"{this} clear all endpoints '{_endpoints.Length}'");
-        ImmutableArray<IProtocolEndpoint> after, before;
+        ImmutableArray<IProtocolEndpoint> after,
+            before;
         do
         {
             before = _endpoints;
-            after = [];    
+            after = [];
         }
         // check if the value is changed by another thread while we are removing the endpoint
-        while (ImmutableInterlocked.InterlockedCompareExchange(ref _endpoints, after, before) != before);
+        while (
+            ImmutableInterlocked.InterlockedCompareExchange(ref _endpoints, after, before) != before
+        );
         foreach (var endpoint in before)
         {
             try
@@ -94,19 +106,29 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
         }
     }
 
-    protected void RemoveAndDisposeEndpoint(IProtocolEndpoint endpoint, ProtocolConnectionException? err)
+    protected void RemoveAndDisposeEndpoint(
+        IProtocolEndpoint endpoint,
+        ProtocolConnectionException? err
+    )
     {
-        if (IsDisposed) return;
+        if (IsDisposed)
+        {
+            return;
+        }
+
         _logger.ZLogInformation($"{this} remove endpoint {endpoint}");
-        ImmutableArray<IProtocolEndpoint> after, before;
+        ImmutableArray<IProtocolEndpoint> after,
+            before;
         do
         {
             before = _endpoints;
-            after = before.Remove(endpoint);    
+            after = before.Remove(endpoint);
         }
         // check if the value is changed by another thread while we are removing the endpoint
-        while (ImmutableInterlocked.InterlockedCompareExchange(ref _endpoints, after, before) != before);
-        
+        while (
+            ImmutableInterlocked.InterlockedCompareExchange(ref _endpoints, after, before) != before
+        );
+
         try
         {
             endpoint.Dispose();
@@ -122,28 +144,38 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
             InternalRisePortErrorAndReconnect(err);
         }
     }
-    
+
     protected void InternalAddEndpoint(IProtocolEndpoint endpoint)
     {
-        if (IsDisposed) return;
+        if (IsDisposed)
+        {
+            return;
+        }
+
         _logger.ZLogInformation($"{this} add endpoint {endpoint}");
-        ImmutableArray<IProtocolEndpoint> after, before;
+        ImmutableArray<IProtocolEndpoint> after,
+            before;
         do
         {
             before = _endpoints;
-            after = before.Add(endpoint);    
+            after = before.Add(endpoint);
         }
         // check if the value is changed by another thread while we are adding the endpoint
-        while (ImmutableInterlocked.InterlockedCompareExchange(ref _endpoints, after, before) != before);
-        
+        while (
+            ImmutableInterlocked.InterlockedCompareExchange(ref _endpoints, after, before) != before
+        );
+
         // we don't need to dispose subscriptions here, because it will be complete by endpoint itself
-        endpoint.LastError.Where(x => x != null).Subscribe(endpoint, (x, p) => RemoveAndDisposeEndpoint(p,x));
-        endpoint.OnRxMessage.Subscribe(InternalPublishRxMessage,InternalPublishRxError, _ => { });
+        endpoint
+            .LastError.Where(x => x != null)
+            .Subscribe(endpoint, (x, p) => RemoveAndDisposeEndpoint(p, x));
+        endpoint.OnRxMessage.Subscribe(InternalPublishRxMessage, InternalPublishRxError, _ => { });
         _endpointAdded.OnNext(endpoint);
     }
+
     protected ImmutableArray<IProtocolParser> InternalCreateParsers()
     {
-        return [.._protocols.Select(x => Context.ParserFactory[x.Id](_context, StatisticHandler))];
+        return [.. _protocols.Select(x => Context.ParserFactory[x.Id](_context, StatisticHandler))];
     }
 
     public ProtocolPortConfig Config => (ProtocolPortConfig)_config.Clone();
@@ -170,7 +202,11 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
 
     private void InternalEnable()
     {
-        if (IsDisposed) return;
+        if (IsDisposed)
+        {
+            return;
+        }
+
         if (Interlocked.CompareExchange(ref _isEnableBusy, 1, 0) == 1)
         {
             _logger.ZLogTrace($"Port {this} skip duplicate enable ");
@@ -207,18 +243,21 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
         _isEnabled.Value = false;
         Task.Factory.StartNew(InternalDisable).SafeFireAndForget();
     }
-    
+
     private void InternalDisable()
     {
-        if (IsDisposed) return;
+        if (IsDisposed)
+        {
+            return;
+        }
+
         if (Interlocked.CompareExchange(ref _isDisableBusy, 1, 0) == 1)
         {
             _logger.ZLogTrace($"{this} Skip duplicate disable");
             return;
         }
         _logger.ZLogInformation($"Disable {this} port");
-        
-        
+
         try
         {
             _status.Value = ProtocolPortStatus.InProgress;
@@ -229,7 +268,7 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
                 {
                     cancel.Cancel(false);
                 }
-                
+
                 cancel.Dispose();
                 _startStopCancel = null;
             }
@@ -239,8 +278,8 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
         }
         catch (Exception e)
         {
-            InternalRisePortErrorAndReconnect(e);     
-        }   
+            InternalRisePortErrorAndReconnect(e);
+        }
         finally
         {
             Interlocked.Exchange(ref _isDisableBusy, 0);
@@ -249,42 +288,69 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
 
     protected void InternalRisePortErrorAndReconnect(Exception ex)
     {
-        if (IsDisposed) return;
+        if (IsDisposed)
+        {
+            return;
+        }
+
         if (_reconnectTimer != null)
         {
             _reconnectTimer.Dispose();
             _reconnectTimer = null;
         }
         ClearAndDisposeAllEndpoints();
-        _logger.ZLogError(ex,$"Port {this} error occured. Reconnect after {_config.ReconnectTimeoutMs} ms. Error message:{ex.Message}");
-        _error.OnNext(new ProtocolPortException(this,$"Port {this} error:{ex.Message}",ex));
+        _logger.ZLogError(
+            ex,
+            $"Port {this} error occured. Reconnect after {_config.ReconnectTimeoutMs} ms. Error message:{ex.Message}"
+        );
+        _error.OnNext(new ProtocolPortException(this, $"Port {this} error:{ex.Message}", ex));
         _status.Value = ProtocolPortStatus.Error;
-        _reconnectTimer = _context.TimeProvider.CreateTimer(ReconnectAfterError, null, TimeSpan.FromMilliseconds(_config.ReconnectTimeoutMs),
-            Timeout.InfiniteTimeSpan);
+        _reconnectTimer = _context.TimeProvider.CreateTimer(
+            ReconnectAfterError,
+            null,
+            TimeSpan.FromMilliseconds(_config.ReconnectTimeoutMs),
+            Timeout.InfiniteTimeSpan
+        );
     }
-    
+
     private void ReconnectAfterError(object? state)
     {
         _reconnectTimer?.Dispose();
         _reconnectTimer = null;
-        if (IsEnabled.CurrentValue == false) return;
-        if (_status.CurrentValue == ProtocolPortStatus.Connected) return;
+        if (IsEnabled.CurrentValue == false)
+        {
+            return;
+        }
+
+        if (_status.CurrentValue == ProtocolPortStatus.Connected)
+        {
+            return;
+        }
+
         InternalEnable();
     }
-    
+
     protected abstract void InternalSafeDisable();
     protected abstract void InternalSafeEnable(CancellationToken token);
-    public override async ValueTask Send(IProtocolMessage message, CancellationToken cancel = default)
+
+    public override async ValueTask Send(
+        IProtocolMessage message,
+        CancellationToken cancel = default
+    )
     {
         ArgumentNullException.ThrowIfNull(message);
         if (IsDisposed)
         {
             return;
         }
-        
+
         cancel.ThrowIfCancellationRequested();
         var newMessage = await InternalFilterTxMessage(message);
-        if (newMessage == null) return;
+        if (newMessage == null)
+        {
+            return;
+        }
+
         var endpoints = _endpoints;
         foreach (var endpoint in endpoints)
         {
@@ -324,17 +390,28 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
         await CastAndDispose(_error);
         await CastAndDispose(_status);
         await CastAndDispose(_isEnabled);
-        if (_startStopCancel != null) await CastAndDispose(_startStopCancel);
-        if (_reconnectTimer != null) await _reconnectTimer.DisposeAsync();
+        if (_startStopCancel != null)
+        {
+            await CastAndDispose(_startStopCancel);
+        }
+
+        if (_reconnectTimer != null)
+        {
+            await _reconnectTimer.DisposeAsync();
+        }
 
         return;
 
         static async ValueTask CastAndDispose(IDisposable resource)
         {
             if (resource is IAsyncDisposable resourceAsyncDisposable)
+            {
                 await resourceAsyncDisposable.DisposeAsync();
+            }
             else
+            {
                 resource.Dispose();
+            }
         }
     }
 

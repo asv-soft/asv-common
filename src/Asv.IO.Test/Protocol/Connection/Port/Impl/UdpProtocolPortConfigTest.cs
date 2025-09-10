@@ -29,8 +29,12 @@ public class UdpProtocolPortConfigTest(ITestOutputHelper output)
         var client2Router = protocol.CreateRouter("Client2");
 
         var serverPort = serverRouter.AddPort("udp://127.0.0.1:5760");
-        var client1Port = client1Router.AddPort("udp://127.0.0.1:5761?remote=127.0.0.1:5760&reconnect=0");
-        var client2Port = client2Router.AddPort("udp://127.0.0.1:5762?remote=127.0.0.1:5760&reconnect=0");
+        var client1Port = client1Router.AddPort(
+            "udp://127.0.0.1:5761?remote=127.0.0.1:5760&reconnect=0"
+        );
+        var client2Port = client2Router.AddPort(
+            "udp://127.0.0.1:5762?remote=127.0.0.1:5760&reconnect=0"
+        );
         await serverPort.Status.FirstAsync(x => x == ProtocolPortStatus.Connected);
         await client1Port.Status.FirstAsync(x => x == ProtocolPortStatus.Connected);
         await client2Port.Status.FirstAsync(x => x == ProtocolPortStatus.Connected);
@@ -45,7 +49,7 @@ public class UdpProtocolPortConfigTest(ITestOutputHelper output)
                 tcs.SetResult();
             }
         });
-        
+
         await Task.Delay(1000);
         for (int i = 0; i < 5; i++)
         {
@@ -53,9 +57,7 @@ public class UdpProtocolPortConfigTest(ITestOutputHelper output)
             await client2Router.Send(new ExampleMessage2());
             await Task.Delay(100);
         }
-        
-         
+
         await tcs.Task;
-        
     }
 }

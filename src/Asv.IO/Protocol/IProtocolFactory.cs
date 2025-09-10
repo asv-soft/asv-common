@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Asv.IO;
 
-public interface IProtocolFactory: IMessageFormatter
+public interface IProtocolFactory : IMessageFormatter
 {
     ILoggerFactory LoggerFactory { get; }
     TimeProvider TimeProvider { get; }
@@ -16,7 +16,9 @@ public interface IProtocolFactory: IMessageFormatter
     ImmutableArray<IProtocolFeature> Features { get; }
     IProtocolParser CreateParser(string protocolId);
     IProtocolRouter CreateRouter(string id);
-    IVirtualConnection CreateVirtualConnection(Func<IProtocolMessage, bool>? clientToServerFilter = null,
-        Func<IProtocolMessage, bool>? serverToClientFilter = null, bool printMessagesToLog = true);
-    
+    IVirtualConnection CreateVirtualConnection(
+        Func<IProtocolMessage, bool>? clientToServerFilter = null,
+        Func<IProtocolMessage, bool>? serverToClientFilter = null,
+        bool printMessagesToLog = true
+    );
 }

@@ -6,7 +6,7 @@ public class SimpleBinarySizeCalculator(bool skipUnknown) : FullVisitorBase(skip
 {
     public int Size { get; private set; }
 
-    public override void Visit(Field field, UInt8Type type,  ref byte value)
+    public override void Visit(Field field, UInt8Type type, ref byte value)
     {
         Size += sizeof(byte);
     }
@@ -61,7 +61,6 @@ public class SimpleBinarySizeCalculator(bool skipUnknown) : FullVisitorBase(skip
         if (value.HasValue)
         {
             Size += sizeof(bool) + sizeof(double);
-            
         }
         else
         {
@@ -307,7 +306,7 @@ public class SimpleBinarySizeCalculator(bool skipUnknown) : FullVisitorBase(skip
 
     public override void Visit(Field field, StringType type, ref string value)
     {
-        Size+= BinSerialize.GetSizeForString(value);
+        Size += BinSerialize.GetSizeForString(value);
     }
 
     public override void Visit(Field field, BoolType type, ref bool value)
@@ -319,13 +318,12 @@ public class SimpleBinarySizeCalculator(bool skipUnknown) : FullVisitorBase(skip
     {
         if (type.Encoding == EncodingId.Ascii)
         {
-            Size += 1;    
+            Size += 1;
         }
         else
         {
             throw new NotImplementedException($"Encoding {type.Encoding} is not supported");
         }
-        
     }
 
     public override void BeginArray(Field field, ArrayType type)
@@ -348,7 +346,12 @@ public class SimpleBinarySizeCalculator(bool skipUnknown) : FullVisitorBase(skip
         // fixed size struct => skip
     }
 
-    public override void BeginOptionalStruct(Field field, OptionalStructType type, bool isPresent, out bool createNew)
+    public override void BeginOptionalStruct(
+        Field field,
+        OptionalStructType type,
+        bool isPresent,
+        out bool createNew
+    )
     {
         createNew = false; // We do not create a new struct, we just calculate size
         Size += sizeof(bool); // Add size for presence flag

@@ -53,7 +53,10 @@ public class FloatingPointComparerTest
     [InlineData(float.MaxValue, float.MaxValue, 0.01f)]
     [InlineData(float.Epsilon, float.Epsilon, 0.01f)]
     public void ApproximatelyEquals_WithFloatsAndCustomEpsilon_ShouldBeEquals(
-        float first, float second, float epsilon)
+        float first,
+        float second,
+        float epsilon
+    )
     {
         // Act
         var result = first.ApproximatelyEquals(second, epsilon);
@@ -68,7 +71,10 @@ public class FloatingPointComparerTest
     [InlineData(float.MinValue, float.MaxValue, 0.01f)]
     [InlineData(0.000001f, 0.000002f, float.Epsilon)]
     public void ApproximatelyNotEquals_WithFloatsAndCustomEpsilon_ShouldNotBeEquals(
-        float first, float second, float epsilon)
+        float first,
+        float second,
+        float epsilon
+    )
     {
         // Act
         var result = first.ApproximatelyNotEquals(second, epsilon);
@@ -117,7 +123,10 @@ public class FloatingPointComparerTest
     [InlineData(double.MaxValue, double.MaxValue, 0.01)]
     [InlineData(double.Epsilon, double.Epsilon, 0.1)]
     public void ApproximatelyEquals_WithDoubleAndCustomEpsilon_ShouldBeEqual(
-        double first, double second, double epsilon)
+        double first,
+        double second,
+        double epsilon
+    )
     {
         // Act
         var result = first.ApproximatelyEquals(second, epsilon);
@@ -132,7 +141,10 @@ public class FloatingPointComparerTest
     [InlineData(double.MinValue, double.MaxValue, 0.01)]
     [InlineData(0.00000004, 0.00000008, double.Epsilon)]
     public void ApproximatelyNotEquals_WithDoubleAndCustomEpsilon_ShouldNotBeEqual(
-        double first, double second, double epsilon)
+        double first,
+        double second,
+        double epsilon
+    )
     {
         // Act
         var result = first.ApproximatelyNotEquals(second, epsilon);

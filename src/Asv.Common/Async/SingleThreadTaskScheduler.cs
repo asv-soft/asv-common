@@ -16,21 +16,30 @@ namespace Asv.Common
         private readonly BlockingCollection<Task> _tasks;
         private readonly Thread _workThread;
 
-        public SingleThreadTaskScheduler([Localizable(false)] string threadName, int boundedCapacity = 256, ThreadPriority priority = ThreadPriority.Normal, ApartmentState apartmentState = ApartmentState.MTA)
+        public SingleThreadTaskScheduler(
+            [Localizable(false)] string threadName,
+            int boundedCapacity = 256,
+            ThreadPriority priority = ThreadPriority.Normal,
+            ApartmentState apartmentState = ApartmentState.MTA
+        )
         {
             _tasks = new BlockingCollection<Task>(boundedCapacity);
             _workThread = new Thread(() =>
             {
                 foreach (var t in _tasks.GetConsumingEnumerable())
                 {
-                    if (IsDisposed) break;
+                    if (IsDisposed)
+                    {
+                        break;
+                    }
+
                     try
                     {
                         TryExecuteTask(t);
                     }
                     catch (Exception ex)
                     {
-                        //Mono sometimes error (System.InvalidOperationException: The task has already completed)
+                        // Mono sometimes error (System.InvalidOperationException: The task has already completed)
                         RiseUnhandledTaskException(ex);
                     }
                 }
@@ -38,10 +47,9 @@ namespace Asv.Common
             {
                 IsBackground = true,
                 Name = threadName,
-                Priority = priority
+                Priority = priority,
             };
-            
-            //_workThread.SetApartmentState(apartmentState);
+
             _workThread.Start();
         }
 
@@ -62,10 +70,13 @@ namespace Asv.Common
 
         protected override bool TryExecuteTaskInline(Task task, bool taskWasPreviouslyQueued)
         {
-            if (IsDisposed) return false;
-            return
-                Thread.CurrentThread.GetApartmentState() == ApartmentState.STA &&
-                TryExecuteTask(task);
+            if (IsDisposed)
+            {
+                return false;
+            }
+
+            return Thread.CurrentThread.GetApartmentState() == ApartmentState.STA
+                && TryExecuteTask(task);
         }
 
         public override int MaximumConcurrencyLevel => 1;
@@ -74,7 +85,11 @@ namespace Asv.Common
 
         public void Dispose()
         {
-            if (Interlocked.CompareExchange(ref _disposeFlag, Disposed, NotDisposed) != NotDisposed) return;
+            if (Interlocked.CompareExchange(ref _disposeFlag, Disposed, NotDisposed) != NotDisposed)
+            {
+                return;
+            }
+
             _tasks.CompleteAdding();
             _workThread.Join();
 
@@ -82,11 +97,14 @@ namespace Asv.Common
             _tasks.Dispose();
         }
 
-        public bool IsDisposed => Thread.VolatileRead(ref _disposeFlag) > 0;
+        public bool IsDisposed => Volatile.Read(ref _disposeFlag) > 0;
 
         public void ThrowIfDisposed()
         {
-            if (IsDisposed) throw new ObjectDisposedException(GetType().Name);
+            if (IsDisposed)
+            {
+                throw new ObjectDisposedException(GetType().Name);
+            }
         }
 
         #endregion
@@ -104,9 +122,10 @@ namespace Asv.Common
         {
             if (!CheckAccess())
             {
-                throw new InvalidOperationException("The calling thread does not have access to the data object");
+                throw new InvalidOperationException(
+                    "The calling thread does not have access to the data object"
+                );
             }
-
         }
 
         #endregion

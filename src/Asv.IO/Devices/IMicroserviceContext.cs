@@ -16,10 +16,12 @@ public interface IMicroserviceContext
 
 public class MicroserviceContext : IMicroserviceContext
 {
-    public MicroserviceContext(IProtocolConnection connection,
+    public MicroserviceContext(
+        IProtocolConnection connection,
         ILoggerFactory? loggerFactory = null,
         TimeProvider? timeProvider = null,
-        IMeterFactory? metrics = null)
+        IMeterFactory? metrics = null
+    )
     {
         Connection = connection;
         LoggerFactory = loggerFactory ?? NullLoggerFactory.Instance;
@@ -40,4 +42,3 @@ public class MicroserviceContext : IMicroserviceContext
     public TimeProvider TimeProvider { get; }
     public IMeterFactory Metrics { get; }
 }
-

@@ -35,14 +35,24 @@ namespace Asv.Common
         /// <exception cref="ArgumentOutOfRangeException">
         /// <paramref name="size"/> is below 1.
         /// </exception>
-        public static IEnumerable<TSource[]> Chunked<TSource>(this IEnumerable<TSource> source, int size)
+        public static IEnumerable<TSource[]> Chunked<TSource>(
+            this IEnumerable<TSource> source,
+            int size
+        )
         {
             return ChunkIterator(source, size);
         }
 
-        private static IEnumerable<TSource[]> ChunkIterator<TSource>(IEnumerable<TSource> source, int size)
+        private static IEnumerable<TSource[]> ChunkIterator<TSource>(
+            IEnumerable<TSource> source,
+            int size
+        )
         {
-            if (size <= 0) throw new ArgumentOutOfRangeException(nameof(size));
+            if (size <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(size));
+            }
+
             using var e = source.GetEnumerator();
             while (e.MoveNext())
             {
@@ -67,7 +77,7 @@ namespace Asv.Common
                 }
             }
         }
-        
+
         /// <summary>
         /// Synchronizes a dictionary with a given list of keys.
         /// Adds keys to the dictionary that are not present and removes keys from the dictionary that are not in the list.
@@ -79,8 +89,12 @@ namespace Asv.Common
         /// <param name="addItem">A function that adds missing keys to the dictionary and returns the corresponding value.</param>
         /// <param name="afterRemoveItem">An action that is executed after removing a key from the dictionary.</param>
         /// <returns>True if any changes were made to the dictionary; otherwise, false.</returns>
-        public static bool SyncDictionaryWithKeys<TKey, TValue>(this IDictionary<TKey, TValue> dict, IEnumerable<TKey> keys,
-            Func<TKey, TValue> addItem, Action<TKey>? afterRemoveItem)
+        public static bool SyncDictionaryWithKeys<TKey, TValue>(
+            this IDictionary<TKey, TValue> dict,
+            IEnumerable<TKey> keys,
+            Func<TKey, TValue> addItem,
+            Action<TKey>? afterRemoveItem
+        )
             where TKey : notnull
         {
             var updated = false;
@@ -91,7 +105,8 @@ namespace Asv.Common
                 dict.Add(key, addItem(key));
                 updated = true;
             }
-            //remove not found keys
+
+            // remove not found keys
             foreach (var key in dict.Keys.ToImmutableArray().Where(key => !list.Contains(key)))
             {
                 dict.Remove(key);
@@ -101,21 +116,38 @@ namespace Asv.Common
 
             return updated;
         }
-        public static void SyncCollection<T>(this IEnumerable<T> exist, IEnumerable<T> actual, Action<T> deleteCallback, Action<T> addCallback,IEqualityComparer<T> comparer) 
+
+        public static void SyncCollection<T>(
+            this IEnumerable<T> exist,
+            IEnumerable<T> actual,
+            Action<T> deleteCallback,
+            Action<T> addCallback,
+            IEqualityComparer<T> comparer
+        )
         {
-            var toDelete = exist.Except(actual,comparer).ToArray();
-            var toAdd = actual.Except(exist,comparer).ToArray();
-            foreach (var item in toDelete)
+            ArgumentNullException.ThrowIfNull(exist);
+            ArgumentNullException.ThrowIfNull(actual);
+            ArgumentNullException.ThrowIfNull(deleteCallback);
+            ArgumentNullException.ThrowIfNull(addCallback);
+            ArgumentNullException.ThrowIfNull(comparer);
+
+            // Материализация во множества
+            var actualSet = new HashSet<T>(actual, comparer);
+            var existSet = new HashSet<T>(exist, comparer);
+
+            // Удаления
+            foreach (var item in existSet.Where(item => !actualSet.Contains(item)))
             {
                 deleteCallback(item);
             }
 
-            foreach (var item in toAdd)
+            // Добавления
+            foreach (var item in actualSet.Where(item => !existSet.Contains(item)))
             {
                 addCallback(item);
             }
         }
-        
+
         /// <summary>
         /// Performs an action for each item in the enumerable
         /// </summary>
@@ -123,12 +155,12 @@ namespace Asv.Common
         /// <param name="values">The data values.</param>
         /// <param name="action">The action to be performed.</param>
         /// <example>
-        /// 
+        ///
         /// var values = new[] { "1", "2", "3" };
         /// values.ConvertList&lt;string, int&gt;().ForEach(Console.WriteLine);
-        /// 
+        ///
         /// </example>
-        /// <remarks>This method was intended to return the passed values to provide method chaining. Howver due to defered execution the compiler would actually never run the entire code at all.</remarks>
+        /// <remarks>This method was intended to return the passed values to provide method chaining. However, due to deferred execution the compiler would actually never run the entire code at all.</remarks>
         public static void ForEach<T>(this IEnumerable<T> values, Action<T> action)
         {
             foreach (var value in values)
@@ -148,7 +180,7 @@ namespace Asv.Common
         /// foreach(var item in items.NotNull()){
         ///     // result of items.NotNull() is empty but not null enumerable
         /// }
-        /// 
+        ///
         /// object[] items = new object[]{ null, "Hello World!", null, "Good bye!" };
         /// foreach(var item in items.NotNull()){
         ///		// result of items.NotNull() is enumerable with two strings
@@ -164,7 +196,11 @@ namespace Asv.Common
 
             foreach (var item in target)
             {
-                if (ReferenceEquals(item, null)) continue;
+                if (ReferenceEquals(item, null))
+                {
+                    continue;
+                }
+
                 yield return item;
             }
         }
@@ -183,7 +219,11 @@ namespace Asv.Common
         /// var oldestPerson = persons.MaxItem(p =&gt; p.Age, out age);
         /// </code>
         /// </example>
-        public static TItem? MaxItem<TItem, TValue>(this IEnumerable<TItem?> items, Func<TItem, TValue> selector, out TValue? maxValue)
+        public static TItem? MaxItem<TItem, TValue>(
+            this IEnumerable<TItem?> items,
+            Func<TItem, TValue> selector,
+            out TValue? maxValue
+        )
             where TItem : class
             where TValue : IComparable
         {
@@ -219,13 +259,14 @@ namespace Asv.Common
         /// var oldestPerson = persons.MaxItem(p =&gt; p.Age);
         /// </code>
         /// </example>
-        public static TItem MaxItem<TItem, TValue>(this IEnumerable<TItem> items, Func<TItem, TValue> selector)
+        public static TItem? MaxItem<TItem, TValue>(
+            this IEnumerable<TItem> items,
+            Func<TItem, TValue> selector
+        )
             where TItem : class
             where TValue : IComparable
         {
-            TValue maxValue;
-
-            return items.MaxItem(selector, out maxValue);
+            return items.MaxItem(selector, out _);
         }
 
         /// <summary>
@@ -242,12 +283,16 @@ namespace Asv.Common
         /// var youngestPerson = persons.MinItem(p =&gt; p.Age, out age);
         /// </code>
         /// </example>
-        public static TItem MinItem<TItem, TValue>(this IEnumerable<TItem> items, Func<TItem, TValue> selector, out TValue? minValue)
+        public static TItem MinItem<TItem, TValue>(
+            this IEnumerable<TItem> items,
+            Func<TItem, TValue> selector,
+            out TValue? minValue
+        )
             where TItem : class
             where TValue : IComparable
         {
             TItem? minItem = null;
-            minValue = default; 
+            minValue = default;
 
             foreach (var item in items)
             {
@@ -275,13 +320,14 @@ namespace Asv.Common
         /// var youngestPerson = persons.MinItem(p =&gt; p.Age);
         /// </code>
         /// </example>
-        public static TItem MinItem<TItem, TValue>(this IEnumerable<TItem> items, Func<TItem, TValue> selector)
+        public static TItem MinItem<TItem, TValue>(
+            this IEnumerable<TItem> items,
+            Func<TItem, TValue> selector
+        )
             where TItem : class
             where TValue : IComparable
         {
-            TValue? minValue;
-
-            return items.MinItem(selector, out minValue);
+            return items.MinItem(selector, out _);
         }
     }
 }

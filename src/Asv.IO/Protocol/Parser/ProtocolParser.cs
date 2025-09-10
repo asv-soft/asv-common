@@ -5,15 +5,19 @@ using R3;
 
 namespace Asv.IO;
 
-public abstract class ProtocolParser<TMessage,TMessageId> : AsyncDisposableOnce, IProtocolParser
+public abstract class ProtocolParser<TMessage, TMessageId> : AsyncDisposableOnce, IProtocolParser
     where TMessage : IProtocolMessage<TMessageId>
     where TMessageId : struct
 {
-    private readonly IProtocolMessageFactory<TMessage,TMessageId> _messageFactory;
+    private readonly IProtocolMessageFactory<TMessage, TMessageId> _messageFactory;
     private readonly Subject<IProtocolMessage> _onMessage = new();
     private readonly Subject<Exception> _onError = new();
 
-    protected ProtocolParser(IProtocolMessageFactory<TMessage,TMessageId> messageFactory, IProtocolContext context, IStatisticHandler? statisticHandler)
+    protected ProtocolParser(
+        IProtocolMessageFactory<TMessage, TMessageId> messageFactory,
+        IProtocolContext context,
+        IStatisticHandler? statisticHandler
+    )
     {
         ArgumentNullException.ThrowIfNull(messageFactory);
         _messageFactory = messageFactory;
@@ -40,12 +44,17 @@ public abstract class ProtocolParser<TMessage,TMessageId> : AsyncDisposableOnce,
     public Observable<Exception> OnError => _onError;
     public abstract bool Push(byte data);
     public abstract void Reset();
-    protected void InternalParsePacket(TMessageId id, ref ReadOnlySpan<byte> data, bool ignoreReadNotAllData = false)
+
+    protected void InternalParsePacket(
+        TMessageId id,
+        ref ReadOnlySpan<byte> data,
+        bool ignoreReadNotAllData = false
+    )
     {
         var message = _messageFactory.Create(id);
         if (message == null)
         {
-            InternalOnError(new ProtocolParserUnknownMessageException(Info,id));
+            InternalOnError(new ProtocolParserUnknownMessageException(Info, id));
             StatisticHandler.IncrementParserUnknownMessageError();
             return;
         }
@@ -82,7 +91,9 @@ public abstract class ProtocolParser<TMessage,TMessageId> : AsyncDisposableOnce,
         if (!ignoreReadNotAllData && !data.IsEmpty)
         {
             StatisticHandler.IncrementParserReadNotAllDataError();
-            InternalOnError(new ProtocolParserReadNotAllDataWhenDeserializePacketException(Info, message));
+            InternalOnError(
+                new ProtocolParserReadNotAllDataWhenDeserializePacketException(Info, message)
+            );
         }
     }
 
@@ -115,4 +126,3 @@ public abstract class ProtocolParser<TMessage,TMessageId> : AsyncDisposableOnce,
 
     #endregion
 }
-

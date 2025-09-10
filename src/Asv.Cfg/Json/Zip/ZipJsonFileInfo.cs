@@ -4,7 +4,8 @@ using Newtonsoft.Json;
 namespace Asv.Cfg;
 
 [method: JsonConstructor]
-public readonly struct ZipJsonFileInfo(string fileVersion, string fileType) : IEquatable<ZipJsonFileInfo>
+public readonly struct ZipJsonFileInfo(string fileVersion, string fileType)
+    : IEquatable<ZipJsonFileInfo>
 {
     public static ZipJsonFileInfo Empty { get; } = new(string.Empty, string.Empty);
     public string FileVersion { get; } = fileVersion;

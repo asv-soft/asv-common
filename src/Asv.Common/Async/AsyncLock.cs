@@ -9,6 +9,7 @@ namespace Asv.Common
     {
         private readonly SemaphoreSlim _reentrancy = new(1, 1);
         private int _reentrances = 0;
+
         // We are using this SemaphoreSlim like a posix condition variable.
         // We only want to wake waiters, one or more of whom will try to obtain
         // a different lock to do their thing. So long as we can guarantee no
@@ -20,6 +21,7 @@ namespace Asv.Common
         internal long _owningId = UnlockedId;
         internal int _owningThreadId = (int)UnlockedId;
         private static long AsyncStackCounter = 0;
+
         // An AsyncLocal<T> is not really the task-based equivalent to a ThreadLocal<T>, in that
         // it does not track the async flow (as the documentation describes) but rather it is
         // associated with a stack snapshot. Mutation of the AsyncLocal in an await call does
@@ -37,9 +39,7 @@ namespace Asv.Common
         private static int ThreadId => Thread.CurrentThread.ManagedThreadId;
 #endif
 
-        public AsyncLock()
-        {
-        }
+        public AsyncLock() { }
 
 #if !DEBUG
         readonly
@@ -70,9 +70,11 @@ namespace Asv.Common
                     // We need to wait for someone to leave the lock before trying again.
                     await _parent._retry.WaitAsync(ct).ConfigureAwait(false);
                 }
+
                 // Reset the owning thread id after all await calls have finished, otherwise we
                 // could be resumed on a different thread and set an incorrect value.
                 _parent._owningThreadId = ThreadId;
+
                 // In case of !synchronous and success, TryEnter() does not release the reentrancy lock
                 _parent._reentrancy.Release();
                 return this;
@@ -97,7 +99,9 @@ namespace Asv.Common
             private bool TryEnter()
             {
                 _parent._reentrancy.Wait();
-                return InnerTryEnter(true /* synchronous */);
+                return InnerTryEnter(
+                    true /* synchronous */
+                );
             }
 
             private bool InnerTryEnter(bool synchronous = false)
@@ -205,6 +209,7 @@ namespace Asv.Common
         public IDisposable Lock()
         {
             var @lock = new InnerLock(this, _asyncId.Value, ThreadId);
+
             // Increment the async stack counter to prevent a child task from getting
             // the lock at the same time as a child thread.
             _asyncId.Value = Interlocked.Increment(ref AsyncLock.AsyncStackCounter);

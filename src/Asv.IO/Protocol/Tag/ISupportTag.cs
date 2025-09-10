@@ -4,4 +4,3 @@ public interface ISupportTag
 {
     ref ProtocolTags Tags { get; }
 }
-

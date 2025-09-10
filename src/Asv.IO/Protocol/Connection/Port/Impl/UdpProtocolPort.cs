@@ -16,12 +16,13 @@ namespace Asv.IO;
 
 public class UdpProtocolPortConfig(Uri connectionString) : ProtocolPortConfig(connectionString)
 {
-    public static UdpProtocolPortConfig CreateDefault() => new(new Uri($"{UdpProtocolPort.Scheme}://127.0.0.1:8080"));
+    public static UdpProtocolPortConfig CreateDefault() =>
+        new(new Uri($"{UdpProtocolPort.Scheme}://127.0.0.1:8080"));
 
     public const string RemoteHostKey = "rhost";
     public const string RemotePortKey = "rport";
     public const string RemoteEndpoints = "remote";
-    
+
     public IPEndPoint? GetRemoteEndpoint()
     {
         var remoteHost = Query.Get(RemoteHostKey);
@@ -32,7 +33,7 @@ public class UdpProtocolPortConfig(Uri connectionString) : ProtocolPortConfig(co
         }
         return CheckIpEndpoint(remoteHost, port);
     }
-    
+
     public IEnumerable<IPEndPoint> GetRemoteEndpoints()
     {
         var obsoleteSettings = GetRemoteEndpoint();
@@ -56,10 +57,9 @@ public class UdpProtocolPortConfig(Uri connectionString) : ProtocolPortConfig(co
     }
 
     public override object Clone() => new UdpProtocolPortConfig(AsUri());
-   
 }
 
-public class UdpProtocolPort:ProtocolPort<UdpProtocolPortConfig>
+public class UdpProtocolPort : ProtocolPort<UdpProtocolPortConfig>
 {
     public const string Scheme = "udp";
     public static PortTypeInfo Info => new(Scheme, "Udp protocol port");
@@ -73,8 +73,15 @@ public class UdpProtocolPort:ProtocolPort<UdpProtocolPortConfig>
     public UdpProtocolPort(
         UdpProtocolPortConfig config,
         IProtocolContext context,
-        IStatisticHandler statistic) 
-        : base(ProtocolHelper.NormalizeId($"{Scheme}_{config.Host}_{config.Port}"), config, context, true,statistic)
+        IStatisticHandler statistic
+    )
+        : base(
+            ProtocolHelper.NormalizeId($"{Scheme}_{config.Host}_{config.Port}"),
+            config,
+            context,
+            true,
+            statistic
+        )
     {
         ArgumentNullException.ThrowIfNull(config);
         ArgumentNullException.ThrowIfNull(context);
@@ -84,10 +91,10 @@ public class UdpProtocolPort:ProtocolPort<UdpProtocolPortConfig>
 
         _localEndPoint = config.CheckAndGetLocalHost();
         _remoteEndPoints = config.GetRemoteEndpoints().ToImmutableHashSet();
-        
     }
 
     public override PortTypeInfo TypeInfo => Info;
+
     protected override void InternalSafeDisable()
     {
         if (_socket != null)
@@ -103,26 +110,37 @@ public class UdpProtocolPort:ProtocolPort<UdpProtocolPortConfig>
     {
         _socket = new Socket(_localEndPoint.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
         _socket.Bind(_localEndPoint);
+
         // if we have list of remote endpoints, we should create it for sending data
         foreach (var recvAddr in _remoteEndPoints)
         {
-            InternalAddEndpoint(new UdpSocketProtocolEndpoint(
-                _socket,
-                recvAddr,
-                ProtocolHelper.NormalizeId($"{Id}_{recvAddr}"),
-                _config, InternalCreateParsers(), _context, StatisticHandler));    
+            InternalAddEndpoint(
+                new UdpSocketProtocolEndpoint(
+                    _socket,
+                    recvAddr,
+                    ProtocolHelper.NormalizeId($"{Id}_{recvAddr}"),
+                    _config,
+                    InternalCreateParsers(),
+                    _context,
+                    StatisticHandler
+                )
+            );
         }
-        Task.Factory.StartNew(BeginAcceptNewData, token, TaskCreationOptions.LongRunning | TaskCreationOptions.DenyChildAttach).SafeFireAndForget();
+        Task.Factory.StartNew(
+                BeginAcceptNewData,
+                token,
+                TaskCreationOptions.LongRunning | TaskCreationOptions.DenyChildAttach
+            )
+            .SafeFireAndForget();
     }
-    
+
     private void BeginAcceptNewData(object? state)
     {
         // ReSharper disable once NullableWarningSuppressionIsUsed
-        var cancel = (CancellationToken) state!;
+        var cancel = (CancellationToken)state!;
         var buffer = ArrayPool<byte>.Shared.Rent(65536); // max UDP packet size
         try
         {
-            
             while (_socket != null && cancel is { IsCancellationRequested: false })
             {
                 // receive data from any remote endpoint
@@ -130,24 +148,38 @@ public class UdpProtocolPort:ProtocolPort<UdpProtocolPortConfig>
                 var readSize = _socket.ReceiveFrom(buffer, ref recvAddr);
                 if (recvAddr is not IPEndPoint recvAddrIPEndPoint)
                 {
-                    _logger.ZLogWarning($"Received data from unsupported endpoint type: {recvAddr.GetType().Name}. Data will be ignored.");
+                    _logger.ZLogWarning(
+                        $"Received data from unsupported endpoint type: {recvAddr.GetType().Name}. Data will be ignored."
+                    );
                     continue;
                 }
+
                 // if we have whitelist of remote endpoints, we should check if received data is from one of them
                 if (_remoteEndPoints.Count > 0 && !_remoteEndPoints.Contains(recvAddrIPEndPoint))
                 {
                     continue;
                 }
-                var exist = (UdpSocketProtocolEndpoint?)Endpoints.FirstOrDefault(x => recvAddrIPEndPoint.Equals(((UdpSocketProtocolEndpoint)x).RemoteEndPoint));
+                var exist = (UdpSocketProtocolEndpoint?)
+                    Endpoints.FirstOrDefault(x =>
+                        recvAddrIPEndPoint.Equals(((UdpSocketProtocolEndpoint)x).RemoteEndPoint)
+                    );
+
                 // if we have no endpoint for this remote address, we should create it
                 if (exist == null)
                 {
-                    InternalAddEndpoint(exist = new UdpSocketProtocolEndpoint(
-                        _socket,
-                        recvAddrIPEndPoint,
-                        ProtocolHelper.NormalizeId($"{Id}_{recvAddr}"),
-                        _config, InternalCreateParsers(), _context, StatisticHandler));    
+                    InternalAddEndpoint(
+                        exist = new UdpSocketProtocolEndpoint(
+                            _socket,
+                            recvAddrIPEndPoint,
+                            ProtocolHelper.NormalizeId($"{Id}_{recvAddr}"),
+                            _config,
+                            InternalCreateParsers(),
+                            _context,
+                            StatisticHandler
+                        )
+                    );
                 }
+
                 // this method blocks this thread until data is processed by endpoint its own read thread
                 exist.ApplyData(buffer, readSize);
             }
@@ -166,7 +198,10 @@ public class UdpProtocolPort:ProtocolPort<UdpProtocolPortConfig>
         }
         catch (Exception ex)
         {
-            _logger.ZLogDebug(ex, $"Unhandled exception on {nameof(BeginAcceptNewData)}:{ex.Message}");
+            _logger.ZLogDebug(
+                ex,
+                $"Unhandled exception on {nameof(BeginAcceptNewData)}:{ex.Message}"
+            );
             InternalRisePortErrorAndReconnect(ex);
         }
         finally
@@ -204,17 +239,21 @@ public class UdpProtocolPort:ProtocolPort<UdpProtocolPortConfig>
 
 public static class UdpProtocolPortHelper
 {
-    public static IProtocolPort AddUdpPort(this IProtocolRouter src, Action<UdpProtocolPortConfig> edit)
+    public static IProtocolPort AddUdpPort(
+        this IProtocolRouter src,
+        Action<UdpProtocolPortConfig> edit
+    )
     {
         var cfg = UdpProtocolPortConfig.CreateDefault();
         edit(cfg);
         return src.AddPort(cfg.AsUri());
     }
+
     public static void RegisterUdpPort(this IProtocolPortBuilder builder)
     {
-        builder.Register(UdpProtocolPort.Info, 
-            (cs, context,stat) 
-                => new UdpProtocolPort(new UdpProtocolPortConfig(cs), context,stat));
+        builder.Register(
+            UdpProtocolPort.Info,
+            (cs, context, stat) => new UdpProtocolPort(new UdpProtocolPortConfig(cs), context, stat)
+        );
     }
 }
-

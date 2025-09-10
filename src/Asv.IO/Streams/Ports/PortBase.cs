@@ -7,7 +7,6 @@ using Microsoft.Extensions.Logging.Abstractions;
 using R3;
 using ZLogger;
 
-
 namespace Asv.IO
 {
     public abstract class PortBase : IPort, IDisposable, IAsyncDisposable
@@ -29,9 +28,12 @@ namespace Asv.IO
         protected PortBase(TimeProvider? timeProvider, ILogger? logger)
         {
             _logger = logger ?? NullLogger.Instance;
-            _timeProvider = timeProvider ?? TimeProvider.System; 
-            _sub1 = _enableStream.Where(x => x).Subscribe(TryConnect, (_,action) => Task.Factory.StartNew(action));
+            _timeProvider = timeProvider ?? TimeProvider.System;
+            _sub1 = _enableStream
+                .Where(x => x)
+                .Subscribe(TryConnect, (_, action) => Task.Factory.StartNew(action));
         }
+
         protected TimeProvider TimeProvider => _timeProvider;
         public long RxBytes => Interlocked.Read(ref _rxBytes);
         public long TxBytes => Interlocked.Read(ref _txBytes);
@@ -43,10 +45,19 @@ namespace Asv.IO
         public ReadOnlyReactiveProperty<Exception?> Error => _portErrorStream;
         public abstract string PortLogName { get; }
         public string Name => PortLogName;
+
         public async Task<bool> Send(byte[] data, int count, CancellationToken cancel)
         {
-            if (!IsEnabled.CurrentValue) return false;
-            if (_portStateStream.Value != PortState.Connected) return false;
+            if (!IsEnabled.CurrentValue)
+            {
+                return false;
+            }
+
+            if (_portStateStream.Value != PortState.Connected)
+            {
+                return false;
+            }
+
             try
             {
                 await InternalSend(data, count, cancel).ConfigureAwait(false);
@@ -59,11 +70,19 @@ namespace Asv.IO
                 return false;
             }
         }
-        
+
         public async Task<bool> Send(ReadOnlyMemory<byte> data, CancellationToken cancel)
         {
-            if (!IsEnabled.CurrentValue) return false;
-            if (_portStateStream.Value != PortState.Connected) return false;
+            if (!IsEnabled.CurrentValue)
+            {
+                return false;
+            }
+
+            if (_portStateStream.Value != PortState.Connected)
+            {
+                return false;
+            }
+
             try
             {
                 await InternalSend(data, cancel).ConfigureAwait(false);
@@ -78,8 +97,6 @@ namespace Asv.IO
         }
 
         protected abstract Task InternalSend(ReadOnlyMemory<byte> data, CancellationToken cancel);
-
-        
 
         public void Enable()
         {
@@ -101,7 +118,7 @@ namespace Asv.IO
             }
             catch (Exception ex)
             {
-                Debug.Assert(true,ex.Message);
+                Debug.Assert(true, ex.Message);
             }
         }
 
@@ -114,8 +131,16 @@ namespace Asv.IO
             }
             try
             {
-                if (!_enableStream.Value) return;
-                if (IsDisposed) return;
+                if (!_enableStream.Value)
+                {
+                    return;
+                }
+
+                if (IsDisposed)
+                {
+                    return;
+                }
+
                 _portStateStream.Value = PortState.Connecting;
                 InternalStart();
                 _portStateStream.Value = PortState.Connected;
@@ -151,10 +176,14 @@ namespace Asv.IO
 
         protected void InternalOnError(Exception exception)
         {
-            
             _portStateStream.Value = PortState.Error;
             _portErrorStream.OnNext(exception);
-            _reconnectTimer = _timeProvider.CreateTimer(x => TryConnect(), null, ReconnectTimeout, Timeout.InfiniteTimeSpan);
+            _reconnectTimer = _timeProvider.CreateTimer(
+                x => TryConnect(),
+                null,
+                ReconnectTimeout,
+                Timeout.InfiniteTimeSpan
+            );
             Stop();
         }
 
@@ -165,7 +194,6 @@ namespace Asv.IO
 
         protected virtual void Dispose(bool disposing)
         {
-            
             if (disposing)
             {
                 _portErrorStream.Dispose();
@@ -180,7 +208,11 @@ namespace Asv.IO
 
         public void Dispose()
         {
-            if (Interlocked.Exchange(ref _isDisposed, 1) != 0) return;
+            if (Interlocked.Exchange(ref _isDisposed, 1) != 0)
+            {
+                return;
+            }
+
             Dispose(true);
             GC.SuppressFinalize(this);
         }
@@ -193,22 +225,33 @@ namespace Asv.IO
             await CastAndDispose(_outputData);
             await CastAndDispose(_sub1);
             await CastAndDispose(_disposeCancel);
-            if (_reconnectTimer != null) await _reconnectTimer.DisposeAsync();
+            if (_reconnectTimer != null)
+            {
+                await _reconnectTimer.DisposeAsync();
+            }
 
             return;
 
             static async ValueTask CastAndDispose(IDisposable resource)
             {
                 if (resource is IAsyncDisposable resourceAsyncDisposable)
+                {
                     await resourceAsyncDisposable.DisposeAsync();
+                }
                 else
+                {
                     resource.Dispose();
+                }
             }
         }
 
         public async ValueTask DisposeAsync()
         {
-            if (Interlocked.Exchange(ref _isDisposed, 1) != 0) return;
+            if (Interlocked.Exchange(ref _isDisposed, 1) != 0)
+            {
+                return;
+            }
+
             await DisposeAsyncCore();
             GC.SuppressFinalize(this);
         }

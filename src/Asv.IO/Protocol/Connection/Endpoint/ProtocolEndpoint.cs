@@ -14,8 +14,7 @@ using ZLogger;
 
 namespace Asv.IO;
 
-
-public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
+public abstract class ProtocolEndpoint : ProtocolConnection, IProtocolEndpoint
 {
     private readonly TimeSpan _readEmptyLoopDelay;
     private readonly ImmutableArray<IProtocolParser> _parsers;
@@ -23,66 +22,96 @@ public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
     private readonly Channel<IProtocolMessage> _rxChannel;
     private readonly ILogger<ProtocolEndpoint> _logger;
     private readonly IDisposable _parserSub;
-    private readonly ReactiveProperty<ProtocolConnectionException?> _lastError = new (null);
+    private readonly ReactiveProperty<ProtocolConnectionException?> _lastError = new(null);
     private readonly ImmutableHashSet<string> _parserAvailable;
 
     protected ProtocolEndpoint(
-        string id, 
-        ProtocolPortConfig config, 
-        ImmutableArray<IProtocolParser> parsers, 
+        string id,
+        ProtocolPortConfig config,
+        ImmutableArray<IProtocolParser> parsers,
         IProtocolContext context,
-        IStatisticHandler? statistic = null)
-        :base(id, context,statistic)
+        IStatisticHandler? statistic = null
+    )
+        : base(id, context, statistic)
     {
         ArgumentNullException.ThrowIfNull(config);
         ArgumentNullException.ThrowIfNull(context);
         _readEmptyLoopDelay = TimeSpan.FromMilliseconds(config.ReadEmptyLoopDelayMs);
         _logger = context.LoggerFactory.CreateLogger<ProtocolEndpoint>();
         _parsers = parsers;
-        _parserAvailable = _parsers.Select(x=>x.Info.Id).ToImmutableHashSet();
-        _txChannel = config.TxQueueSize <= 0 
-            ? Channel.CreateUnbounded<IProtocolMessage>() 
-            : Channel.CreateBounded<IProtocolMessage>(new BoundedChannelOptions(config.TxQueueSize)
-            {
-                AllowSynchronousContinuations = false,
-                SingleReader = true,
-                SingleWriter = false,
-                FullMode = config.DropMessageWhenFullTxQueue ? BoundedChannelFullMode.DropOldest: BoundedChannelFullMode.Wait
-            }, TxMessageDropped);
-        
-        _rxChannel = config.RxQueueSize <= 0 
-            ? Channel.CreateUnbounded<IProtocolMessage>() 
-            : Channel.CreateBounded<IProtocolMessage>(new BoundedChannelOptions(config.RxQueueSize)
-            {
-                AllowSynchronousContinuations = false,
-                SingleReader = true,
-                SingleWriter = true,
-                FullMode = config.DropMessageWhenFullRxQueue ? BoundedChannelFullMode.DropOldest: BoundedChannelFullMode.Wait
-            }, RxMessageDropped);
+        _parserAvailable = _parsers.Select(x => x.Info.Id).ToImmutableHashSet();
+        _txChannel =
+            config.TxQueueSize <= 0
+                ? Channel.CreateUnbounded<IProtocolMessage>()
+                : Channel.CreateBounded<IProtocolMessage>(
+                    new BoundedChannelOptions(config.TxQueueSize)
+                    {
+                        AllowSynchronousContinuations = false,
+                        SingleReader = true,
+                        SingleWriter = false,
+                        FullMode = config.DropMessageWhenFullTxQueue
+                            ? BoundedChannelFullMode.DropOldest
+                            : BoundedChannelFullMode.Wait,
+                    },
+                    TxMessageDropped
+                );
+
+        _rxChannel =
+            config.RxQueueSize <= 0
+                ? Channel.CreateUnbounded<IProtocolMessage>()
+                : Channel.CreateBounded<IProtocolMessage>(
+                    new BoundedChannelOptions(config.RxQueueSize)
+                    {
+                        AllowSynchronousContinuations = false,
+                        SingleReader = true,
+                        SingleWriter = true,
+                        FullMode = config.DropMessageWhenFullRxQueue
+                            ? BoundedChannelFullMode.DropOldest
+                            : BoundedChannelFullMode.Wait,
+                    },
+                    RxMessageDropped
+                );
         var disposableBuilder = Disposable.CreateBuilder();
         foreach (var parser in _parsers)
         {
-            parser.OnMessage
-                .SubscribeAwait((x,cancel) => _rxChannel.Writer.WriteAsync(x,cancel))
+            parser
+                .OnMessage.SubscribeAwait((x, cancel) => _rxChannel.Writer.WriteAsync(x, cancel))
                 .AddTo(ref disposableBuilder);
-            
         }
         _parserSub = disposableBuilder.Build();
-        Task.Factory.StartNew(ReadLoop, TaskCreationOptions.LongRunning | TaskCreationOptions.DenyChildAttach, DisposeCancel);
-        Task.Factory.StartNew(WriteLoop, TaskCreationOptions.LongRunning | TaskCreationOptions.DenyChildAttach, DisposeCancel);
-        Task.Factory.StartNew(PublishRxLoop, TaskCreationOptions.LongRunning | TaskCreationOptions.DenyChildAttach, DisposeCancel);
+        Task.Factory.StartNew(
+            ReadLoop,
+            TaskCreationOptions.LongRunning | TaskCreationOptions.DenyChildAttach,
+            DisposeCancel
+        );
+        Task.Factory.StartNew(
+            WriteLoop,
+            TaskCreationOptions.LongRunning | TaskCreationOptions.DenyChildAttach,
+            DisposeCancel
+        );
+        Task.Factory.StartNew(
+            PublishRxLoop,
+            TaskCreationOptions.LongRunning | TaskCreationOptions.DenyChildAttach,
+            DisposeCancel
+        );
     }
 
     private void RxMessageDropped(IProtocolMessage droppedMessage)
     {
         StatisticHandler.IncrementDropRxMessage();
-        _logger.ZLogWarning($"Dropped message (rx queue is full) {droppedMessage.Protocol.Id} {droppedMessage.Name} ");
+        _logger.ZLogWarning(
+            $"Dropped message (rx queue is full) {droppedMessage.Protocol.Id} {droppedMessage.Name} "
+        );
     }
+
     private void TxMessageDropped(IProtocolMessage droppedMessage)
     {
         StatisticHandler.IncrementDropTxMessage();
-        _logger.ZLogWarning($"Dropped message (tx queue is full) {droppedMessage.Protocol.Id} {droppedMessage.Name} "); 
+        _logger.ZLogWarning(
+            $"Dropped message (tx queue is full) {droppedMessage.Protocol.Id} {droppedMessage.Name} "
+        );
     }
+
     private async void PublishRxLoop(object? obj)
     {
         try
@@ -105,7 +134,13 @@ public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
                 {
                     _logger.ZLogError(e, $"Error in '{nameof(PublishRxLoop)}':{e.Message}");
                     StatisticHandler.IncrementRxError();
-                    InternalPublishRxError(new ProtocolConnectionException(this,$"Error in '{nameof(PublishRxLoop)}': {e.Message}",e));
+                    InternalPublishRxError(
+                        new ProtocolConnectionException(
+                            this,
+                            $"Error in '{nameof(PublishRxLoop)}': {e.Message}",
+                            e
+                        )
+                    );
                 }
             }
         }
@@ -113,7 +148,13 @@ public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
         {
             _logger.ZLogError(e, $"Error in publish loop: {e.Message}");
             StatisticHandler.IncrementRxError();
-            InternalPublishRxError(new ProtocolConnectionException(this,$"Error in '{nameof(PublishRxLoop)}': {e.Message}",e));
+            InternalPublishRxError(
+                new ProtocolConnectionException(
+                    this,
+                    $"Error in '{nameof(PublishRxLoop)}': {e.Message}",
+                    e
+                )
+            );
             Debug.Assert(false);
             Debugger.Break();
         }
@@ -136,28 +177,35 @@ public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
                 using var mem = MemoryPool<byte>.Shared.Rent(bufferSize);
                 var readBytes = await InternalRead(mem.Memory, DisposeCancel);
                 StatisticHandler.AddRxBytes(readBytes);
-                
+
                 for (var i = 0; i < readBytes; i++)
                 {
                     var b = mem.Memory.Span[i];
                     for (var j = 0; j < _parsers.Length; j++)
                     {
                         var parser = _parsers[j];
-                        if (!parser.Push(b)) continue;
-                        _parsers.ForEach(x=>x.Reset());
+                        if (!parser.Push(b))
+                        {
+                            continue;
+                        }
+
+                        _parsers.ForEach(x => x.Reset());
                         break;
                     }
                 }
             }
-
         }
         catch (Exception e)
         {
             _logger.ZLogError(e, $"Error while reading loop {Id}: {e.Message}");
-            InternalPublishRxError(new ProtocolConnectionException(this, $"Error at read loop: {e.Message}",e));
+            InternalPublishRxError(
+                new ProtocolConnectionException(this, $"Error at read loop: {e.Message}", e)
+            );
             if (IsDisposed == false)
             {
-                _lastError.OnNext(new ProtocolConnectionException(this, $"Error at read loop: {e.Message}",e));    
+                _lastError.OnNext(
+                    new ProtocolConnectionException(this, $"Error at read loop: {e.Message}", e)
+                );
             }
         }
     }
@@ -165,7 +213,11 @@ public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
     protected abstract int GetAvailableBytesToRead();
 
     protected abstract ValueTask<int> InternalRead(Memory<byte> memory, CancellationToken cancel);
-    protected abstract ValueTask<int> InternalWrite(ReadOnlyMemory<byte> memory, CancellationToken cancel);
+    protected abstract ValueTask<int> InternalWrite(
+        ReadOnlyMemory<byte> memory,
+        CancellationToken cancel
+    );
+
     private async void WriteLoop(object? o)
     {
         try
@@ -173,16 +225,29 @@ public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
             while (IsDisposed == false && _lastError.CurrentValue == null)
             {
                 var msg = await _txChannel.Reader.ReadAsync(DisposeCancel);
+
                 // skip not supported messages
-                if (_parserAvailable.Contains(msg.Protocol.Id) == false) continue;
+                if (_parserAvailable.Contains(msg.Protocol.Id) == false)
+                {
+                    continue;
+                }
+
                 var newMessage = await InternalFilterTxMessage(msg);
-                if (newMessage == null) continue;
+                if (newMessage == null)
+                {
+                    continue;
+                }
+
                 var size = newMessage.GetByteSize();
                 using var mem = MemoryPool<byte>.Shared.Rent(size);
                 var writeBytes = await newMessage.Serialize(mem.Memory);
+
                 // _logger.ZLogTrace($"TX:{BitConverter.ToString(mem.Memory[..writeBytes].ToArray())} S{size} WS{writeBytes} ");
                 var sendBytes = await InternalWrite(mem.Memory[..writeBytes], DisposeCancel);
-                Debug.Assert(writeBytes == sendBytes);
+                Debug.Assert(
+                    writeBytes == sendBytes,
+                    $"Write less bytes than expected {writeBytes} != {sendBytes}"
+                );
                 StatisticHandler.AddTxBytes(sendBytes);
                 StatisticHandler.IncrementTxMessage();
                 InternalPublishTxMessage(newMessage);
@@ -191,14 +256,18 @@ public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
         catch (Exception e)
         {
             _logger.ZLogError(e, $"Error while writing loop {Id}");
-            InternalPublishTxError(new ProtocolConnectionException(this, $"Error at write loop: {e.Message}",e));
+            InternalPublishTxError(
+                new ProtocolConnectionException(this, $"Error at write loop: {e.Message}", e)
+            );
             if (IsDisposed == false)
             {
-                _lastError.OnNext(new ProtocolConnectionException(this, $"Error at write loop: {e.Message}",e));    
+                _lastError.OnNext(
+                    new ProtocolConnectionException(this, $"Error at write loop: {e.Message}", e)
+                );
             }
         }
     }
-  
+
     public override ValueTask Send(IProtocolMessage message, CancellationToken cancel = default)
     {
         ArgumentNullException.ThrowIfNull(message);
@@ -206,17 +275,17 @@ public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
         {
             return ValueTask.FromException(new OperationCanceledException());
         }
-        
+
         if (IsDisposed)
         {
             return ValueTask.CompletedTask;
         }
-        
+
         if (_lastError.CurrentValue != null)
         {
             return ValueTask.CompletedTask;
         }
-        
+
         return _txChannel.Writer.WriteAsync(message, cancel);
     }
 
@@ -239,7 +308,6 @@ public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
         }
     }
 
-
     protected override async ValueTask DisposeAsyncCore()
     {
         _logger.ZLogTrace($"{nameof(DisposeAsync)} {Id}");
@@ -254,9 +322,13 @@ public abstract class ProtocolEndpoint: ProtocolConnection, IProtocolEndpoint
         static async ValueTask CastAndDispose(IDisposable resource)
         {
             if (resource is IAsyncDisposable resourceAsyncDisposable)
+            {
                 await resourceAsyncDisposable.DisposeAsync();
+            }
             else
+            {
                 resource.Dispose();
+            }
         }
     }
 

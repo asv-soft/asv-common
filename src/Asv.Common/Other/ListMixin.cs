@@ -13,7 +13,9 @@ public static class ListMixin
         where T : new()
     {
         if (size < 0)
+        {
             throw new ArgumentOutOfRangeException(nameof(size), "Size cannot be negative.");
+        }
 
         while (list.Count > size)
         {
@@ -30,11 +32,12 @@ public static class ListMixin
     /// </summary>
     public static void Resize<T>(this IList<T> list, int size, Func<T> factory)
     {
-        if (factory == null)
-            throw new ArgumentNullException(nameof(factory));
-        
+        ArgumentNullException.ThrowIfNull(factory);
+
         if (size < 0)
+        {
             throw new ArgumentOutOfRangeException(nameof(size), "Size cannot be negative.");
+        }
 
         while (list.Count > size)
         {
@@ -52,7 +55,9 @@ public static class ListMixin
     public static void Resize<T>(this IList<T> list, int size, T defaultValue)
     {
         if (size < 0)
+        {
             throw new ArgumentOutOfRangeException(nameof(size), "Size cannot be negative.");
+        }
 
         while (list.Count > size)
         {

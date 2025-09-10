@@ -9,7 +9,7 @@ using R3;
 
 namespace Asv.IO;
 
-public class VirtualPort:ProtocolConnection, IProtocolEndpoint
+public class VirtualPort : ProtocolConnection, IProtocolEndpoint
 {
     private Func<IProtocolMessage, bool> _sendFilter;
     private readonly Subject<byte[]> _tx = new();
@@ -18,25 +18,31 @@ public class VirtualPort:ProtocolConnection, IProtocolEndpoint
     private readonly IDisposable _dispose;
     private readonly ReactiveProperty<ProtocolConnectionException?> _lastError = new();
 
-    public VirtualPort(string id, IProtocolContext context, Func<IProtocolMessage, bool> sendFilter, IStatisticHandler parent)
-        : base(id, context,parent)
+    public VirtualPort(
+        string id,
+        IProtocolContext context,
+        Func<IProtocolMessage, bool> sendFilter,
+        IStatisticHandler parent
+    )
+        : base(id, context, parent)
     {
         _sendFilter = sendFilter;
-        _parsers = [..context.ParserFactory.Values.Select(x => x(context,StatisticHandler))];
+        _parsers = [.. context.ParserFactory.Values.Select(x => x(context, StatisticHandler))];
         var builder = Disposable.CreateBuilder();
         foreach (var parser in _parsers)
         {
-            parser.OnMessage
-                .Do(_ => StatisticHandler.IncrementRxMessage())
-                .Subscribe(InternalPublishRxMessage).AddTo(ref builder);
+            parser
+                .OnMessage.Do(_ => StatisticHandler.IncrementRxMessage())
+                .Subscribe(InternalPublishRxMessage)
+                .AddTo(ref builder);
         }
         _rx.Subscribe(ReadLoop).AddTo(ref builder);
         _dispose = builder.Build();
     }
-    
+
     public ReadOnlyReactiveProperty<ProtocolConnectionException?> LastError => _lastError;
     public IEnumerable<IProtocolParser> Parsers => _parsers;
-    
+
     private void ReadLoop(byte[] bytes)
     {
         foreach (var b in bytes)
@@ -45,11 +51,12 @@ public class VirtualPort:ProtocolConnection, IProtocolEndpoint
             {
                 if (parser.Push(b))
                 {
-                    _parsers.ForEach(x=>x.Reset());
+                    _parsers.ForEach(x => x.Reset());
                 }
             }
         }
     }
+
     public Observer<byte[]> Rx => _rx.AsObserver();
     public Observable<byte[]> Tx => _tx;
 
@@ -57,8 +64,11 @@ public class VirtualPort:ProtocolConnection, IProtocolEndpoint
     {
         _sendFilter = filter;
     }
-    
-    public override async ValueTask Send(IProtocolMessage message, CancellationToken cancel = default)
+
+    public override async ValueTask Send(
+        IProtocolMessage message,
+        CancellationToken cancel = default
+    )
     {
         ArgumentNullException.ThrowIfNull(message);
         cancel.ThrowIfCancellationRequested();
@@ -92,7 +102,7 @@ public class VirtualPort:ProtocolConnection, IProtocolEndpoint
             StatisticHandler.IncrementTxError();
         }
     }
-    
+
     #region Dispose
 
     protected override void Dispose(bool disposing)
@@ -120,14 +130,15 @@ public class VirtualPort:ProtocolConnection, IProtocolEndpoint
         static async ValueTask CastAndDispose(IDisposable resource)
         {
             if (resource is IAsyncDisposable resourceAsyncDisposable)
+            {
                 await resourceAsyncDisposable.DisposeAsync();
+            }
             else
+            {
                 resource.Dispose();
+            }
         }
     }
 
     #endregion
-
-    
-    
 }

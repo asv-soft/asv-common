@@ -16,20 +16,28 @@ namespace Asv.Common
     public static class StringExtensions
     {
         private static readonly string[] ByteSuffixes = ["B", "KB", "MB", "GB", "TB", "PB", "EB"];
+
         public static string BytesToString(this long byteCount)
         {
             if (byteCount == 0)
+            {
                 return "0" + ByteSuffixes[0];
+            }
+
             var bytes = Math.Abs(byteCount);
             var place = Convert.ToInt32(Math.Floor(Math.Log(bytes, 1024)));
             var num = Math.Round(bytes / Math.Pow(1024, place), 1);
-            return (Math.Sign(byteCount) * num).ToString(CultureInfo.InvariantCulture) + ByteSuffixes[place];
+            return (Math.Sign(byteCount) * num).ToString(CultureInfo.InvariantCulture)
+                + ByteSuffixes[place];
         }
-        
+
         public static string BytesToString(this uint byteCount)
         {
             if (byteCount == 0)
+            {
                 return "0" + ByteSuffixes[0];
+            }
+
             var place = Convert.ToInt32(Math.Floor(Math.Log(byteCount, 1024)));
             var num = Math.Round(byteCount / Math.Pow(1024, place), 1);
             return num.ToString(CultureInfo.InvariantCulture) + ByteSuffixes[place];
@@ -37,7 +45,11 @@ namespace Asv.Common
 
         public static string RightMargin(this string src, int charCount, char fillChar = ' ')
         {
-            if (charCount <= 0) return string.Empty;
+            if (charCount <= 0)
+            {
+                return string.Empty;
+            }
+
             var delay = charCount - src.Length;
             if (delay < 0)
             {
@@ -58,7 +70,11 @@ namespace Asv.Common
 
         public static string LeftMargin(this string src, int charCount, char fillChar = ' ')
         {
-            if (charCount <= 0) return string.Empty;
+            if (charCount <= 0)
+            {
+                return string.Empty;
+            }
+
             var delay = charCount - src.Length;
             if (delay < 0)
             {
@@ -78,27 +94,45 @@ namespace Asv.Common
 
         public static string PadCenter(this string text, int totalWidth, char paddingChar = ' ')
         {
-
             var length = text.Length;
             var charactersToPad = totalWidth - length;
-            if (charactersToPad < 0) throw new ArgumentException("New width must be greater than string length.", nameof(totalWidth));
-            var padLeft = charactersToPad / 2 + charactersToPad % 2;
-            //add a space to the left if the string is an odd number
+            if (charactersToPad < 0)
+            {
+                throw new ArgumentException(
+                    "New width must be greater than string length.",
+                    nameof(totalWidth)
+                );
+            }
+
+            var padLeft = (charactersToPad / 2) + (charactersToPad % 2);
+
+            // Add a space to the left if the string is an odd number
             var padRight = charactersToPad / 2;
 
             var resultBuilder = new StringBuilder(totalWidth);
-            for (var i = 0; i < padLeft; i++) resultBuilder.Insert(i, paddingChar);
-            for (var i = 0; i < length; i++) resultBuilder.Insert(i + padLeft, text[i]);
-            for (var i = totalWidth - padRight; i < totalWidth; i++) resultBuilder.Insert(i, paddingChar);
+            for (var i = 0; i < padLeft; i++)
+            {
+                resultBuilder.Insert(i, paddingChar);
+            }
+
+            for (var i = 0; i < length; i++)
+            {
+                resultBuilder.Insert(i + padLeft, text[i]);
+            }
+
+            for (var i = totalWidth - padRight; i < totalWidth; i++)
+            {
+                resultBuilder.Insert(i, paddingChar);
+            }
+
             return resultBuilder.ToString();
         }
-
 
         #region Common string extensions
 
         public static bool IsNullOrWhiteSpace(this string value)
         {
-            return String.IsNullOrWhiteSpace(value);
+            return string.IsNullOrWhiteSpace(value);
         }
 
         /// <summary>
@@ -107,7 +141,7 @@ namespace Asv.Common
         /// <param name="value">The string value to check.</param>
         public static bool IsEmpty(this string value)
         {
-            return String.IsNullOrEmpty(value);
+            return string.IsNullOrEmpty(value);
         }
 
         /// <summary>
@@ -138,14 +172,14 @@ namespace Asv.Common
         /// <returns></returns>
         public static string FormatWith(this string value, params object[] parameters)
         {
-            return String.Format(value, parameters);
+            return string.Format(value, parameters);
         }
 
         public static string TryFormatWith(this string format, object arg0)
         {
             try
             {
-                return String.Format(format, arg0);
+                return string.Format(format, arg0);
             }
             catch
             {
@@ -157,29 +191,32 @@ namespace Asv.Common
         {
             try
             {
-                return String.Format(format, args);
+                return string.Format(format, args);
             }
             catch
             {
                 return format;
             }
-
         }
 
         public static string TryFormatWith(this string format, object arg0, object arg1)
         {
             try
             {
-                return String.Format(format, arg0, arg1);
+                return string.Format(format, arg0, arg1);
             }
             catch
             {
                 return format;
             }
-
         }
 
-        public static string TryFormatWith(this string format, object arg0, object arg1, object arg2)
+        public static string TryFormatWith(
+            this string format,
+            object arg0,
+            object arg1,
+            object arg2
+        )
         {
             try
             {
@@ -189,9 +226,7 @@ namespace Asv.Common
             {
                 return format;
             }
-
         }
-
 
         /// <summary>
         /// Trims the text to a provided maximum length.
@@ -229,12 +264,14 @@ namespace Asv.Common
         /// <returns>
         /// 	<c>true</c> if input value contains the specified value, otherwise, <c>false</c>.
         /// </returns>
-        public static bool Contains(this string inputValue, string comparisonValue, StringComparison comparisonType)
+        public static bool Contains(
+            this string inputValue,
+            string comparisonValue,
+            StringComparison comparisonType
+        )
         {
             return inputValue.IndexOf(comparisonValue, comparisonType) != -1;
         }
-
-      
 
         /// <summary>
         /// Loads the string into a XML XPath DOM (XPathDocument)
@@ -254,7 +291,10 @@ namespace Asv.Common
         /// <returns>The reversed string</returns>
         public static string Reverse(this string value)
         {
-            if (value.IsEmpty() || value.Length == 1) return value;
+            if (value.IsEmpty() || value.Length == 1)
+            {
+                return value;
+            }
 
             var chars = value.ToCharArray();
             Array.Reverse(chars);
@@ -276,8 +316,11 @@ namespace Asv.Common
         public static string EnsureStartsWith(this string value, string prefix)
         {
             if (value.StartsWith(prefix))
+            {
                 return value;
-            return String.Concat(prefix, value);
+            }
+
+            return string.Concat(prefix, value);
         }
 
         /// <summary>
@@ -295,8 +338,11 @@ namespace Asv.Common
         public static string EnsureEndsWith(this string value, string suffix)
         {
             if (value.EndsWith(suffix))
+            {
                 return value;
-            return String.Concat(value, suffix);
+            }
+
+            return string.Concat(value, suffix);
         }
 
         #endregion
@@ -337,7 +383,11 @@ namespace Asv.Common
         /// var isMatching = s.IsMatchingTo(@"^\d+$");
         /// </code>
         /// </example>
-        public static bool IsMatchingTo(this string value, string regexPattern, RegexOptions options)
+        public static bool IsMatchingTo(
+            this string value,
+            string regexPattern,
+            RegexOptions options
+        )
         {
             return Regex.IsMatch(value, regexPattern, options);
         }
@@ -355,7 +405,11 @@ namespace Asv.Common
         /// var replaced = s.ReplaceWith(@"\d", m => string.Concat(" -", m.Value, "- "));
         /// </code>
         /// </example>
-        public static string ReplaceWith(this string value, string regexPattern, string replaceValue)
+        public static string ReplaceWith(
+            this string value,
+            string regexPattern,
+            string replaceValue
+        )
         {
             return ReplaceWith(value, regexPattern, replaceValue, RegexOptions.None);
         }
@@ -374,8 +428,12 @@ namespace Asv.Common
         /// var replaced = s.ReplaceWith(@"\d", m => string.Concat(" -", m.Value, "- "));
         /// </code>
         /// </example>
-        public static string ReplaceWith(this string value, string regexPattern, string replaceValue,
-                                         RegexOptions options)
+        public static string ReplaceWith(
+            this string value,
+            string regexPattern,
+            string replaceValue,
+            RegexOptions options
+        )
         {
             return Regex.Replace(value, regexPattern, replaceValue, options);
         }
@@ -393,7 +451,11 @@ namespace Asv.Common
         /// var replaced = s.ReplaceWith(@"\d", m => string.Concat(" -", m.Value, "- "));
         /// </code>
         /// </example>
-        public static string ReplaceWith(this string value, string regexPattern, MatchEvaluator evaluator)
+        public static string ReplaceWith(
+            this string value,
+            string regexPattern,
+            MatchEvaluator evaluator
+        )
         {
             return ReplaceWith(value, regexPattern, RegexOptions.None, evaluator);
         }
@@ -412,8 +474,12 @@ namespace Asv.Common
         /// var replaced = s.ReplaceWith(@"\d", m => string.Concat(" -", m.Value, "- "));
         /// </code>
         /// </example>
-        public static string ReplaceWith(this string value, string regexPattern, RegexOptions options,
-                                         MatchEvaluator evaluator)
+        public static string ReplaceWith(
+            this string value,
+            string regexPattern,
+            RegexOptions options,
+            MatchEvaluator evaluator
+        )
         {
             return Regex.Replace(value, regexPattern, evaluator, options);
         }
@@ -436,7 +502,11 @@ namespace Asv.Common
         /// <param name="regexPattern">The regular expression pattern.</param>
         /// <param name="options">The regular expression options.</param>
         /// <returns>A collection of all matches</returns>
-        public static MatchCollection GetMatches(this string value, string regexPattern, RegexOptions options)
+        public static MatchCollection GetMatches(
+            this string value,
+            string regexPattern,
+            RegexOptions options
+        )
         {
             return Regex.Matches(value, regexPattern, options);
         }
@@ -475,11 +545,18 @@ namespace Asv.Common
         /// }
         /// </code>
         /// </example>
-        public static IEnumerable<string> GetMatchingValues(this string value, string regexPattern, RegexOptions options)
+        public static IEnumerable<string> GetMatchingValues(
+            this string value,
+            string regexPattern,
+            RegexOptions options
+        )
         {
             foreach (Match match in GetMatches(value, regexPattern, options))
             {
-                if (match.Success) yield return match.Value;
+                if (match.Success)
+                {
+                    yield return match.Value;
+                }
             }
         }
 
@@ -539,7 +616,6 @@ namespace Asv.Common
         }
 
         #endregion
-
 
 
         #region Bytes & Base64
@@ -623,31 +699,21 @@ namespace Asv.Common
 
         public static Guid GetMd5Hash(this string s)
         {
-            //переводим строку в байт-массим  
             var bytes = Encoding.Unicode.GetBytes(s);
-
-            //создаем объект для получения средст шифрования  
             using var csp = MD5.Create();
-
-            //вычисляем хеш-представление в байтах  
             var byteHash = csp.ComputeHash(bytes);
-
             var hash = byteHash.Aggregate(string.Empty, (current, b) => current + $"{b:x2}");
-
-            //формируем одну цельную строку из массива  
-
             return new Guid(hash);
         }
 
         public static string EncryptAes(this string plainText, string password)
         {
-            byte[] Results;
+            byte[] results;
             var utf8 = Encoding.UTF8;
 
             // Step 1. We hash the passphrase using MD5
             // We use the MD5 hash generator as the result is a 128 bit byte array
             // which is a valid length for the TripleDES encoder we use below
-
             var hashProvider = MD5.Create();
             var tdesKey = hashProvider.ComputeHash(utf8.GetBytes(password));
 
@@ -666,7 +732,7 @@ namespace Asv.Common
             try
             {
                 var encryptor = tdesAlgorithm.CreateEncryptor();
-                Results = encryptor.TransformFinalBlock(dataToEncrypt, 0, dataToEncrypt.Length);
+                results = encryptor.TransformFinalBlock(dataToEncrypt, 0, dataToEncrypt.Length);
             }
             finally
             {
@@ -676,7 +742,7 @@ namespace Asv.Common
             }
 
             // Step 6. Return the encrypted string as a base64 encoded string
-            return Convert.ToBase64String(Results);
+            return Convert.ToBase64String(results);
         }
 
         public static string DecryptAes(this string plainText, string password)
@@ -687,7 +753,6 @@ namespace Asv.Common
             // Step 1. We hash the passphrase using MD5
             // We use the MD5 hash generator as the result is a 128 bit byte array
             // which is a valid length for the TripleDES encoder we use below
-
             var hashProvider = MD5.Create();
             var tdesKey = hashProvider.ComputeHash(utf8.GetBytes(password));
 
@@ -722,4 +787,3 @@ namespace Asv.Common
         #endregion
     }
 }
-

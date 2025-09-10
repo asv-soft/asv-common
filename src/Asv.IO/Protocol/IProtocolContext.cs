@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Asv.IO;
 
-public interface IProtocolContext: IMessageFormatter
+public interface IProtocolContext : IMessageFormatter
 {
     ILoggerFactory LoggerFactory { get; }
     TimeProvider TimeProvider { get; }

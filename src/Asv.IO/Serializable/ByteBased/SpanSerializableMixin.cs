@@ -9,7 +9,12 @@ namespace Asv.IO;
 
 public static class SpanSerializableMixin
 {
-    public static int Serialize(this ISpanSerializable src,byte[] destination, int start = 0, int length = -1)
+    public static int Serialize(
+        this ISpanSerializable src,
+        byte[] destination,
+        int start = 0,
+        int length = -1
+    )
     {
         if (length < 0)
         {
@@ -19,21 +24,30 @@ public static class SpanSerializableMixin
         src.Serialize(ref span);
         return length - span.Length;
     }
-       
+
     public static ValueTask<int> Serialize(this ISpanSerializable src, Memory<byte> destination)
     {
         var span = destination.Span;
         src.Serialize(ref span);
         return ValueTask.FromResult(destination.Length - span.Length);
     }
-    public static ValueTask<int> Deserialize(this ISpanSerializable src, ReadOnlyMemory<byte> destination)
+
+    public static ValueTask<int> Deserialize(
+        this ISpanSerializable src,
+        ReadOnlyMemory<byte> destination
+    )
     {
         var span = destination.Span;
         src.Deserialize(ref span);
         return ValueTask.FromResult(destination.Length - span.Length);
     }
 
-    public static int Deserialize(this ISpanSerializable src, byte[] destination, int start = 0, int length = -1)
+    public static int Deserialize(
+        this ISpanSerializable src,
+        byte[] destination,
+        int start = 0,
+        int length = -1
+    )
     {
         if (length < 0)
         {
@@ -43,12 +57,12 @@ public static class SpanSerializableMixin
         src.Deserialize(ref span);
         return length - span.Length;
     }
-        
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void Serialize(this ISizedSpanSerializable value, IBufferWriter<byte> buffer) 
-        => Serialize(value, buffer, value.GetByteSize());
 
-    public static void Serialize(this ISpanSerializable value, IBufferWriter<byte> buffer, int size) 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void Serialize(this ISizedSpanSerializable value, IBufferWriter<byte> buffer) =>
+        Serialize(value, buffer, value.GetByteSize());
+
+    public static void Serialize(this ISpanSerializable value, IBufferWriter<byte> buffer, int size)
     {
         var writer = buffer.GetSpan(size);
         value.Serialize(ref writer);
@@ -56,10 +70,16 @@ public static class SpanSerializableMixin
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool Deserialize(this ISizedSpanSerializable value, ref SequenceReader<byte> reader) 
-        => Deserialize(value, ref reader, value.GetByteSize());
+    public static bool Deserialize(
+        this ISizedSpanSerializable value,
+        ref SequenceReader<byte> reader
+    ) => Deserialize(value, ref reader, value.GetByteSize());
 
-    public static bool Deserialize(this ISpanSerializable value,ref SequenceReader<byte> reader, int size)
+    public static bool Deserialize(
+        this ISpanSerializable value,
+        ref SequenceReader<byte> reader,
+        int size
+    )
     {
         if (reader.Remaining < size)
         {
@@ -88,7 +108,10 @@ public static class SpanSerializableMixin
                 reader.Advance(size);
                 var span = new ReadOnlySpan<byte>(rentedArray, 0, size);
                 value.Deserialize(ref span);
-                Debug.Assert(rentedArray.Length == span.Length, "Read not all data from rented array");
+                Debug.Assert(
+                    rentedArray.Length == span.Length,
+                    "Read not all data from rented array"
+                );
             }
             finally
             {
@@ -99,16 +122,19 @@ public static class SpanSerializableMixin
         return true;
     }
 
-    public static bool Deserialize(this ISizedSpanSerializable value, ref ReadOnlySequence<byte> rdr) 
+    public static bool Deserialize(
+        this ISizedSpanSerializable value,
+        ref ReadOnlySequence<byte> rdr
+    )
     {
         var reader = new SequenceReader<byte>(rdr);
         return Deserialize(value, ref reader);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void Serialize(this ISizedSpanSerializable item, Stream dest) 
-        => Serialize(item,dest, item.GetByteSize());
-    
+    public static void Serialize(this ISizedSpanSerializable item, Stream dest) =>
+        Serialize(item, dest, item.GetByteSize());
+
     /// <summary>
     /// Create new byte array and serialize item to it
     /// Do not use it in performance critical code
@@ -122,7 +148,12 @@ public static class SpanSerializableMixin
         var array = new byte[size];
         var wSize = item.Serialize(array);
         if (wSize != size)
-            throw new Exception($"Error to serialize item {item}: file length error. Want write {size} bytes. Writed {wSize} bytes.");
+        {
+            throw new Exception(
+                $"Error to serialize item {item}: file length error. Want write {size} bytes. Writed {wSize} bytes."
+            );
+        }
+
         return array;
     }
 
@@ -133,7 +164,11 @@ public static class SpanSerializableMixin
         {
             var span = new Span<byte>(array, 0, maxSize);
             item.Serialize(ref span);
-            for (var i = 0; i < span.Length; i++) span[i] = 0;
+            for (var i = 0; i < span.Length; i++)
+            {
+                span[i] = 0;
+            }
+
             dest.Write(array, 0, maxSize);
         }
         finally
@@ -143,8 +178,8 @@ public static class SpanSerializableMixin
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void Deserialize(this ISizedSpanSerializable value, Stream src) 
-        => Deserialize(value, src, value.GetByteSize());
+    public static void Deserialize(this ISizedSpanSerializable value, Stream src) =>
+        Deserialize(value, src, value.GetByteSize());
 
     public static void Deserialize(this ISpanSerializable item, Stream src, int size)
     {
@@ -155,7 +190,8 @@ public static class SpanSerializableMixin
             var read = src.Read(array, 0, size);
             if (read != size)
                 throw new Exception(
-                    $"Error to read item {item}: file length error. Want read {size} bytes. Got {read} bytes.");
+                    $"Error to read item {item}: file length error. Want read {size} bytes. Got {read} bytes."
+                );
             var span = new ReadOnlySpan<byte>(array, 0, size);
             item.Deserialize(ref span);
         }
@@ -164,7 +200,7 @@ public static class SpanSerializableMixin
             ArrayPool<byte>.Shared.Return(array);
         }
     }
-        
+
     /// <summary>
     /// Copy data from src to dest by serializing and deserializing
     /// </summary>
@@ -172,7 +208,7 @@ public static class SpanSerializableMixin
     /// <param name="dest">Destination</param>
     /// <returns></returns>
     public static void CopyTo<T>(this T src, T dest)
-        where T: ISizedSpanSerializable
+        where T : ISizedSpanSerializable
     {
         var size = src.GetByteSize();
         var array = ArrayPool<byte>.Shared.Rent(size);
@@ -189,6 +225,7 @@ public static class SpanSerializableMixin
             ArrayPool<byte>.Shared.Return(array);
         }
     }
+
     /// <summary>
     /// Create new instance of T and copy data from src to new instance
     /// </summary>
@@ -196,7 +233,7 @@ public static class SpanSerializableMixin
     /// <typeparam name="T"></typeparam>
     /// <returns></returns>
     public static T BinaryClone<T>(this T src)
-        where T: ISizedSpanSerializable, new()
+        where T : ISizedSpanSerializable, new()
     {
         var dest = new T();
         var size = src.GetByteSize();

@@ -16,21 +16,26 @@ public class ClientDeviceConfig
 }
 
 public abstract class ClientDevice<TDeviceId> : AsyncDisposableWithCancel, IClientDevice
-    where TDeviceId:DeviceId
+    where TDeviceId : DeviceId
 {
-    
     private readonly ClientDeviceConfig _config;
     private readonly ImmutableArray<IClientDeviceExtender> _extenders;
     private readonly ReactiveProperty<string?> _name;
-    private readonly ReactiveProperty<ClientDeviceState> _state = new(ClientDeviceState.Uninitialized);
+    private readonly ReactiveProperty<ClientDeviceState> _state = new(
+        ClientDeviceState.Uninitialized
+    );
     private ImmutableArray<IMicroserviceClient> _microservices = [];
     private int _isTryReconnectInProgress;
     private readonly ILogger _logger;
     private ITimer? _reconnectionTimer;
     private int _isInitialized;
 
-
-    protected ClientDevice(TDeviceId id, ClientDeviceConfig config, ImmutableArray<IClientDeviceExtender> extenders, IMicroserviceContext context)
+    protected ClientDevice(
+        TDeviceId id,
+        ClientDeviceConfig config,
+        ImmutableArray<IClientDeviceExtender> extenders,
+        IMicroserviceContext context
+    )
     {
         ArgumentNullException.ThrowIfNull(id);
         ArgumentNullException.ThrowIfNull(config);
@@ -42,15 +47,15 @@ public abstract class ClientDevice<TDeviceId> : AsyncDisposableWithCancel, IClie
         _name = new ReactiveProperty<string?>(id.AsString());
         _logger = context.LoggerFactory.CreateLogger(id.AsString());
     }
-    
+
     public void Initialize()
-    {   
+    {
         if (Interlocked.CompareExchange(ref _isInitialized, 1, 0) == 1)
         {
             _logger.ZLogTrace($"Skip double initialization [{Id}]");
             return;
         }
-        
+
         try
         {
             InternalInitializeOnce();
@@ -63,9 +68,8 @@ public abstract class ClientDevice<TDeviceId> : AsyncDisposableWithCancel, IClie
         }
         finally
         {
-            Interlocked.Exchange(ref _isInitialized,0);
+            Interlocked.Exchange(ref _isInitialized, 0);
         }
-        
     }
 
     /// <summary>
@@ -79,8 +83,11 @@ public abstract class ClientDevice<TDeviceId> : AsyncDisposableWithCancel, IClie
     // ReSharper disable once AsyncVoidMethod
     private async void TryReconnect(object? state)
     {
-        if (IsDisposed) return; // do not reconnect if disposed
-        
+        if (IsDisposed)
+        {
+            return; // do not reconnect if disposed
+        }
+
         if (Interlocked.CompareExchange(ref _isTryReconnectInProgress, 1, 0) == 1)
         {
             _logger.ZLogTrace($"Skip double reconnect [{Id}]");
@@ -92,7 +99,7 @@ public abstract class ClientDevice<TDeviceId> : AsyncDisposableWithCancel, IClie
         {
             _state.Value = ClientDeviceState.InProgress;
             await InitBeforeMicroservices(DisposeCancel).ConfigureAwait(false);
-            
+
             await foreach (var item in InternalCreateMicroservices(DisposeCancel))
             {
                 builder.Add(item);
@@ -116,8 +123,12 @@ public abstract class ClientDevice<TDeviceId> : AsyncDisposableWithCancel, IClie
                 return;
             }
             _state.Value = ClientDeviceState.Failed;
-            _reconnectionTimer = Context.TimeProvider.CreateTimer(TryReconnect, null,
-                TimeSpan.FromMilliseconds(_config.RequestDelayAfterFailMs),Timeout.InfiniteTimeSpan);
+            _reconnectionTimer = Context.TimeProvider.CreateTimer(
+                TryReconnect,
+                null,
+                TimeSpan.FromMilliseconds(_config.RequestDelayAfterFailMs),
+                Timeout.InfiniteTimeSpan
+            );
         }
         finally
         {
@@ -141,7 +152,7 @@ public abstract class ClientDevice<TDeviceId> : AsyncDisposableWithCancel, IClie
     }
 
     public DeviceId Id { get; }
-    
+
     protected IMicroserviceContext Context { get; }
 
     protected void UpdateDeviceName(string? name)
@@ -154,7 +165,6 @@ public abstract class ClientDevice<TDeviceId> : AsyncDisposableWithCancel, IClie
     public ReadOnlyReactiveProperty<ClientDeviceState> State => _state;
     public abstract ILinkIndicator Link { get; }
 
-    
     /// <summary>
     /// This method is called before the microservices are created
     /// Can be called multiple times, if initialization fails.
@@ -163,7 +173,11 @@ public abstract class ClientDevice<TDeviceId> : AsyncDisposableWithCancel, IClie
     {
         return ValueTask.CompletedTask;
     }
-    protected abstract IAsyncEnumerable<IMicroserviceClient> InternalCreateMicroservices(CancellationToken cancel);
+
+    protected abstract IAsyncEnumerable<IMicroserviceClient> InternalCreateMicroservices(
+        CancellationToken cancel
+    );
+
     /// <summary>
     /// This method is called after the microservices have been created and initialized.
     /// Can be called multiple times, if initialization fails.
@@ -173,7 +187,7 @@ public abstract class ClientDevice<TDeviceId> : AsyncDisposableWithCancel, IClie
     {
         return ValueTask.CompletedTask;
     }
-    
+
     public ImmutableArray<IMicroserviceClient> Microservices => _microservices;
 
     #region Dispose
@@ -194,7 +208,11 @@ public abstract class ClientDevice<TDeviceId> : AsyncDisposableWithCancel, IClie
 
     protected override async ValueTask DisposeAsyncCore()
     {
-        if (_reconnectionTimer != null) await _reconnectionTimer.DisposeAsync();
+        if (_reconnectionTimer != null)
+        {
+            await _reconnectionTimer.DisposeAsync();
+        }
+
         await CastAndDispose(_name);
         await CastAndDispose(_state);
         SafeDisposeMicroservices(_microservices);
@@ -206,9 +224,13 @@ public abstract class ClientDevice<TDeviceId> : AsyncDisposableWithCancel, IClie
         static async ValueTask CastAndDispose(IDisposable resource)
         {
             if (resource is IAsyncDisposable resourceAsyncDisposable)
+            {
                 await resourceAsyncDisposable.DisposeAsync();
+            }
             else
+            {
                 resource.Dispose();
+            }
         }
     }
 

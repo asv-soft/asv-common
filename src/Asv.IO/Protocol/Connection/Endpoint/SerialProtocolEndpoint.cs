@@ -12,11 +12,11 @@ public sealed class SerialProtocolEndpoint(
     ProtocolPortConfig config,
     ImmutableArray<IProtocolParser> parsers,
     IProtocolContext context,
-    IStatisticHandler statisticHandler)
-    : ProtocolEndpoint(id, config, parsers, context, statisticHandler)
+    IStatisticHandler statisticHandler
+) : ProtocolEndpoint(id, config, parsers, context, statisticHandler)
 {
-    
     SerialPort SerialPort => port;
+
     protected override int GetAvailableBytesToRead()
     {
         if (!port.IsOpen)
@@ -31,19 +31,26 @@ public sealed class SerialProtocolEndpoint(
         return port.BaseStream.ReadAsync(memory, cancel);
     }
 
-    protected override async ValueTask<int> InternalWrite(ReadOnlyMemory<byte> memory, CancellationToken cancel)
+    protected override async ValueTask<int> InternalWrite(
+        ReadOnlyMemory<byte> memory,
+        CancellationToken cancel
+    )
     {
         await port.BaseStream.WriteAsync(memory, cancel);
         return memory.Length;
     }
-    
+
     #region Dispose
 
     protected override void Dispose(bool disposing)
     {
         if (disposing)
         {
-            if (port.IsOpen) port.Close();
+            if (port.IsOpen)
+            {
+                port.Close();
+            }
+
             port.Dispose();
         }
 
@@ -52,7 +59,11 @@ public sealed class SerialProtocolEndpoint(
 
     protected override async ValueTask DisposeAsyncCore()
     {
-        if (port.IsOpen) port.Close();
+        if (port.IsOpen)
+        {
+            port.Close();
+        }
+
         port.Dispose();
         await base.DisposeAsyncCore();
     }

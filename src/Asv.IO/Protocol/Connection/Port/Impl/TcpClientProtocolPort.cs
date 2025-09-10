@@ -6,18 +6,20 @@ using System.Threading.Tasks;
 
 namespace Asv.IO;
 
-public class TcpClientProtocolPortConfig(Uri connectionString) : ProtocolPortConfig(connectionString)
+public class TcpClientProtocolPortConfig(Uri connectionString)
+    : ProtocolPortConfig(connectionString)
 {
-    public static TcpClientProtocolPortConfig CreateDefault() => new(new Uri($"{TcpClientProtocolPort.Scheme}://127.0.0.1:7341"));
-    
+    public static TcpClientProtocolPortConfig CreateDefault() =>
+        new(new Uri($"{TcpClientProtocolPort.Scheme}://127.0.0.1:7341"));
+
     public override object Clone() => new TcpClientProtocolPortConfig(AsUri());
 }
 
-public class TcpClientProtocolPort:ProtocolPort<TcpClientProtocolPortConfig>
+public class TcpClientProtocolPort : ProtocolPort<TcpClientProtocolPortConfig>
 {
     public const string Scheme = "tcp";
-    public static readonly PortTypeInfo Info  = new(Scheme, "Tcp client port");
-    
+    public static readonly PortTypeInfo Info = new(Scheme, "Tcp client port");
+
     private readonly TcpClientProtocolPortConfig _config;
     private readonly IProtocolContext _context;
     private readonly IPEndPoint _remoteEndpoint;
@@ -25,10 +27,17 @@ public class TcpClientProtocolPort:ProtocolPort<TcpClientProtocolPortConfig>
     private Socket? _socket;
 
     public TcpClientProtocolPort(
-        TcpClientProtocolPortConfig config, 
+        TcpClientProtocolPortConfig config,
         IProtocolContext context,
-        IStatisticHandler statistic) 
-        : base(ProtocolHelper.NormalizeId($"{Scheme}_{config.Host}_{config.Port}"), config, context, true, statistic)
+        IStatisticHandler statistic
+    )
+        : base(
+            ProtocolHelper.NormalizeId($"{Scheme}_{config.Host}_{config.Port}"),
+            config,
+            context,
+            true,
+            statistic
+        )
     {
         _config = config;
         _context = context;
@@ -36,9 +45,8 @@ public class TcpClientProtocolPort:ProtocolPort<TcpClientProtocolPortConfig>
         ArgumentNullException.ThrowIfNull(config);
     }
 
-    
-
     public override PortTypeInfo TypeInfo => Info;
+
     protected override void InternalSafeDisable()
     {
         if (_socket != null)
@@ -61,11 +69,15 @@ public class TcpClientProtocolPort:ProtocolPort<TcpClientProtocolPortConfig>
         _socket.SendTimeout = _config.SendTimeout;
         _socket.ReceiveBufferSize = _config.ReadBufferSize;
         _socket.ReceiveTimeout = _config.ReadTimeout;
-        
+
         _endpoint = new TcpClientSocketProtocolEndpoint(
             _socket,
             ProtocolHelper.NormalizeId($"{Id}_{_socket.RemoteEndPoint}"),
-            _config, InternalCreateParsers(), _context, StatisticHandler);
+            _config,
+            InternalCreateParsers(),
+            _context,
+            StatisticHandler
+        );
         InternalAddEndpoint(_endpoint);
     }
 
@@ -88,16 +100,22 @@ public class TcpClientProtocolPort:ProtocolPort<TcpClientProtocolPortConfig>
 
 public static class TcpClientProtocolPortHelper
 {
-    public static IProtocolPort AddTcpClientPort(this IProtocolRouter src, Action<TcpClientProtocolPortConfig> edit)
+    public static IProtocolPort AddTcpClientPort(
+        this IProtocolRouter src,
+        Action<TcpClientProtocolPortConfig> edit
+    )
     {
         var cfg = TcpClientProtocolPortConfig.CreateDefault();
         edit(cfg);
         return src.AddPort(cfg.AsUri());
     }
+
     public static void RegisterTcpClientPort(this IProtocolPortBuilder builder)
     {
-        builder.Register(TcpClientProtocolPort.Info, 
-            (cs,  context,stat) 
-                => new TcpClientProtocolPort(new TcpClientProtocolPortConfig(cs), context,stat));
+        builder.Register(
+            TcpClientProtocolPort.Info,
+            (cs, context, stat) =>
+                new TcpClientProtocolPort(new TcpClientProtocolPortConfig(cs), context, stat)
+        );
     }
 }

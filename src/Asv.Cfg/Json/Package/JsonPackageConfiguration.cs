@@ -14,8 +14,22 @@ public class JsonPackageConfiguration : JsonConfigurationBase
     private readonly CompressionOption _compression;
     private readonly Lock? _packageLock;
 
-    public JsonPackageConfiguration(Package package, Uri partUri, string contentType, CompressionOption compression, Lock? packageLock, TimeSpan? flushToFileDelayMs = null, bool sortKeysInFile = false, TimeProvider? timeProvider = null) 
-        : base(() => LoadCallback(package, partUri,contentType,compression), flushToFileDelayMs, sortKeysInFile, timeProvider)
+    public JsonPackageConfiguration(
+        Package package,
+        Uri partUri,
+        string contentType,
+        CompressionOption compression,
+        Lock? packageLock,
+        TimeSpan? flushToFileDelayMs = null,
+        bool sortKeysInFile = false,
+        TimeProvider? timeProvider = null
+    )
+        : base(
+            () => LoadCallback(package, partUri, contentType, compression),
+            flushToFileDelayMs,
+            sortKeysInFile,
+            timeProvider
+        )
     {
         ArgumentNullException.ThrowIfNull(package);
         _package = package;
@@ -25,21 +39,27 @@ public class JsonPackageConfiguration : JsonConfigurationBase
         _packageLock = packageLock;
     }
 
-    private static Stream LoadCallback(Package package, Uri partUri, string contentType, CompressionOption compression)
+    private static Stream LoadCallback(
+        Package package,
+        Uri partUri,
+        string contentType,
+        CompressionOption compression
+    )
     {
         if (package.PartExists(partUri))
         {
             var part = package.GetPart(partUri);
             if (part.ContentType != contentType)
             {
-                throw new InvalidOperationException($"Part {partUri} has wrong content type: {part.ContentType}");
+                throw new InvalidOperationException(
+                    $"Part {partUri} has wrong content type: {part.ContentType}"
+                );
             }
             return part.GetStream(FileMode.Open, FileAccess.Read);
         }
         var newPart = package.CreatePart(partUri, contentType, compression);
         return newPart.GetStream(FileMode.CreateNew);
     }
-
 
     protected override IEnumerable<string> InternalSafeGetReservedParts()
     {

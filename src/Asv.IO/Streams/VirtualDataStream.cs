@@ -5,8 +5,7 @@ using R3;
 
 namespace Asv.IO;
 
-
-public class VirtualDataStream : IDataStream, IDisposable,IAsyncDisposable
+public class VirtualDataStream : IDataStream, IDisposable, IAsyncDisposable
 {
     private readonly string _name;
     private long _rxBytes;
@@ -23,30 +22,36 @@ public class VirtualDataStream : IDataStream, IDisposable,IAsyncDisposable
         _sub1 = _rxPipe.Subscribe(x => Interlocked.Add(ref _rxBytes, x.Length));
     }
 
-
     public Task<bool> Send(byte[] data, int count, CancellationToken cancel)
     {
-        return Task.Run(() =>
-        {
-            Interlocked.Add(ref _txBytes, count);
-            var dataToSend = new byte[count];
-            Array.Copy(data, dataToSend, count);
-            _txPipe.OnNext(dataToSend);
-            return true;
-        }, cancel);
+        return Task.Run(
+            () =>
+            {
+                Interlocked.Add(ref _txBytes, count);
+                var dataToSend = new byte[count];
+                Array.Copy(data, dataToSend, count);
+                _txPipe.OnNext(dataToSend);
+                return true;
+            },
+            cancel
+        );
     }
 
     public Task<bool> Send(ReadOnlyMemory<byte> data, CancellationToken cancel)
     {
-        return Task.Run(() =>
-        {
-            Interlocked.Add(ref _txBytes, data.Length);
-            var dataToSend = new byte[data.Length];
-            data.CopyTo( dataToSend);
-            _txPipe.OnNext(dataToSend);
-            return true;
-        }, cancel);
+        return Task.Run(
+            () =>
+            {
+                Interlocked.Add(ref _txBytes, data.Length);
+                var dataToSend = new byte[data.Length];
+                data.CopyTo(dataToSend);
+                _txPipe.OnNext(dataToSend);
+                return true;
+            },
+            cancel
+        );
     }
+
     public Observer<byte[]> RxPipe => _rxPipe.AsObserver();
     public Observable<byte[]> TxPipe => _txPipe;
     public Observable<byte[]> OnReceive => _rxPipe;
@@ -74,9 +79,13 @@ public class VirtualDataStream : IDataStream, IDisposable,IAsyncDisposable
         static async ValueTask CastAndDispose(IDisposable resource)
         {
             if (resource is IAsyncDisposable resourceAsyncDisposable)
+            {
                 await resourceAsyncDisposable.DisposeAsync();
+            }
             else
+            {
                 resource.Dispose();
+            }
         }
     }
 

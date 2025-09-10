@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(TargetFrameworksValue)</TargetFrameworks>
-    
     <FileVersion>$(ProductVersion)</FileVersion>
     <Version>$(ProductVersion)</Version>
     <PackageVersion>$(ProductVersion)</PackageVersion>
@@ -15,6 +14,25 @@
     <PackageIcon>asv-io-128.png</PackageIcon>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
+    <CodeAnalysisRuleSet>../CodeStyle.ruleset</CodeAnalysisRuleSet>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <WarningsAsErrors>
+          CS0169,
+          CS0618,
+          CS1502,
+          CS1503,
+          CS8524,
+          CS8600,
+          CS8601,
+          CS8602,
+          CS8603,
+          CS8604,
+          CS8625,
+          CS8629,
+          CS8762,
+          CA1510,
+          CA1851
+      </WarningsAsErrors>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net6.0|AnyCPU'">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -57,15 +75,28 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="ObservableCollections.R3" Version="$(R3Collections)" />
+    <PackageReference Include="Roslynator.Analyzers" Version="4.14.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="StyleCop.Analyzers" Version="1.1.118">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="ZLogger" Version="$(ZLoggerVersion)" />
     <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
     <PackageReference Include="System.IO.Abstractions" Version="$(SystemIOAbstractionsVersion)" />
-    <PackageReference Include="TestableIO.System.IO.Abstractions" Version="$(SystemIOAbstractionsVersion)" />
-    <PackageReference Include="TestableIO.System.IO.Abstractions.Wrappers" Version="$(SystemIOAbstractionsVersion)" />
+    <PackageReference
+      Include="TestableIO.System.IO.Abstractions"
+      Version="$(SystemIOAbstractionsVersion)"
+    />
+    <PackageReference
+      Include="TestableIO.System.IO.Abstractions.Wrappers"
+      Version="$(SystemIOAbstractionsVersion)"
+    />
     <PackageReference Include="System.IO.Pipelines" Version="$(DotNetVersion)" />
     <PackageReference Include="System.IO.Ports" Version="$(DotNetVersion)" />
     <PackageReference Include="DotNext.Threading" Version="$(DotNextVersion)" />
-      
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Asv.Common\Asv.Common.csproj" />

@@ -6,7 +6,7 @@ public class ExampleMessage2 : ExampleMessageBase
 {
     public const string MessageName = "ExampleMessage2";
     public const int MessageId = 2;
-    
+
     public override string Name => MessageName;
     public override byte Id => MessageId;
 
@@ -23,14 +23,12 @@ public class ExampleMessage2 : ExampleMessageBase
         UInt64Type.Accept(visitor, Value9Field, Value9Field.DataType, ref _value9);
     }
 
-
-
-
     private static readonly Field Value1Field = new Field.Builder()
         .Name(nameof(Value1))
         .DataType(Int32Type.Default)
         .Title("Title  message  field 1")
-        .Description("Description message field 1").Build();
+        .Description("Description message field 1")
+        .Build();
     private int _value1;
     public int Value1
     {
@@ -42,7 +40,8 @@ public class ExampleMessage2 : ExampleMessageBase
         .Name(nameof(Value2))
         .DataType(UInt16Type.Default)
         .Title("Title  message  field 2")
-        .Description("Description message field 2").Build();
+        .Description("Description message field 2")
+        .Build();
     private ushort _value2;
     public ushort Value2
     {
@@ -52,11 +51,12 @@ public class ExampleMessage2 : ExampleMessageBase
 
     private static readonly Field Value3Field = new Field.Builder()
         .Name(nameof(Value3))
-        .DataType(new StringType(EncodingId.Ascii,0,50))
+        .DataType(new StringType(EncodingId.Ascii, 0, 50))
         .Title("Title  message  field 3")
-        .Description("Description message field 3").Build();
+        .Description("Description message field 3")
+        .Build();
     private string _value3 = string.Empty;
-    
+
     public string Value3
     {
         get => _value3;
@@ -67,9 +67,10 @@ public class ExampleMessage2 : ExampleMessageBase
         .Name(nameof(Value4))
         .DataType(Int32Type.Default)
         .Title("Title  message  field 4")
-        .Description("Description message field 4").Build();
+        .Description("Description message field 4")
+        .Build();
     private int _value4;
-    
+
     public int Value4
     {
         get => _value4;
@@ -80,9 +81,10 @@ public class ExampleMessage2 : ExampleMessageBase
         .Name(nameof(Value5))
         .DataType(FloatType.Default)
         .Title("Title  message  field 5")
-        .Description("Description message field 5").Build();
+        .Description("Description message field 5")
+        .Build();
     private float _value5;
-    
+
     public float Value5
     {
         get => _value5;
@@ -93,9 +95,10 @@ public class ExampleMessage2 : ExampleMessageBase
         .Name(nameof(Value6))
         .DataType(DoubleType.Default)
         .Title("Title  message  field 6")
-        .Description("Description message field 6").Build();
+        .Description("Description message field 6")
+        .Build();
     private double _value6;
-    
+
     public double Value6
     {
         get => _value6;
@@ -106,9 +109,10 @@ public class ExampleMessage2 : ExampleMessageBase
         .Name(nameof(Value7))
         .DataType(BoolType.Default)
         .Title("Title  message  field 7")
-        .Description("Description message field 7").Build();
+        .Description("Description message field 7")
+        .Build();
     private bool _value7;
-   
+
     public bool Value7
     {
         get => _value7;
@@ -119,21 +123,22 @@ public class ExampleMessage2 : ExampleMessageBase
         .Name(nameof(Value8))
         .DataType(Int64Type.Default)
         .Title("Title  message  field 8")
-        .Description("Description message field 8").Build();
+        .Description("Description message field 8")
+        .Build();
     private long _value8;
-    
+
     public long Value8
     {
         get => _value8;
         set => _value8 = value;
     }
 
-    
     private static readonly Field Value9Field = new Field.Builder()
         .Name(nameof(Value9))
         .DataType(UInt64Type.Default)
         .Title("Title  message  field 9")
-        .Description("Description message field 9").Build();
+        .Description("Description message field 9")
+        .Build();
     private ulong _value9;
     public ulong Value9
     {
@@ -169,15 +174,23 @@ public class ExampleMessage2 : ExampleMessageBase
 
     protected override int InternalGetByteSize()
     {
-        return BinSerialize.GetSizeForPackedInteger(Value1) + // value1 is int
-               sizeof(ushort) + // value2 is ushort
-               BinSerialize.GetSizeForString(Value3 ?? string.Empty) + // value3 is string
-               sizeof(int) + // value4 is int
-               sizeof(float) + // value5 is float
-               sizeof(double) + // value6 is double
-               sizeof(bool) + // value7 is bool
-               sizeof(long) + // value8 is long
-               sizeof(ulong); // value9 is ulong
+        return BinSerialize.GetSizeForPackedInteger(Value1)
+            + // value1 is int
+            sizeof(ushort)
+            + // value2 is ushort
+            BinSerialize.GetSizeForString(Value3 ?? string.Empty)
+            + // value3 is string
+            sizeof(int)
+            + // value4 is int
+            sizeof(float)
+            + // value5 is float
+            sizeof(double)
+            + // value6 is double
+            sizeof(bool)
+            + // value7 is bool
+            sizeof(long)
+            + // value8 is long
+            sizeof(ulong); // value9 is ulong
     }
 
     public override string ToString()

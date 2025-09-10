@@ -7,14 +7,15 @@ using System.Runtime.CompilerServices;
 
 namespace Asv.IO;
 
-public struct ProtocolTags : IList<KeyValuePair<string, object?>>, IReadOnlyList<KeyValuePair<string, object?>>
+public struct ProtocolTags
+    : IList<KeyValuePair<string, object?>>,
+        IReadOnlyList<KeyValuePair<string, object?>>
 {
     private const int OverflowAdditionalCapacity = 8;
 
     // Up to eight tags are stored in an inline array. Once there are more items than will fit in the inline array,
     // an array is allocated to store all the items and the inline array is abandoned. Even if the size shrinks down
     // to below eight items, the array continues to be used.
-
     private InlineTags _tags;
     private KeyValuePair<string, object?>[]? _overflowTags;
     private int _tagsCount;
@@ -23,13 +24,17 @@ public struct ProtocolTags : IList<KeyValuePair<string, object?>>, IReadOnlyList
     /// Initializes a new instance of the ProtocolTags structure using the specified <paramref name="tagList" />.
     /// </summary>
     /// <param name="tagList">A span of tags to initialize the list with.</param>
-    public ProtocolTags(ReadOnlySpan<KeyValuePair<string, object?>> tagList) : this()
+    public ProtocolTags(ReadOnlySpan<KeyValuePair<string, object?>> tagList)
+        : this()
     {
         _tagsCount = tagList.Length;
 
-        scoped Span<KeyValuePair<string, object?>> tags = _tagsCount <= InlineTags.Length
-            ? _tags
-            : _overflowTags = new KeyValuePair<string, object?>[_tagsCount + OverflowAdditionalCapacity];
+        scoped Span<KeyValuePair<string, object?>> tags =
+            _tagsCount <= InlineTags.Length
+                ? _tags
+                : _overflowTags = new KeyValuePair<string, object?>[
+                    _tagsCount + OverflowAdditionalCapacity
+                ];
 
         tagList.CopyTo(tags);
     }
@@ -52,14 +57,21 @@ public struct ProtocolTags : IList<KeyValuePair<string, object?>>, IReadOnlyList
     {
         readonly get
         {
-            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual((uint)index, (uint)_tagsCount, nameof(index));
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(
+                (uint)index,
+                (uint)_tagsCount,
+                nameof(index)
+            );
 
             return _overflowTags is null ? _tags[index] : _overflowTags[index];
         }
-
         set
         {
-            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual((uint)index, (uint)_tagsCount, nameof(index));
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(
+                (uint)index,
+                (uint)_tagsCount,
+                nameof(index)
+            );
 
             if (_overflowTags is null)
             {
@@ -97,7 +109,6 @@ public struct ProtocolTags : IList<KeyValuePair<string, object?>>, IReadOnlyList
             }
             return null;
         }
-
         set
         {
             if (_overflowTags is null)
@@ -162,7 +173,9 @@ public struct ProtocolTags : IList<KeyValuePair<string, object?>>, IReadOnlyList
 
         if (_overflowTags is null)
         {
-            _overflowTags = new KeyValuePair<string, object?>[InlineTags.Length + OverflowAdditionalCapacity];
+            _overflowTags = new KeyValuePair<string, object?>[
+                InlineTags.Length + OverflowAdditionalCapacity
+            ];
             ((ReadOnlySpan<KeyValuePair<string, object?>>)_tags).CopyTo(_overflowTags);
         }
         else if (_tagsCount == _overflowTags.Length)
@@ -200,7 +213,11 @@ public struct ProtocolTags : IList<KeyValuePair<string, object?>>, IReadOnlyList
     public readonly void CopyTo(KeyValuePair<string, object?>[] array, int arrayIndex)
     {
         ArgumentNullException.ThrowIfNull(array);
-        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual((uint)arrayIndex, (uint)array.Length, nameof(arrayIndex));
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(
+            (uint)arrayIndex,
+            (uint)array.Length,
+            nameof(arrayIndex)
+        );
 
         CopyTo(array.AsSpan(arrayIndex));
     }
@@ -219,11 +236,17 @@ public struct ProtocolTags : IList<KeyValuePair<string, object?>>, IReadOnlyList
             return;
         }
 
-        ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)index, (uint)_tagsCount, nameof(index));
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(
+            (uint)index,
+            (uint)_tagsCount,
+            nameof(index)
+        );
 
         if (_tagsCount == InlineTags.Length && _overflowTags is null)
         {
-            _overflowTags = new KeyValuePair<string, object?>[InlineTags.Length + OverflowAdditionalCapacity];
+            _overflowTags = new KeyValuePair<string, object?>[
+                InlineTags.Length + OverflowAdditionalCapacity
+            ];
             ((ReadOnlySpan<KeyValuePair<string, object?>>)_tags).CopyTo(_overflowTags);
         }
 
@@ -254,9 +277,15 @@ public struct ProtocolTags : IList<KeyValuePair<string, object?>>, IReadOnlyList
     /// <exception cref="T:System.ArgumentOutOfRangeException"> <paramref name="index" /> index is less than 0 or <paramref name="index" /> is greater than <see cref="M:System.Diagnostics.ProtocolTags.Count" />.</exception>
     public void RemoveAt(int index)
     {
-        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual((uint)index, (uint)_tagsCount, nameof(index));
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(
+            (uint)index,
+            (uint)_tagsCount,
+            nameof(index)
+        );
 
-        Span<KeyValuePair<string, object?>> tags = _overflowTags is not null ? _overflowTags : _tags;
+        Span<KeyValuePair<string, object?>> tags = _overflowTags is not null
+            ? _overflowTags
+            : _tags;
         tags.Slice(index + 1, _tagsCount - index - 1).CopyTo(tags.Slice(index));
         _tagsCount--;
     }
@@ -264,16 +293,14 @@ public struct ProtocolTags : IList<KeyValuePair<string, object?>>, IReadOnlyList
     /// <summary>
     /// Removes all elements from the <see cref="T:System.Diagnostics.ProtocolTags" />.
     /// </summary>
-    public void Clear() =>
-        _tagsCount = 0;
+    public void Clear() => _tagsCount = 0;
 
     /// <summary>
     /// Determines whether an tag is in the <see cref="T:System.Diagnostics.ProtocolTags" />.
     /// </summary>
     /// <param name="item">The tag to locate in the <see cref="T:System.Diagnostics.ProtocolTags" />.</param>
     /// <returns><see langword="true" /> if item is found in the <see cref="T:System.Diagnostics.ProtocolTags" />; otherwise, <see langword="false" />.</returns>
-    public readonly bool Contains(KeyValuePair<string, object?> item) =>
-        IndexOf(item) >= 0;
+    public readonly bool Contains(KeyValuePair<string, object?> item) => IndexOf(item) >= 0;
 
     /// <summary>
     /// Removes the first occurrence of a specific object from the <see cref="T:System.Diagnostics.ProtocolTags" />.
@@ -296,7 +323,8 @@ public struct ProtocolTags : IList<KeyValuePair<string, object?>>, IReadOnlyList
     /// Returns an enumerator that iterates through the <see cref="T:System.Diagnostics.ProtocolTags" />.
     /// </summary>
     /// <returns>Returns an enumerator that iterates through the <see cref="T:System.Diagnostics.ProtocolTags" />.</returns>
-    public readonly IEnumerator<KeyValuePair<string, object?>> GetEnumerator() => new Enumerator(in this);
+    public readonly IEnumerator<KeyValuePair<string, object?>> GetEnumerator() =>
+        new Enumerator(in this);
 
     /// <summary>
     /// Returns an enumerator that iterates through the <see cref="T:System.Diagnostics.ProtocolTags" />.
@@ -310,8 +338,9 @@ public struct ProtocolTags : IList<KeyValuePair<string, object?>>, IReadOnlyList
     /// <param name="item">The tag to locate in the <see cref="T:System.Diagnostics.ProtocolTags" />.</param>
     public readonly int IndexOf(KeyValuePair<string, object?> item)
     {
-        ReadOnlySpan<KeyValuePair<string, object?>> tags =
-            _overflowTags is not null ? _overflowTags : _tags;
+        ReadOnlySpan<KeyValuePair<string, object?>> tags = _overflowTags is not null
+            ? _overflowTags
+            : _tags;
 
         tags = tags.Slice(0, _tagsCount);
 

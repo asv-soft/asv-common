@@ -17,7 +17,11 @@ public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolC
     private readonly Subject<Exception> _onTxError = new();
     private ProtocolTags _tags = [];
 
-    protected ProtocolConnection(string id, IProtocolContext context, IStatisticHandler? statistic = null)
+    protected ProtocolConnection(
+        string id,
+        IProtocolContext context,
+        IStatisticHandler? statistic = null
+    )
     {
         ArgumentNullException.ThrowIfNull(id);
         ArgumentNullException.ThrowIfNull(context);
@@ -48,22 +52,31 @@ public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolC
     public Observable<Exception> OnTxError => _onTxError;
     public Observable<IProtocolMessage> OnRxMessage => _onRxMessage;
     public Observable<Exception> OnRxError => _onRxError;
-    
+
     protected IStatisticHandler StatisticHandler { get; }
     protected IProtocolContext Context { get; }
     public abstract ValueTask Send(IProtocolMessage message, CancellationToken cancel = default);
-    public string? PrintMessage(IProtocolMessage message, PacketFormatting formatting = PacketFormatting.Inline) => Context.PrintMessage(message, formatting);
+
+    public string? PrintMessage(
+        IProtocolMessage message,
+        PacketFormatting formatting = PacketFormatting.Inline
+    ) => Context.PrintMessage(message, formatting);
 
     protected async ValueTask<IProtocolMessage?> InternalFilterTxMessage(IProtocolMessage message)
     {
         foreach (var item in Context.Features)
         {
             var newMsg = await item.ProcessTx(message, this, DisposeCancel);
-            if (newMsg == null) return null;
+            if (newMsg == null)
+            {
+                return null;
+            }
+
             message = newMsg;
         }
         return message;
     }
+
     protected async void InternalPublishRxMessage(IProtocolMessage message)
     {
         try
@@ -71,7 +84,11 @@ public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolC
             foreach (var item in Context.Features)
             {
                 var newMsg = await item.ProcessRx(message, this, DisposeCancel);
-                if (newMsg == null) return;
+                if (newMsg == null)
+                {
+                    return;
+                }
+
                 message = newMsg;
             }
             _onRxMessage.OnNext(message);
@@ -82,24 +99,46 @@ public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolC
         }
         catch (Exception ex)
         {
-            InternalPublishRxError(new ProtocolConnectionException(this,$"Error at publish rx message:{ex.Message}", ex));
+            InternalPublishRxError(
+                new ProtocolConnectionException(
+                    this,
+                    $"Error at publish rx message:{ex.Message}",
+                    ex
+                )
+            );
         }
     }
+
     protected void InternalPublishRxError(Exception ex)
     {
-        if (IsDisposed) return;
+        if (IsDisposed)
+        {
+            return;
+        }
+
         _onRxError.OnNext(ex);
     }
+
     protected void InternalPublishTxError(ProtocolConnectionException ex)
     {
-        if (IsDisposed) return;
+        if (IsDisposed)
+        {
+            return;
+        }
+
         _onTxError.OnNext(ex);
     }
+
     protected void InternalPublishTxMessage(IProtocolMessage msg)
     {
-        if (IsDisposed) return;
+        if (IsDisposed)
+        {
+            return;
+        }
+
         _onTxMessage.OnNext(msg);
     }
+
     public ref ProtocolTags Tags => ref _tags;
 
     #region Dispose
@@ -139,9 +178,13 @@ public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolC
         static async ValueTask CastAndDispose(IDisposable resource)
         {
             if (resource is IAsyncDisposable resourceAsyncDisposable)
+            {
                 await resourceAsyncDisposable.DisposeAsync();
+            }
             else
+            {
                 resource.Dispose();
+            }
         }
     }
 

@@ -60,6 +60,7 @@ public class GeoPointLongitudeTest
         Assert.True(GeoPointLongitude.TryParse(input, out double value));
         Assert.Equal(expected, value);
     }
+
     [Theory]
     [InlineData("000° 00' 00\"", 0.0)]
     [InlineData("000° 00' 00\" E", 0.0)]
@@ -181,14 +182,15 @@ public class GeoPointLongitudeTest
     }
 
     [Theory]
-    [InlineData("2 40", 2 + 40d/60d)]
-    [InlineData("15 59 45", 15 + 59d/60d + 45d/3600d)]
-    [InlineData("0 1 0 W", -1d/60d)]
+    [InlineData("2 40", 2 + (40d / 60d))]
+    [InlineData("15 59 45", 15 + (59d / 60d) + (45d / 3600d))]
+    [InlineData("0 1 0 W", -1d / 60d)]
     public void CheckDmsWithShortValues(string input, double expected)
     {
         Assert.True(GeoPointLongitude.TryParse(input, out double value));
         Assert.Equal(expected, value, 6); // using precision of 6 decimal places
     }
+
     [Theory]
     [InlineData("001 00 00.00 E", 1)]
     [InlineData("01 00 00.00 E", 1)]
@@ -260,27 +262,27 @@ public class GeoPointLongitudeTest
     }
 
     [Theory]
-    [InlineData("000 01 0 E", 1.0/60.0)]
-    [InlineData("000 1 0 E", 1.0/60.0)]
-    [InlineData("000 9 0 E", 9.0/60.0)]
-    [InlineData("000 09 0 E", 9.0/60.0)]
-    [InlineData("000 10 0 E", 10.0/60.0)]
-    [InlineData("000 59 0 E", 59.0/60.0)]
-    [InlineData("000 5 0 E", 5.0/60.0)]
-    [InlineData("000 01' 0 E", 1.0/60.0)]
-    [InlineData("000 1' 0 E", 1.0/60.0)]
-    [InlineData("000 9' 0 E", 9.0/60.0)]
-    [InlineData("000 09' 0 E", 9.0/60.0)]
-    [InlineData("000 10' 0 E", 10.0/60.0)]
-    [InlineData("000 59' 0 E", 59.0/60.0)]
-    [InlineData("000 5' 0 E", 5.0/60.0)]
-    [InlineData("000 01′ 0 E", 1.0/60.0)]
-    [InlineData("000 1′ 0 E", 1.0/60.0)]
-    [InlineData("000 9′ 0 E", 9.0/60.0)]
-    [InlineData("000 09′ 0 E", 9.0/60.0)]
-    [InlineData("000 10′ 0 E", 10.0/60.0)]
-    [InlineData("000 59′ 0 E", 59.0/60.0)]
-    [InlineData("000 5′ 0 E", 5.0/60.0)]
+    [InlineData("000 01 0 E", 1.0 / 60.0)]
+    [InlineData("000 1 0 E", 1.0 / 60.0)]
+    [InlineData("000 9 0 E", 9.0 / 60.0)]
+    [InlineData("000 09 0 E", 9.0 / 60.0)]
+    [InlineData("000 10 0 E", 10.0 / 60.0)]
+    [InlineData("000 59 0 E", 59.0 / 60.0)]
+    [InlineData("000 5 0 E", 5.0 / 60.0)]
+    [InlineData("000 01' 0 E", 1.0 / 60.0)]
+    [InlineData("000 1' 0 E", 1.0 / 60.0)]
+    [InlineData("000 9' 0 E", 9.0 / 60.0)]
+    [InlineData("000 09' 0 E", 9.0 / 60.0)]
+    [InlineData("000 10' 0 E", 10.0 / 60.0)]
+    [InlineData("000 59' 0 E", 59.0 / 60.0)]
+    [InlineData("000 5' 0 E", 5.0 / 60.0)]
+    [InlineData("000 01′ 0 E", 1.0 / 60.0)]
+    [InlineData("000 1′ 0 E", 1.0 / 60.0)]
+    [InlineData("000 9′ 0 E", 9.0 / 60.0)]
+    [InlineData("000 09′ 0 E", 9.0 / 60.0)]
+    [InlineData("000 10′ 0 E", 10.0 / 60.0)]
+    [InlineData("000 59′ 0 E", 59.0 / 60.0)]
+    [InlineData("000 5′ 0 E", 5.0 / 60.0)]
     public void CheckValidLongitudeMinuteValues(string input, double expected)
     {
         Assert.True(GeoPointLongitude.TryParse(input, out double value));
@@ -288,22 +290,22 @@ public class GeoPointLongitudeTest
     }
 
     [Theory]
-    [InlineData("000 00 01 E", 1.0/3600.0)]
-    [InlineData("000 00 1 E", 1.0/3600.0)]
-    [InlineData("000 00 09 E", 9.0/3600.0)]
-    [InlineData("000 00 9 E", 9.0/3600.0)]
-    [InlineData("000 00 59 E", 59.0/3600.0)]
-    [InlineData("000 00 01.001 E", 1.001/3600.0)]
-    [InlineData("000 00 1.001 E", 1.001/3600.0)]
-    [InlineData("000 00 09.001 E", 9.001/3600.0)]
-    [InlineData("000 00 9.001 E", 9.001/3600.0)]
-    [InlineData("000 00 59.001 E", 59.001/3600.0)]
-    [InlineData("0000001E", 1.0/3600.0)]
-    [InlineData("000001E", 1.0/3600.0)]
-    [InlineData("0000009E", 9.0/3600.0)]
-    [InlineData("000009E", 9.0/3600.0)]
-    [InlineData("0000059E", 59.0/3600.0)]
-    [InlineData("0000001.001E", 1.001/3600.0)]
+    [InlineData("000 00 01 E", 1.0 / 3600.0)]
+    [InlineData("000 00 1 E", 1.0 / 3600.0)]
+    [InlineData("000 00 09 E", 9.0 / 3600.0)]
+    [InlineData("000 00 9 E", 9.0 / 3600.0)]
+    [InlineData("000 00 59 E", 59.0 / 3600.0)]
+    [InlineData("000 00 01.001 E", 1.001 / 3600.0)]
+    [InlineData("000 00 1.001 E", 1.001 / 3600.0)]
+    [InlineData("000 00 09.001 E", 9.001 / 3600.0)]
+    [InlineData("000 00 9.001 E", 9.001 / 3600.0)]
+    [InlineData("000 00 59.001 E", 59.001 / 3600.0)]
+    [InlineData("0000001E", 1.0 / 3600.0)]
+    [InlineData("000001E", 1.0 / 3600.0)]
+    [InlineData("0000009E", 9.0 / 3600.0)]
+    [InlineData("000009E", 9.0 / 3600.0)]
+    [InlineData("0000059E", 59.0 / 3600.0)]
+    [InlineData("0000001.001E", 1.001 / 3600.0)]
     public void CheckValidLongitudeSecondValues(string input, double expected)
     {
         Assert.True(GeoPointLongitude.TryParse(input, out double value));
@@ -317,7 +319,7 @@ public class GeoPointLongitudeTest
         Assert.True(GeoPointLongitude.TryParse(input, out double value));
         Assert.Equal(expected, value);
     }
-    
+
     [Theory]
     [InlineData("068:25.0365W", -68.416667)]
     [InlineData("E068:25.0365", 68.416667)]
@@ -330,7 +332,7 @@ public class GeoPointLongitudeTest
         Assert.True(GeoPointLongitude.TryParse(input, out var value));
         Assert.Equal(expectedLatitude, value, 6);
     }
-    
+
     [Theory]
     [InlineData("068:25. 0365W")]
     [InlineData("068:25 .0365W")]

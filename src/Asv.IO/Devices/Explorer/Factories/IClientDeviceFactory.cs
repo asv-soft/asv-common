@@ -17,10 +17,15 @@ public interface IClientDeviceFactory
     /// <param name="deviceId"></param>
     /// <returns></returns>
     bool TryIdentify(IProtocolMessage message, out DeviceId? deviceId);
-    
+
     void UpdateDevice(IClientDevice device, IProtocolMessage message);
-    
-    IClientDevice CreateDevice(IProtocolMessage message, DeviceId deviceId, IMicroserviceContext context, ImmutableArray<IClientDeviceExtender> extenders);
+
+    IClientDevice CreateDevice(
+        IProtocolMessage message,
+        DeviceId deviceId,
+        IMicroserviceContext context,
+        ImmutableArray<IClientDeviceExtender> extenders
+    );
 }
 
 public static class ClientDeviceFactory
@@ -29,12 +34,14 @@ public static class ClientDeviceFactory
     public const int MinimumOrder = int.MaxValue;
 }
 
-public abstract class ClientDeviceFactory<TMessageBase,TDeviceBase, TDeviceId> : IClientDeviceFactory
+public abstract class ClientDeviceFactory<TMessageBase, TDeviceBase, TDeviceId>
+    : IClientDeviceFactory
     where TDeviceId : DeviceId
-    where TDeviceBase:IClientDevice
-    where TMessageBase:IProtocolMessage
+    where TDeviceBase : IClientDevice
+    where TMessageBase : IProtocolMessage
 {
     public abstract int Order { get; }
+
     public bool TryIdentify(IProtocolMessage message, out DeviceId? deviceId)
     {
         if (message is TMessageBase msg)
@@ -56,7 +63,7 @@ public abstract class ClientDeviceFactory<TMessageBase,TDeviceBase, TDeviceId> :
     {
         if (message is TMessageBase msg)
         {
-            InternalUpdateDevice((TDeviceBase)device,msg);
+            InternalUpdateDevice((TDeviceBase)device, msg);
             return;
         }
         throw new InvalidOperationException($"Unknown message type {message.GetType().Name}");
@@ -64,8 +71,12 @@ public abstract class ClientDeviceFactory<TMessageBase,TDeviceBase, TDeviceId> :
 
     protected abstract void InternalUpdateDevice(TDeviceBase device, TMessageBase msg);
 
-    public IClientDevice CreateDevice(IProtocolMessage message, DeviceId deviceId, IMicroserviceContext context,
-        ImmutableArray<IClientDeviceExtender> extenders)
+    public IClientDevice CreateDevice(
+        IProtocolMessage message,
+        DeviceId deviceId,
+        IMicroserviceContext context,
+        ImmutableArray<IClientDeviceExtender> extenders
+    )
     {
         if (message is TMessageBase msg)
         {
@@ -74,9 +85,12 @@ public abstract class ClientDeviceFactory<TMessageBase,TDeviceBase, TDeviceId> :
         throw new InvalidOperationException($"Unknown message type {message.GetType().Name}");
     }
 
-    protected abstract TDeviceBase InternalCreateDevice(TMessageBase msg, TDeviceId deviceId, IMicroserviceContext context,
-        ImmutableArray<IClientDeviceExtender> extenders);
-
+    protected abstract TDeviceBase InternalCreateDevice(
+        TMessageBase msg,
+        TDeviceId deviceId,
+        IMicroserviceContext context,
+        ImmutableArray<IClientDeviceExtender> extenders
+    );
 }
 
 public interface IClientDeviceFactoryBuilder
@@ -84,4 +98,3 @@ public interface IClientDeviceFactoryBuilder
     void Register(IClientDeviceFactory factory);
     void Clear();
 }
-

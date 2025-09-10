@@ -7,7 +7,10 @@ namespace Asv.IO
             uint bits = 0;
             uint i;
             for (i = pos; i < pos + len; i++)
-                bits = (uint)((bits << 1) + ((buff[i / 8] >> (int)(7 - i % 8)) & 1u));
+            {
+                bits = (uint)((bits << 1) + ((buff[i / 8] >> (int)(7 - (i % 8))) & 1u));
+            }
+
             return bits;
         }
 
@@ -15,7 +18,10 @@ namespace Asv.IO
         {
             uint bits = 0;
             for (var i = (int)(pos + len) - 1; i >= pos; i--)
-                bits = (uint)((bits << 1) + ((buff[i / 8] >> 7 - i % 8) & 1u));
+            {
+                bits = (uint)((bits << 1) + ((buff[i / 8] >> (7 - (i % 8))) & 1u));
+            }
+
             return bits;
         }
 
@@ -23,14 +29,21 @@ namespace Asv.IO
         {
             var mask = 1u << (int)(len - 1);
 
-            if (len <= 0 || 32 < len) return;
+            if (len <= 0 || 32 < len)
+            {
+                return;
+            }
 
             for (var i = pos; i < pos + len; i++, mask >>= 1)
             {
                 if ((data & mask) > 0)
-                    buff[i / 8] |= (byte)(1u << (int)(7 - i % 8));
+                {
+                    buff[i / 8] |= (byte)(1u << (int)(7 - (i % 8)));
+                }
                 else
-                    buff[i / 8] &= (byte)~(1u << (int)(7 - i % 8));
+                {
+                    buff[i / 8] &= (byte)~(1u << (int)(7 - (i % 8)));
+                }
             }
         }
 
@@ -38,14 +51,21 @@ namespace Asv.IO
         {
             var mask = 1u;
 
-            if (len <= 0 || 32 < len) return;
+            if (len <= 0 || 32 < len)
+            {
+                return;
+            }
 
             for (var i = pos; i < pos + len; i++, mask <<= 1)
             {
                 if ((data & mask) > 0)
-                    buff[i / 8] |= (byte)(1u << (int)(7 - i % 8));
+                {
+                    buff[i / 8] |= (byte)(1u << (int)(7 - (i % 8)));
+                }
                 else
-                    buff[i / 8] &= (byte)~(1u << (int)(7 - i % 8));
+                {
+                    buff[i / 8] &= (byte)~(1u << (int)(7 - (i % 8)));
+                }
             }
         }
 
@@ -63,7 +83,10 @@ namespace Asv.IO
         {
             var bits = GetBitU(buff, pos, len);
             if (len <= 0 || 32 <= len || (bits & (1u << (int)(len - 1))) == 0)
+            {
                 return (int)bits;
+            }
+
             return (int)(bits | (~0u << (int)len)); /* extend sign */
         }
 
@@ -71,25 +94,38 @@ namespace Asv.IO
         {
             var bits = GetBitUReverse(buff, pos, len);
             if (len <= 0 || 32 <= len || (bits & (1u << (int)(len - 1))) == 0)
+            {
                 return (int)bits;
+            }
+
             return (int)(bits | (~0u << (int)len)); /* extend sign */
         }
 
         public static void SetBitS(byte[] buff, uint pos, uint len, int data)
         {
             if (data < 0)
+            {
                 data |= 1 << (int)(len - 1);
+            }
             else
+            {
                 data &= ~(1 << (int)(len - 1)); /* set sign bit */
+            }
+
             SetBitU(buff, pos, len, (uint)data);
         }
 
         public static void SetBitSReverse(byte[] buff, uint pos, uint len, int data)
         {
             if (data < 0)
+            {
                 data |= 1 << (int)(len - 1);
+            }
             else
+            {
                 data &= ~(1 << (int)(len - 1)); /* set sign bit */
+            }
+
             SetBitUReverse(buff, pos, len, (uint)data);
         }
 
@@ -102,7 +138,6 @@ namespace Asv.IO
         {
             SetBitSReverse(buff, pos, len, (int)data);
         }
-
 
         public static byte Reverse(this byte src)
         {
@@ -158,6 +193,5 @@ namespace Asv.IO
 
             return result;
         }
-
     }
 }

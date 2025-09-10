@@ -1,18 +1,17 @@
 using JetBrains.Annotations;
-using Xunit;
 using R3;
+using Xunit;
 
 namespace Asv.Common.Test;
 
 [TestSubject(typeof(ManualLinkIndicator))]
-public class ManualLinkIndicatorTest:LinkIndicatorExTestBase<ManualLinkIndicator>
+public class ManualLinkIndicatorTest : LinkIndicatorExTestBase<ManualLinkIndicator>
 {
-    
     protected override ManualLinkIndicator CreateLinkIndicator(int downgradeErrors = 3)
     {
         return new ManualLinkIndicator();
     }
-    
+
     [Fact]
     public void InternalUpgrade_SetsStateToConnected()
     {
@@ -25,6 +24,7 @@ public class ManualLinkIndicatorTest:LinkIndicatorExTestBase<ManualLinkIndicator
         // Assert
         Assert.Equal(LinkState.Connected, linkIndicator.State.CurrentValue);
     }
+
     [Fact]
     public void InternalDowngrade_MovesThroughStatesCorrectly()
     {
@@ -45,7 +45,7 @@ public class ManualLinkIndicatorTest:LinkIndicatorExTestBase<ManualLinkIndicator
         linkIndicator.Downgrade();
         Assert.Equal(LinkState.Disconnected, linkIndicator.State.CurrentValue);
     }
-    
+
     [Fact]
     public void ForceDisconnected_SetsStateToDisconnected()
     {
@@ -59,14 +59,14 @@ public class ManualLinkIndicatorTest:LinkIndicatorExTestBase<ManualLinkIndicator
         // Assert
         Assert.Equal(LinkState.Disconnected, linkIndicator.State.CurrentValue);
     }
-    
+
     [Fact]
     public void OnLost_EmitsWhenDisconnected()
     {
         // Arrange
         var linkIndicator = CreateLinkIndicator();
         bool lostEmitted = false;
-        ((ILinkIndicator)linkIndicator).OnLost.Subscribe(x=>lostEmitted = true);
+        ((ILinkIndicator)linkIndicator).OnLost.Subscribe(x => lostEmitted = true);
 
         // Act
         linkIndicator.Downgrade(); // move to Downgrade
@@ -75,7 +75,4 @@ public class ManualLinkIndicatorTest:LinkIndicatorExTestBase<ManualLinkIndicator
         // Assert
         Assert.True(lostEmitted);
     }
-    
-
-    
 }
