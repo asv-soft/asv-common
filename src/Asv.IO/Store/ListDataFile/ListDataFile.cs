@@ -209,7 +209,7 @@ public class ListDataFile<TMetadata> : DisposableOnce, IListDataFile<TMetadata>
         {
             var readSpan = new Span<byte>(buffer, 0, _fileMetadataSize);
 
-            // if file have metadata => read
+            // if file has metadata => read
             if (_stream.Length >= ListDataFileFormat.MaxSize + _fileMetadataSize)
             {
                 _stream.Seek(_startFileMetadataOffset, SeekOrigin.Begin);
@@ -229,9 +229,9 @@ public class ListDataFile<TMetadata> : DisposableOnce, IListDataFile<TMetadata>
                 );
                 _metadata.Deserialize(ref deserializeSpan);
             }
-            // if file have no metadata => write origin
             else
             {
+                // if file have no metadata => write origin
                 var serializeSpan = new Span<byte>(
                     buffer,
                     0,

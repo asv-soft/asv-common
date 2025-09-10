@@ -86,11 +86,9 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
         {
             before = _endpoints;
             after = [];
-        }
-        // check if the value is changed by another thread while we are removing the endpoint
-        while (
+        } while (
             ImmutableInterlocked.InterlockedCompareExchange(ref _endpoints, after, before) != before
-        );
+        ); // check if the value is changed by another thread while we are removing the endpoint
         foreach (var endpoint in before)
         {
             try
@@ -123,11 +121,9 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
         {
             before = _endpoints;
             after = before.Remove(endpoint);
-        }
-        // check if the value is changed by another thread while we are removing the endpoint
-        while (
+        } while (
             ImmutableInterlocked.InterlockedCompareExchange(ref _endpoints, after, before) != before
-        );
+        ); // check if the value is changed by another thread while we are removing the endpoint
 
         try
         {
@@ -159,11 +155,9 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
         {
             before = _endpoints;
             after = before.Add(endpoint);
-        }
-        // check if the value is changed by another thread while we are adding the endpoint
-        while (
+        } while (
             ImmutableInterlocked.InterlockedCompareExchange(ref _endpoints, after, before) != before
-        );
+        ); // check if the value is changed by another thread while we are adding the endpoint
 
         // we don't need to dispose subscriptions here, because it will be complete by endpoint itself
         endpoint

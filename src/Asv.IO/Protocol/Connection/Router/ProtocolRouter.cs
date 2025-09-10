@@ -72,13 +72,11 @@ public sealed class ProtocolRouter : ProtocolConnection, IProtocolRouter
         {
             before = _ports;
             after = before.Add(port);
-        }
-        // check if the value is changed by another thread while we are adding the endpoint
-        while (
+        } while (
             ImmutableInterlocked.InterlockedCompareExchange(ref _ports, after, before) != before
-        );
+        ); // check if the value is changed by another thread while we are adding the endpoint
         _logger.ZLogInformation($"{this} add {port}");
-        if (port.Config.IsEnabled == true)
+        if (port.Config.IsEnabled)
         {
             port.Enable();
         }
@@ -94,11 +92,9 @@ public sealed class ProtocolRouter : ProtocolConnection, IProtocolRouter
         {
             before = _ports;
             after = before.Remove(port);
-        }
-        // check if the value is changed by another thread while we are removing the endpoint
-        while (
+        } while (
             ImmutableInterlocked.InterlockedCompareExchange(ref _ports, after, before) != before
-        );
+        ); // check if the value is changed by another thread while we are removing the endpoint
         _portRemoved.OnNext(port);
         port.Dispose();
         _logger.ZLogInformation($"{this} remove {port}");
@@ -128,11 +124,9 @@ public sealed class ProtocolRouter : ProtocolConnection, IProtocolRouter
             {
                 before = _ports;
                 after = ImmutableArray<IProtocolPort>.Empty;
-            }
-            // check if the value is changed by another thread while we are removing the endpoint
-            while (
+            } while (
                 ImmutableInterlocked.InterlockedCompareExchange(ref _ports, after, before) != before
-            );
+            ); // check if the value is changed by another thread while we are removing the endpoint
 
             foreach (var port in _ports)
             {
@@ -156,11 +150,9 @@ public sealed class ProtocolRouter : ProtocolConnection, IProtocolRouter
         {
             before = _ports;
             after = ImmutableArray<IProtocolPort>.Empty;
-        }
-        // check if the value is changed by another thread while we are removing the endpoint
-        while (
+        } while (
             ImmutableInterlocked.InterlockedCompareExchange(ref _ports, after, before) != before
-        );
+        ); // check if the value is changed by another thread while we are removing the endpoint
         foreach (var port in _ports)
         {
             _portRemoved.OnNext(port);
