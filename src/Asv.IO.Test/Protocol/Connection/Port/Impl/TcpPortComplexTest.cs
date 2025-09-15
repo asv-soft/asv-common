@@ -40,7 +40,6 @@ public class TcpPortComplexTest
     }
 
     [Theory(Skip = "This test can be performed only on a local machine.")]
-    //[Theory]
     [InlineData(100)]
     [InlineData(1000)]
     public async Task TcpPort_SendAndRecvMessages_Success(int messagesCount)
@@ -62,7 +61,6 @@ public class TcpPortComplexTest
         await serverPort.Status.FirstAsync(x => x == ProtocolPortStatus.Connected);
 
         // Act
-
         var tcs = new TaskCompletionSource();
         var cnt = 0;
         serverPort.OnRxMessage.Subscribe(x =>

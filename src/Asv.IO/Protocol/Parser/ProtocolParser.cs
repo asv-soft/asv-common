@@ -104,7 +104,6 @@ public abstract class ProtocolParser<TMessage, TMessageId> : AsyncDisposableOnce
 
     #region Dispose
 
-
     protected override void Dispose(bool disposing)
     {
         if (disposing)

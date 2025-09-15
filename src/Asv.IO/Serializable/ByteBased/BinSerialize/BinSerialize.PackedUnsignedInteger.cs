@@ -202,7 +202,6 @@ public static partial class BinSerialize
 
     #endregion
 
-
     #region WritePackedUnsignedInteger
 
     /// <summary>

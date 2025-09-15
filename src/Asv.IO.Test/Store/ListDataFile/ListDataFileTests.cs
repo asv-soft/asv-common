@@ -157,7 +157,7 @@ public class ListDataFileTests
         var format = new ListDataFileFormat()
         {
             Version = "1.0.0",
-            Type = "",
+            Type = string.Empty,
             MetadataMaxSize = 1234,
             ItemMaxSize = 567,
         };

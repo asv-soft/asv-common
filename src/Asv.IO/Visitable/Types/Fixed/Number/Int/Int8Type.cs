@@ -1,5 +1,3 @@
-using System;
-
 namespace Asv.IO;
 
 public sealed class Int8Type(

@@ -5,6 +5,7 @@
     <FileVersion>$(ProductVersion)</FileVersion>
     <Version>$(ProductVersion)</Version>
     <LangVersion>latest</LangVersion>
+    <CodeAnalysisRuleSet>../CodeStyle.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="AutoFixture" Version="$(AutoFixtureVersion)" />

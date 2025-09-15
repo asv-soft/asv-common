@@ -87,7 +87,6 @@ public class VirtualConnectionTest
         await tcs.Task;
 
         // Assert
-
         Assert.Equal(count * 2, all);
         Assert.Equal(count, msg1);
         Assert.Equal(0, msg2);
@@ -157,7 +156,6 @@ public class VirtualConnectionTest
         }
 
         // Assert
-
         Assert.Equal(count * 2, all);
         Assert.Equal(count, msg1);
         Assert.Equal(0, msg2);
@@ -171,7 +169,6 @@ public class VirtualConnectionTest
     public async Task VirtualConnection_SendServerToClient_Success(int count)
     {
         // Arrange
-
         var fixture = new Fixture();
         var link = Protocol
             .Create(builder =>
@@ -247,7 +244,6 @@ public class VirtualConnectionTest
     public async Task VirtualConnection_SendClientToServer_Success(int count)
     {
         // Arrange
-
         var fixture = new Fixture();
         var link = Protocol
             .Create(builder =>

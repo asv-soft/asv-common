@@ -1,7 +1,7 @@
 using System;
 using Xunit;
 
-namespace Asv.Common.Test;
+namespace Asv.Common.Test.Other;
 
 public class ShortGuidTests
 {
@@ -21,46 +21,46 @@ public class ShortGuidTests
     /// </summary>
     const string InvalidSampleShortGuidString = "bullshitmustnotbevalid";
 
-    void assert_instance_equals_samples(ShortGuid instance)
+    private void Assert_instance_equals_samples(ShortGuid instance)
     {
         Assert.Equal(SampleShortGuidString, instance.Value);
         Assert.Equal(SampleGuid, instance.Guid);
     }
 
     [Fact]
-    void ctor_decodes_shortguid_string()
+    public void Ctor_decodes_shortguid_string()
     {
         var actual = new ShortGuid(SampleShortGuidString);
 
-        assert_instance_equals_samples(actual);
+        Assert_instance_equals_samples(actual);
     }
 
     [Fact]
-    void StrictDecode_parses_valid_shortGuid_strict_off()
+    public void StrictDecode_parses_valid_shortGuid_strict_off()
     {
         ShortGuid.Decode(SampleShortGuidString);
     }
 
     [Fact]
-    void StrictDecode_parses_valid_shortGuid_strict_on()
+    public void StrictDecode_parses_valid_shortGuid_strict_on()
     {
         ShortGuid.Decode(SampleShortGuidString);
     }
 
     [Fact]
-    void Decode_does_not_parse_longer_base64_string()
+    public void Decode_does_not_parse_longer_base64_string()
     {
         Assert.Throws<ArgumentException>(() => ShortGuid.Decode(LongerBase64String));
     }
 
     [Fact]
-    void StrictDecode_does_not_parse_longer_base64_string()
+    public void StrictDecode_does_not_parse_longer_base64_string()
     {
         Assert.Throws<ArgumentException>(() => ShortGuid.Decode(LongerBase64String));
     }
 
     [Fact]
-    void invalid_strings_must_not_return_true_on_try_parse_with_strict_true()
+    public void Invalid_strings_must_not_return_true_on_try_parse_with_strict_true()
     {
         // try parse should return false
         Assert.False(ShortGuid.TryParse(InvalidSampleShortGuidString, out ShortGuid strictSguid));
@@ -73,29 +73,29 @@ public class ShortGuidTests
     }
 
     [Fact]
-    void ctor_throws_when_trying_to_decode_guid_string()
+    public void Ctor_throws_when_trying_to_decode_guid_string()
     {
         Assert.Throws<ArgumentException>(() => new ShortGuid(SampleGuidString));
     }
 
     [Fact]
-    void TryParse_decodes_shortguid_string()
+    public void TryParse_decodes_shortguid_string()
     {
         ShortGuid.TryParse(SampleShortGuidString, out ShortGuid actual);
 
-        assert_instance_equals_samples(actual);
+        Assert_instance_equals_samples(actual);
     }
 
     [Fact]
-    void TryParse_decodes_guid_string()
+    public void TryParse_decodes_guid_string()
     {
         ShortGuid.TryParse(SampleGuidString, out ShortGuid actual);
 
-        assert_instance_equals_samples(actual);
+        Assert_instance_equals_samples(actual);
     }
 
     [Fact]
-    void TryParse_decodes_empty_guid_literal_as_empty()
+    public void TryParse_decodes_empty_guid_literal_as_empty()
     {
         bool result = ShortGuid.TryParse(Guid.Empty.ToString(), out ShortGuid actual);
 
@@ -104,7 +104,7 @@ public class ShortGuidTests
     }
 
     [Fact]
-    void TryParse_decodes_empty_string_as_empty()
+    public void TryParse_decodes_empty_string_as_empty()
     {
         bool result = ShortGuid.TryParse(string.Empty, out ShortGuid actual);
 
@@ -113,7 +113,7 @@ public class ShortGuidTests
     }
 
     [Fact]
-    void TryParse_decodes_bad_string_as_empty()
+    public void TryParse_decodes_bad_string_as_empty()
     {
         bool result = ShortGuid.TryParse("Nothing to see here...", out ShortGuid actual);
 
@@ -122,7 +122,7 @@ public class ShortGuidTests
     }
 
     [Fact]
-    void Encode_creates_expected_string()
+    public void Encode_creates_expected_string()
     {
         string actual = ShortGuid.Encode(SampleGuid);
 
@@ -130,7 +130,7 @@ public class ShortGuidTests
     }
 
     [Fact]
-    void Decode_takes_expected_string()
+    public void Decode_takes_expected_string()
     {
         Guid actual = ShortGuid.Decode(SampleShortGuidString);
 
@@ -138,7 +138,7 @@ public class ShortGuidTests
     }
 
     [Fact]
-    void Decode_fails_on_unexpected_string()
+    public void Decode_fails_on_unexpected_string()
     {
         Assert.Throws<ArgumentException>(() => ShortGuid.Decode("Am I valid?"));
 
@@ -146,7 +146,7 @@ public class ShortGuidTests
     }
 
     [Fact]
-    void instance_equality_equals()
+    public void Instance_equality_equals()
     {
         var actual = new ShortGuid(SampleShortGuidString);
 
@@ -158,7 +158,7 @@ public class ShortGuidTests
     }
 
     [Fact]
-    void operator_eqaulity_equals()
+    public void Operator_eqaulity_equals()
     {
         ShortGuid actual = new ShortGuid(SampleShortGuidString);
 
@@ -178,7 +178,7 @@ public class ShortGuidTests
     }
 
     [Fact]
-    void ShortGuid_Emtpy_equals_Guid_Empty()
+    public void ShortGuid_Emtpy_equals_Guid_Empty()
     {
         Assert.True(Guid.Empty.Equals(ShortGuid.Empty));
     }
