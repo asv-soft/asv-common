@@ -2,7 +2,7 @@ using System;
 
 namespace Asv.IO;
 
-public interface IBitWriter : IDisposable
+public interface IBitWriter : IAsyncDisposable, IDisposable
 {
     long TotalBitsWritten { get; }
     void WriteBit(int bit);

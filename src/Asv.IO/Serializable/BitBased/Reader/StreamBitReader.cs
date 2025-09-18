@@ -1,19 +1,21 @@
 using System;
 using System.IO;
+using System.Threading.Tasks;
+using Asv.Common;
 
 namespace Asv.IO;
 
-public sealed class StreamBitReader(Stream s, bool leaveOpen = false) : IBitReader, IDisposable
+public sealed class StreamBitReader(Stream s, bool leaveOpen = false) : AsyncDisposableOnce, IBitReader
 {
     private readonly Stream _s = s ?? throw new ArgumentNullException(nameof(s));
     private int _cur = -1; // текущий байт или -1
     private int _pos = 8; // позиция бита [0..7]; 8 = пусто
-    private bool _disposed;
 
     public long TotalBitsRead { get; private set; }
 
     public int ReadBit()
     {
+        ThrowIfDisposed();
         if (_pos == 8)
         {
             _cur = _s.ReadByte();
@@ -32,6 +34,7 @@ public sealed class StreamBitReader(Stream s, bool leaveOpen = false) : IBitRead
 
     public ulong ReadBits(int count)
     {
+        ThrowIfDisposed();
         if ((uint)count > 64)
         {
             throw new ArgumentOutOfRangeException(nameof(count));
@@ -48,6 +51,7 @@ public sealed class StreamBitReader(Stream s, bool leaveOpen = false) : IBitRead
 
     public void AlignToByte()
     {
+        ThrowIfDisposed();
         if (_pos != 8)
         {
             TotalBitsRead += 8 - _pos;
@@ -55,18 +59,24 @@ public sealed class StreamBitReader(Stream s, bool leaveOpen = false) : IBitRead
         }
     }
 
-    public void Dispose()
+    protected sealed override void Dispose(bool disposing)
     {
-        if (_disposed)
+        if (disposing)
         {
-            return;
+            if (!leaveOpen)
+            {
+                _s.Dispose();
+            }
         }
+        base.Dispose(disposing);
+    }
 
+    protected sealed override async ValueTask DisposeAsyncCore()
+    {
         if (!leaveOpen)
         {
-            _s.Dispose();
+            await _s.DisposeAsync();
         }
-
-        _disposed = true;
+        await base.DisposeAsyncCore();
     }
 }

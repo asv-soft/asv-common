@@ -2,10 +2,11 @@ using System;
 using System.Buffers;
 using System.IO;
 using System.Runtime.CompilerServices;
+using Asv.Common;
 
 namespace Asv.IO;
 
-public sealed class MemoryBitReader(ReadOnlyMemory<byte> buffer) : IBitReader
+public sealed class MemoryBitReader(ReadOnlyMemory<byte> buffer) : AsyncDisposableOnce, IBitReader
 {
     private int _bytePos = 0; // индекс следующего байта для подхвата
     private int _bitPos = 8; // позиция бита в _cur [0..7]; 8 => «нужно взять новый байт»

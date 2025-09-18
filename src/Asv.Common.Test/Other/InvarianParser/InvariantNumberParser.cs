@@ -389,6 +389,7 @@ public class InvariantNumberParserTest
     [InlineData("2м", 2_000_000)]
     [InlineData("1b", 1_000_000_000)]
     [InlineData("2g", 2_000_000_000)]
+    
     // Check that exceeding int.MaxValue when multiplying
     // by 1000 or 1_000_000 returns FailAsOutOfRange during double->int casting
     public void TryParseInt_WithSuffix_ShouldSuccessOrFailIfOverflow(

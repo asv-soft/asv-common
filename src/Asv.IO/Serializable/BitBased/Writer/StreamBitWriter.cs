@@ -1,22 +1,23 @@
 using System;
 using System.IO;
 using System.Runtime.CompilerServices;
-using DotNext.IO;
+using System.Threading.Tasks;
+using Asv.Common;
 
 namespace Asv.IO;
 
-public class StreamBitWriter(Stream s, bool leaveOpen = false) : IBitWriter
+public class StreamBitWriter(Stream s, bool leaveOpen = false) : AsyncDisposableOnce, IBitWriter
 {
     private readonly Stream _s = s ?? throw new ArgumentNullException(nameof(s));
     private byte _buf;
     private int _filled; // 0..7
-    private bool _disposed;
 
     public long TotalBitsWritten { get; private set; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void WriteBit(int bit)
     {
+        ThrowIfDisposed();
         if ((uint)bit > 1)
         {
             throw new ArgumentOutOfRangeException(nameof(bit));
@@ -37,6 +38,7 @@ public class StreamBitWriter(Stream s, bool leaveOpen = false) : IBitWriter
 
     public void WriteBits(ulong value, int count)
     {
+        ThrowIfDisposed();
         if (count is < 0 or > 64)
         {
             throw new ArgumentOutOfRangeException(nameof(count));
@@ -50,6 +52,7 @@ public class StreamBitWriter(Stream s, bool leaveOpen = false) : IBitWriter
 
     public void AlignToByte()
     {
+        ThrowIfDisposed();
         if (_filled > 0)
         {
             FlushCurrentByte();
@@ -64,8 +67,13 @@ public class StreamBitWriter(Stream s, bool leaveOpen = false) : IBitWriter
         _filled = 0;
     }
 
-    public void Flush()
+    public void Flush() => Flush(false);
+    private void Flush(bool idDisposing)
     {
+        if (!idDisposing)
+        {
+            ThrowIfDisposed();
+        }
         if (_filled > 0)
         {
             FlushCurrentByte();
@@ -74,19 +82,27 @@ public class StreamBitWriter(Stream s, bool leaveOpen = false) : IBitWriter
         _s.Flush();
     }
 
-    public void Dispose()
+    protected override void Dispose(bool disposing)
     {
-        if (_disposed)
+        if (disposing)
         {
-            return;
+            Flush(true);
+            if (!leaveOpen)
+            {
+                _s.Dispose();
+            }
         }
 
+        base.Dispose(disposing);
+    }
+
+    protected override async ValueTask DisposeAsyncCore()
+    {
         Flush();
         if (!leaveOpen)
         {
-            _s.Dispose();
+            await _s.DisposeAsync();
         }
-
-        _disposed = true;
+        await base.DisposeAsyncCore();
     }
 }
