@@ -68,6 +68,7 @@ public class StreamBitWriter(Stream s, bool leaveOpen = false) : AsyncDisposable
     }
 
     public void Flush() => Flush(false);
+
     private void Flush(bool idDisposing)
     {
         if (!idDisposing)

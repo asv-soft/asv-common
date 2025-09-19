@@ -30,8 +30,7 @@ namespace Asv.IO;
 /// </list>
 /// All signed fields are sign-extended to 64-bit integers using two’s complement.
 /// </remarks>
-public sealed class GorillaTimestampDecoder
-    : AsyncDisposableOnce, IBitDecoder<long>
+public sealed class GorillaTimestampDecoder : AsyncDisposableOnce, IBitDecoder<long>
 {
     private readonly IBitReader _br;
     private readonly bool _firstDelta27Bits;
@@ -59,9 +58,13 @@ public sealed class GorillaTimestampDecoder
     /// (exactly as in the original Gorilla paper/implementation). When <see langword="false"/>,
     /// Δ1 is read as an unsigned 64-bit value.
     /// </param>
-    /// <param name="leaveOpen"> leaveOpen if set to <see langword="true"/> the <paramref name="input"/> will not be disposed when this instance is disposed.</param> 
+    /// <param name="leaveOpen"> leaveOpen if set to <see langword="true"/> the <paramref name="input"/> will not be disposed when this instance is disposed.</param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="input"/> is <see langword="null"/>.</exception>
-    public GorillaTimestampDecoder(IBitReader input, bool firstDelta27Bits = true, bool leaveOpen = false)
+    public GorillaTimestampDecoder(
+        IBitReader input,
+        bool firstDelta27Bits = true,
+        bool leaveOpen = false
+    )
     {
         _br = input ?? throw new ArgumentNullException(nameof(input));
         _firstDelta27Bits = firstDelta27Bits;
@@ -88,7 +91,7 @@ public sealed class GorillaTimestampDecoder
                 _state = 1;
                 return ts0;
             }
-            
+
             // State 1: read Δ1 (either signed 27 bits or unsigned 64 bits)
             case 1:
             {
@@ -102,7 +105,7 @@ public sealed class GorillaTimestampDecoder
                 _state = 2;
                 return ts1;
             }
-            
+
             // State 2: read DoD using the Gorilla prefix tree and accumulate
             default:
             {

@@ -179,17 +179,18 @@ namespace Asv.IO.Tests
             var prev = 0x0123_4567_89AB_CDEFUL;
 
             // Задаём L=1, W=3, payload=0b101 => xor = 0b101 << 60 = 0x5_0000_0000_0000_0000
-            int L = 1, W = 3;
+            int L = 1,
+                W = 3;
             var payload = 0b101UL;
             var cur = MakeValue(prev, L, W, payload);
 
             // Encode:
-            b.AddBits(prev, 64);                 // first
+            b.AddBits(prev, 64); // first
             b.AddBit(1);
-            b.AddBit(1);            // p1=1, p2=1
-            b.AddBits((ulong)L, 5);              // L(5)
-            b.AddBits((ulong)(W - 1), 6);        // (W-1)(6)
-            b.AddBits(payload, W);               // payload(W)
+            b.AddBit(1); // p1=1, p2=1
+            b.AddBits((ulong)L, 5); // L(5)
+            b.AddBits((ulong)(W - 1), 6); // (W-1)(6)
+            b.AddBits(payload, W); // payload(W)
 
             var reader = new TestBitReader(b.ToBitArray());
             using var dec = new ChimpDecoder(reader, leaveOpen: true);
@@ -208,7 +209,8 @@ namespace Asv.IO.Tests
             var prev = 0x0123_4567_89AB_CDEFUL;
 
             // Сначала объявим окно L=1, W=3, payload=0b101 → cur1.
-            int L = 1, W = 3;
+            int L = 1,
+                W = 3;
             var payload1 = 0b101UL;
             var cur1 = MakeValue(prev, L, W, payload1);
 
@@ -248,7 +250,8 @@ namespace Asv.IO.Tests
         {
             var b = new BitStreamBuilder();
             var prev = 0UL;
-            int L = 0, W = 64;
+            int L = 0,
+                W = 64;
             var payload = 0xF0F0_F0F0_F0F0_F0F0UL;
             var cur = prev ^ payload; // т.к. L=0, W=64, xor = payload без сдвига
 
@@ -277,11 +280,11 @@ namespace Asv.IO.Tests
             var first = 0xDEAD_BEEF_DEAD_BEEFUL;
 
             b.AddBits(first, 64); // first value
-            
+
             // try to reuse window immediately: p1=1, p2=0, но окно ещё не объявлено
             b.AddBit(1);
             b.AddBit(0);
-            
+
             // (никакого payload, т.к. ширина W неизвестна)
             var reader = new TestBitReader(b.ToBitArray());
             using var dec = new ChimpDecoder(reader, leaveOpen: true);
@@ -300,7 +303,8 @@ namespace Asv.IO.Tests
 
             // Сценарий: first + define + reuse + repeat
             // define: L=2, W=4, payload=0b1010
-            const int l = 2, w = 4;
+            const int l = 2,
+                w = 4;
             const ulong payload1 = 0b1010UL;
             var cur1 = MakeValue(prev, l, w, payload1);
 
@@ -308,22 +312,29 @@ namespace Asv.IO.Tests
             var payload2 = 0b0011UL;
             var cur2 = MakeValue(cur1, l, w, payload2);
 
-            b.AddBits(prev, 64);          // first
+            b.AddBits(prev, 64); // first
             b.AddBit(1);
-            b.AddBit(1);     // define
+            b.AddBit(1); // define
             b.AddBits((ulong)l, 5);
             b.AddBits((ulong)(w - 1), 6);
             b.AddBits(payload1, w);
             b.AddBit(1);
-            b.AddBit(0);     // reuse
+            b.AddBit(0); // reuse
             b.AddBits(payload2, w);
-            b.AddBit(0);                  // repeat previous (cur2)
+            b.AddBit(0); // repeat previous (cur2)
 
             long expectedBits =
-                64 +          // first
-                2 + 5 + 6 + w + // define
-                2 + w +       // reuse
-                1;            // repeat
+                64
+                + // first
+                2
+                + 5
+                + 6
+                + w
+                + // define
+                2
+                + w
+                + // reuse
+                1; // repeat
 
             var reader = new TestBitReader(b.ToBitArray());
             using var dec = new ChimpDecoder(reader, leaveOpen: true);

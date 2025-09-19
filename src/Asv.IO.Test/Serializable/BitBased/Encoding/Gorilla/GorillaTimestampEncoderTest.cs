@@ -8,8 +8,6 @@ using Xunit;
 
 namespace Asv.IO.Tests
 {
-    
-
     public class GorillaTimestampEncoderTests
     {
         /// <summary>Minimal MSB-first bit writer for testing.</summary>
@@ -73,7 +71,12 @@ namespace Asv.IO.Tests
             }
 
             public void Dispose() => _disposed = true;
-            public ValueTask DisposeAsync() { _disposed = true; return ValueTask.CompletedTask; }
+
+            public ValueTask DisposeAsync()
+            {
+                _disposed = true;
+                return ValueTask.CompletedTask;
+            }
 
             private void EnsureNotDisposed()
             {
@@ -83,7 +86,7 @@ namespace Asv.IO.Tests
                 }
             }
         }
-        
+
         // ---------- Helpers for expected bitstreams ----------
         private static void AddBits(List<byte> dst, ulong value, int width)
         {
@@ -102,7 +105,8 @@ namespace Asv.IO.Tests
         private static string BitsConcat(params (ulong v, int w)[] chunks)
         {
             var bits = new List<byte>();
-            foreach (var (v, w) in chunks) AddBits(bits, v, w);
+            foreach (var (v, w) in chunks)
+                AddBits(bits, v, w);
             var chars = new char[bits.Count];
             for (var i = 0; i < bits.Count; i++)
             {
@@ -162,10 +166,7 @@ namespace Asv.IO.Tests
             enc.Add(t0);
             enc.Add(t1);
 
-            var expected = BitsConcat(
-                ((ulong)t0, 64),
-                ((ulong)delta1, 64)
-            );
+            var expected = BitsConcat(((ulong)t0, 64), ((ulong)delta1, 64));
             Assert.Equal(expected, w.ToBitString());
         }
 
@@ -277,7 +278,7 @@ namespace Asv.IO.Tests
         }
 
         [Theory]
-        [InlineData(0x0000_0800UL)]   // 2048 — сразу за пределом 12-bit (max 2047)
+        [InlineData(0x0000_0800UL)] // 2048 — сразу за пределом 12-bit (max 2047)
         [InlineData(0x0000_FF00UL)]
         [InlineData(0x7FFF_FFFFUL)]
         [InlineData(0x8000_0000UL)]
@@ -291,7 +292,7 @@ namespace Asv.IO.Tests
             const long delta1 = 0;
             var t1 = t0 + delta1;
 
-            var delta2 = (long)dod32;   // DoD = delta2 - delta1 = dod32
+            var delta2 = (long)dod32; // DoD = delta2 - delta1 = dod32
             var t2 = t1 + delta2;
 
             enc.Add(t0);
@@ -307,7 +308,6 @@ namespace Asv.IO.Tests
             Assert.Equal(ToString(exp), w.ToBitString());
         }
 
-
         [Fact]
         public void TotalBitsWritten_IsAccurate_MixedSequence()
         {
@@ -315,11 +315,11 @@ namespace Asv.IO.Tests
             using var enc = new GorillaTimestampEncoder(w);
 
             const long t0 = 100;
-            const long delta1 = 7;           // 27 bits
-            const long dod7   = -1;          // '10'  + 7
-            const long dod9   = 200;         // '110' + 9
-            const long dod12  = -1000;       // '1110' + 12
-            const ulong dod32 = 0x1_0000UL;  // '1111' + 32 (65536 -> за пределами 12-бит)
+            const long delta1 = 7; // 27 bits
+            const long dod7 = -1; // '10'  + 7
+            const long dod9 = 200; // '110' + 9
+            const long dod12 = -1000; // '1110' + 12
+            const ulong dod32 = 0x1_0000UL; // '1111' + 32 (65536 -> за пределами 12-бит)
 
             var t1 = t0 + delta1;
             var t2 = t1 + (delta1 + dod7);
@@ -335,16 +335,20 @@ namespace Asv.IO.Tests
             enc.Add(t5); // 4 + 32
 
             const long expectedBits =
-                64 +        // t0
-                27 +        // Δ1
-                (2 + 7) +   // '10'  + 7
-                (3 + 9) +   // '110' + 9
-                (4 + 12) +  // '1110'+ 12
-                (4 + 32);   // '1111'+ 32
+                64
+                + // t0
+                27
+                + // Δ1
+                (2 + 7)
+                + // '10'  + 7
+                (3 + 9)
+                + // '110' + 9
+                (4 + 12)
+                + // '1110'+ 12
+                (4 + 32); // '1111'+ 32
 
             Assert.Equal(expectedBits, w.TotalBitsWritten);
         }
-
 
         [Fact]
         public void Dispose_LeaveOpenFalse_DisposesWriter()
@@ -378,12 +382,12 @@ namespace Asv.IO.Tests
 
             // Build a sequence that hits several buckets
             const long t0 = 1_000_000;
-            const long d1 = -12;                      // 27-bit
-            var d2 = d1 + 0;                   // DoD=0
-            var d3 = d2 + 63;                  // 7-bit max
-            var d4 = d3 - 256;                 // 9-bit min
-            var d5 = d4 + 2047;                // 12-bit max
-            var d6 = d5 + (long)0x1_0000;      // 32-bit bucket
+            const long d1 = -12; // 27-bit
+            var d2 = d1 + 0; // DoD=0
+            var d3 = d2 + 63; // 7-bit max
+            var d4 = d3 - 256; // 9-bit min
+            var d5 = d4 + 2047; // 12-bit max
+            var d6 = d5 + (long)0x1_0000; // 32-bit bucket
 
             var t1 = t0 + d1;
             var t2 = t1 + d2;
@@ -402,7 +406,11 @@ namespace Asv.IO.Tests
 
             // Decode back
             var reader = new TestBitReader(w.Bits);
-            using var dec = new GorillaTimestampDecoder(reader, firstDelta27Bits: true, leaveOpen: true);
+            using var dec = new GorillaTimestampDecoder(
+                reader,
+                firstDelta27Bits: true,
+                leaveOpen: true
+            );
 
             Assert.Equal(t0, dec.ReadNext());
             Assert.Equal(t1, dec.ReadNext());
@@ -418,6 +426,7 @@ namespace Asv.IO.Tests
         {
             private readonly IReadOnlyList<byte> _bits;
             private int _pos;
+
             public TestBitReader(IReadOnlyList<byte> bits) => _bits = bits;
 
             public long TotalBitsRead { get; private set; }
@@ -460,6 +469,7 @@ namespace Asv.IO.Tests
             }
 
             public void Dispose() { }
+
             public ValueTask DisposeAsync() => ValueTask.CompletedTask;
         }
 

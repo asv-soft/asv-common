@@ -41,12 +41,13 @@ namespace Asv.IO;
 /// <see cref="InvalidDataException"/> is thrown.
 /// </remarks>
 public sealed class ChimpDecoder(IBitReader input, bool leaveOpen = false)
-    : AsyncDisposableOnce, IBitDecoder<ulong>
+    : AsyncDisposableOnce,
+        IBitDecoder<ulong>
 {
     private bool _first = true;
     private ulong _prevBits;
-    private int _l = -1;  // last known leading-zero count (L); -1 => undefined
-    private int _w = -1;  // last known width (W);         -1 => undefined
+    private int _l = -1; // last known leading-zero count (L); -1 => undefined
+    private int _w = -1; // last known width (W);         -1 => undefined
 
     /// <summary>
     /// Total number of bits consumed from the underlying <see cref="IBitReader"/>.
@@ -90,10 +91,10 @@ public sealed class ChimpDecoder(IBitReader input, bool leaveOpen = false)
                 throw new InvalidDataException("Reuse before window defined.");
             }
 
-            var tWin = 64 - _l - _w;               // trailing zeros (right side) for alignment
-            var payload = input.ReadBits(_w);      // read W significant bits
+            var tWin = 64 - _l - _w; // trailing zeros (right side) for alignment
+            var payload = input.ReadBits(_w); // read W significant bits
             var xor = (_w == 64) ? payload : (payload << tWin); // align unless full-lane
-            var cur = _prevBits ^ xor;             // reconstruct current value
+            var cur = _prevBits ^ xor; // reconstruct current value
             _prevBits = cur;
             return cur;
         }
@@ -105,8 +106,8 @@ public sealed class ChimpDecoder(IBitReader input, bool leaveOpen = false)
             var L = (int)input.ReadBits(5);
             var W = (int)input.ReadBits(6) + 1;
 
-            var tWin = 64 - L - W;                 // trailing zeros for alignment
-            var payload = input.ReadBits(W);       // read W significant bits
+            var tWin = 64 - L - W; // trailing zeros for alignment
+            var payload = input.ReadBits(W); // read W significant bits
             var xor = (W == 64) ? payload : (payload << tWin);
             var cur = _prevBits ^ xor;
 

@@ -1,8 +1,8 @@
+using System;
+using System.IO;
 using Asv.IO;
 using FluentAssertions;
 using JetBrains.Annotations;
-using System;
-using System.IO;
 using Xunit;
 
 namespace Asv.IO.Test.Serializable.BitBased.Writer;
@@ -10,7 +10,6 @@ namespace Asv.IO.Test.Serializable.BitBased.Writer;
 [TestSubject(typeof(StreamBitWriter))]
 public class StreamBitWriterTest
 {
-
     [Fact]
     public void WriteBit_ShouldWriteSingleBit_ToFirstByte()
     {
@@ -115,8 +114,7 @@ public class StreamBitWriterTest
 
         // Act & Assert
         var action = () => writer.WriteBits(0ul, 65);
-        action.Should().Throw<ArgumentOutOfRangeException>()
-            .WithParameterName("count");
+        action.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("count");
     }
 
     [Fact]
@@ -144,12 +142,10 @@ public class StreamBitWriterTest
 
         // Act & Assert: Test invalid bit values
         var action1 = () => writer.WriteBit(-1);
-        action1.Should().Throw<ArgumentOutOfRangeException>()
-            .WithParameterName("bit");
+        action1.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("bit");
 
         var action2 = () => writer.WriteBit(2);
-        action2.Should().Throw<ArgumentOutOfRangeException>()
-            .WithParameterName("bit");
+        action2.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("bit");
     }
 
     [Fact]
@@ -167,7 +163,7 @@ public class StreamBitWriterTest
 
         // Assert: Should pad with zeros to complete the byte
         writer.TotalBitsWritten.Should().Be(3);
-        
+
         // 101xxxxx -> 10100000 = 0xA0 (assuming padding with zeros)
         stream.Length.Should().Be(1);
         stream.ToArray()[0].Should().Be(0xA0);
@@ -230,7 +226,10 @@ public class StreamBitWriterTest
 
         // Assert
         writer.TotalBitsWritten.Should().Be(64);
-        stream.ToArray().Should().Equal(new byte[] { 0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0 });
+        stream
+            .ToArray()
+            .Should()
+            .Equal(new byte[] { 0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0 });
     }
 
     [Fact]
@@ -275,18 +274,18 @@ public class StreamBitWriterTest
 
         // Assert
         writer.TotalBitsWritten.Should().Be(bitCount);
-        
+
         // Verify the pattern matches expected all-1s for the bit count
         var bytes = stream.ToArray();
         var fullBytes = bitCount / 8;
         var remainingBits = bitCount % 8;
-        
+
         // Check full bytes (should all be 0xFF)
         for (int i = 0; i < fullBytes; i++)
         {
             bytes[i].Should().Be(0xFF, $"byte {i} should be 0xFF");
         }
-        
+
         // Check partial byte if any
         if (remainingBits > 0)
         {
@@ -311,7 +310,7 @@ public class StreamBitWriterTest
         // Assert: Stream should still be open
         stream.CanWrite.Should().BeTrue();
         stream.ToArray().Should().Equal(new byte[] { 0x80 }); // 1 bit in MSB position
-        
+
         // Cleanup
         stream.Dispose();
     }
@@ -373,7 +372,7 @@ public class StreamBitWriterTest
         // Arrange
         using var stream = new MemoryStream();
         var writer = new StreamBitWriter(stream, leaveOpen: true);
-        
+
         // Act: Dispose writer
         writer.Dispose();
 
@@ -394,10 +393,10 @@ public class StreamBitWriterTest
         // Arrange
         using var stream = new MemoryStream();
         var writer = new StreamBitWriter(stream, leaveOpen: true);
-        
+
         writer.WriteBit(1);
         var expectedBits = writer.TotalBitsWritten;
-        
+
         // Act: Dispose writer
         writer.Dispose();
 
@@ -410,8 +409,7 @@ public class StreamBitWriterTest
     {
         // Act & Assert
         var action = () => new StreamBitWriter(null!);
-        action.Should().Throw<ArgumentNullException>()
-            .WithParameterName("s");
+        action.Should().Throw<ArgumentNullException>().WithParameterName("s");
     }
 
     [Fact]
@@ -420,7 +418,7 @@ public class StreamBitWriterTest
         // Arrange: Create a non-seekable stream wrapper
         var baseStream = new MemoryStream();
         var nonSeekableStream = new NonSeekableStreamWrapper(baseStream);
-        
+
         using var writer = new StreamBitWriter(nonSeekableStream, leaveOpen: true);
 
         // Act: Should work with non-seekable streams
@@ -428,11 +426,11 @@ public class StreamBitWriterTest
         writer.WriteBits(0b0101010ul, 7);
         writer.WriteBits(0x55ul, 8);
         writer.Flush();
-        
+
         // Assert
         writer.TotalBitsWritten.Should().Be(16);
         baseStream.ToArray().Should().Equal(new byte[] { 0xAA, 0x55 });
-        
+
         // Cleanup
         baseStream.Dispose();
     }
@@ -472,7 +470,7 @@ public class StreamBitWriterTest
         // Assert
         writer.TotalBitsWritten.Should().Be(1600); // 100 * 16 bits
         stream.Length.Should().Be(200); // 200 bytes
-        
+
         var bytes = stream.ToArray();
         for (int i = 0; i < 200; i += 2)
         {
@@ -486,7 +484,7 @@ public class StreamBitWriterTest
     {
         // Arrange: Test round-trip compatibility with StreamBitReader
         var originalData = new byte[] { 0x12, 0x34, 0x56, 0x78, 0x9A };
-        
+
         // Write data
         using var writeStream = new MemoryStream();
         using (var writer = new StreamBitWriter(writeStream, leaveOpen: true))
@@ -532,10 +530,17 @@ public class StreamBitWriterTest
         }
 
         public override void Flush() => _baseStream.Flush();
-        public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
-        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+        public override int Read(byte[] buffer, int offset, int count) =>
+            throw new NotSupportedException();
+
+        public override long Seek(long offset, SeekOrigin origin) =>
+            throw new NotSupportedException();
+
         public override void SetLength(long value) => throw new NotSupportedException();
-        public override void Write(byte[] buffer, int offset, int count) => _baseStream.Write(buffer, offset, count);
+
+        public override void Write(byte[] buffer, int offset, int count) =>
+            _baseStream.Write(buffer, offset, count);
 
         protected override void Dispose(bool disposing)
         {

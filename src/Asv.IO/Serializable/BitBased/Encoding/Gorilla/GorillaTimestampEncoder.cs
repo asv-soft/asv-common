@@ -26,8 +26,7 @@ namespace Asv.IO;
 ///   </description></item>
 /// </list>
 /// </remarks>
-public sealed class GorillaTimestampEncoder
-    : AsyncDisposableOnce, IBitEncoder<long>
+public sealed class GorillaTimestampEncoder : AsyncDisposableOnce, IBitEncoder<long>
 {
     private readonly IBitWriter _bw;
     private readonly bool _firstDelta27Bits;
@@ -57,7 +56,11 @@ public sealed class GorillaTimestampEncoder
     /// <param name="leaveOpen">
     /// If <see langword="true"/>, the <paramref name="output"/> is not disposed when this encoder is disposed.
     /// </param>
-    public GorillaTimestampEncoder(IBitWriter output, bool firstDelta27Bits = true, bool leaveOpen = false)
+    public GorillaTimestampEncoder(
+        IBitWriter output,
+        bool firstDelta27Bits = true,
+        bool leaveOpen = false
+    )
     {
         _bw = output;
         _firstDelta27Bits = firstDelta27Bits;
@@ -111,20 +114,20 @@ public sealed class GorillaTimestampEncoder
                         _bw.WriteBit(0); // '0'
                         break;
                     case >= -64 and <= 63:
-                        _bw.WriteBits(0b10, 2);                   // '10'
-                        _bw.WriteBits(EncodeSigned(dod, 7), 7);   // 7-bit two's complement
+                        _bw.WriteBits(0b10, 2); // '10'
+                        _bw.WriteBits(EncodeSigned(dod, 7), 7); // 7-bit two's complement
                         break;
                     case >= -256 and <= 255:
-                        _bw.WriteBits(0b110, 3);                  // '110'
-                        _bw.WriteBits(EncodeSigned(dod, 9), 9);   // 9-bit two's complement
+                        _bw.WriteBits(0b110, 3); // '110'
+                        _bw.WriteBits(EncodeSigned(dod, 9), 9); // 9-bit two's complement
                         break;
                     case >= -2048 and <= 2047:
-                        _bw.WriteBits(0b1110, 4);                 // '1110'
+                        _bw.WriteBits(0b1110, 4); // '1110'
                         _bw.WriteBits(EncodeSigned(dod, 12), 12); // 12-bit two's complement
                         break;
                     default:
-                        _bw.WriteBits(0b1111, 4);                 // '1111'
-                        
+                        _bw.WriteBits(0b1111, 4); // '1111'
+
                         // Write lower 32 bits of DoD (unchecked truncation).
                         _bw.WriteBits((ulong)dod, 32);
                         break;

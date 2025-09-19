@@ -55,7 +55,8 @@ namespace Asv.IO;
 /// </code>
 /// </example>
 public sealed class ChimpEncoder(IBitWriter writer, bool leaveOpen = false)
-    : AsyncDisposableOnce, IBitEncoder<ulong>
+    : AsyncDisposableOnce,
+        IBitEncoder<ulong>
 {
     private bool _first = true;
     private ulong _prevBits;
@@ -109,9 +110,7 @@ public sealed class ChimpEncoder(IBitWriter writer, bool leaveOpen = false)
             // Prefix '10' → reuse [L, W], emit only W-bit payload.
             writer.WriteBits(0b10, 2);
             var tWin = 64 - _l - _w;
-            var payload = (_w == 64)
-                ? xor
-                : ((xor >> tWin) & ((1UL << _w) - 1));
+            var payload = (_w == 64) ? xor : ((xor >> tWin) & ((1UL << _w) - 1));
             writer.WriteBits(payload, _w);
         }
         else
@@ -127,9 +126,7 @@ public sealed class ChimpEncoder(IBitWriter writer, bool leaveOpen = false)
             writer.WriteBits((ulong)(w - 1), 6);
 
             var tWin = 64 - l5 - w;
-            var payload = (w == 64)
-                ? xor
-                : ((xor >> tWin) & ((1UL << w) - 1));
+            var payload = (w == 64) ? xor : ((xor >> tWin) & ((1UL << w) - 1));
             writer.WriteBits(payload, w);
 
             // Update sticky window.

@@ -17,6 +17,7 @@ namespace Asv.IO.Tests
             private readonly List<byte> _bits = new(); // 0/1 per bit (MSB-first)
 
             public long LengthBits => _bits.Count;
+
             public IReadOnlyList<byte> ToBitArray() => _bits;
 
             public void AddBit(int bit)
@@ -108,7 +109,12 @@ namespace Asv.IO.Tests
             }
 
             public void Dispose() => _disposed = true;
-            public ValueTask DisposeAsync() { _disposed = true; return ValueTask.CompletedTask; }
+
+            public ValueTask DisposeAsync()
+            {
+                _disposed = true;
+                return ValueTask.CompletedTask;
+            }
 
             private void EnsureNotDisposed()
             {
@@ -130,7 +136,11 @@ namespace Asv.IO.Tests
             b.AddBits((ulong)t0, 64);
 
             var rdr = new TestBitReader(b.ToBitArray());
-            using var dec = new GorillaTimestampDecoder(rdr, firstDelta27Bits: true, leaveOpen: true);
+            using var dec = new GorillaTimestampDecoder(
+                rdr,
+                firstDelta27Bits: true,
+                leaveOpen: true
+            );
 
             var v0 = dec.ReadNext();
             Assert.Equal(t0, v0);
@@ -138,8 +148,8 @@ namespace Asv.IO.Tests
         }
 
         [Theory]
-        [InlineData(5)]    // positive Δ1
-        [InlineData(-3)]   // negative Δ1
+        [InlineData(5)] // positive Δ1
+        [InlineData(-3)] // negative Δ1
         public void Delta1_27bit_SignExtended(long delta1)
         {
             var b = new BitStreamBuilder();
@@ -148,7 +158,11 @@ namespace Asv.IO.Tests
             b.AddSigned(delta1, 27); // Δ1 (27-bit two’s complement)
 
             var rdr = new TestBitReader(b.ToBitArray());
-            using var dec = new GorillaTimestampDecoder(rdr, firstDelta27Bits: true, leaveOpen: true);
+            using var dec = new GorillaTimestampDecoder(
+                rdr,
+                firstDelta27Bits: true,
+                leaveOpen: true
+            );
 
             var t0r = dec.ReadNext();
             var t1r = dec.ReadNext();
@@ -166,7 +180,11 @@ namespace Asv.IO.Tests
             b.AddBits(delta1, 64); // raw 64-bit Δ1
 
             var rdr = new TestBitReader(b.ToBitArray());
-            using var dec = new GorillaTimestampDecoder(rdr, firstDelta27Bits: false, leaveOpen: true);
+            using var dec = new GorillaTimestampDecoder(
+                rdr,
+                firstDelta27Bits: false,
+                leaveOpen: true
+            );
 
             var t0r = dec.ReadNext();
             var t1r = dec.ReadNext();
@@ -199,8 +217,8 @@ namespace Asv.IO.Tests
         }
 
         [Theory]
-        [InlineData(-64)]  // min 7-bit
-        [InlineData(63)]   // max 7-bit
+        [InlineData(-64)] // min 7-bit
+        [InlineData(63)] // max 7-bit
         public void DoD_Prefix10_7bit_Signed(long dod)
         {
             var b = new BitStreamBuilder();
@@ -208,9 +226,9 @@ namespace Asv.IO.Tests
             long delta1 = 5;
 
             b.AddBits((ulong)t0, 64);
-            b.AddSigned(delta1, 27);         // Δ1
-            b.AddBits(0b10, 2);              // prefix
-            b.AddSigned(dod, 7);             // 7-bit DoD
+            b.AddSigned(delta1, 27); // Δ1
+            b.AddBits(0b10, 2); // prefix
+            b.AddSigned(dod, 7); // 7-bit DoD
 
             var rdr = new TestBitReader(b.ToBitArray());
             using var dec = new GorillaTimestampDecoder(rdr, true, leaveOpen: true);
@@ -227,7 +245,7 @@ namespace Asv.IO.Tests
 
         [Theory]
         [InlineData(-256)] // min 9-bit
-        [InlineData(255)]  // max 9-bit
+        [InlineData(255)] // max 9-bit
         [InlineData(200)]
         public void DoD_Prefix110_9bit_Signed(long dod)
         {
@@ -255,7 +273,7 @@ namespace Asv.IO.Tests
 
         [Theory]
         [InlineData(-2048)] // min 12-bit
-        [InlineData(2047)]  // max 12-bit
+        [InlineData(2047)] // max 12-bit
         [InlineData(-1000)]
         public void DoD_Prefix1110_12bit_Signed(long dod)
         {
@@ -305,8 +323,8 @@ namespace Asv.IO.Tests
 
             var t0r = dec.ReadNext();
             var t1r = dec.ReadNext();
-            var dodLong = (long)dod32;               // decoder casts 32-bit unsigned to long as-is
-            var delta2 = ApplyDod(delta1, dodLong);  // Δ2 = Δ1 + DoD
+            var dodLong = (long)dod32; // decoder casts 32-bit unsigned to long as-is
+            var delta2 = ApplyDod(delta1, dodLong); // Δ2 = Δ1 + DoD
             var t2r = dec.ReadNext();
 
             Assert.Equal(t0, t0r);
@@ -319,30 +337,43 @@ namespace Asv.IO.Tests
         {
             var b = new BitStreamBuilder();
             long t0 = 100;
-            long delta1 = 7;          // 27 bits
-            long dod7 = -1;           // prefix '10' + 7 bits
-            long dod9 = 200;          // prefix '110' + 9 bits
-            long dod12 = -1000;       // prefix '1110' + 12 bits
+            long delta1 = 7; // 27 bits
+            long dod7 = -1; // prefix '10' + 7 bits
+            long dod9 = 200; // prefix '110' + 9 bits
+            long dod12 = -1000; // prefix '1110' + 12 bits
             ulong dod32 = 0x00000010; // prefix '1111' + 32 bits
 
             // Build stream
             b.AddBits((ulong)t0, 64);
             b.AddSigned(delta1, 27);
-            b.AddBits(0b10, 2);  b.AddSigned(dod7, 7);
-            b.AddBits(0b110, 3); b.AddSigned(dod9, 9);
-            b.AddBits(0b1110, 4); b.AddSigned(dod12, 12);
-            b.AddBits(0b1111, 4); b.AddBits(dod32, 32);
+            b.AddBits(0b10, 2);
+            b.AddSigned(dod7, 7);
+            b.AddBits(0b110, 3);
+            b.AddSigned(dod9, 9);
+            b.AddBits(0b1110, 4);
+            b.AddSigned(dod12, 12);
+            b.AddBits(0b1111, 4);
+            b.AddBits(dod32, 32);
 
             long expected =
-                64 +        // t0
-                27 +        // Δ1
-                (2 + 7) +   // '10' + 7
-                (3 + 9) +   // '110' + 9
-                (4 + 12) +  // '1110' + 12
-                (4 + 32);   // '1111' + 32
+                64
+                + // t0
+                27
+                + // Δ1
+                (2 + 7)
+                + // '10' + 7
+                (3 + 9)
+                + // '110' + 9
+                (4 + 12)
+                + // '1110' + 12
+                (4 + 32); // '1111' + 32
 
             var rdr = new TestBitReader(b.ToBitArray());
-            using var dec = new GorillaTimestampDecoder(rdr, firstDelta27Bits: true, leaveOpen: true);
+            using var dec = new GorillaTimestampDecoder(
+                rdr,
+                firstDelta27Bits: true,
+                leaveOpen: true
+            );
 
             // Consume all values (t0, t1, t2, t3, t4, t5)
             _ = dec.ReadNext(); // t0

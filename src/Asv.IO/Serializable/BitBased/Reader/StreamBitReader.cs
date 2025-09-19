@@ -5,7 +5,9 @@ using Asv.Common;
 
 namespace Asv.IO;
 
-public sealed class StreamBitReader(Stream s, bool leaveOpen = false) : AsyncDisposableOnce, IBitReader
+public sealed class StreamBitReader(Stream s, bool leaveOpen = false)
+    : AsyncDisposableOnce,
+        IBitReader
 {
     private readonly Stream _s = s ?? throw new ArgumentNullException(nameof(s));
     private int _cur = -1; // текущий байт или -1

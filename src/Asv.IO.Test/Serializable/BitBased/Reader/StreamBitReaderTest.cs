@@ -1,8 +1,8 @@
+using System;
+using System.IO;
 using Asv.IO;
 using FluentAssertions;
 using JetBrains.Annotations;
-using System;
-using System.IO;
 using Xunit;
 
 namespace Asv.IO.Test.Serializable.BitBased.Reader;
@@ -27,7 +27,7 @@ public class StreamBitReaderTest
         reader.ReadBit().Should().Be(0); // bit 2
         reader.ReadBit().Should().Be(1); // bit 1
         reader.ReadBit().Should().Be(0); // bit 0
-        
+
         reader.TotalBitsRead.Should().Be(8);
     }
 
@@ -134,8 +134,7 @@ public class StreamBitReaderTest
 
         // Act & Assert
         var action = () => reader.ReadBits(65);
-        action.Should().Throw<ArgumentOutOfRangeException>()
-            .WithParameterName("count");
+        action.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("count");
     }
 
     [Fact]
@@ -183,7 +182,7 @@ public class StreamBitReaderTest
 
         // Assert: Should be aligned to byte 2 (skipping 5 remaining bits from byte 1)
         reader.TotalBitsRead.Should().Be(8);
-        
+
         // Next read should start from second byte
         var result = reader.ReadBits(8);
         result.Should().Be(0xAAul);
@@ -200,7 +199,7 @@ public class StreamBitReaderTest
         // Act: Read full byte, then align
         reader.ReadBits(8);
         var bitsBeforeAlign = reader.TotalBitsRead;
-        
+
         reader.AlignToByte();
 
         // Assert: Should not change position when already aligned
@@ -243,7 +242,7 @@ public class StreamBitReaderTest
 
         // Assert
         reader.TotalBitsRead.Should().Be(0);
-        
+
         // Should throw immediately when trying to read
         var action = () => reader.ReadBit();
         action.Should().Throw<EndOfStreamException>();
@@ -323,7 +322,7 @@ public class StreamBitReaderTest
 
         // Assert: Stream should still be open
         stream.CanRead.Should().BeTrue();
-        
+
         // Cleanup
         stream.Dispose();
     }
@@ -369,7 +368,7 @@ public class StreamBitReaderTest
         var buffer = new byte[] { 0xFF, 0xAA };
         using var stream = new MemoryStream(buffer);
         var reader = new StreamBitReader(stream, leaveOpen: true);
-        
+
         // Act: Dispose reader
         reader.Dispose();
 
@@ -391,10 +390,10 @@ public class StreamBitReaderTest
         var buffer = new byte[] { 0xFF };
         using var stream = new MemoryStream(buffer);
         var reader = new StreamBitReader(stream, leaveOpen: true);
-        
+
         reader.ReadBit();
         var expectedBits = reader.TotalBitsRead;
-        
+
         // Act: Dispose reader
         reader.Dispose();
 
@@ -407,8 +406,7 @@ public class StreamBitReaderTest
     {
         // Act & Assert
         var action = () => new StreamBitReader(null!);
-        action.Should().Throw<ArgumentNullException>()
-            .WithParameterName("s");
+        action.Should().Throw<ArgumentNullException>().WithParameterName("s");
     }
 
     [Fact]
@@ -418,16 +416,16 @@ public class StreamBitReaderTest
         var buffer = new byte[] { 0xAA, 0x55 };
         var baseStream = new MemoryStream(buffer);
         var nonSeekableStream = new NonSeekableStreamWrapper(baseStream);
-        
+
         using var reader = new StreamBitReader(nonSeekableStream, leaveOpen: true);
 
         // Act & Assert: Should work with non-seekable streams
         reader.ReadBit().Should().Be(1);
         reader.ReadBits(7).Should().Be(0b0101010ul);
         reader.ReadBits(8).Should().Be(0x55ul);
-        
+
         reader.TotalBitsRead.Should().Be(16);
-        
+
         // Cleanup
         baseStream.Dispose();
     }
@@ -453,10 +451,17 @@ public class StreamBitReaderTest
         }
 
         public override void Flush() => _baseStream.Flush();
-        public override int Read(byte[] buffer, int offset, int count) => _baseStream.Read(buffer, offset, count);
-        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+        public override int Read(byte[] buffer, int offset, int count) =>
+            _baseStream.Read(buffer, offset, count);
+
+        public override long Seek(long offset, SeekOrigin origin) =>
+            throw new NotSupportedException();
+
         public override void SetLength(long value) => throw new NotSupportedException();
-        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+        public override void Write(byte[] buffer, int offset, int count) =>
+            throw new NotSupportedException();
 
         protected override void Dispose(bool disposing)
         {

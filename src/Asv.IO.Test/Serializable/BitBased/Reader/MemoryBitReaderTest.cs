@@ -1,8 +1,8 @@
+using System;
+using System.IO;
 using Asv.IO;
 using FluentAssertions;
 using JetBrains.Annotations;
-using System;
-using System.IO;
 using Xunit;
 
 namespace Asv.IO.Test.Serializable.BitBased.Reader;
@@ -10,7 +10,6 @@ namespace Asv.IO.Test.Serializable.BitBased.Reader;
 [TestSubject(typeof(MemoryBitReader))]
 public class MemoryBitReaderTest
 {
-
     [Fact]
     public void ReadBit_ShouldReadSingleBit_FromFirstByte()
     {
@@ -27,7 +26,7 @@ public class MemoryBitReaderTest
         reader.ReadBit().Should().Be(0); // bit 2
         reader.ReadBit().Should().Be(1); // bit 1
         reader.ReadBit().Should().Be(0); // bit 0
-        
+
         reader.TotalBitsRead.Should().Be(8);
     }
 
@@ -69,7 +68,9 @@ public class MemoryBitReaderTest
 
         // Assert: 9th bit should throw
         var action = () => reader.ReadBit();
-        action.Should().Throw<EndOfStreamException>()
+        action
+            .Should()
+            .Throw<EndOfStreamException>()
             .WithMessage("MemoryBitReader: attempted to read past end of buffer.");
     }
 
@@ -129,8 +130,7 @@ public class MemoryBitReaderTest
 
         // Act & Assert
         var action = () => reader.ReadBits(65);
-        action.Should().Throw<ArgumentOutOfRangeException>()
-            .WithParameterName("count");
+        action.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("count");
     }
 
     [Fact]
@@ -157,8 +157,7 @@ public class MemoryBitReaderTest
 
         // Act & Assert
         var action = () => reader.ReadBits(16); // Try to read 16 bits
-        action.Should().Throw<EndOfStreamException>()
-            .WithMessage("*not enough data*");
+        action.Should().Throw<EndOfStreamException>().WithMessage("*not enough data*");
     }
 
     [Fact]
@@ -176,7 +175,7 @@ public class MemoryBitReaderTest
 
         // Assert: Should be aligned to byte 2 (skipping 5 remaining bits from byte 1)
         reader.TotalBitsRead.Should().Be(8);
-        
+
         // Next read should start from second byte
         var result = reader.ReadBits(8);
         result.Should().Be(0xAAul);
@@ -192,7 +191,7 @@ public class MemoryBitReaderTest
         // Act: Read full byte, then align
         reader.ReadBits(8);
         var bitsBeforeAlign = reader.TotalBitsRead;
-        
+
         reader.AlignToByte();
 
         // Assert: Should not change position when already aligned
@@ -234,7 +233,7 @@ public class MemoryBitReaderTest
 
         // Assert
         reader.TotalBitsRead.Should().Be(0);
-        
+
         // Should throw immediately when trying to read
         var action = () => reader.ReadBit();
         action.Should().Throw<EndOfStreamException>();
