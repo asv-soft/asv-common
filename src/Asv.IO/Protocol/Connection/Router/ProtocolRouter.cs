@@ -128,7 +128,7 @@ public sealed class ProtocolRouter : ProtocolConnection, IProtocolRouter
                 ImmutableInterlocked.InterlockedCompareExchange(ref _ports, after, before) != before
             ); // check if the value is changed by another thread while we are removing the endpoint
 
-            foreach (var port in _ports)
+            foreach (var port in before)
             {
                 _portRemoved.OnNext(port);
                 port.Dispose();
@@ -153,7 +153,7 @@ public sealed class ProtocolRouter : ProtocolConnection, IProtocolRouter
         } while (
             ImmutableInterlocked.InterlockedCompareExchange(ref _ports, after, before) != before
         ); // check if the value is changed by another thread while we are removing the endpoint
-        foreach (var port in _ports)
+        foreach (var port in before)
         {
             _portRemoved.OnNext(port);
             await port.DisposeAsync();
