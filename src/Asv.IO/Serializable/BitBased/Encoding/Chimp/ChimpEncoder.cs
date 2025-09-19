@@ -102,10 +102,19 @@ public sealed class ChimpEncoder(IBitWriter writer, bool leaveOpen = false)
         {
             sig = 1; // defensive (shouldn't normally happen)
         }
+        var canReuse = false;
 
         // Eligible to reuse the last [L, W] if the new XOR fits entirely within that window.
-        var reuse = (_l >= 0 && _w > 0) && (leading >= _l) && (sig <= _w);
-        if (reuse)
+        if (_l >= 0 && _w > 0)
+        {
+            var tWinPrev = 64 - _l - _w; // сколько нулей справа «ожидает» окно
+            canReuse = (leading >= _l) && (trailing >= tWinPrev);
+
+            // Примечание: этого достаточно; проверка sig <= _w уже
+            // следует из trailing >= tWinPrev при фиксированном leading >= _l.
+        }
+
+        if (canReuse)
         {
             // Prefix '10' → reuse [L, W], emit only W-bit payload.
             writer.WriteBits(0b10, 2);
@@ -115,23 +124,35 @@ public sealed class ChimpEncoder(IBitWriter writer, bool leaveOpen = false)
         }
         else
         {
-            // Define a new window:
-            // L is clamped to 0..31 (5 bits), W is clamped to 1..64 and encoded as (W-1) in 6 bits.
-            var l5 = Math.Min(leading, 31);
-            var w = Math.Min(Math.Max(sig, 1), 64);
+            var Ltrue = BitOperations.LeadingZeroCount(xor);
+            var Ttrue = BitOperations.TrailingZeroCount(xor);
 
-            // Prefix '11' + L(5) + (W-1)(6) + payload(W).
+            // Кодируемый L ограничен 31
+            var Lenc = Math.Min(Ltrue, 31);
+
+            // Критично: W считаем от trailing, чтобы сохранялась та же правая граница
+            var Wenc = 64 - Lenc - Ttrue;
+            if (Wenc <= 0)
+            {
+                Wenc = 1;
+            }
+
+            if (Wenc > 64)
+            {
+                Wenc = 64;
+            }
+
             writer.WriteBits(0b11, 2);
-            writer.WriteBits((ulong)l5, 5);
-            writer.WriteBits((ulong)(w - 1), 6);
+            writer.WriteBits((ulong)Lenc, 5);
+            writer.WriteBits((ulong)(Wenc - 1), 6);
 
-            var tWin = 64 - l5 - w;
-            var payload = (w == 64) ? xor : ((xor >> tWin) & ((1UL << w) - 1));
-            writer.WriteBits(payload, w);
+            // payload вырезаем сдвигом на истинный trailing
+            var payload = (Wenc == 64) ? xor : ((xor >> Ttrue) & ((1UL << Wenc) - 1));
+            writer.WriteBits(payload, Wenc);
 
-            // Update sticky window.
-            _l = l5;
-            _w = w;
+            // Обновляем «липкое» окно
+            _l = Lenc;
+            _w = Wenc;
         }
 
         _prevBits = bits;

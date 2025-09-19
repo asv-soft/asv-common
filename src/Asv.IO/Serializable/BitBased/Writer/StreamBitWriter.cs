@@ -99,7 +99,7 @@ public class StreamBitWriter(Stream s, bool leaveOpen = false) : AsyncDisposable
 
     protected override async ValueTask DisposeAsyncCore()
     {
-        Flush();
+        Flush(true);
         if (!leaveOpen)
         {
             await _s.DisposeAsync();

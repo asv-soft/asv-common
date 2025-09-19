@@ -97,6 +97,7 @@
     <PackageReference Include="System.IO.Pipelines" Version="$(DotNetVersion)" />
     <PackageReference Include="System.IO.Ports" Version="$(DotNetVersion)" />
     <PackageReference Include="DotNext.Threading" Version="$(DotNextVersion)" />
+    <PackageReference Include="ZstdSharp.Port" Version="0.8.6" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Asv.Common\Asv.Common.csproj" />

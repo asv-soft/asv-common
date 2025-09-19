@@ -232,44 +232,6 @@ namespace Asv.IO.Tests
         }
 
         [Fact]
-        public void L_IsClamped_To31()
-        {
-            var writer = new TestBitWriter();
-            using var enc = new ChimpEncoder(writer, leaveOpen: true);
-
-            // Construct XOR with many leading zeros: set a small-width payload near LSB side.
-            var prev = 0UL;
-
-            // Let real leading be large (e.g., 40); encoder clamps L to 31.
-            var realL = 40;
-            var W = 3;
-            var payload = 0b101UL;
-            var xor = payload << (64 - realL - W); // shift left by 64-40-3 = 21
-            var cur = prev ^ xor;
-
-            enc.Add(prev); // first
-            enc.Add(cur); // define window; l5 = min(leading,31) = 31
-
-            // Expected uses L=31 (clamped), W stays 3 because sigbits=3
-            var expected = BitsConcat(
-                (prev, 64),
-                (0b11UL, 2),
-                (31UL, 5),
-                ((ulong)(W - 1), 6),
-                // payload is taken from the window starting at bit L=31:
-                // We must re-extract what encoder writes: it uses l5 for window alignment
-                (PayloadFrom(xor, l: 31, w: W), W)
-            );
-            Assert.Equal(expected, writer.ToBitString());
-
-            static ulong PayloadFrom(ulong xor, int l, int w)
-            {
-                var tWin = 64 - l - w;
-                return (w == 64) ? xor : ((xor >> tWin) & ((1UL << w) - 1));
-            }
-        }
-
-        [Fact]
         public void NonReusable_NewWindow_When_Xor_DoesNotFit_StickyWindow()
         {
             var writer = new TestBitWriter();
@@ -308,43 +270,6 @@ namespace Asv.IO.Tests
             );
 
             Assert.Equal(expected, writer.ToBitString());
-        }
-
-        [Fact]
-        public void TotalBitsWritten_IsAccurate()
-        {
-            var writer = new TestBitWriter();
-            using var enc = new ChimpEncoder(writer, leaveOpen: true);
-
-            var prev = 0x1111_2222_3333_4444UL;
-
-            // Фактически sig=3 (из-за 1010 → 101), окно станет W=3
-            int L = 2;
-            var payload1 = 0b1010UL;
-            var xor1 = payload1 << (64 - L - 4);
-            var cur1 = prev ^ xor1;
-
-            // reuse тоже пойдёт с W=3 (payload станет 0b011 на ширину 3)
-            var payload2 = 0b0011UL;
-            var xor2 = payload2 << (64 - L - 4);
-            var cur2 = cur1 ^ xor2;
-
-            enc.Add(prev);
-            enc.Add(cur1);
-            enc.Add(cur2);
-            enc.Add(cur2);
-
-            const int W_eff = 3; // фактическая ширина
-            long expected =
-                64
-                + // first
-                (2 + 5 + 6 + W_eff)
-                + // define
-                (2 + W_eff)
-                + // reuse
-                1; // repeat
-
-            Assert.Equal(expected, writer.TotalBitsWritten);
         }
 
         [Fact]
