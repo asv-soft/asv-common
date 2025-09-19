@@ -6,6 +6,7 @@
     <Version>$(ProductVersion)</Version>
     <LangVersion>latest</LangVersion>
     <CodeAnalysisRuleSet>../CodeStyle.ruleset</CodeAnalysisRuleSet>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="AutoFixture" Version="$(AutoFixtureVersion)" />
@@ -53,8 +54,5 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>SpanBitHelperExtTest.tt</DependentUpon>
     </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Store\" />
   </ItemGroup>
 </Project>
