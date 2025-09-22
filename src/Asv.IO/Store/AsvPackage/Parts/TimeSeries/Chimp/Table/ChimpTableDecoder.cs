@@ -56,7 +56,7 @@ public sealed class ChimpTableDecoder : IDisposable
         _readers = builder.ToImmutable();
     }
 
-    public bool Read(Action<(VisitableRecord, object)> visitor)
+    public bool Read(Action<(TableRow, object)> visitor)
     {
         var ii = 0;
         try
@@ -74,9 +74,9 @@ public sealed class ChimpTableDecoder : IDisposable
                 );
             }
 
-            while (header.RawCount > _flushEvery)
+            while (header.RowCount > _flushEvery)
             {
-                header.RawCount -= _flushEvery;
+                header.RowCount -= _flushEvery;
             }
 
             _indexRdr.Clear();
@@ -100,14 +100,14 @@ public sealed class ChimpTableDecoder : IDisposable
             }
 
             var decoder = new ChimpColumnDecoderVisitor(streams);
-            for (var i = 0; i < header.RawCount; i++)
+            for (var i = 0; i < header.RowCount; i++)
             {
                 ii = i;
                 var msg = _factory();
                 msg.Item1.Accept(decoder);
                 visitor(
                     (
-                        new VisitableRecord(
+                        new TableRow(
                             (uint)index.ReadNext(),
                             DateTime.FromBinary(timestamp.ReadNext()),
                             _id,

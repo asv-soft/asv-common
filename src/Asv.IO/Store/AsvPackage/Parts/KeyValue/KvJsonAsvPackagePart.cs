@@ -8,12 +8,12 @@ using ZLogger;
 
 namespace Asv.IO;
 
-public class KvJsonPart(
+public class KvJsonAsvPackagePart(
     Uri uriPart,
     string contentType,
     CompressionOption compression,
-    AsvFileContext context
-) : AsvFilePart(context)
+    AsvPackageContext context
+) : AsvPackagePart(context)
 {
     private const string StaticHeader0 =
         "|====================================================================== |";

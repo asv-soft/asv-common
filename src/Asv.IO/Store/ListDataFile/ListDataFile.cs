@@ -381,7 +381,7 @@ public class ListDataFile<TMetadata> : DisposableOnce, IListDataFile<TMetadata>
         BinSerialize.WriteUShort(ref row, crc);
     }
 
-    private bool ValidateRaw(ReadOnlySpan<byte> row)
+    private bool ValidateRow(ReadOnlySpan<byte> row)
     {
         if (row[_startRowByteIndex] != StartRowMagicByte)
         {
@@ -417,7 +417,7 @@ public class ListDataFile<TMetadata> : DisposableOnce, IListDataFile<TMetadata>
                 var readBytes = _stream.Read(buffer);
                 Debug.Assert(readBytes == _rowSize);
             }
-            return ValidateRaw(buffer);
+            return ValidateRow(buffer);
         }
         finally
         {
@@ -474,7 +474,7 @@ public class ListDataFile<TMetadata> : DisposableOnce, IListDataFile<TMetadata>
                 var readBytes = _stream.Read(row);
                 Debug.Assert(readBytes == _rowSize);
             }
-            if (ValidateRaw(row) == false)
+            if (ValidateRow(row) == false)
             {
                 return false;
             }

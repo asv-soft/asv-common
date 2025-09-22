@@ -7,10 +7,10 @@ using R3;
 
 namespace Asv.IO;
 
-public abstract class AsvFilePart(AsvFileContext context) : AsyncDisposableOnce
+public abstract class AsvPackagePart(AsvPackageContext context) : AsyncDisposableOnce
 {
     private DisposableBag _disposeBag;
-    protected AsvFileContext Context => context;
+    protected AsvPackageContext Context => context;
 
     protected void EnsureReadAccess()
     {

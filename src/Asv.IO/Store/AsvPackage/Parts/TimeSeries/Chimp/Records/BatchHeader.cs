@@ -10,7 +10,7 @@ public class BatchHeader : ISizedSpanSerializable
 
     public string? Name { get; set; }
     public uint FieldCount { get; set; }
-    public uint RawCount { get; set; }
+    public uint RowCount { get; set; }
 
     public void Deserialize(ref ReadOnlySpan<byte> buffer)
     {
@@ -22,7 +22,7 @@ public class BatchHeader : ISizedSpanSerializable
 
         Name = BinSerialize.ReadString(ref buffer);
         FieldCount = BinSerialize.ReadPackedUnsignedInteger(ref buffer);
-        RawCount = BinSerialize.ReadPackedUnsignedInteger(ref buffer);
+        RowCount = BinSerialize.ReadPackedUnsignedInteger(ref buffer);
         var end = BinSerialize.ReadByte(ref buffer);
         if (end != EndSignatureString)
         {
@@ -35,7 +35,7 @@ public class BatchHeader : ISizedSpanSerializable
         BinSerialize.WriteByte(ref buffer, StartSignatureString);
         BinSerialize.WriteString(ref buffer, Name);
         BinSerialize.WritePackedUnsignedInteger(ref buffer, FieldCount);
-        BinSerialize.WritePackedUnsignedInteger(ref buffer, RawCount);
+        BinSerialize.WritePackedUnsignedInteger(ref buffer, RowCount);
         BinSerialize.WriteByte(ref buffer, EndSignatureString);
     }
 
@@ -43,7 +43,7 @@ public class BatchHeader : ISizedSpanSerializable
     {
         return BinSerialize.GetSizeForString(Name)
             + BinSerialize.GetSizeForPackedUnsignedInteger(FieldCount)
-            + BinSerialize.GetSizeForPackedUnsignedInteger(RawCount)
+            + BinSerialize.GetSizeForPackedUnsignedInteger(RowCount)
             + (2 * sizeof(byte));
     }
 
@@ -62,7 +62,7 @@ public class BatchHeader : ISizedSpanSerializable
 
         Name = BinSerialize.ReadString(stream);
         FieldCount = BinSerialize.ReadPackedUnsignedInteger(stream);
-        RawCount = BinSerialize.ReadPackedUnsignedInteger(stream);
+        RowCount = BinSerialize.ReadPackedUnsignedInteger(stream);
         var end = stream.ReadByte();
         if (end != EndSignatureString)
         {

@@ -13,8 +13,8 @@ using Xunit.Abstractions;
 
 namespace Asv.IO.Test.PackageFile.Parts.KeyValue;
 
-[TestSubject(typeof(KvChangesJsonPart))]
-public class KvChangesJsonPartTest(ITestOutputHelper log)
+[TestSubject(typeof(KvChangesJsonAsvPackagePart))]
+public class KvChangesJsonAsvPackagePartTest(ITestOutputHelper log)
 {
     private static readonly Uri PartUri = new Uri("/meta/kvs.json", UriKind.Relative);
     private const string ContentType = "application/json";
@@ -41,8 +41,8 @@ public class KvChangesJsonPartTest(ITestOutputHelper log)
         var ms = new MemoryStream();
         var pkg = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite);
         var logger = new TestLogger(log, TimeProvider.System, "AsvFilePartTest");
-        var ctx = new AsvFileContext(new Lock(), pkg, logger);
-        var part = new KvChangesJsonPart(PartUri, ContentType, compression, ctx);
+        var ctx = new AsvPackageContext(new Lock(), pkg, logger);
+        var part = new KvChangesJsonAsvPackagePart(PartUri, ContentType, compression, ctx);
 
         var data = new KeyValueChange<string, string>[count];
         var size = 0;
@@ -67,8 +67,13 @@ public class KvChangesJsonPartTest(ITestOutputHelper log)
         // Reopen package for reading
         ms.Position = 0;
         pkg = Package.Open(ms, FileMode.Open, FileAccess.Read);
-        ctx = new AsvFileContext(new Lock(), pkg, logger);
-        part = new KvChangesJsonPart(PartUri, ContentType, CompressionOption.Maximum, ctx);
+        ctx = new AsvPackageContext(new Lock(), pkg, logger);
+        part = new KvChangesJsonAsvPackagePart(
+            PartUri,
+            ContentType,
+            CompressionOption.Maximum,
+            ctx
+        );
 
         var arr = new KeyValueChange<string, string>[count];
         var index = 0;

@@ -6,18 +6,18 @@ using ZLogger;
 
 namespace Asv.IO;
 
-public class VisitableZstdTimeSeriesPart(
+public class VisitableTimeSeriesAsvPackagePart(
     Uri uriPart,
     string contentType,
     uint flushEvery,
-    AsvFileContext context,
+    AsvPackageContext context,
     CompressionOption compression = CompressionOption.Maximum,
     bool useZstdForBatch = true
-) : AsvFilePart(context)
+) : AsvPackagePart(context)
 {
     private readonly Dictionary<string, ChimpTableEncoder> _files = new();
 
-    public void Write(VisitableRecord record)
+    public void Write(TableRow record)
     {
         using (Context.Lock.EnterScope())
         {
@@ -51,7 +51,7 @@ public class VisitableZstdTimeSeriesPart(
     }
 
     public void Read(
-        Action<(VisitableRecord, object)> visitor,
+        Action<(TableRow, object)> visitor,
         Func<string, (IVisitable, object)?> factory
     )
     {

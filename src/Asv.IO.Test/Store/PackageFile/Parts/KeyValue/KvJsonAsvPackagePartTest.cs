@@ -12,8 +12,8 @@ using Xunit.Abstractions;
 
 namespace Asv.IO.Test;
 
-[TestSubject(typeof(KvJsonPart))]
-public class KvJsonPartTest(ITestOutputHelper log)
+[TestSubject(typeof(KvJsonAsvPackagePart))]
+public class KvJsonAsvPackagePartTest(ITestOutputHelper log)
 {
     private static readonly Uri PartUri = new Uri("/meta/kvs.json", UriKind.Relative);
     private const string ContentType = "application/json";
@@ -40,8 +40,8 @@ public class KvJsonPartTest(ITestOutputHelper log)
         var ms = new MemoryStream();
         var pkg = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite);
         var logger = new TestLogger(log, TimeProvider.System, "AsvFilePartTest");
-        var ctx = new AsvFileContext(new Lock(), pkg, logger);
-        var part = new KvJsonPart(PartUri, ContentType, compression, ctx);
+        var ctx = new AsvPackageContext(new Lock(), pkg, logger);
+        var part = new KvJsonAsvPackagePart(PartUri, ContentType, compression, ctx);
 
         var data = new KeyValuePair<string, string>[count];
         var size = 0;
@@ -64,8 +64,8 @@ public class KvJsonPartTest(ITestOutputHelper log)
         // Reopen package for reading
         ms.Position = 0;
         pkg = Package.Open(ms, FileMode.Open, FileAccess.Read);
-        ctx = new AsvFileContext(new Lock(), pkg, logger);
-        part = new KvJsonPart(PartUri, ContentType, CompressionOption.Maximum, ctx);
+        ctx = new AsvPackageContext(new Lock(), pkg, logger);
+        part = new KvJsonAsvPackagePart(PartUri, ContentType, CompressionOption.Maximum, ctx);
 
         var dict = new Dictionary<string, string>(StringComparer.Ordinal);
         part.Load(kv => dict[kv.Key] = kv.Value);
@@ -84,8 +84,8 @@ public class KvJsonPartTest(ITestOutputHelper log)
         var ms = new MemoryStream();
         var pkg = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite);
         var logger = new TestLogger(log, TimeProvider.System, "AsvFilePartTest");
-        var ctx = new AsvFileContext(new Lock(), pkg, logger);
-        var part = new KvJsonPart(PartUri, ContentType, CompressionOption.Maximum, ctx);
+        var ctx = new AsvPackageContext(new Lock(), pkg, logger);
+        var part = new KvJsonAsvPackagePart(PartUri, ContentType, CompressionOption.Maximum, ctx);
 
         part.Save(
             new[]
@@ -108,8 +108,8 @@ public class KvJsonPartTest(ITestOutputHelper log)
         // Reopen package for reading
         ms.Position = 0;
         pkg = Package.Open(ms, FileMode.Open, FileAccess.Read);
-        ctx = new AsvFileContext(new Lock(), pkg, logger);
-        part = new KvJsonPart(PartUri, ContentType, CompressionOption.Maximum, ctx);
+        ctx = new AsvPackageContext(new Lock(), pkg, logger);
+        part = new KvJsonAsvPackagePart(PartUri, ContentType, CompressionOption.Maximum, ctx);
 
         var dict = new Dictionary<string, string>(StringComparer.Ordinal);
         part.Load(kv => dict[kv.Key] = kv.Value);

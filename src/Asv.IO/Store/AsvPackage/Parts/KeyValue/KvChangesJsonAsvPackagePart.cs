@@ -6,12 +6,12 @@ using ZLogger;
 
 namespace Asv.IO;
 
-public class KvChangesJsonPart(
+public class KvChangesJsonAsvPackagePart(
     Uri uriPart,
     string contentType,
     CompressionOption compression,
-    AsvFileContext context
-) : AsvFilePart(context)
+    AsvPackageContext context
+) : AsvPackagePart(context)
 {
     private const string StaticHeader0 =
         "|============================================================================== |";

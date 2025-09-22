@@ -12,8 +12,8 @@ using Xunit.Abstractions;
 
 namespace Asv.IO.Test;
 
-[TestSubject(typeof(VisitableZstdTimeSeriesPart))]
-public class VisitableZstdTimeSeriesPartTest(ITestOutputHelper log)
+[TestSubject(typeof(VisitableTimeSeriesAsvPackagePart))]
+public class VisitableTimeSeriesAsvPackagePartTest(ITestOutputHelper log)
 {
     private static readonly Uri PartUri = new Uri("/meta/ts.json", UriKind.Relative);
     private const string ContentType = "application/json";
@@ -28,8 +28,8 @@ public class VisitableZstdTimeSeriesPartTest(ITestOutputHelper log)
         var ms = new MemoryStream();
         var pkg = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite);
         var logger = new TestLogger(log, TimeProvider.System, "AsvFilePartTest");
-        var ctx = new AsvFileContext(new Lock(), pkg, logger);
-        var part = new VisitableZstdTimeSeriesPart(
+        var ctx = new AsvPackageContext(new Lock(), pkg, logger);
+        var part = new VisitableTimeSeriesAsvPackagePart(
             PartUri,
             ContentType,
             flushEvery,
@@ -43,7 +43,7 @@ public class VisitableZstdTimeSeriesPartTest(ITestOutputHelper log)
         var start = DateTime.Now;
         for (var i = 0; i < array.Length; i++)
         {
-            part.Write(new VisitableRecord((uint)i, start.AddSeconds(i), "test", array[i]));
+            part.Write(new TableRow((uint)i, start.AddSeconds(i), "test", array[i]));
             size += SimpleBinaryMixin.GetSize(array[i]);
         }
 
@@ -58,8 +58,8 @@ public class VisitableZstdTimeSeriesPartTest(ITestOutputHelper log)
 
         ms.Position = 0;
         pkg = Package.Open(ms, FileMode.Open, FileAccess.Read);
-        ctx = new AsvFileContext(new Lock(), pkg, logger);
-        part = new VisitableZstdTimeSeriesPart(PartUri, ContentType, flushEvery, ctx);
+        ctx = new AsvPackageContext(new Lock(), pkg, logger);
+        part = new VisitableTimeSeriesAsvPackagePart(PartUri, ContentType, flushEvery, ctx);
 
         sw.Restart();
 

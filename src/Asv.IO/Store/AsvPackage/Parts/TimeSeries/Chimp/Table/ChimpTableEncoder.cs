@@ -6,7 +6,6 @@ using System.IO;
 using DotNext.Buffers;
 using DotNext.IO;
 using Microsoft.Extensions.Logging;
-using ZLogger;
 using ZstdSharp;
 
 namespace Asv.IO;
@@ -30,7 +29,7 @@ public sealed class ChimpTableEncoder : IDisposable
     private readonly List<string> _fieldNames;
 
     public ChimpTableEncoder(
-        VisitableRecord msg,
+        TableRow msg,
         Stream stream,
         uint flushEvery,
         ILogger logger,
@@ -61,7 +60,7 @@ public sealed class ChimpTableEncoder : IDisposable
         _id = msg.Id;
     }
 
-    public void Append(VisitableRecord msg)
+    public void Append(TableRow msg)
     {
         if (msg.Id != _id)
         {
@@ -93,7 +92,7 @@ public sealed class ChimpTableEncoder : IDisposable
         {
             Name = _id,
             FieldCount = (uint)(_writers.Length + 2),
-            RawCount = (uint)_count,
+            RowCount = (uint)_count,
         };
         header.Serialize(_stream);
 

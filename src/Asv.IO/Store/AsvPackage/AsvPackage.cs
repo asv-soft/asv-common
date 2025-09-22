@@ -11,7 +11,7 @@ using R3;
 
 namespace Asv.IO;
 
-public class AsvFile : AsyncDisposableOnce
+public class AsvPackage : AsyncDisposableOnce
 {
     #region Static
 
@@ -73,12 +73,12 @@ public class AsvFile : AsyncDisposableOnce
 
     #endregion
 
-    private readonly ConcurrentBag<AsvFilePart> _parts = [];
+    private readonly ConcurrentBag<AsvPackagePart> _parts = [];
     private DisposableBag _disposeBag;
 
-    protected AsvFile(Package package, int version, string contentType, ILogger? logger)
+    protected AsvPackage(Package package, int version, string contentType, ILogger? logger)
     {
-        Context = new AsvFileContext(new Lock(), package, logger ?? NullLogger.Instance);
+        Context = new AsvPackageContext(new Lock(), package, logger ?? NullLogger.Instance);
         ArgumentNullException.ThrowIfNull(package);
         Version = version;
 
@@ -93,7 +93,7 @@ public class AsvFile : AsyncDisposableOnce
     }
 
     public int Version { get; }
-    protected AsvFileContext Context { get; }
+    protected AsvPackageContext Context { get; }
 
     public void Flush()
     {
@@ -104,7 +104,7 @@ public class AsvFile : AsyncDisposableOnce
     }
 
     protected T AddPart<T>(T part)
-        where T : AsvFilePart
+        where T : AsvPackagePart
     {
         _parts.Add(AddToDispose(part));
         return part;
