@@ -4,7 +4,7 @@ using Microsoft.Extensions.Time.Testing;
 using R3;
 using Xunit;
 
-namespace Asv.Common.Test;
+namespace Asv.Common.Test.Other.LinkIndicator;
 
 [TestSubject(typeof(TimeBasedObservableLinkIndicator<Unit>))]
 public class TimeBasedObservableLinkIndicatorTest

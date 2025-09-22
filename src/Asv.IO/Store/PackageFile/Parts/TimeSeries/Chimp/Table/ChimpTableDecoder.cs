@@ -1,32 +1,47 @@
 using System;
 using System.Buffers;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using DotNext.Buffers;
+using Microsoft.Extensions.Logging;
+using ZLogger;
 using ZstdSharp;
 
 namespace Asv.IO;
 
-public sealed class ChimpRecordDecoder : IDisposable
+public sealed class ChimpTableDecoder : IDisposable
 {
     private readonly string _id;
     private readonly Func<(IVisitable, object)> _factory;
     private readonly Stream _stream;
+    private readonly uint _flushEvery;
+    private readonly ILogger _logger;
     private readonly int _fieldCount;
 
     private readonly PoolingArrayBufferWriter<byte> _indexRdr;
     private readonly PoolingArrayBufferWriter<byte> _timestampRdr;
     private readonly ImmutableArray<PoolingArrayBufferWriter<byte>> _readers;
+    private readonly List<string> _fieldNames;
 
-    public ChimpRecordDecoder(string id, Func<(IVisitable, object)> factory, Stream stream)
+    public ChimpTableDecoder(
+        string id,
+        Func<(IVisitable, object)> factory,
+        Stream stream,
+        uint flushEvery,
+        ILogger logger
+    )
     {
         _id = id;
         _factory = factory;
         _stream = stream;
-        var countVisitor = new ChimpFieldCounterVisitor();
+        _flushEvery = flushEvery;
+        _logger = logger;
+        var countVisitor = new ChimpColumnVisitor();
         var msg = factory();
         msg.Item1.Accept(countVisitor);
         _fieldCount = countVisitor.Count;
+        _fieldNames = countVisitor.Columns;
 
         _indexRdr = new PoolingArrayBufferWriter<byte>(ArrayPool<byte>.Shared);
 
@@ -43,40 +58,51 @@ public sealed class ChimpRecordDecoder : IDisposable
 
     public bool Read(Action<(VisitableRecord, object)> visitor)
     {
+        var ii = 0;
         try
         {
-            var header = new ChunkHeader();
+            var header = new BatchHeader();
             header.ReadFrom(_stream);
             if (_fieldCount + 2 != header.FieldCount)
             {
                 throw new InvalidOperationException("Invalid field count");
             }
-
-            while (header.RawCount > 300)
+            if (header.Name != _id)
             {
-                header.RawCount -= 300;
+                throw new InvalidDataException(
+                    $"Unexpected batch name: '{header.Name}', expected '{_id}'"
+                );
             }
 
+            while (header.RawCount > _flushEvery)
+            {
+                header.RawCount -= _flushEvery;
+            }
+
+            _indexRdr.Clear();
+            ReadField(_indexRdr, "Index");
+            var index = new GorillaTimestampDecoder(new MemoryBitReader(_indexRdr.WrittenMemory));
+
             _timestampRdr.Clear();
-            ReadField(_timestampRdr);
+            ReadField(_timestampRdr, "Timestamp");
+
             var timestamp = new GorillaTimestampDecoder(
                 new MemoryBitReader(_timestampRdr.WrittenMemory)
             );
-            _indexRdr.Clear();
-            ReadField(_indexRdr);
-            var index = new GorillaTimestampDecoder(new MemoryBitReader(_indexRdr.WrittenMemory));
+
             var streams = new ChimpDecoder[_fieldCount];
             for (var i = 0; i < _fieldCount; i++)
             {
                 var buff = _readers[i];
                 buff.Clear(true);
-                ReadField(buff);
+                ReadField(buff, _fieldNames[i]);
                 streams[i] = new ChimpDecoder(new MemoryBitReader(buff.WrittenMemory));
             }
 
-            var decoder = new ChimpFieldDecoderVisitor(streams);
+            var decoder = new ChimpColumnDecoderVisitor(streams);
             for (var i = 0; i < header.RawCount; i++)
             {
+                ii = i;
                 var msg = _factory();
                 msg.Item1.Accept(decoder);
                 visitor(
@@ -97,11 +123,12 @@ public sealed class ChimpRecordDecoder : IDisposable
         }
         catch (EndOfStreamException)
         {
+            _logger.ZLogTrace($"{_id}: End of stream reached at {ii}");
             return false;
         }
     }
 
-    private void ReadField(PoolingArrayBufferWriter<byte> rdr)
+    private void ReadField(PoolingArrayBufferWriter<byte> rdr, string fieldName)
     {
         var field = new FieldHeader();
         field.ReadFrom(_stream);
@@ -115,10 +142,13 @@ public sealed class ChimpRecordDecoder : IDisposable
                 var decompressed = decompressor.Unwrap(
                     new ReadOnlySpan<byte>(buffer, 0, field.Size)
                 );
+
+                // _logger.ZLogTrace($"{fieldName}: Read(ZST) {decompressed.Length} <= {field.Size} bytes {Convert.ToBase64String(decompressed)}");
                 rdr.Write(decompressed);
             }
             else
             {
+                // _logger.ZLogTrace($"{fieldName}: Read {field.Size} bytes {Convert.ToBase64String(new ReadOnlySpan<byte>(buffer, 0, field.Size))}");
                 rdr.Write(new ReadOnlySpan<byte>(buffer, 0, field.Size));
             }
         }

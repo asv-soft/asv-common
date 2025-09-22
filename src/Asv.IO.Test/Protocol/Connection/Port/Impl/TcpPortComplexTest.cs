@@ -10,7 +10,7 @@ using TimeProviderExtensions;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Asv.IO.Test;
+namespace Asv.IO.Test.Connection.Port.Impl;
 
 [Collection("Sequential")]
 [TestSubject(typeof(ProtocolRouter))]

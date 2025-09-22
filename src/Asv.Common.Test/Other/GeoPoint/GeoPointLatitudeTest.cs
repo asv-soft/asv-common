@@ -1,6 +1,6 @@
 using Xunit;
 
-namespace Asv.Common.Test;
+namespace Asv.Common.Test.Other;
 
 public class GeoPointLatitudeTest
 {

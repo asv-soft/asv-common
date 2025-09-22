@@ -2,7 +2,7 @@ using System;
 using R3;
 using Xunit;
 
-namespace Asv.Common.Test;
+namespace Asv.Common.Test.Other.LinkIndicator;
 
 /// <summary>
 /// Base class for testing implementations of ILinkIndicatorEx.

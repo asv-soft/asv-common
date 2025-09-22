@@ -55,4 +55,7 @@
       <DependentUpon>SpanBitHelperExtTest.tt</DependentUpon>
     </Compile>
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Store\PackageFile\Parts\TimeSeries\Chimp\Table\" />
+  </ItemGroup>
 </Project>

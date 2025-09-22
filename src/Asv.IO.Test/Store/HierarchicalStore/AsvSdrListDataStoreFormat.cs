@@ -14,10 +14,7 @@ public class AsvSdrListDataStoreFormat
         MetadataMaxSize =
             78 /*size of AsvSdrRecordPayload */
             + sizeof(ushort) /* size of tag list */
-            + (
-                100 * 57
-            ) /* max 100 tag * size of AsvSdrRecordTagPayload */
-        ,
+            + (100 * 57), /* max 100 tag * size of AsvSdrRecordTagPayload */
         ItemMaxSize = 256,
     };
 

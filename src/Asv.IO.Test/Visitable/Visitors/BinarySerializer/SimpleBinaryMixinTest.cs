@@ -21,9 +21,7 @@ public class SimpleBinaryMixinTest
     {
         var example = new ExampleMessage1().Randomize();
         Assert.Equal(
-            example.GetByteSize()
-                - 5 /*HEADER + CRC*/
-            ,
+            example.GetByteSize() - 5, /*HEADER + CRC*/
             SimpleBinaryMixin.GetSize(example)
         );
     }

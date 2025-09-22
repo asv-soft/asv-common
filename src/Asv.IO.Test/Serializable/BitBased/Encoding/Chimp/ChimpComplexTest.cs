@@ -6,7 +6,7 @@ using Xunit;
 using Xunit.Abstractions;
 using ZstdSharp;
 
-namespace Asv.IO.Tests;
+namespace Asv.IO.Test.Serializable.BitBased.Encoding.Chimp;
 
 public class ChimpComplexTest(ITestOutputHelper log)
 {

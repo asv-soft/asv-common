@@ -1,7 +1,7 @@
 using System.Linq;
 using Xunit;
 
-namespace Asv.Common.Test;
+namespace Asv.Common.Test.Math;
 
 public class PiecewiseLinearFunctionTest
 {

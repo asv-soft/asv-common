@@ -1,13 +1,12 @@
 // ChimpDecoderTests.cs
+
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
-using Asv.Common;
-using Asv.IO;
 using Xunit;
 
-namespace Asv.IO.Tests
+namespace Asv.IO.Test.Serializable.BitBased.Encoding.Chimp
 {
     public class ChimpDecoderTests
     {

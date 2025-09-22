@@ -4,7 +4,7 @@ using DotNext.Threading;
 using JetBrains.Annotations;
 using Xunit;
 
-namespace Asv.Common.Test;
+namespace Asv.Common.Test.Async;
 
 [TestSubject(typeof(AsyncReaderWriterLock))]
 public class AsyncReaderWriterLockTest

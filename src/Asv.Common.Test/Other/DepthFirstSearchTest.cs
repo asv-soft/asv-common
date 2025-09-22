@@ -5,7 +5,7 @@ using System.Data;
 using System.Diagnostics;
 using Xunit;
 
-namespace Asv.Common.Test;
+namespace Asv.Common.Test.Other;
 
 public class DepthFirstSearchTest
 {

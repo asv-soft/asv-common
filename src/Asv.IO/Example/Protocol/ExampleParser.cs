@@ -77,10 +77,7 @@ public class ExampleParser(
                 {
                     var span = new ReadOnlySpan<byte>(_buffer, 0, _size + 5);
                     InternalParsePacket(
-                        _buffer[
-                            2
-                        ] /*MSG_ID*/
-                        ,
+                        _buffer[2], /*MSG_ID*/
                         ref span,
                         false
                     );

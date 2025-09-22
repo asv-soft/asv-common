@@ -480,8 +480,7 @@ public class ListDataFile<TMetadata> : DisposableOnce, IListDataFile<TMetadata>
             }
 
             ReadOnlySpan<byte> buffer = row.Slice(
-                1 /*START BYTE*/
-                ,
+                1, /*START BYTE*/
                 (int)_rowDataSize
             );
             payload.Deserialize(ref buffer);

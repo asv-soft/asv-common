@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Asv.Common;
 using R3;
@@ -22,6 +23,7 @@ public abstract class AsvFilePart(AsvFileContext context) : AsyncDisposableOnce
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     protected void EnsureWriteAccess()
     {
         if (

@@ -3,7 +3,7 @@ using Microsoft.Extensions.Time.Testing;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Asv.Common.Test;
+namespace Asv.Common.Test.Other;
 
 public class IncrementalRateCounterTest
 {

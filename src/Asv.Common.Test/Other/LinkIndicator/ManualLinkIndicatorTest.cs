@@ -2,7 +2,7 @@ using JetBrains.Annotations;
 using R3;
 using Xunit;
 
-namespace Asv.Common.Test;
+namespace Asv.Common.Test.Other.LinkIndicator;
 
 [TestSubject(typeof(ManualLinkIndicator))]
 public class ManualLinkIndicatorTest : LinkIndicatorExTestBase<ManualLinkIndicator>

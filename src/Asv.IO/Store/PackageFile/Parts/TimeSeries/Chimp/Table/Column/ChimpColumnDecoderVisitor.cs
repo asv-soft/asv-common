@@ -2,7 +2,7 @@
 
 namespace Asv.IO;
 
-public class ChimpFieldEncoderVisitor(ChimpEncoder[] streams) : ChimpVisitorBase
+public class ChimpColumnDecoderVisitor(ChimpDecoder[] streams) : ChimpVisitorBase
 {
     private int _index;
 
@@ -13,61 +13,61 @@ public class ChimpFieldEncoderVisitor(ChimpEncoder[] streams) : ChimpVisitorBase
 
     public override void Visit(Field field, DoubleType type, ref double value)
     {
-        streams[_index++].Add(BitConverter.DoubleToUInt64Bits(value));
+        value = BitConverter.UInt64BitsToDouble(streams[_index++].ReadNext());
     }
 
     public override void Visit(Field field, FloatType type, ref float value)
     {
-        streams[_index++].Add(BitConverter.DoubleToUInt64Bits(value));
+        value = (float)BitConverter.UInt64BitsToDouble(streams[_index++].ReadNext());
     }
 
     public override void Visit(Field field, Int8Type type, ref sbyte value)
     {
-        streams[_index++].Add(unchecked((ulong)value));
+        value = unchecked((sbyte)streams[_index++].ReadNext());
     }
 
     public override void Visit(Field field, Int16Type type, ref short value)
     {
-        streams[_index++].Add(unchecked((ulong)value));
+        value = unchecked((short)streams[_index++].ReadNext());
     }
 
     public override void Visit(Field field, Int32Type type, ref int value)
     {
-        streams[_index++].Add(unchecked((ulong)value));
+        value = unchecked((int)streams[_index++].ReadNext());
     }
 
     public override void Visit(Field field, Int64Type type, ref long value)
     {
-        streams[_index++].Add(unchecked((ulong)value));
+        value = unchecked((long)streams[_index++].ReadNext());
     }
 
     public override void Visit(Field field, UInt8Type type, ref byte value)
     {
-        streams[_index++].Add(value);
+        value = (byte)streams[_index++].ReadNext();
     }
 
     public override void Visit(Field field, UInt16Type type, ref ushort value)
     {
-        streams[_index++].Add(value);
+        value = (ushort)streams[_index++].ReadNext();
     }
 
     public override void Visit(Field field, UInt32Type type, ref uint value)
     {
-        streams[_index++].Add(value);
+        value = (uint)streams[_index++].ReadNext();
     }
 
     public override void Visit(Field field, UInt64Type type, ref ulong value)
     {
-        streams[_index++].Add(value);
+        value = streams[_index++].ReadNext();
     }
 
     public override void Visit(Field field, CharType type, ref char value)
     {
-        streams[_index++].Add(value);
+        value = (char)streams[_index++].ReadNext();
     }
 
     public override void Visit(Field field, BoolType type, ref bool value)
     {
-        streams[_index++].Add(value ? 1U : 0U);
+        value = streams[_index++].ReadNext() != 0;
     }
 }

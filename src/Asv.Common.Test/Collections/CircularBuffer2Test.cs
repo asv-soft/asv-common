@@ -1,7 +1,8 @@
 using System;
 using System.Collections.Generic;
-using Asv.Common;
 using Xunit;
+
+namespace Asv.Common.Test.Collections;
 
 public class CircularBuffer2Tests
 {

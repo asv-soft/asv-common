@@ -5,7 +5,7 @@ using Xunit;
 using Xunit.Abstractions;
 using ZstdSharp;
 
-namespace Asv.IO.Tests;
+namespace Asv.IO.Test.Serializable.BitBased.Encoding.Gorilla;
 
 public class GorillaTimestampComplexTest(ITestOutputHelper log)
 {
@@ -20,7 +20,7 @@ public class GorillaTimestampComplexTest(ITestOutputHelper log)
         var wrtStream = new PoolingArrayBufferWriter<byte>();
         using (
             var wrtEncoder = new GorillaTimestampEncoder(
-                new StreamBitWriter(wrtStream.AsStream(), true),
+                new StreamBitWriter(wrtStream.AsStream()),
                 firstDelta27Bits: firstDelta27Bits
             )
         )

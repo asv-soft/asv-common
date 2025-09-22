@@ -3,7 +3,7 @@ using JetBrains.Annotations;
 using Microsoft.Extensions.Time.Testing;
 using Xunit;
 
-namespace Asv.Common.Test;
+namespace Asv.Common.Test.Other.LinkIndicator;
 
 [TestSubject(typeof(TimeBasedLinkIndicator))]
 public class TimeBasedLinkIndicatorTest : LinkIndicatorExTestBase<TimeBasedLinkIndicator>

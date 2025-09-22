@@ -22,22 +22,22 @@ public abstract class ChimpVisitorBase : IChimpVisitor
         throw new NotSupportedException($"Unsupported filed '{field.Name}' type '{type.Name}'");
     }
 
-    public void BeginArray(Field field, ArrayType fieldType)
+    public virtual void BeginArray(Field field, ArrayType fieldType)
     {
         // nothing to do
     }
 
-    public void EndArray()
+    public virtual void EndArray()
     {
         // nothing to do
     }
 
-    public void BeginStruct(Field field, StructType type)
+    public virtual void BeginStruct(Field field, StructType type)
     {
         // nothing to do
     }
 
-    public void EndStruct()
+    public virtual void EndStruct()
     {
         // nothing to do
     }
