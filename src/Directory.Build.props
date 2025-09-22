@@ -1,16 +1,16 @@
 <Project>
   <PropertyGroup>
-    <ProductVersion>3.2.11-dev.4</ProductVersion>
+    <ProductVersion>3.3.0-dev.0</ProductVersion>
     <TargetFrameworksValue>net9.0</TargetFrameworksValue>
-    <DotNetVersion>9.0.8</DotNetVersion>
-    <DotNextVersion>5.24.0</DotNextVersion>
+    <DotNetVersion>9.0.9</DotNetVersion>
+    <DotNextVersion>5.25.0</DotNextVersion>
     <R3Version>1.3.0</R3Version>
     <R3Collections>3.3.4</R3Collections>
-    <NewtonsoftJsonVersion>13.0.3</NewtonsoftJsonVersion>
+    <NewtonsoftJsonVersion>13.0.4</NewtonsoftJsonVersion>
     <ZLoggerVersion>2.5.10</ZLoggerVersion>
     <GeodesyVersion>4.1.0</GeodesyVersion>
     <DeepEqualVersion>5.1.0</DeepEqualVersion>
     <AutoFixtureVersion>4.18.1</AutoFixtureVersion>
-    <SystemIOAbstractionsVersion>22.0.15</SystemIOAbstractionsVersion>
+    <SystemIOAbstractionsVersion>22.0.16</SystemIOAbstractionsVersion>
   </PropertyGroup>
 </Project>
