@@ -123,7 +123,7 @@ public sealed class ChimpTableDecoder : IDisposable
         }
         catch (EndOfStreamException)
         {
-            _logger.ZLogTrace($"{_id}: End of stream reached at {ii}");
+            // _logger.ZLogTrace($"{_id}: End of stream reached at {ii}");
             return false;
         }
     }
