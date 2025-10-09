@@ -75,6 +75,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="ObservableCollections.R3" Version="$(R3Collections)" />
+    <PackageReference Include="RJCP.SerialPortStream" Version="3.0.4" />
     <PackageReference Include="Roslynator.Analyzers" Version="4.14.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

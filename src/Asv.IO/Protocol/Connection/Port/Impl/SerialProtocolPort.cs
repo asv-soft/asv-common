@@ -79,7 +79,7 @@ public sealed class SerialProtocolPort : ProtocolPort<SerialProtocolPortConfig>
     public static readonly PortTypeInfo Info = new(Scheme, "Serial port");
     private readonly SerialProtocolPortConfig _config;
     private readonly IProtocolContext _context;
-    private SerialProtocolEndpoint? _pipe;
+    private IProtocolEndpoint? _pipe;
 
     public SerialProtocolPort(
         SerialProtocolPortConfig config,
@@ -107,15 +107,30 @@ public sealed class SerialProtocolPort : ProtocolPort<SerialProtocolPortConfig>
 
     protected override void InternalSafeEnable(CancellationToken token)
     {
-        _pipe = new SerialProtocolEndpoint(
-            ProtocolHelper.NormalizeId(
-                $"{Id}_{_config.BoundRate}_{_config.DataBits}_{_config.Parity}_{_config.StopBits}"
-            ),
-            _config,
-            InternalCreateParsers(),
-            _context,
-            StatisticHandler
-        );
+        if (_config.Version == 2)
+        {
+            _pipe = new AlternativeSerialProtocolEndpoint(
+                ProtocolHelper.NormalizeId(
+                    $"{Id}_{_config.BoundRate}_{_config.DataBits}_{_config.Parity}_{_config.StopBits}"
+                ),
+                _config,
+                InternalCreateParsers(),
+                _context,
+                StatisticHandler
+            );
+        }
+        else
+        {
+            _pipe = new SerialProtocolEndpoint(
+                ProtocolHelper.NormalizeId(
+                    $"{Id}_{_config.BoundRate}_{_config.DataBits}_{_config.Parity}_{_config.StopBits}"
+                ),
+                _config,
+                InternalCreateParsers(),
+                _context,
+                StatisticHandler
+            );
+        }
         InternalAddEndpoint(_pipe);
     }
 
