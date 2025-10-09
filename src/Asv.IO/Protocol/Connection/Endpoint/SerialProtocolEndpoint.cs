@@ -6,29 +6,48 @@ using System.Threading.Tasks;
 
 namespace Asv.IO;
 
-public sealed class SerialProtocolEndpoint(
-    SerialPort port,
-    string id,
-    ProtocolPortConfig config,
-    ImmutableArray<IProtocolParser> parsers,
-    IProtocolContext context,
-    IStatisticHandler statisticHandler
-) : ProtocolEndpoint(id, config, parsers, context, statisticHandler)
+public sealed class SerialProtocolEndpoint : ProtocolEndpoint
 {
-    SerialPort SerialPort => port;
+    private readonly SerialPort _serial;
+
+    public SerialProtocolEndpoint(
+        string id,
+        SerialProtocolPortConfig config,
+        ImmutableArray<IProtocolParser> parsers,
+        IProtocolContext context,
+        IStatisticHandler statisticHandler)
+        : base(id, config, parsers, context, statisticHandler)
+    {
+        _serial = new SerialPort(
+            config.PortName,
+            config.BoundRate,
+            config.Parity,
+            config.DataBits,
+            config.StopBits
+        )
+        {
+            WriteBufferSize = config.WriteBufferSize,
+            WriteTimeout = config.WriteTimeout,
+            ReadBufferSize = config.ReadBufferSize,
+            ReadTimeout = config.ReadTimeout,
+        };
+        _serial.Open();
+    }
+
+    public SerialPort SerialPort => _serial;
 
     protected override int GetAvailableBytesToRead()
     {
-        if (!port.IsOpen)
+        if (!_serial.IsOpen)
         {
             throw new InvalidOperationException("Serial port is not open.");
         }
-        return port.BytesToRead;
+        return _serial.BytesToRead;
     }
 
     protected override ValueTask<int> InternalRead(Memory<byte> memory, CancellationToken cancel)
     {
-        return port.BaseStream.ReadAsync(memory, cancel);
+        return _serial.BaseStream.ReadAsync(memory, cancel);
     }
 
     protected override async ValueTask<int> InternalWrite(
@@ -36,7 +55,7 @@ public sealed class SerialProtocolEndpoint(
         CancellationToken cancel
     )
     {
-        await port.BaseStream.WriteAsync(memory, cancel);
+        await _serial.BaseStream.WriteAsync(memory, cancel);
         return memory.Length;
     }
 
@@ -46,12 +65,12 @@ public sealed class SerialProtocolEndpoint(
     {
         if (disposing)
         {
-            if (port.IsOpen)
+            if (_serial.IsOpen)
             {
-                port.Close();
+                _serial.Close();
             }
 
-            port.Dispose();
+            _serial.Dispose();
         }
 
         base.Dispose(disposing);
@@ -59,12 +78,12 @@ public sealed class SerialProtocolEndpoint(
 
     protected override async ValueTask DisposeAsyncCore()
     {
-        if (port.IsOpen)
+        if (_serial.IsOpen)
         {
-            port.Close();
+            _serial.Close();
         }
 
-        port.Dispose();
+        _serial.Dispose();
         await base.DisposeAsyncCore();
     }
     #endregion

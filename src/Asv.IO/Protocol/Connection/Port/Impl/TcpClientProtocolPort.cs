@@ -65,8 +65,8 @@ public class TcpClientProtocolPort : ProtocolPort<TcpClientProtocolPortConfig>
     {
         _socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
         _socket.Connect(_remoteEndpoint);
-        _socket.SendBufferSize = _config.SendBufferSize;
-        _socket.SendTimeout = _config.SendTimeout;
+        _socket.SendBufferSize = _config.WriteBufferSize;
+        _socket.SendTimeout = _config.WriteTimeout;
         _socket.ReceiveBufferSize = _config.ReadBufferSize;
         _socket.ReceiveTimeout = _config.ReadTimeout;
 

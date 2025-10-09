@@ -70,34 +70,6 @@ public class SerialProtocolPortConfig(Uri cs) : ProtocolPortConfig(cs)
         set => Path = value;
     }
 
-    public int WriteTimeout
-    {
-        get
-        {
-            var writeTimeout = Query["wt"];
-            if (writeTimeout != null && int.TryParse(writeTimeout, out var result))
-            {
-                return result;
-            }
-            return 200;
-        }
-        set => Query["wt"] = value.ToString();
-    }
-
-    public int WriteBufferSize
-    {
-        get
-        {
-            var writeBufferSize = Query["wb"];
-            if (writeBufferSize != null && int.TryParse(writeBufferSize, out var result))
-            {
-                return result;
-            }
-            return 40960;
-        }
-        set => Query["wb"] = value.ToString();
-    }
-
     public override object Clone() => new SerialProtocolPortConfig(AsUri());
 }
 
@@ -107,7 +79,6 @@ public sealed class SerialProtocolPort : ProtocolPort<SerialProtocolPortConfig>
     public static readonly PortTypeInfo Info = new(Scheme, "Serial port");
     private readonly SerialProtocolPortConfig _config;
     private readonly IProtocolContext _context;
-    private SerialPort? _serial;
     private SerialProtocolEndpoint? _pipe;
 
     public SerialProtocolPort(
@@ -127,17 +98,6 @@ public sealed class SerialProtocolPort : ProtocolPort<SerialProtocolPortConfig>
 
     protected override void InternalSafeDisable()
     {
-        if (_serial != null)
-        {
-            var serial = _serial;
-            if (serial.IsOpen)
-            {
-                serial.Close();
-            }
-
-            serial.Dispose();
-            serial = null;
-        }
         if (_pipe != null)
         {
             _pipe.Dispose();
@@ -147,22 +107,7 @@ public sealed class SerialProtocolPort : ProtocolPort<SerialProtocolPortConfig>
 
     protected override void InternalSafeEnable(CancellationToken token)
     {
-        _serial = new SerialPort(
-            _config.PortName,
-            _config.BoundRate,
-            _config.Parity,
-            _config.DataBits,
-            _config.StopBits
-        )
-        {
-            WriteBufferSize = _config.WriteBufferSize,
-            WriteTimeout = _config.WriteTimeout,
-            ReadBufferSize = _config.ReadBufferSize,
-            ReadTimeout = _config.ReadTimeout,
-        };
-        _serial.Open();
         _pipe = new SerialProtocolEndpoint(
-            _serial,
             ProtocolHelper.NormalizeId(
                 $"{Id}_{_config.BoundRate}_{_config.DataBits}_{_config.Parity}_{_config.StopBits}"
             ),
@@ -180,12 +125,6 @@ public sealed class SerialProtocolPort : ProtocolPort<SerialProtocolPortConfig>
     {
         if (disposing)
         {
-            if (_serial != null)
-            {
-                _serial.Close();
-                _serial.Dispose();
-                _serial = null;
-            }
             if (_pipe != null)
             {
                 _pipe.Dispose();
@@ -198,12 +137,6 @@ public sealed class SerialProtocolPort : ProtocolPort<SerialProtocolPortConfig>
 
     protected override async ValueTask DisposeAsyncCore()
     {
-        if (_serial != null)
-        {
-            _serial.Close();
-            _serial.Dispose();
-            _serial = null;
-        }
         if (_pipe != null)
         {
             await _pipe.DisposeAsync();

@@ -14,6 +14,17 @@ namespace Asv.IO;
 /// </summary>
 public class ProtocolPortConfig(Uri connectionString) : ICloneable
 {
+    public const string VersionKey = "version";
+    public const int DefaultVersion = 1;
+    public uint Version
+    {
+        get =>
+            uint.TryParse(Query[VersionKey], out var value)
+                ? value
+                : DefaultVersion;
+        set => Query.Set(VersionKey, value.ToString());
+    }
+
     public const string NameQueryKey = "name";
     public string? Name
     {
@@ -105,7 +116,7 @@ public class ProtocolPortConfig(Uri connectionString) : ICloneable
     }
     private const string SendBufferSizeKey = "tx_size";
     private const int SendBufferSizeDefault = 64 * 1024;
-    public int SendBufferSize
+    public int WriteBufferSize
     {
         get =>
             int.TryParse(Query[SendBufferSizeKey], out var value) ? value : SendBufferSizeDefault;
@@ -113,7 +124,7 @@ public class ProtocolPortConfig(Uri connectionString) : ICloneable
     }
     private const string SendTimeoutKey = "tx_timout";
     private const int SendTimeoutDefault = 1000;
-    public int SendTimeout
+    public int WriteTimeout
     {
         get => int.TryParse(Query[SendTimeoutKey], out var value) ? value : SendTimeoutDefault;
         set => Query.Set(SendTimeoutKey, value.ToString());
