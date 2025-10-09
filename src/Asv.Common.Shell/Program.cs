@@ -11,6 +11,7 @@ class Program
         Console.OutputEncoding = Encoding.UTF8;
         var app = ConsoleApp.Create();
         app.Add<TcpTest>();
+        app.Add<SerialCommand>();
         await app.RunAsync(args);
     }
 }

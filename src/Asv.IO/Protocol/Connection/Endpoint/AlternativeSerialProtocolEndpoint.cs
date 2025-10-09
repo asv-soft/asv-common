@@ -1,17 +1,17 @@
 using System;
 using System.Collections.Immutable;
-using System.IO.Ports;
 using System.Threading;
 using System.Threading.Tasks;
+using RJCP.IO.Ports;
 
 namespace Asv.IO;
 
-public sealed class SerialProtocolEndpoint : ProtocolEndpoint
+public sealed class AlternativeSerialProtocolEndpoint : ProtocolEndpoint
 {
-    private readonly SerialPort _serial;
+    private readonly SerialPortStream _serial;
     private readonly bool _initializationComplete;
 
-    public SerialProtocolEndpoint(
+    public AlternativeSerialProtocolEndpoint(
         string id,
         SerialProtocolPortConfig config,
         ImmutableArray<IProtocolParser> parsers,
@@ -19,12 +19,12 @@ public sealed class SerialProtocolEndpoint : ProtocolEndpoint
         IStatisticHandler statisticHandler)
         : base(id, config, parsers, context, statisticHandler)
     {
-        _serial = new SerialPort(
+        _serial = new SerialPortStream(
             config.PortName,
             config.BoundRate,
-            config.Parity,
             config.DataBits,
-            config.StopBits
+            ConvertParity(config.Parity),
+            ConvertStopBits(config.StopBits)
         )
         {
             WriteBufferSize = config.WriteBufferSize,
@@ -36,7 +36,32 @@ public sealed class SerialProtocolEndpoint : ProtocolEndpoint
         _initializationComplete = true;
     }
 
-    public SerialPort SerialPort => _serial;
+    private static StopBits ConvertStopBits(System.IO.Ports.StopBits configStopBits)
+    {
+        return configStopBits switch
+        {
+            System.IO.Ports.StopBits.None => StopBits.One,
+            System.IO.Ports.StopBits.One => StopBits.One,
+            System.IO.Ports.StopBits.Two => StopBits.Two,
+            System.IO.Ports.StopBits.OnePointFive => StopBits.One5,
+            _ => throw new ArgumentOutOfRangeException(nameof(configStopBits), configStopBits, null)
+        };
+    }
+
+    private static Parity ConvertParity(System.IO.Ports.Parity configParity)
+    {
+        return configParity switch
+        {
+            System.IO.Ports.Parity.None => Parity.None,
+            System.IO.Ports.Parity.Odd => Parity.Odd,
+            System.IO.Ports.Parity.Even => Parity.Even,
+            System.IO.Ports.Parity.Mark => Parity.Mark,
+            System.IO.Ports.Parity.Space => Parity.Space,
+            _ => throw new ArgumentOutOfRangeException(nameof(configParity), configParity, null)
+        };
+    }
+
+    public SerialPortStream SerialPort => _serial;
 
     protected override int GetAvailableBytesToRead()
     {
@@ -54,7 +79,7 @@ public sealed class SerialProtocolEndpoint : ProtocolEndpoint
 
     protected override ValueTask<int> InternalRead(Memory<byte> memory, CancellationToken cancel)
     {
-        return _serial.BaseStream.ReadAsync(memory, cancel);
+        return _serial.ReadAsync(memory, cancel);
     }
 
     protected override async ValueTask<int> InternalWrite(
@@ -62,7 +87,7 @@ public sealed class SerialProtocolEndpoint : ProtocolEndpoint
         CancellationToken cancel
     )
     {
-        await _serial.BaseStream.WriteAsync(memory, cancel);
+        await _serial.WriteAsync(memory, cancel);
         return memory.Length;
     }
 
@@ -90,7 +115,7 @@ public sealed class SerialProtocolEndpoint : ProtocolEndpoint
             _serial.Close();
         }
 
-        _serial.Dispose();
+        await _serial.DisposeAsync();
         await base.DisposeAsyncCore();
     }
     #endregion
