@@ -56,6 +56,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Store\PackageFile\Parts\TimeSeries\Chimp\Table\" />
+    <Folder Include="Store\AsvPackage\Parts\TimeSeries\Chimp\Table\" />
   </ItemGroup>
 </Project>

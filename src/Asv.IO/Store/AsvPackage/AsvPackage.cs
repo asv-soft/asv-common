@@ -19,10 +19,11 @@ public class AsvPackage : AsyncDisposableOnce
         string filePath,
         in string contentType,
         Func<Package, int, ILogger, T> factory,
-        ILogger? logger
+        ILogger? logger = null,
+        FileAccess fileAccess = FileAccess.Read
     )
     {
-        var package = Package.Open(filePath, FileMode.Open, FileAccess.Read);
+        var package = Package.Open(filePath, FileMode.Open, fileAccess);
         ReadAndCheckMetadata(package, contentType, out var version);
         return factory(package, version, logger ?? NullLogger.Instance);
     }
@@ -73,12 +74,13 @@ public class AsvPackage : AsyncDisposableOnce
 
     #endregion
 
-    private readonly ConcurrentBag<AsvPackagePart> _parts = [];
+    protected ConcurrentBag<AsvPackagePart> Parts { get; } = [];
     private DisposableBag _disposeBag;
 
     protected AsvPackage(Package package, int version, string contentType, ILogger? logger)
     {
         Context = new AsvPackageContext(new Lock(), package, logger ?? NullLogger.Instance);
+        AddToDispose(Context);
         ArgumentNullException.ThrowIfNull(package);
         Version = version;
 
@@ -95,18 +97,18 @@ public class AsvPackage : AsyncDisposableOnce
     public int Version { get; }
     protected AsvPackageContext Context { get; }
 
-    public void Flush()
+    public virtual void Flush()
     {
-        foreach (var part in _parts)
+        foreach (var part in Parts)
         {
             part.Flush();
         }
     }
 
-    protected T AddPart<T>(T part)
+    protected virtual T AddPart<T>(T part)
         where T : AsvPackagePart
     {
-        _parts.Add(AddToDispose(part));
+        Parts.Add(AddToDispose(part));
         return part;
     }
 
