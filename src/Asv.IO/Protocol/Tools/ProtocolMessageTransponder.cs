@@ -47,12 +47,12 @@ public class ProtocolMessageTransponder<TMessage>
         using (_sync.EnterScope())
         {
             _timer?.Dispose();
-            _timer = _timeProvider.CreateTimer(OnTick, null, dueTime, period);
+            _timer = _timeProvider.CreateTimer(s => OnTick(s).SafeFireAndForget(), null, dueTime, period);
             IsStarted = true;
         }
     }
 
-    private async void OnTick(object? state)
+    private async Task OnTick(object? state)
     {
         try
         {

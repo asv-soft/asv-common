@@ -112,7 +112,7 @@ public abstract class ProtocolEndpoint : ProtocolConnection, IProtocolEndpoint
         );
     }
 
-    private async void PublishRxLoop(object? obj)
+    private async Task PublishRxLoop(object? obj)
     {
         try
         {
@@ -160,7 +160,7 @@ public abstract class ProtocolEndpoint : ProtocolConnection, IProtocolEndpoint
         }
     }
 
-    private async void ReadLoop(object? o)
+    private async Task ReadLoop(object? o)
     {
         try
         {
@@ -218,7 +218,7 @@ public abstract class ProtocolEndpoint : ProtocolConnection, IProtocolEndpoint
         CancellationToken cancel
     );
 
-    private async void WriteLoop(object? o)
+    private async Task WriteLoop(object? o)
     {
         try
         {

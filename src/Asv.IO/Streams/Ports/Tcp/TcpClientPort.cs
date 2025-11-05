@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using Asv.Common;
 using Microsoft.Extensions.Logging;
 
 namespace Asv.IO
@@ -69,7 +70,7 @@ namespace Asv.IO
             _tcp = new TcpClient();
             _tcp.Connect(_cfg.Host ?? throw new InvalidOperationException(), _cfg.Port);
             _stop = new CancellationTokenSource();
-            var recvThread = new Thread(ListenAsync)
+            var recvThread = new Thread(s => ListenAsync(s).SafeFireAndForget())
             {
                 Name = "TCP_C" + _counter,
                 IsBackground = true,
@@ -91,7 +92,7 @@ namespace Asv.IO
             recvThread.Start(_stop);
         }
 
-        private async void ListenAsync(object? obj)
+        private async Task ListenAsync(object? obj)
         {
             if (obj is CancellationTokenSource == false)
             {

@@ -59,7 +59,7 @@ public abstract class ClientDevice<TDeviceId> : AsyncDisposableWithCancel, IClie
         try
         {
             InternalInitializeOnce();
-            TryReconnect(null); // call first time to create and init microservices
+            TryReconnect(null).SafeFireAndForget(); // call first time to create and init microservices
         }
         catch (Exception e)
         {
@@ -81,7 +81,7 @@ public abstract class ClientDevice<TDeviceId> : AsyncDisposableWithCancel, IClie
     }
 
     // ReSharper disable once AsyncVoidMethod
-    private async void TryReconnect(object? state)
+    private async Task TryReconnect(object? state)
     {
         if (IsDisposed)
         {
@@ -124,7 +124,7 @@ public abstract class ClientDevice<TDeviceId> : AsyncDisposableWithCancel, IClie
             }
             _state.Value = ClientDeviceState.Failed;
             _reconnectionTimer = Context.TimeProvider.CreateTimer(
-                TryReconnect,
+                s => TryReconnect(s).SafeFireAndForget(),
                 null,
                 TimeSpan.FromMilliseconds(_config.RequestDelayAfterFailMs),
                 Timeout.InfiniteTimeSpan

@@ -8,6 +8,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using Asv.Common;
 using Microsoft.Extensions.Logging;
 using R3;
 
@@ -161,7 +162,7 @@ namespace Asv.IO
             _tcp.Start();
             _stop = new CancellationTokenSource();
             var recvConnectionThread = new Thread(RecvConnectionCallback) { IsBackground = true };
-            var recvDataThread = new Thread(RecvDataCallback) { IsBackground = true };
+            var recvDataThread = new Thread(s => RecvDataCallback(s).SafeFireAndForget()) { IsBackground = true };
 
             _stop.Token.Register(() =>
             {
@@ -234,7 +235,7 @@ namespace Asv.IO
             }
         }
 
-        private async void RecvDataCallback(object? obj)
+        private async Task RecvDataCallback(object? obj)
         {
             try
             {

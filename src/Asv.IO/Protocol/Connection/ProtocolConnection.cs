@@ -77,7 +77,40 @@ public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolC
         return message;
     }
 
+    [Obsolete]
     protected async void InternalPublishRxMessage(IProtocolMessage message)
+    {
+        try
+        {
+            foreach (var item in Context.Features)
+            {
+                var newMsg = await item.ProcessRx(message, this, DisposeCancel);
+                if (newMsg == null)
+                {
+                    return;
+                }
+
+                message = newMsg;
+            }
+            _onRxMessage.OnNext(message);
+        }
+        catch (ProtocolConnectionException ex)
+        {
+            InternalPublishRxError(ex);
+        }
+        catch (Exception ex)
+        {
+            InternalPublishRxError(
+                new ProtocolConnectionException(
+                    this,
+                    $"Error at publish rx message:{ex.Message}",
+                    ex
+                )
+            );
+        }
+    }
+    
+    protected async Task InternalPublishRxMessageAsync(IProtocolMessage message)
     {
         try
         {
