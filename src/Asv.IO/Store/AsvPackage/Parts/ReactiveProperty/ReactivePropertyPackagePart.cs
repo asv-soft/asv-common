@@ -11,26 +11,36 @@ public class ReactivePropertyPackagePart : KvJsonAsvPackagePart, ISupportChanges
 {
     private readonly ReactiveProperty<bool> _hasChanges;
 
-    public ReactivePropertyPackagePart(Uri uriPart, string contentType, CompressionOption compression, AsvPackageContext context)
+    public ReactivePropertyPackagePart(
+        Uri uriPart,
+        string contentType,
+        CompressionOption compression,
+        AsvPackageContext context
+    )
         : base(uriPart, contentType, compression, context)
     {
         _hasChanges = AddToDispose(new ReactiveProperty<bool>(false));
-        AddToDispose(_hasChanges
-            .DistinctUntilChanged()
-            .Subscribe(x => Context.Publish(new HasChangesEvent(this, x))));
+        AddToDispose(
+            _hasChanges
+                .DistinctUntilChanged()
+                .Subscribe(x => Context.Publish(new HasChangesEvent(this, x)))
+        );
     }
 
     protected SortedDictionary<string, (Action<string>, Func<string>)> Props { get; } = new();
 
-    public ReactiveProperty<T> AddProperty<T>(string key, T defaultValue, Func<string, T> load, Func<T, string> save)
+    public ReactiveProperty<T> AddProperty<T>(
+        string key,
+        T defaultValue,
+        Func<string, T> load,
+        Func<T, string> save
+    )
     {
         var prop = AddToDispose(new ReactiveProperty<T>(defaultValue));
-        AddToDispose(prop.DistinctUntilChanged()
-            .Subscribe(_ => _hasChanges.Value = true));
+        AddToDispose(prop.DistinctUntilChanged().Subscribe(_ => _hasChanges.Value = true));
         Props.Add(key, (str => prop.Value = load(str), () => save(prop.Value)));
         return prop;
     }
-
 
     public void Load()
     {

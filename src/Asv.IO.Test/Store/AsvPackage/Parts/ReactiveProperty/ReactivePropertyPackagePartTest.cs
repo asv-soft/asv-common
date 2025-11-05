@@ -14,10 +14,9 @@ namespace Asv.IO.Test.AsvPackage.Parts.ReactiveProperty;
 [TestSubject(typeof(ReactivePropertyPackagePart))]
 public class ReactivePropertyPackagePartTest(ITestOutputHelper log)
 {
-
     private static readonly Uri PartUri = new Uri("/meta/kvs.json", UriKind.Relative);
     private const string ContentType = "application/json";
-    
+
     [Fact]
     public void Save_Twice_OverwritesAndWarns()
     {
@@ -25,7 +24,12 @@ public class ReactivePropertyPackagePartTest(ITestOutputHelper log)
         var pkg = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite);
         var logger = new TestLogger(log, TimeProvider.System, "AsvFilePartTest");
         var ctx = new AsvPackageContext(new Lock(), pkg, logger);
-        var part = new ReactivePropertyPackagePart(PartUri, ContentType, CompressionOption.Normal, ctx);
+        var part = new ReactivePropertyPackagePart(
+            PartUri,
+            ContentType,
+            CompressionOption.Normal,
+            ctx
+        );
 
         var prop1 = part.AddGeoPoint("prop1", GeoPoint.Zero);
         var prop2 = part.AddDouble("prop2", double.NaN);
@@ -55,7 +59,12 @@ public class ReactivePropertyPackagePartTest(ITestOutputHelper log)
         ms.Position = 0;
         pkg = Package.Open(ms, FileMode.Open, FileAccess.Read);
         ctx = new AsvPackageContext(new Lock(), pkg, logger);
-        part = new ReactivePropertyPackagePart(PartUri, ContentType, CompressionOption.Maximum, ctx);
+        part = new ReactivePropertyPackagePart(
+            PartUri,
+            ContentType,
+            CompressionOption.Maximum,
+            ctx
+        );
         part.Load();
 
         Assert.Equal(value1, prop1.Value);

@@ -27,6 +27,5 @@ public static class CircularBufferMixin
 
             buffer = newBuffer;
         }
-
     }
 }

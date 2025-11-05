@@ -12,7 +12,9 @@ public sealed class AsvPackageContext(Lock @lock, Package package, ILogger logge
     public Lock Lock => @lock;
     public Package Package => package;
     public ILogger Logger => logger;
-    public void Publish(EventArgs eve) => _onEvents.Publish(eve);
+
+    public void Publish(EventArgs eve) => _onEvents.OnNext(eve);
+
     public Observable<EventArgs> OnEvents => _onEvents;
 
     public void Dispose()

@@ -16,7 +16,8 @@ public sealed class SerialProtocolEndpoint : ProtocolEndpoint
         SerialProtocolPortConfig config,
         ImmutableArray<IProtocolParser> parsers,
         IProtocolContext context,
-        IStatisticHandler statisticHandler)
+        IStatisticHandler statisticHandler
+    )
         : base(id, config, parsers, context, statisticHandler)
     {
         _serial = new SerialPort(

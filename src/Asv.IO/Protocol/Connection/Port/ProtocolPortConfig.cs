@@ -18,10 +18,7 @@ public class ProtocolPortConfig(Uri connectionString) : ICloneable
     public const int DefaultVersion = 1;
     public uint Version
     {
-        get =>
-            uint.TryParse(Query[VersionKey], out var value)
-                ? value
-                : DefaultVersion;
+        get => uint.TryParse(Query[VersionKey], out var value) ? value : DefaultVersion;
         set => Query.Set(VersionKey, value.ToString());
     }
 
@@ -101,6 +98,7 @@ public class ProtocolPortConfig(Uri connectionString) : ICloneable
         set => Query.Set(DropMessageWhenFullTxQueueKey, value.ToString());
     }
     private const string DropMessageWhenFullRxQueueKey = "rx_drop";
+
     public bool DropMessageWhenFullRxQueue
     {
         get => bool.TryParse(Query[DropMessageWhenFullRxQueueKey], out var value) && value;

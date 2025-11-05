@@ -16,7 +16,8 @@ public sealed class AlternativeSerialProtocolEndpoint : ProtocolEndpoint
         SerialProtocolPortConfig config,
         ImmutableArray<IProtocolParser> parsers,
         IProtocolContext context,
-        IStatisticHandler statisticHandler)
+        IStatisticHandler statisticHandler
+    )
         : base(id, config, parsers, context, statisticHandler)
     {
         _serial = new SerialPortStream(
@@ -44,7 +45,11 @@ public sealed class AlternativeSerialProtocolEndpoint : ProtocolEndpoint
             System.IO.Ports.StopBits.One => StopBits.One,
             System.IO.Ports.StopBits.Two => StopBits.Two,
             System.IO.Ports.StopBits.OnePointFive => StopBits.One5,
-            _ => throw new ArgumentOutOfRangeException(nameof(configStopBits), configStopBits, null)
+            _ => throw new ArgumentOutOfRangeException(
+                nameof(configStopBits),
+                configStopBits,
+                null
+            ),
         };
     }
 
@@ -57,7 +62,7 @@ public sealed class AlternativeSerialProtocolEndpoint : ProtocolEndpoint
             System.IO.Ports.Parity.Even => Parity.Even,
             System.IO.Ports.Parity.Mark => Parity.Mark,
             System.IO.Ports.Parity.Space => Parity.Space,
-            _ => throw new ArgumentOutOfRangeException(nameof(configParity), configParity, null)
+            _ => throw new ArgumentOutOfRangeException(nameof(configParity), configParity, null),
         };
     }
 
