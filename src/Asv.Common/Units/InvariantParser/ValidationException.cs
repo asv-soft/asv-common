@@ -2,13 +2,18 @@ using System;
 
 namespace Asv.Common;
 
-public class ValidationException : Exception
+public class ValidationException : LocalizedException
 {
-    public ValidationException() { }
+    public ValidationException()
+        : base() { }
 
-    public ValidationException(string message)
-        : base(message) { }
+    public ValidationException(string? message, string? localizedMessage = null)
+        : base(message, localizedMessage) { }
 
-    public ValidationException(string message, Exception inner)
-        : base(message, inner) { }
+    public ValidationException(
+        string? message,
+        Exception? innerException,
+        string? localizedMessage = null
+    )
+        : base(message, innerException, localizedMessage) { }
 }

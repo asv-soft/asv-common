@@ -42,14 +42,19 @@ namespace Asv.Common
 
         public static string? GetErrorMessage(string? value)
         {
-            return IsValid(value) == false ? RS.GeoPointLongitude_GetErrorMessage : null;
+            return IsValid(value) == false
+                ? RS.ValidationException_GeoPointLongitude_Message
+                : null;
         }
 
         public static ValidationResult ValidateValue(string? value)
         {
             return IsValid(value)
                 ? ValidationResult.Success
-                : ValidationResult.FailFromErrorMessage(RS.GeoPointLongitude_GetErrorMessage);
+                : ValidationResult.FailFromErrorMessage(
+                    "Longitude must be a real number from -180.0 to 180.0 or DMS format value (e.g. 12°34′56.78 N)",
+                    RS.ValidationException_GeoPointLongitude_Message
+                );
         }
 
         public static bool TryParse(string? value, out double longitude)

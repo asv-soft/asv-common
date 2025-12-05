@@ -18,19 +18,31 @@
     <resheader name="writer">
         <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
     </resheader>
-    <data name="GeoPointLatitude_ErrorMessage" xml:space="preserve">
+    <data name="ValidationException_GeoPointLatitude_Message" xml:space="preserve">
         <value>Latitude must be a real number from -90.0 to 90.0 or DMS format value (e.g. 12°34′56.78 N)</value>
     </data>
-    <data name="GeoPointLongitude_GetErrorMessage" xml:space="preserve">
+    <data name="ValidationException_GeoPointLongitude_Message" xml:space="preserve">
         <value>Longitude must be a real number from -180.0 to 180.0 or DMS format value (e.g. 12°34′56.78 N)</value>
     </data>
-    <data name="Angle_ErrorMessage" xml:space="preserve">
+    <data name="ValidationException_Angle_Message" xml:space="preserve">
         <value>Angle must be a real number or DMS format value (e.g. 12°34′56.78)</value>
     </data>
-    <data name="AngleMs_ErrorMessage" xml:space="preserve">
+    <data name="ValidationException_AngleMs_Message" xml:space="preserve">
         <value>Angle must be a real number or MS format value (e.g. 34′56.78)</value>
     </data>
-    <data name="AngleDm_ErrorMessage" xml:space="preserve">
+    <data name="ValidationException_AngleDm_Message" xml:space="preserve">
         <value>Angle must be a real number or DM format value (e.g. 34°56.78′)</value>
+    </data>
+    <data name="ValidationException_NaN_Message" xml:space="preserve">
+        <value>Value is not a number</value>
+    </data>
+    <data name="ValidationException_IsNullOrWhiteSpace_Message" xml:space="preserve">
+        <value>Value is empty</value>
+    </data>
+    <data name="ValidationException_InvalidCharacters_Message" xml:space="preserve">
+        <value>Value contains invalid characters</value>
+    </data>
+    <data name="ValidationException_FailAsOutOfRange_Message" xml:space="preserve">
+        <value>Value is out of range. Min: {0}, Max: {1}</value>
     </data>
 </root>

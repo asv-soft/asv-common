@@ -34,21 +34,24 @@ public readonly struct ValidationResult
             ValidationException = InvalidCharactersValidationException.Instance,
         };
 
-    public static ValidationResult FailAsNotNumber = new()
-    {
-        IsSuccess = false,
-        ValidationException = NotNumberValidationException.Instance,
-    };
+    public static ValidationResult FailAsNotNumber { get; } =
+        new() { IsSuccess = false, ValidationException = NotNumberValidationException.Instance };
 
     public static ValidationResult FailAsOutOfRange(string min, string max) =>
-        FailFromErrorMessage("Value is out of range. Min: {min}, Max: {max}");
+        FailFromErrorMessage(
+            $"Value is out of range. Min: {min}, Max: {max}",
+            string.Format(RS.ValidationException_FailAsOutOfRange_Message, min, max)
+        );
 
-    public static ValidationResult FailFromErrorMessage(string errorMessage)
+    public static ValidationResult FailFromErrorMessage(
+        string errorMessage,
+        string? localizedMessage = null
+    )
     {
         return new ValidationResult
         {
             IsSuccess = false,
-            ValidationException = new ValidationException(errorMessage),
+            ValidationException = new ValidationException(errorMessage, localizedMessage),
         };
     }
 }
