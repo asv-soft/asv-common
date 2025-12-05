@@ -51,7 +51,7 @@ public class VisitableTimeSeriesAsvPackagePartTest(ITestOutputHelper log)
         log.WriteLine(
             $"Write {array.Length} records with flushEvery={flushEvery} in {sw.ElapsedMilliseconds} ms"
         );
-        part.Flush();
+        part.InternalFlush();
         part.Dispose();
         pkg.Flush();
         pkg.Close();

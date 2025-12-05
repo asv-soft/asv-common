@@ -1,16 +1,28 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Asv.Common;
+using DotNext.IO;
 using R3;
 
 namespace Asv.IO;
 
-public abstract class AsvPackagePart(AsvPackageContext context) : AsyncDisposableOnce
+public abstract class AsvPackagePart
+    : AsyncDisposableOnceBag,
+        ISupportRoutedEvents<AsvPackagePart>,
+        IFlushable
 {
-    private DisposableBag _disposeBag;
-    protected AsvPackageContext Context => context;
+    protected AsvPackagePart(AsvPackageContext context, AsvPackagePart? parent)
+    {
+        Context = context;
+        Parent = parent;
+        Events = new RoutedEventController<AsvPackagePart>(this).AddTo(ref DisposableBag);
+    }
+
+    public IRoutedEventController<AsvPackagePart> Events { get; }
+    protected AsvPackageContext Context { get; }
 
     protected void EnsureReadAccess()
     {
@@ -35,23 +47,24 @@ public abstract class AsvPackagePart(AsvPackageContext context) : AsyncDisposabl
         }
     }
 
-    protected T AddToDispose<T>(T obj)
-    {
-        if (obj is IDisposable disposable)
-        {
-            _disposeBag.Add(disposable);
-        }
-        return obj;
-    }
+    public AsvPackagePart? Parent { get; set; }
+    public abstract IEnumerable<AsvPackagePart> GetChildren();
+    public abstract void InternalFlush();
 
-    public abstract void Flush();
+    public void Flush()
+    {
+        foreach (var child in GetChildren())
+        {
+            child.Flush();
+        }
+        InternalFlush();
+    }
 
     protected override void Dispose(bool disposing)
     {
         if (disposing)
         {
-            Flush();
-            _disposeBag.Dispose();
+            InternalFlush();
         }
 
         base.Dispose(disposing);
@@ -59,8 +72,7 @@ public abstract class AsvPackagePart(AsvPackageContext context) : AsyncDisposabl
 
     protected override async ValueTask DisposeAsyncCore()
     {
-        Flush();
-        _disposeBag.Dispose();
+        InternalFlush();
         await base.DisposeAsyncCore();
     }
 }

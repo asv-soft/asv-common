@@ -1,6 +1,6 @@
 using R3;
 
-namespace Asv.IO;
+namespace Asv.Common.Changes;
 
 public interface ISupportChanges
 {

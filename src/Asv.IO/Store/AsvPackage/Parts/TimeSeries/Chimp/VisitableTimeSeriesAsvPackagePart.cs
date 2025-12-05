@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.IO.Packaging;
 using System.Linq;
+using System.Threading.Tasks;
+using R3;
 using ZLogger;
 
 namespace Asv.IO;
@@ -12,8 +14,9 @@ public class VisitableTimeSeriesAsvPackagePart(
     uint flushEvery,
     AsvPackageContext context,
     CompressionOption compression = CompressionOption.Maximum,
-    bool useZstdForBatch = true
-) : AsvPackagePart(context)
+    bool useZstdForBatch = true,
+    AsvPackagePart? parent = null
+) : AsvPackagePart(context, parent)
 {
     private readonly Dictionary<string, ChimpTableEncoder> _files = new();
 
@@ -33,15 +36,13 @@ public class VisitableTimeSeriesAsvPackagePart(
                     }
                     var part = Context.Package.CreatePart(uri, contentType, compression);
                     var stream = part.GetStream();
-                    file = AddToDispose(
-                        new ChimpTableEncoder(
-                            record,
-                            stream,
-                            flushEvery,
-                            Context.Logger,
-                            useZstdForBatch
-                        )
-                    );
+                    file = new ChimpTableEncoder(
+                        record,
+                        stream,
+                        flushEvery,
+                        Context.Logger,
+                        useZstdForBatch
+                    ).AddTo(ref DisposableBag);
                     _files.Add(record.Id, file);
                 }
             }
@@ -83,7 +84,12 @@ public class VisitableTimeSeriesAsvPackagePart(
         }
     }
 
-    public override void Flush()
+    public override IEnumerable<AsvPackagePart> GetChildren()
+    {
+        return [];
+    }
+
+    public override void InternalFlush()
     {
         foreach (var value in _files.Values)
         {

@@ -1,17 +1,14 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.IO;
 using System.IO.Packaging;
 using System.Threading;
 using System.Threading.Tasks;
-using Asv.Common;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using R3;
 
 namespace Asv.IO;
 
-public class AsvPackage : AsyncDisposableOnce
+public abstract class AsvPackage : AsvPackagePart
 {
     #region Static
 
@@ -74,13 +71,9 @@ public class AsvPackage : AsyncDisposableOnce
 
     #endregion
 
-    protected ConcurrentBag<AsvPackagePart> Parts { get; } = [];
-    private DisposableBag _disposeBag;
-
     protected AsvPackage(Package package, int version, string contentType, ILogger? logger)
+        : base(new AsvPackageContext(new Lock(), package, logger ?? NullLogger.Instance), null)
     {
-        Context = new AsvPackageContext(new Lock(), package, logger ?? NullLogger.Instance);
-        AddToDispose(Context);
         ArgumentNullException.ThrowIfNull(package);
         Version = version;
 
@@ -95,46 +88,20 @@ public class AsvPackage : AsyncDisposableOnce
     }
 
     public int Version { get; }
-    protected AsvPackageContext Context { get; }
 
-    public virtual void Flush()
+    public override void InternalFlush()
     {
-        foreach (var part in Parts)
-        {
-            part.Flush();
-        }
-    }
-
-    protected virtual T AddPart<T>(T part)
-        where T : AsvPackagePart
-    {
-        Parts.Add(AddToDispose(part));
-        return part;
-    }
-
-    protected T AddToDispose<T>(T obj)
-    {
-        if (obj is IDisposable disposable)
-        {
-            _disposeBag.Add(disposable);
-        }
-        return obj;
+        Context.Package.Flush();
     }
 
     protected override void Dispose(bool disposing)
     {
-        if (disposing)
-        {
-            _disposeBag.Dispose();
-            ((IDisposable)Context.Package).Dispose();
-        }
-
         base.Dispose(disposing);
+        ((IDisposable)Context.Package).Dispose();
     }
 
     protected override async ValueTask DisposeAsyncCore()
     {
-        await CastAndDispose(_disposeBag);
         await CastAndDispose(Context.Package);
 
         await base.DisposeAsyncCore();

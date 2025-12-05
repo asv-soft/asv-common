@@ -1,7 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Packaging;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
+using R3;
 using ZLogger;
 
 namespace Asv.IO;
@@ -10,8 +13,9 @@ public class KvChangesJsonAsvPackagePart(
     Uri uriPart,
     string contentType,
     CompressionOption compression,
-    AsvPackageContext context
-) : AsvPackagePart(context)
+    AsvPackageContext context,
+    AsvPackagePart? parent = null
+) : AsvPackagePart(context, parent)
 {
     private const string StaticHeader0 =
         "|============================================================================== |";
@@ -44,8 +48,8 @@ public class KvChangesJsonAsvPackagePart(
                 {
                     Formatting = Formatting.None,
                     CloseOutput = true,
-                };
-                AddToDispose(_jsonWriter);
+                }.AddTo(ref DisposableBag);
+
                 _jsonWriter.WriteComment(StaticHeader0);
                 _jsonWriter.WriteRaw("\n");
                 _jsonWriter.WriteComment(StaticHeader1);
@@ -182,7 +186,12 @@ public class KvChangesJsonAsvPackagePart(
         }
     }
 
-    public override void Flush()
+    public override IEnumerable<AsvPackagePart> GetChildren()
+    {
+        return [];
+    }
+
+    public override void InternalFlush()
     {
         _jsonWriter?.Flush();
     }

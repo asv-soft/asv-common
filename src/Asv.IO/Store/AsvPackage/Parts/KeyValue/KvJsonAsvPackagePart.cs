@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.IO.Packaging;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 using ZLogger;
 
@@ -12,8 +13,9 @@ public class KvJsonAsvPackagePart(
     Uri uriPart,
     string contentType,
     CompressionOption compression,
-    AsvPackageContext context
-) : AsvPackagePart(context)
+    AsvPackageContext context,
+    AsvPackagePart? parent = null
+) : AsvPackagePart(context, parent)
 {
     private const string StaticHeader0 =
         "|====================================================================== |";
@@ -193,8 +195,13 @@ public class KvJsonAsvPackagePart(
         }
     }
 
-    public override void Flush()
+    public override IEnumerable<AsvPackagePart> GetChildren()
     {
-        // nothing
+        return [];
+    }
+
+    public override void InternalFlush()
+    {
+        // do nothing
     }
 }
