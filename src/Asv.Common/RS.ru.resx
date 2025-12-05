@@ -11,19 +11,34 @@
     <resheader name="writer">
         <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
     </resheader>
-    <data name="GeoPointLatitude_ErrorMessage" xml:space="preserve">
+    <data name="ValidationException_GeoPointLatitude_Message" xml:space="preserve">
         <value>Широта должна быть дробным числом от -90.0 до 90.0 или значением в формате ГМС (например, 12°34′56.78 N).</value>
     </data>
-    <data name="GeoPointLongitude_GetErrorMessage" xml:space="preserve">
+    <data name="ValidationException_GeoPointLongitude_Message" xml:space="preserve">
         <value>Долгота должна быть дробным числом от -180.0 до 180.0 или значением в формате ГМС (например, 12°34′56.78 N).</value>
     </data>
-    <data name="Angle_ErrorMessage" xml:space="preserve">
+    <data name="ValidationException_Angle_Message" xml:space="preserve">
         <value>Угол должен быть дробным числом или значением в формате ГМС (например, 12°34′56.78).</value>
     </data>
-    <data name="AngleMs_ErrorMessage" xml:space="preserve">
+    <data name="ValidationException_AngleMs_Message" xml:space="preserve">
         <value>Угол должен быть дробным числом или значением в формате МС (например, 34′56.78).</value>
     </data>
-    <data name="AngleDm_ErrorMessage" xml:space="preserve">
+    <data name="ValidationException_AngleDm_Message" xml:space="preserve">
         <value>Угол должен быть дробным числом или значением в формате ГМ (например, 34°56.78′).</value>
+    </data>
+    <data name="ValidationException_NaN_Message" xml:space="preserve">
+        <value>Значение это не число</value>
+    </data>
+    <data name="ValidationException_IsNullOrWhiteSpace_Message" xml:space="preserve">
+        <value>Значение пустое</value>
+    </data>
+    <data name="ValidationException_InvalidCharacters_Message" xml:space="preserve">
+        <value>Значение содержит неверный символы</value>
+    </data>
+    <data name="ValidationException_FailAsOutOfRange_Message" xml:space="preserve">
+        <value>Значение находится вне диапазона. Минимальное: {0}, Максимальное: {1}</value>
+    </data>
+    <data name="ValidationException_Unknown_Message" xml:space="preserve">
+        <value>Валидация провалилась из-за неизвестной ошибки</value>
     </data>
 </root>
