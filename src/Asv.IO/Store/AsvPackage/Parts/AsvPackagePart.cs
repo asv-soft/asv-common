@@ -51,13 +51,18 @@ public abstract class AsvPackagePart
     public abstract IEnumerable<AsvPackagePart> GetChildren();
     public abstract void InternalFlush();
 
-    public void Flush()
+    public void Flush() => Flush(true);
+
+    private void Flush(bool checkDisposed)
     {
-        ThrowIfDisposed();
+        if (checkDisposed)
+        {
+            ThrowIfDisposed();
+        }
         EnsureWriteAccess();
         foreach (var child in GetChildren())
         {
-            child.Flush();
+            child.Flush(checkDisposed);
         }
         InternalFlush();
     }
@@ -69,7 +74,7 @@ public abstract class AsvPackagePart
             // only flush if not read-only
             if (Context.Package.FileOpenAccess != FileAccess.Read)
             {
-                Flush();
+                Flush(false);
                 Context.Package.Flush();
             }
             foreach (var child in GetChildren())
@@ -86,7 +91,7 @@ public abstract class AsvPackagePart
         // only flush if not read-only
         if (Context.Package.FileOpenAccess != FileAccess.Read)
         {
-            Flush();
+            Flush(false);
             Context.Package.Flush();
         }
         foreach (var child in GetChildren())
