@@ -37,14 +37,17 @@ namespace Asv.Common
 
         public static string? GetErrorMessage(string? value)
         {
-            return IsValid(value) == false ? RS.AngleMs_ErrorMessage : null;
+            return IsValid(value) == false ? RS.ValidationException_AngleMs_Message : null;
         }
 
         public static ValidationResult ValidateValue(string? value)
         {
             return IsValid(value)
                 ? ValidationResult.Success
-                : ValidationResult.FailFromErrorMessage(RS.AngleMs_ErrorMessage);
+                : ValidationResult.FailFromErrorMessage(
+                    "Angle must be a real number or MS format value (e.g. 34′56.78)",
+                    RS.ValidationException_AngleMs_Message
+                );
         }
 
         public static bool TryParse(string? value, out double angle)
