@@ -53,6 +53,8 @@ public abstract class AsvPackagePart
 
     public void Flush()
     {
+        ThrowIfDisposed();
+        EnsureWriteAccess();
         foreach (var child in GetChildren())
         {
             child.Flush();
@@ -64,7 +66,16 @@ public abstract class AsvPackagePart
     {
         if (disposing)
         {
-            InternalFlush();
+            // only flush if not read-only
+            if (Context.Package.FileOpenAccess != FileAccess.Read)
+            {
+                Flush();
+                Context.Package.Flush();
+            }
+            foreach (var child in GetChildren())
+            {
+                child.Dispose();
+            }
         }
 
         base.Dispose(disposing);
@@ -72,7 +83,16 @@ public abstract class AsvPackagePart
 
     protected override async ValueTask DisposeAsyncCore()
     {
-        InternalFlush();
+        // only flush if not read-only
+        if (Context.Package.FileOpenAccess != FileAccess.Read)
+        {
+            Flush();
+            Context.Package.Flush();
+        }
+        foreach (var child in GetChildren())
+        {
+            await child.DisposeAsync();
+        }
         await base.DisposeAsyncCore();
     }
 }

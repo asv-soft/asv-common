@@ -102,9 +102,8 @@ public abstract class AsvPackage : AsvPackagePart
 
     protected override async ValueTask DisposeAsyncCore()
     {
-        await CastAndDispose(Context.Package);
-
         await base.DisposeAsyncCore();
+        await CastAndDispose(Context.Package);
 
         return;
 
