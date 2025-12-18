@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-    <ProductVersion>3.4.0-dev.6</ProductVersion>
+    <ProductVersion>3.4.0-dev.7</ProductVersion>
     <TargetFrameworksValue>net9.0;net10.0</TargetFrameworksValue>
     <DotNetVersion>10.0.0</DotNetVersion>
     <DotNextVersion>5.26.1</DotNextVersion>
