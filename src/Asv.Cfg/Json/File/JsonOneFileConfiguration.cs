@@ -96,7 +96,7 @@ namespace Asv.Cfg
                 logger.ZLogWarning(
                     $"Configuration file doesn't exist. Try to load from backup file: {backup} => {file}"
                 );
-                fs.File.Replace(backup, file, null, true);
+                fs.File.Copy(backup, file, true);
             }
 
             if (fs.File.Exists(fileName) == false)
