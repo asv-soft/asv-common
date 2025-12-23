@@ -4,6 +4,8 @@ using System.IO;
 using System.IO.Abstractions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using ZLogger;
 
 namespace Asv.Cfg
@@ -71,6 +73,24 @@ namespace Asv.Cfg
                 );
                 fs.Directory.CreateDirectory(dir);
             }
+
+            if (fs.File.Exists(fileName))
+            {
+                try
+                {
+                    using var stream = fs.File.OpenRead(fileName);
+                    using var streamReader = new StreamReader(stream);
+                    using var reader = new JsonTextReader(streamReader);
+                    JToken.ReadFrom(reader);
+                }
+                catch (Exception e)
+                {
+                    logger.ZLogCritical(
+                        $"Configuration file is corrupted: {fileName} => DELETE IT. Error: {e}"
+                    );
+                    fs.File.Delete(fileName);
+                }
+            }
             if (fs.File.Exists(fileName) == false && fs.File.Exists(backup))
             {
                 logger.ZLogWarning(
@@ -99,7 +119,7 @@ namespace Asv.Cfg
 
         protected override void EndSaveChanges()
         {
-            _fileSystem.File.Move(_backupFileName, _fileName, true);
+            _fileSystem.File.Copy(_backupFileName, _fileName, true);
             Logger.ZLogTrace($"Flush configuration to file '{_fileName}' [{Count} items] ");
         }
 
@@ -110,7 +130,7 @@ namespace Asv.Cfg
                 _fileSystem.File.Delete(_backupFileName);
             }
 
-            return _fileSystem.File.Create(_backupFileName);
+            return _fileSystem.File.Create(_backupFileName, 4096, FileOptions.WriteThrough);
         }
 
         public override string ToString()

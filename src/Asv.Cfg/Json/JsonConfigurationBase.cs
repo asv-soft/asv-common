@@ -108,6 +108,12 @@ public abstract class JsonConfigurationBase : ConfigurationBase
                 {
                     _serializer.Serialize(file, _values);
                 }
+
+                // this is to reduce file corruption
+                if (stream is FileStream fileStream)
+                {
+                    fileStream.Flush(true);
+                }
             }
             catch (Exception e)
             {
