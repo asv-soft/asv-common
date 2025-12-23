@@ -115,7 +115,7 @@ namespace Asv.Cfg.Test
                 _fileSystem.File.Delete(fileName);
             }
 
-            _fileSystem.Directory.Delete(dir);
+            _fileSystem.Directory.Delete(dir, true);
         }
 
         [Fact]
