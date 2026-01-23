@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using Asv.XUnit;
 using Microsoft.Extensions.Time.Testing;
 using R3;
 using Xunit;
@@ -31,7 +32,7 @@ public class TcpTest
             }
         );
 
-    [Fact(Skip = "This test can be performed only on a local machine.")]
+    [ManualFact]
     public void TcpClientConnectionErrorTest()
     {
         var client = CreateTcpClient(port: 2005);
@@ -48,7 +49,7 @@ public class TcpTest
         client.Disable();
     }
 
-    [Fact(Skip = "This test can be performed only on a local machine.")]
+    [ManualFact]
     public void TcpServerConnectionSuccessTest()
     {
         var server = CreateTcpServer(port: 2004);
@@ -65,7 +66,7 @@ public class TcpTest
         server.Disable();
     }
 
-    [Fact(Skip = "This test can be performed only on a local machine.")]
+    [ManualFact]
     public void TcpClientServerConnectionTest()
     {
         var client = CreateTcpClient(port: 2003);
@@ -86,7 +87,7 @@ public class TcpTest
         server.Disable();
     }
 
-    [Fact(Skip = "This test can be performed only on a local machine.")]
+    [ManualFact]
     public async Task TcpClientServerDataTransferTest()
     {
         var client = CreateTcpClient(port: 2002);

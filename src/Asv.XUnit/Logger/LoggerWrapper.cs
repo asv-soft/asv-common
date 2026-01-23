@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 using R3;
 using Xunit.Abstractions;
 
-namespace Asv.Common.Test;
+namespace Asv.XUnit;
 
 public class TestLoggerFactory(ITestOutputHelper testOutputHelper, TimeProvider time, string prefix)
     : ILoggerFactory

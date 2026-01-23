@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using Asv.XUnit;
 using Microsoft.Extensions.Time.Testing;
 using R3;
 using Xunit;
@@ -27,7 +28,7 @@ public class UdpTest
             }
         );
 
-    [Fact(Skip = "This test can be performed only on a local machine.")]
+    [ManualFact]
     public void UdpClientConnectionSuccessTest()
     {
         var client = CreateUdpPort(localPort: 2005);
@@ -44,7 +45,7 @@ public class UdpTest
         client.Disable();
     }
 
-    [Fact(Skip = "This test can be performed only on a local machine.")]
+    [ManualFact]
     public void UdpServerConnectionSuccessTest()
     {
         var server = CreateUdpPort(localPort: 2004);
@@ -61,7 +62,7 @@ public class UdpTest
         server.Disable();
     }
 
-    [Fact(Skip = "This test can be performed only on a local machine.")]
+    [ManualFact]
     public void UdpClientServerConnectionTest()
     {
         var client = CreateUdpPort(localPort: 2002, remotePort: 2007);
@@ -82,7 +83,7 @@ public class UdpTest
         server.Disable();
     }
 
-    [Fact(Skip = "This test can be performed only on a local machine.")]
+    [ManualFact]
     public async Task UdpClientServerDataTransferTest()
     {
         var client = CreateUdpPort(localPort: 2001, remotePort: 2009);

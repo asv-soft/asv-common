@@ -1,7 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Asv.Cfg.Test;
+using Asv.XUnit;
 using AutoFixture;
 using JetBrains.Annotations;
 using R3;

@@ -36,5 +36,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Asv.Cfg\Asv.Cfg.csproj" />
+    <ProjectReference Include="..\Asv.XUnit\Asv.XUnit.csproj" />
   </ItemGroup>
 </Project>

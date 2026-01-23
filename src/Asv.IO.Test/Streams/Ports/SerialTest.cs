@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using Asv.XUnit;
 using Microsoft.Extensions.Time.Testing;
 using R3;
 using Xunit;
@@ -14,7 +15,7 @@ public class SerialTest
     public static CustomSerialPort CreateSerialPort(string name = "COM0") =>
         new(new SerialPortConfig { PortName = name });
 
-    [Fact(Skip = "This test can be performed only on a local machine.")]
+    [ManualFact]
     public void SerialClientConnectionSuccessTest()
     {
         var client = CreateSerialPort("COM6");
@@ -31,7 +32,7 @@ public class SerialTest
         client.Disable();
     }
 
-    [Fact(Skip = "This test can be performed only on a local machine.")]
+    [ManualFact]
     public void SerialServerConnectionSuccessTest()
     {
         var server = CreateSerialPort("COM5");
@@ -48,7 +49,7 @@ public class SerialTest
         server.Disable();
     }
 
-    [Fact(Skip = "This test can be performed only on a local machine.")]
+    [ManualFact]
     public void SerialClientServerConnectionTest()
     {
         var client = CreateSerialPort("COM3");
@@ -69,7 +70,7 @@ public class SerialTest
         server.Disable();
     }
 
-    [Fact(Skip = "This test can be performed only on a local machine.")]
+    [ManualFact]
     public async Task SerialClientServerDataTransferTest()
     {
         var client = CreateSerialPort("COM1");

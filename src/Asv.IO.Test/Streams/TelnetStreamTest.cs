@@ -3,6 +3,7 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Asv.XUnit;
 using R3;
 using Xunit;
 using Xunit.Abstractions;
@@ -18,7 +19,7 @@ namespace Asv.IO.Test
             _output = output;
         }
 
-        [Fact(Skip = "Manual test")]
+        [ManualFact] // TODO: I think somethings is wrong with the test
         public async Task ReadWriteMessageTest()
         {
             var message1 = "Ping";

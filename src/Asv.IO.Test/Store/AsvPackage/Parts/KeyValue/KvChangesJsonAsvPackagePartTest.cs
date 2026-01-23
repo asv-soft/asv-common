@@ -1,17 +1,15 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.IO.Packaging;
 using System.Threading;
-using Asv.Cfg.Test;
-using Asv.IO;
+using Asv.XUnit;
 using DotNext;
 using FluentAssertions;
 using JetBrains.Annotations;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Asv.IO.Test.PackageFile.Parts.KeyValue;
+namespace Asv.IO.Test;
 
 [TestSubject(typeof(KvChangesJsonAsvPackagePart))]
 public class KvChangesJsonAsvPackagePartTest(ITestOutputHelper log)

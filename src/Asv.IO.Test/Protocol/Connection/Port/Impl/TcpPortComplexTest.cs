@@ -2,7 +2,7 @@ using System;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-using Asv.Cfg.Test;
+using Asv.XUnit;
 using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
 using R3;
@@ -39,7 +39,7 @@ public class TcpPortComplexTest
         _clientRouter = _protocol.CreateRouter("Client");
     }
 
-    [Theory(Skip = "This test can be performed only on a local machine.")]
+    [ManualTheory]
     [InlineData(100)]
     [InlineData(1000)]
     public async Task TcpPort_SendAndRecvMessages_Success(int messagesCount)
@@ -115,7 +115,7 @@ public class TcpPortComplexTest
         Assert.Equal(_serverRouter.Statistic.RxMessages, (uint)messagesCount);
     }
 
-    [Theory(Skip = "This test can be performed only on a local machine.")]
+    [ManualTheory]
     [InlineData("tcp://127.0.0.1:5650")]
     [InlineData("tcp://127.0.0.1:5652?srv=true")]
     [InlineData("udp://127.0.0.1:5651")]
@@ -138,7 +138,7 @@ public class TcpPortComplexTest
         }
     }
 
-    [Theory(Skip = "This test can be performed only on a local machine.")]
+    [ManualTheory]
     [InlineData("tcp//127.0.0.1:5650")]
     [InlineData("127.0.0:561")]
     [InlineData("thisIsABadValue")]
@@ -153,7 +153,7 @@ public class TcpPortComplexTest
         });
     }
 
-    [Theory(Skip = "This test can be performed only on a local machine.")]
+    [ManualTheory]
     [InlineData("tcp:/127.0.0.15652?srv=true")]
     [InlineData("tcp:/127.0.0.15652?srvtru")]
     public void Router_AddPortWithInValidConnStringArgumentOutOfRange_Failure(
@@ -164,7 +164,7 @@ public class TcpPortComplexTest
         Assert.Throws<ArgumentOutOfRangeException>(() => _clientRouter.AddPort(connectionString));
     }
 
-    [Theory(Skip = "This test can be performed only on a local machine.")]
+    [ManualTheory]
     [InlineData("udp://1270.0:5651")]
     public void Router_AddPortWithInValidConnStringNetSocketException_Failure(
         string connectionString
@@ -174,7 +174,7 @@ public class TcpPortComplexTest
         Assert.Throws<SocketException>(() => _clientRouter.AddPort(connectionString));
     }
 
-    [Theory(Skip = "This test can be performed only on a local machine.")]
+    [ManualTheory]
     [InlineData("p://127.0.0:5651")]
     public void Router_AddPortWithInValidConnStringInvalidOperationException_Failure(
         string connectionString
@@ -184,8 +184,7 @@ public class TcpPortComplexTest
         Assert.Throws<InvalidOperationException>(() => _clientRouter.AddPort(connectionString));
     }
 
-    //[Fact]
-    [Fact(Skip = "This test can be performed only on a local machine.")]
+    [ManualFact]
     public void Router_RecreatePortWithAddAndRemove_Success()
     {
         const string validConnString = "tcp://127.0.0.1:5650";
@@ -197,8 +196,7 @@ public class TcpPortComplexTest
         Assert.NotNull(port1);
     }
 
-    //[Fact]
-    [Fact(Skip = "This test can be performed only on a local machine.")]
+    [ManualFact]
     public void Router_SetConnectionId_Success()
     {
         const string validConnString = "tcp://127.0.0.1:5650";
@@ -207,8 +205,7 @@ public class TcpPortComplexTest
         _clientRouter.OnRxMessage.Subscribe();
     }
 
-    //[Fact]
-    [Fact(Skip = "This test can be performed only on a local machine.")]
+    [ManualFact]
     public void Router_SetPortId_Success()
     {
         const string validConnString = "tcp://127.0.0.1:5650";

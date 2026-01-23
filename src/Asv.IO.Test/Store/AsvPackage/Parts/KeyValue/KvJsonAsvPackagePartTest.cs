@@ -4,6 +4,7 @@ using System.IO;
 using System.IO.Packaging;
 using System.Threading;
 using Asv.Cfg.Test;
+using Asv.XUnit;
 using DotNext;
 using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
