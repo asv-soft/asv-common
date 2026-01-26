@@ -1,9 +1,8 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Asv.Cfg.Test;
+using Asv.XUnit;
 using R3;
-using Xunit;
 using Xunit.Abstractions;
 using ZLogger;
 
@@ -11,8 +10,8 @@ namespace Asv.IO.Test;
 
 public class TcpPortConnectionTest(ITestOutputHelper output)
 {
-    // [Fact] // this code is for manual testing only
-    public async void TcpPortReconnectionTest()
+    [ManualFact]
+    public async Task TcpPortReconnectionTest()
     {
         var logFactory1 = new TestLoggerFactory(output, TimeProvider.System, "CLIENT");
         var protocol1 = Protocol.Create(builder =>

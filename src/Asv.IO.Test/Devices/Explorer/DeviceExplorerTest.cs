@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using Asv.Cfg.Test;
 using Asv.IO.Device;
+using Asv.XUnit;
 using JetBrains.Annotations;
 using TimeProviderExtensions;
 using Xunit;

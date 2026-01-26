@@ -1,10 +1,8 @@
 using System;
 using System.Threading.Tasks;
-using Asv.Cfg.Test;
-using Asv.IO;
+using Asv.XUnit;
 using JetBrains.Annotations;
 using R3;
-using Xunit;
 using Xunit.Abstractions;
 
 namespace Asv.IO.Test.Connection.Port.Impl;
@@ -12,7 +10,7 @@ namespace Asv.IO.Test.Connection.Port.Impl;
 [TestSubject(typeof(UdpProtocolPortConfig))]
 public class UdpProtocolPortConfigTest(ITestOutputHelper output)
 {
-    [Fact(Skip = "Only for manual testing")]
+    [ManualFact]
     public async Task UpdConnectionTest()
     {
         var testLogFactory = new TestLoggerFactory(output, TimeProvider.System, "CLIENT");

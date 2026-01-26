@@ -35,6 +35,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Asv.Composition.Test", "Asv
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Asv.Common.Shell", "Asv.Common.Shell\Asv.Common.Shell.csproj", "{1B9E2AF3-37A9-4ECC-A10C-A90234D44260}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Asv.XUnit", "Asv.XUnit\Asv.XUnit.csproj", "{B1A00B82-E2A0-4A0A-91B7-4988060FACC3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -77,6 +79,10 @@ Global
 		{1B9E2AF3-37A9-4ECC-A10C-A90234D44260}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1B9E2AF3-37A9-4ECC-A10C-A90234D44260}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1B9E2AF3-37A9-4ECC-A10C-A90234D44260}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B1A00B82-E2A0-4A0A-91B7-4988060FACC3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B1A00B82-E2A0-4A0A-91B7-4988060FACC3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B1A00B82-E2A0-4A0A-91B7-4988060FACC3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B1A00B82-E2A0-4A0A-91B7-4988060FACC3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

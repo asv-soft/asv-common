@@ -1,7 +1,6 @@
-#nullable enable
 using System;
 using System.Threading.Tasks;
-using Asv.Cfg.Test;
+using Asv.XUnit;
 using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
 using R3;
