@@ -1,0 +1,24 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="../.github/workflows/release-action.yml" />
+    <File Path="../.github/workflows/release-debug-version.yml" />
+    <File Path="../.gitignore" />
+    <File Path="../build.bat" />
+    <File Path="../LICENSE" />
+    <File Path="../publish_github.bat" />
+    <File Path="../publish_nuget.bat" />
+    <File Path="../README.md" />
+    <File Path="CodeStyle.ruleset" />
+    <File Path="Directory.Build.props" />
+  </Folder>
+  <Project Path="Asv.Cfg.Test/Asv.Cfg.Test.csproj" />
+  <Project Path="Asv.Cfg/Asv.Cfg.csproj" />
+  <Project Path="Asv.Common.Shell/Asv.Common.Shell.csproj" />
+  <Project Path="Asv.Common.Test/Asv.Common.Test.csproj" />
+  <Project Path="Asv.Common/Asv.Common.csproj" />
+  <Project Path="Asv.Composition.Test/Asv.Composition.Test.csproj" />
+  <Project Path="Asv.Composition/Asv.Composition.csproj" />
+  <Project Path="Asv.IO.Test/Asv.IO.Test.csproj" />
+  <Project Path="Asv.IO/Asv.IO.csproj" />
+  <Project Path="Asv.XUnit/Asv.XUnit.csproj" />
+</Solution>
