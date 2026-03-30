@@ -3,19 +3,10 @@ using System.Collections.Immutable;
 
 namespace Asv.IO;
 
-/// <summary>
-/// Used to create a device
-/// </summary>
 public interface IClientDeviceFactory
 {
     int Order { get; }
 
-    /// <summary>
-    /// Try to identify new device from message stream
-    /// </summary>
-    /// <param name="message"></param>
-    /// <param name="deviceId"></param>
-    /// <returns></returns>
     bool TryIdentify(IProtocolMessage message, out DeviceId? deviceId);
 
     void UpdateDevice(IClientDevice device, IProtocolMessage message);

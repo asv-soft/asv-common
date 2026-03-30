@@ -39,7 +39,7 @@ public class TestLogger(ITestOutputHelper testOutputHelper, TimeProvider time, s
         try
         {
             testOutputHelper.WriteLine(
-                $"{time.GetLocalNow().DateTime:HH:mm:ss.fff,15} |={ConvertToStr(logLevel)}=| {categoryName,-8} | {formatter(state, exception)}"
+                $"{time.GetLocalNow().DateTime:HH:mm:ss.fff,15} |={ConvertToStr(logLevel)}=| {categoryName, -8} | {formatter(state, exception)}"
             );
         }
         catch

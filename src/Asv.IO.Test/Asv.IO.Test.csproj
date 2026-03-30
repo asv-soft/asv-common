@@ -56,7 +56,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Store\AsvPackage\Parts\TimeSeries\Chimp\Table\" />
+    <Folder Include="Store\" />
     <ProjectReference Include="..\Asv.XUnit\Asv.XUnit.csproj" />
   </ItemGroup>
 </Project>

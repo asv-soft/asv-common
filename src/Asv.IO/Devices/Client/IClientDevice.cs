@@ -10,9 +10,6 @@ namespace Asv.IO;
 
 public interface IClientDevice : IDisposable, IAsyncDisposable
 {
-    /// <summary>
-    /// This method is used to initialize the device.
-    /// </summary>
     void Initialize();
     DeviceId Id { get; }
     ReadOnlyReactiveProperty<string?> Name { get; }
