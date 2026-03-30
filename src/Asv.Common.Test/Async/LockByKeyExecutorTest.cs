@@ -57,33 +57,57 @@ public class LockByKeyExecutorTest
     {
         var locker = new LockByKeyExecutor<string>();
         var threads = new Thread[2];
-        var firstStopWatch = new Stopwatch();
-        var secondStopWatch = new Stopwatch();
+        using var ready = new CountdownEvent(2);
+        using var start = new ManualResetEventSlim(false);
+        var activeCount = 0;
+        var maxActiveCount = 0;
+        var executionCount = 0;
 
         threads[0] = new Thread(() =>
         {
-            locker.Execute("one", () => Thread.Sleep(100));
-            firstStopWatch.Stop();
+            ready.Signal();
+            start.Wait();
+            locker.Execute(
+                "one",
+                () =>
+                {
+                    var active = Interlocked.Increment(ref activeCount);
+                    Interlocked.Increment(ref executionCount);
+                    UpdateMax(ref maxActiveCount, active);
+                    Thread.Sleep(100);
+                    Interlocked.Decrement(ref activeCount);
+                }
+            );
         });
         threads[1] = new Thread(() =>
         {
-            locker.Execute("one", () => Thread.Sleep(100));
-            secondStopWatch.Stop();
+            ready.Signal();
+            start.Wait();
+            locker.Execute(
+                "one",
+                () =>
+                {
+                    var active = Interlocked.Increment(ref activeCount);
+                    Interlocked.Increment(ref executionCount);
+                    UpdateMax(ref maxActiveCount, active);
+                    Thread.Sleep(100);
+                    Interlocked.Decrement(ref activeCount);
+                }
+            );
         });
 
-        firstStopWatch.Start();
-        secondStopWatch.Start();
         threads[0].Start();
         threads[1].Start();
+        ready.Wait();
+        start.Set();
 
         foreach (var thread in threads)
         {
             thread.Join();
         }
 
-        Assert.True(
-            secondStopWatch.ElapsedMilliseconds - firstStopWatch.ElapsedMilliseconds >= 100
-        );
+        Assert.Equal(2, executionCount);
+        Assert.Equal(1, maxActiveCount);
     }
 
     [Fact]
@@ -118,5 +142,18 @@ public class LockByKeyExecutorTest
         Assert.True(
             secondStopWatch.ElapsedMilliseconds - firstStopWatch.ElapsedMilliseconds < 1000
         );
+    }
+
+    private static void UpdateMax(ref int target, int value)
+    {
+        int current;
+        do
+        {
+            current = Volatile.Read(ref target);
+            if (value <= current)
+            {
+                return;
+            }
+        } while (Interlocked.CompareExchange(ref target, value, current) != current);
     }
 }
