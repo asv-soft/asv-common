@@ -77,4 +77,7 @@
       <DependentUpon>RS.resx</DependentUpon>
     </Compile>
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Behaviours\Undo\History\" />
+  </ItemGroup>
 </Project>

@@ -2,9 +2,9 @@
 
 namespace Asv.Common;
 
-public interface ISupportId<out T>
+public interface ISupportId<out TId>
 {
-    T Id { get; }
+    TId Id { get; }
 }
 
 public static class SupportIdMixin
