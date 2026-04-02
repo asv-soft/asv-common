@@ -1,9 +1,9 @@
 namespace Asv.Common;
 
-public interface ISupportUndo<TBase, TId>
+public interface ISupportUndoHistory<TBase, TId>
     : ISupportRoutedEvents<TBase>,
         ISupportNavigation<TBase, TId>
     where TBase : ISupportRoutedEvents<TBase>, ISupportNavigation<TBase, TId>
 {
-    IUndoController Undo { get; }
+    IUndoHistory<TBase, TId> UndoHistory { get; }
 }

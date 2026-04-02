@@ -51,6 +51,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="R3" Version="$(R3Version)" />
+    <PackageReference Include="ObservableCollections.R3" Version="$(R3Collections)" />
     <PackageReference Include="Geodesy" Version="$(GeodesyVersion)" />
     <PackageReference Include="Roslynator.Analyzers" Version="4.14.0">
       <PrivateAssets>all</PrivateAssets>
@@ -78,6 +79,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Behaviours\Undo\History\" />
+    <Folder Include="Behaviours\Undo\Controller\Changes\" />
   </ItemGroup>
 </Project>
