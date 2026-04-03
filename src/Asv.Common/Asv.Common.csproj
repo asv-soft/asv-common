@@ -78,7 +78,4 @@
       <DependentUpon>RS.resx</DependentUpon>
     </Compile>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Behaviours\Undo\Controller\Changes\" />
-  </ItemGroup>
 </Project>

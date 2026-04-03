@@ -20,6 +20,8 @@ public class ISupportUndoTest
         var root = new RootViewModel("root");
         var child = new ViewModelBase("child");
         root.Children.Add(child);
+
+        child.Prop1.Value = "123";
     }
 }
 
@@ -43,22 +45,7 @@ public class ViewModelBase : AsyncDisposableOnceBag, ISupportUndo<ViewModelBase,
         Undo = new UndoController<ViewModelBase>(this);
         Children.SetParent(this).AddTo(ref DisposableBag);
 
-        Undo.Register(
-            new UndoChangeHandler<ScalarChange>(
-                nameof(Prop1),
-                () => new ScalarChange(),
-                async (change, cancel) =>
-                {
-                    Prop1.Value = change.Prev;
-                    await Task.CompletedTask;
-                },
-                async (change, cancel) =>
-                {
-                    Prop1.Value = change.Curr;
-                    await Task.CompletedTask;
-                }
-            )
-        );
+        Undo.Register(nameof(Prop1), Prop1).AddTo(ref DisposableBag);
     }
 
     public string Id { get; }
@@ -78,25 +65,4 @@ public class ViewModelBase : AsyncDisposableOnceBag, ISupportUndo<ViewModelBase,
     }
 
     public ReactiveProperty<string> Prop1 { get; } = new();
-}
-
-public class ScalarChange : IChange
-{
-    public ScalarChange() { }
-
-    public ScalarChange(string prev, string curr)
-    {
-        Prev = prev;
-        Curr = curr;
-    }
-
-    public string Prev { get; }
-    public string Curr { get; }
-
-    public void Serialize(IBufferWriter<byte> writer) { }
-
-    public void Deserialize(ReadOnlySequence<byte> data)
-    {
-        throw new NotImplementedException();
-    }
 }

@@ -20,12 +20,12 @@ public class UndoHistoryStore<TId> : AsyncDisposableOnceBag, IUndoHistoryStore<T
 {
     public IEnumerable<IUndoSnapshot<TId>> LoadUndoStack()
     {
-        throw new NotImplementedException();
+        yield break;
     }
 
     public void SaveUndoStack(IEnumerable<IUndoSnapshot<TId>> snapshots)
     {
-        throw new NotImplementedException();
+        
     }
 
     public IEnumerable<IUndoSnapshot<TId>> LoadRedoStack()

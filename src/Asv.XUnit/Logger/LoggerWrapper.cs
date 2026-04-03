@@ -1,7 +1,8 @@
 using System;
 using Microsoft.Extensions.Logging;
 using R3;
-using Xunit.Abstractions;
+using Xunit;
+
 
 namespace Asv.XUnit;
 

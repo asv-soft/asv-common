@@ -1,6 +1,7 @@
 using System.Buffers;
 using System.Threading;
 using System.Threading.Tasks;
+using MemoryPack;
 using R3;
 
 namespace Asv.Common;
@@ -8,12 +9,20 @@ namespace Asv.Common;
 public class ReactivePropertyChangeHandler<T>(string name, ReactiveProperty<T> property)
     : UndoChangeHandler<ScalarChange<T>>(
         name,
-        property.Pairwise().Select(x => (IChange)new ScalarChange<T>(x.Previous, x.Current))
+        property.Pairwise().Select(x => (IChange)new ScalarChange<T>
+        {
+            OldValue = x.Previous, 
+            NewValue = x.Current
+        })
     )
 {
     public override IChange Create()
     {
-        return new ScalarChange<T>();
+        return new ScalarChange<T>
+        {
+            OldValue = default,
+            NewValue = default,
+        };
     }
 
     protected override ValueTask InternalUndo(ScalarChange<T> change, CancellationToken cancel)
@@ -29,22 +38,21 @@ public class ReactivePropertyChangeHandler<T>(string name, ReactiveProperty<T> p
     }
 }
 
-public class ScalarChange<T> : IChange
+
+[MemoryPackable]
+public partial class ScalarChange<T> : IChange
 {
-    public ScalarChange() { }
-
-    public ScalarChange(T previous, T current) { }
-
-    public T OldValue { get; private set; }
-    public T NewValue { get; private set; }
+    public required T OldValue { get; set; }
+    public required T NewValue { get; set; }
 
     public void Serialize(IBufferWriter<byte> writer)
     {
-        throw new System.NotImplementedException();
+        MemoryPackSerializer.Serialize(writer, this);
     }
 
     public void Deserialize(ReadOnlySequence<byte> data)
     {
-        throw new System.NotImplementedException();
+        var src = this;
+        MemoryPackSerializer.Deserialize(in data, ref src);
     }
 }

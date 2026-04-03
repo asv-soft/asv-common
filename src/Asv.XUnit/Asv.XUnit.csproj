@@ -3,6 +3,7 @@
     <TargetFrameworks>$(TargetFrameworksValue)</TargetFrameworks>
     <FileVersion>$(ProductVersion)</FileVersion>
     <Version>$(ProductVersion)</Version>
+    <OutputType>Exe</OutputType>
     <PackageVersion>$(ProductVersion)</PackageVersion>
     <Authors>https://github.com/asv-soft</Authors>
     <Company>https://github.com/asv-soft</Company>
@@ -40,7 +41,8 @@
       Version="$(ZLoggerVersion)"
     />
     <PackageReference Include="R3" Version="$(R3Version)" />
-    <PackageReference Include="xunit.extensibility.core" Version="2.9.3" />
+      <PackageReference Include="xunit.v3" Version="$(XunitVersion)" />
+      <PackageReference Include="xunit.runner.visualstudio" Version="$(XunitRunnerVersion)" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\README.md">
