@@ -1,7 +1,6 @@
 using System;
 using Xunit;
 
-
 namespace Asv.IO.Test
 {
     public class SpanSerializationTest

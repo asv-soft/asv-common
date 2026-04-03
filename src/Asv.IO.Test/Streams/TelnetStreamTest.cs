@@ -7,7 +7,6 @@ using Asv.XUnit;
 using R3;
 using Xunit;
 
-
 namespace Asv.IO.Test
 {
     public class TelnetStreamTest

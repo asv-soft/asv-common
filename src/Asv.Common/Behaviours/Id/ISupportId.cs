@@ -35,13 +35,14 @@ public static class SupportIdMixin
         var current = src;
         var stack = new Stack<TId>();
 
-        while (current.Equals(parent))
+        while (!current.Equals(parent))
         {
             stack.Push(current.Id);
             if (current.Parent == null)
             {
                 throw new Exception("Parent not found");
             }
+            current = current.Parent;
         }
 
         return stack;

@@ -2,7 +2,6 @@ using System;
 using DotNext.Buffers;
 using DotNext.IO;
 using Xunit;
-
 using ZstdSharp;
 
 namespace Asv.IO.Test.Serializable.BitBased.Encoding.Gorilla;

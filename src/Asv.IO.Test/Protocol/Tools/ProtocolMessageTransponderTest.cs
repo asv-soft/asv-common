@@ -7,7 +7,6 @@ using R3;
 using TimeProviderExtensions;
 using Xunit;
 
-
 namespace Asv.IO.Test;
 
 [TestSubject(typeof(ProtocolMessageTransponder<ExampleMessage1>))]

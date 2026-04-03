@@ -4,7 +4,6 @@ using Asv.XUnit;
 using DotNext;
 using JetBrains.Annotations;
 
-
 namespace Asv.Store.Test;
 
 [TestSubject(typeof(KvJsonAsvPackagePart))]

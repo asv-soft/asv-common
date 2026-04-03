@@ -3,7 +3,6 @@ using System.Diagnostics;
 using System.Threading;
 using Xunit;
 
-
 namespace Asv.Common.Test.Async;
 
 public class LockByKeyExecutorTest

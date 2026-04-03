@@ -10,7 +10,6 @@ using Newtonsoft.Json.Converters;
 using R3;
 using Xunit;
 
-
 namespace Asv.Cfg.Test
 {
     [TestSubject(typeof(JsonOneFileConfiguration))]

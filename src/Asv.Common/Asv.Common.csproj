@@ -78,4 +78,7 @@
       <DependentUpon>RS.resx</DependentUpon>
     </Compile>
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Behaviours\Behaviours\" />
+  </ItemGroup>
 </Project>

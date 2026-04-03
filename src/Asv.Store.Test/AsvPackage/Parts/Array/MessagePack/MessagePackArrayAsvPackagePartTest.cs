@@ -5,7 +5,6 @@ using DotNext;
 using JetBrains.Annotations;
 using MessagePack;
 
-
 namespace Asv.Store.Test;
 
 [TestSubject(typeof(MessagePackArrayAsvPackagePart<>))]

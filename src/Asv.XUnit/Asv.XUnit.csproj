@@ -41,8 +41,8 @@
       Version="$(ZLoggerVersion)"
     />
     <PackageReference Include="R3" Version="$(R3Version)" />
-      <PackageReference Include="xunit.v3" Version="$(XunitVersion)" />
-      <PackageReference Include="xunit.runner.visualstudio" Version="$(XunitRunnerVersion)" />
+    <PackageReference Include="xunit.v3" Version="$(XunitVersion)" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="$(XunitRunnerVersion)" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\README.md">

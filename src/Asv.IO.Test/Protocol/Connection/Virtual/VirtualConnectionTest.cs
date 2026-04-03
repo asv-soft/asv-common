@@ -7,7 +7,6 @@ using JetBrains.Annotations;
 using R3;
 using Xunit;
 
-
 namespace Asv.IO.Test.Connection.Virtual;
 
 [TestSubject(typeof(VirtualPort))]

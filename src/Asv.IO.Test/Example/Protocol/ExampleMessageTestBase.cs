@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using DeepEqual.Syntax;
 using Xunit;
 
-
 namespace Asv.IO.Test.Example.Protocol;
 
 public abstract class ExampleMessageTestBase<T>(ITestOutputHelper output)

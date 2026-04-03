@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Asv.Common;
+using Asv.Store.Undo.History.Store;
 using JetBrains.Annotations;
 using ObservableCollections;
 using R3;
@@ -15,22 +16,41 @@ namespace Asv.Common.Test.Behaviours.Undo;
 public class ISupportUndoTest
 {
     [Fact]
-    public void METHOD()
+    public async ValueTask UndoRedoTests()
     {
         var root = new RootViewModel("root");
-        var child = new ViewModelBase("child");
-        root.Children.Add(child);
+        var child1 = new ViewModelBase("child1");
+        root.Children.Add(child1);
+        var child2 = new ViewModelBase("child2");
+        child1.Children.Add(child2);
+        var child3 = new ViewModelBase("child3");
+        child2.Children.Add(child3);
 
-        child.Prop1.Value = "123";
+        child3.Prop1.Value = "1";
+        child3.Prop1.Value = "2";
+        child3.Prop1.Value = "3";
+
+        await root.UndoHistory.UndoAsync(TestContext.Current.CancellationToken);
+        Assert.Equal("2", child3.Prop1.Value);
+        await root.UndoHistory.RedoAsync(TestContext.Current.CancellationToken);
+        Assert.Equal("3", child3.Prop1.Value);
+
+        await root.UndoHistory.UndoAsync(TestContext.Current.CancellationToken);
+        Assert.Equal("2", child3.Prop1.Value);
+        await root.UndoHistory.UndoAsync(TestContext.Current.CancellationToken);
+        Assert.Equal("1", child3.Prop1.Value);
     }
 }
 
-public class RootViewModel : ViewModelBase, ISupportUndoHistory<ViewModelBase, string>
+public class RootViewModel : ViewModelBase, IHasUndoHistory<ViewModelBase, string>
 {
     public RootViewModel(string id)
         : base(id)
     {
-        UndoHistory = new UndoHistory<ViewModelBase, string>(this, new UndoHistoryStore<string>());
+        UndoHistory = new UndoHistory<ViewModelBase, string>(
+            this,
+            new MemoryPackUndoHistoryStore<string>()
+        );
     }
 
     public IUndoHistory<ViewModelBase, string> UndoHistory { get; }
@@ -65,4 +85,9 @@ public class ViewModelBase : AsyncDisposableOnceBag, ISupportUndo<ViewModelBase,
     }
 
     public ReactiveProperty<string> Prop1 { get; } = new();
+
+    public override string ToString()
+    {
+        return Id;
+    }
 }

@@ -7,7 +7,6 @@ using JetBrains.Annotations;
 using TimeProviderExtensions;
 using Xunit;
 
-
 namespace Asv.IO.Test.Devices.Explorer;
 
 [TestSubject(typeof(DeviceExplorer))]

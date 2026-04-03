@@ -6,7 +6,6 @@ using JetBrains.Annotations;
 using R3;
 using Xunit;
 
-
 namespace Asv.Cfg.Test
 {
     [TestSubject(typeof(ZipJsonConfiguration))]

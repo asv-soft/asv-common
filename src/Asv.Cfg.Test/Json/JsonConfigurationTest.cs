@@ -8,7 +8,6 @@ using JetBrains.Annotations;
 using R3;
 using Xunit;
 
-
 namespace Asv.Cfg.Test
 {
     public enum EnumTest

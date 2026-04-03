@@ -3,7 +3,6 @@ using DotNext;
 using DotNext.Buffers;
 using DotNext.IO;
 using Xunit;
-
 using ZstdSharp;
 
 namespace Asv.IO.Test.Serializable.BitBased.Encoding.Chimp;

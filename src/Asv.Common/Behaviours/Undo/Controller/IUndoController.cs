@@ -16,11 +16,3 @@ public interface IUndoController : IDisposable
     IDisposable Register(IUndoHandler handler);
     IUndoHandler Find(string registrationId);
 }
-
-public static class UndoControllerMixin
-{
-    public static IDisposable Register<T>(this IUndoController controller, string name, ReactiveProperty<T> prop)
-    {
-        return controller.Register(new ReactivePropertyChangeHandler<T>(name, prop));
-    }
-}

@@ -5,7 +5,6 @@ using DotNext;
 using FluentAssertions;
 using JetBrains.Annotations;
 
-
 namespace Asv.Store.Test;
 
 [TestSubject(typeof(KvChangesJsonAsvPackagePart))]

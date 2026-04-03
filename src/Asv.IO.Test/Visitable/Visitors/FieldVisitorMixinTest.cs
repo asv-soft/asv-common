@@ -1,7 +1,6 @@
 using JetBrains.Annotations;
 using Xunit;
 
-
 namespace Asv.IO.Test.Visitable.Visitors;
 
 [TestSubject(typeof(FieldVisitorMixin))]

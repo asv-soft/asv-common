@@ -2,7 +2,6 @@ using System;
 using Microsoft.Extensions.Time.Testing;
 using Xunit;
 
-
 namespace Asv.Common.Test.Other;
 
 public class IncrementalRateCounterTest

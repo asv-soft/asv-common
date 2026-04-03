@@ -40,19 +40,19 @@ public struct ProtocolTags
     }
 
     /// <summary>
-    /// Gets the number of tags contained in the <see cref="T:System.Diagnostics.ProtocolTags" />.
+    /// Gets the number of tags contained in the <see cref="T:ProtocolTags" />.
     /// </summary>
     public readonly int Count => _tagsCount;
 
     /// <summary>
-    /// Gets a value indicating whether the <see cref="T:System.Diagnostics.ProtocolTags" /> is read-only. This property will always return <see langword="false" />.
+    /// Gets a value indicating whether the <see cref="T:ProtocolTags" /> is read-only. This property will always return <see langword="false" />.
     /// </summary>
     public readonly bool IsReadOnly => false;
 
     /// <summary>
     /// Gets or sets the tags at the specified index.
     /// </summary>
-    /// <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="index" /> is not a valid index in the <see cref="T:System.Diagnostics.ProtocolTags" />.</exception>
+    /// <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="index" /> is not a valid index in the <see cref="T:ProtocolTags" />.</exception>
     public KeyValuePair<string, object?> this[int index]
     {
         readonly get
@@ -189,10 +189,10 @@ public struct ProtocolTags
 
     /// <summary>
     /// Copies the contents of this  into a destination <paramref name="tags" /> span.
-    /// Inserts an element into this <see cref="T:System.Diagnostics.ProtocolTags" /> at the specified index.
+    /// Inserts an element into this <see cref="T:ProtocolTags" /> at the specified index.
     /// </summary>
     /// <param name="tags">The destination <see cref="T:System.Span`1" /> object.</param>
-    /// <exception cref="T:System.ArgumentException"> <paramref name="tags" /> The number of elements in the source <see cref="T:System.Diagnostics.ProtocolTags" /> is greater than the number of elements that the destination span.</exception>
+    /// <exception cref="T:System.ArgumentException"> <paramref name="tags" /> The number of elements in the source <see cref="T:ProtocolTags" /> is greater than the number of elements that the destination span.</exception>
     public readonly void CopyTo(Span<KeyValuePair<string, object?>> tags)
     {
         if (tags.Length < _tagsCount)
@@ -204,9 +204,9 @@ public struct ProtocolTags
     }
 
     /// <summary>
-    /// Copies the entire <see cref="T:System.Diagnostics.ProtocolTags" /> to a compatible one-dimensional array, starting at the specified index of the target array.
+    /// Copies the entire <see cref="T:ProtocolTags" /> to a compatible one-dimensional array, starting at the specified index of the target array.
     /// </summary>
-    /// <param name="array">The one-dimensional Array that is the destination of the elements copied from <see cref="T:System.Diagnostics.ProtocolTags" />. The Array must have zero-based indexing.</param>
+    /// <param name="array">The one-dimensional Array that is the destination of the elements copied from <see cref="T:ProtocolTags" />. The Array must have zero-based indexing.</param>
     /// <param name="arrayIndex">The zero-based index in <paramref name="array" /> at which copying begins.</param>
     /// <exception cref="T:System.ArgumentNullException"> <paramref name="array" /> is null.</exception>
     /// <exception cref="T:System.ArgumentOutOfRangeException"> <paramref name="arrayIndex " /> is less than 0 or greater that or equal the <paramref name="array" /> length.</exception>
@@ -223,11 +223,11 @@ public struct ProtocolTags
     }
 
     /// <summary>
-    /// Inserts an element into the <see cref="T:System.Diagnostics.ProtocolTags" /> at the specified index.
+    /// Inserts an element into the <see cref="T:ProtocolTags" /> at the specified index.
     /// </summary>
     /// <param name="index">The zero-based index at which item should be inserted.</param>
     /// <param name="item">The tag to insert.</param>
-    /// <exception cref="T:System.ArgumentOutOfRangeException"> <paramref name="index" /> index is less than 0 or <paramref name="index" /> is greater than <see cref="M:System.Diagnostics.ProtocolTags.Count" />.</exception>
+    /// <exception cref="T:System.ArgumentOutOfRangeException"> <paramref name="index" /> index is less than 0 or <paramref name="index" /> is greater than <see cref="M:ProtocolTags.Count" />.</exception>
     public void Insert(int index, KeyValuePair<string, object?> item)
     {
         if (index == _tagsCount)
@@ -271,10 +271,10 @@ public struct ProtocolTags
     }
 
     /// <summary>
-    /// Removes the element at the specified index of the <see cref="T:System.Diagnostics.ProtocolTags" />.
+    /// Removes the element at the specified index of the <see cref="T:ProtocolTags" />.
     /// </summary>
     /// <param name="index">The zero-based index of the element to remove.</param>
-    /// <exception cref="T:System.ArgumentOutOfRangeException"> <paramref name="index" /> index is less than 0 or <paramref name="index" /> is greater than <see cref="M:System.Diagnostics.ProtocolTags.Count" />.</exception>
+    /// <exception cref="T:System.ArgumentOutOfRangeException"> <paramref name="index" /> index is less than 0 or <paramref name="index" /> is greater than <see cref="M:ProtocolTags.Count" />.</exception>
     public void RemoveAt(int index)
     {
         ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(
@@ -291,22 +291,22 @@ public struct ProtocolTags
     }
 
     /// <summary>
-    /// Removes all elements from the <see cref="T:System.Diagnostics.ProtocolTags" />.
+    /// Removes all elements from the <see cref="T:ProtocolTags" />.
     /// </summary>
     public void Clear() => _tagsCount = 0;
 
     /// <summary>
-    /// Determines whether an tag is in the <see cref="T:System.Diagnostics.ProtocolTags" />.
+    /// Determines whether an tag is in the <see cref="T:ProtocolTags" />.
     /// </summary>
-    /// <param name="item">The tag to locate in the <see cref="T:System.Diagnostics.ProtocolTags" />.</param>
-    /// <returns><see langword="true" /> if item is found in the <see cref="T:System.Diagnostics.ProtocolTags" />; otherwise, <see langword="false" />.</returns>
+    /// <param name="item">The tag to locate in the <see cref="T:ProtocolTags" />.</param>
+    /// <returns><see langword="true" /> if item is found in the <see cref="T:ProtocolTags" />; otherwise, <see langword="false" />.</returns>
     public readonly bool Contains(KeyValuePair<string, object?> item) => IndexOf(item) >= 0;
 
     /// <summary>
-    /// Removes the first occurrence of a specific object from the <see cref="T:System.Diagnostics.ProtocolTags" />.
+    /// Removes the first occurrence of a specific object from the <see cref="T:ProtocolTags" />.
     /// </summary>
-    /// <param name="item">The tag to remove from the <see cref="T:System.Diagnostics.ProtocolTags" />.</param>
-    /// <returns><see langword="true" /> if item is successfully removed; otherwise, <see langword="false" />. This method also returns <see langword="false" /> if item was not found in the <see cref="T:System.Diagnostics.ProtocolTags" />.</returns>
+    /// <param name="item">The tag to remove from the <see cref="T:ProtocolTags" />.</param>
+    /// <returns><see langword="true" /> if item is successfully removed; otherwise, <see langword="false" />. This method also returns <see langword="false" /> if item was not found in the <see cref="T:ProtocolTags" />.</returns>
     public bool Remove(KeyValuePair<string, object?> item)
     {
         int index = IndexOf(item);
@@ -320,22 +320,22 @@ public struct ProtocolTags
     }
 
     /// <summary>
-    /// Returns an enumerator that iterates through the <see cref="T:System.Diagnostics.ProtocolTags" />.
+    /// Returns an enumerator that iterates through the <see cref="T:ProtocolTags" />.
     /// </summary>
-    /// <returns>Returns an enumerator that iterates through the <see cref="T:System.Diagnostics.ProtocolTags" />.</returns>
+    /// <returns>Returns an enumerator that iterates through the <see cref="T:ProtocolTags" />.</returns>
     public readonly IEnumerator<KeyValuePair<string, object?>> GetEnumerator() =>
         new Enumerator(in this);
 
     /// <summary>
-    /// Returns an enumerator that iterates through the <see cref="T:System.Diagnostics.ProtocolTags" />.
+    /// Returns an enumerator that iterates through the <see cref="T:ProtocolTags" />.
     /// </summary>
-    /// <returns>Returns an enumerator that iterates through the <see cref="T:System.Diagnostics.ProtocolTags" />.</returns>
+    /// <returns>Returns an enumerator that iterates through the <see cref="T:ProtocolTags" />.</returns>
     readonly IEnumerator IEnumerable.GetEnumerator() => new Enumerator(in this);
 
     /// <summary>
-    /// Searches for the specified tag and returns the zero-based index of the first occurrence within the entire <see cref="T:System.Diagnostics.ProtocolTags" />.
+    /// Searches for the specified tag and returns the zero-based index of the first occurrence within the entire <see cref="T:ProtocolTags" />.
     /// </summary>
-    /// <param name="item">The tag to locate in the <see cref="T:System.Diagnostics.ProtocolTags" />.</param>
+    /// <param name="item">The tag to locate in the <see cref="T:ProtocolTags" />.</param>
     public readonly int IndexOf(KeyValuePair<string, object?> item)
     {
         ReadOnlySpan<KeyValuePair<string, object?>> tags = _overflowTags is not null

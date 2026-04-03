@@ -9,20 +9,16 @@ namespace Asv.Common;
 public class ReactivePropertyChangeHandler<T>(string name, ReactiveProperty<T> property)
     : UndoChangeHandler<ScalarChange<T>>(
         name,
-        property.Pairwise().Select(x => (IChange)new ScalarChange<T>
-        {
-            OldValue = x.Previous, 
-            NewValue = x.Current
-        })
+        property
+            .Pairwise()
+            .Select(x =>
+                (IChange)new ScalarChange<T> { OldValue = x.Previous, NewValue = x.Current }
+            )
     )
 {
     public override IChange Create()
     {
-        return new ScalarChange<T>
-        {
-            OldValue = default,
-            NewValue = default,
-        };
+        return new ScalarChange<T> { OldValue = default, NewValue = default };
     }
 
     protected override ValueTask InternalUndo(ScalarChange<T> change, CancellationToken cancel)
@@ -38,12 +34,11 @@ public class ReactivePropertyChangeHandler<T>(string name, ReactiveProperty<T> p
     }
 }
 
-
 [MemoryPackable]
 public partial class ScalarChange<T> : IChange
 {
-    public required T OldValue { get; set; }
-    public required T NewValue { get; set; }
+    public T OldValue { get; set; }
+    public T NewValue { get; set; }
 
     public void Serialize(IBufferWriter<byte> writer)
     {

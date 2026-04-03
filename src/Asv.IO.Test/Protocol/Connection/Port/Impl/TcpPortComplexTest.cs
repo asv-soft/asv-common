@@ -9,7 +9,6 @@ using R3;
 using TimeProviderExtensions;
 using Xunit;
 
-
 namespace Asv.IO.Test.Connection.Port.Impl;
 
 [Collection("Sequential")]

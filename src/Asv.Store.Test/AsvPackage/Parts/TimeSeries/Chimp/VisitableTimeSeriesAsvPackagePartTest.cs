@@ -5,7 +5,6 @@ using Asv.XUnit;
 using DeepEqual.Syntax;
 using JetBrains.Annotations;
 
-
 namespace Asv.Store.Test;
 
 [TestSubject(typeof(VisitableTimeSeriesAsvPackagePart))]

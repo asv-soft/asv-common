@@ -5,7 +5,6 @@ using Asv.XUnit;
 using AutoFixture;
 using Xunit;
 
-
 namespace Asv.Cfg.Test;
 
 public class CustomTestClass() : ICustomConfigurable
