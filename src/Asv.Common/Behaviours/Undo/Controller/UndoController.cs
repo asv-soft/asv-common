@@ -10,7 +10,7 @@ public class UndoController<TBase>(TBase owner) : AsyncDisposableOnce, IUndoCont
     where TBase : ISupportRoutedEvents<TBase>
 {
     private readonly Dictionary<string, IUndoHandler> _registration = new();
-    public bool MuteUndoChanges { get; set; } = false;
+    public bool MuteChanges { get; set; } = true;
 
     public IDisposable Register(IUndoHandler handler)
     {
@@ -22,8 +22,11 @@ public class UndoController<TBase>(TBase owner) : AsyncDisposableOnce, IUndoCont
         }
         return Disposable.Combine(
             handler
-                .Changes.Where(_ => !MuteUndoChanges)
-                .SubscribeAwait(handler.RegistrationId, RiseChangeEvent),
+                .Changes.Where(_ => !MuteChanges)
+                .SubscribeAwait(
+                    handler.RegistrationId,
+                    (change, id, cancel) => RiseChangeEvent(id, change, cancel)
+                ),
             Disposable.Create(handler.RegistrationId, x => _registration.Remove(x))
         );
     }
@@ -33,14 +36,14 @@ public class UndoController<TBase>(TBase owner) : AsyncDisposableOnce, IUndoCont
         return _registration[changeId];
     }
 
-    private ValueTask RiseChangeEvent(IChange change, string id, CancellationToken cancel) =>
+    private ValueTask RiseChangeEvent(string id, IChange change, CancellationToken cancel) =>
         owner.Rise(new UndoEvent<TBase>(owner, change, id), cancel);
 
     protected override void Dispose(bool disposing)
     {
         if (disposing)
         {
-            MuteUndoChanges = true;
+            MuteChanges = true;
             _registration.Clear();
         }
 
@@ -49,7 +52,7 @@ public class UndoController<TBase>(TBase owner) : AsyncDisposableOnce, IUndoCont
 
     protected override async ValueTask DisposeAsyncCore()
     {
-        MuteUndoChanges = true;
+        MuteChanges = true;
         await base.DisposeAsyncCore();
         _registration.Clear();
     }

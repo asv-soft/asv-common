@@ -1,6 +1,5 @@
 using System;
 using System.Buffers;
-using R3;
 
 namespace Asv.Common;
 
@@ -12,7 +11,7 @@ public interface IChange
 
 public interface IUndoController : IDisposable
 {
-    bool MuteUndoChanges { get; set; }
+    bool MuteChanges { get; set; }
     IDisposable Register(IUndoHandler handler);
     IUndoHandler Find(string registrationId);
 }
