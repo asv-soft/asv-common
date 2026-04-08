@@ -51,7 +51,6 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="R3" Version="$(R3Version)" />
-    <PackageReference Include="ObservableCollections.R3" Version="$(R3Collections)" />
     <PackageReference Include="Geodesy" Version="$(GeodesyVersion)" />
     <PackageReference Include="Roslynator.Analyzers" Version="4.14.0">
       <PrivateAssets>all</PrivateAssets>
@@ -77,8 +76,5 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>RS.resx</DependentUpon>
     </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Behaviours\Behaviours\" />
   </ItemGroup>
 </Project>

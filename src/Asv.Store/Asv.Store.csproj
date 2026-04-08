@@ -6,9 +6,9 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Asv.IO\Asv.IO.csproj" />
+    <ProjectReference Include="..\Asv.Modeling\Asv.Modeling.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="MemoryPack" Version="1.21.4" />
     <PackageReference Include="MessagePack" Version="3.1.4" />
     <PackageReference Include="System.IO.Packaging" Version="$(DotNetVersion)" />
   </ItemGroup>
