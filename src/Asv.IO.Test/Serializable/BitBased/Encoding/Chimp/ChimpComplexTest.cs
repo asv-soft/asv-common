@@ -1,7 +1,5 @@
 using System;
-using DotNext;
-using DotNext.Buffers;
-using DotNext.IO;
+using System.IO;
 using Xunit;
 using ZstdSharp;
 
@@ -9,12 +7,17 @@ namespace Asv.IO.Test.Serializable.BitBased.Encoding.Chimp;
 
 public class ChimpComplexTest(ITestOutputHelper log)
 {
+    private static ulong NextUInt64(Random random)
+    {
+        return ((ulong)(uint)random.Next() << 32) | (uint)random.Next();
+    }
+
     private void RunChimpRoundtrip(ulong[] testArray, string? label = null)
     {
         var count = testArray.Length;
 
-        var wrtStream = new PoolingArrayBufferWriter<byte>();
-        using (var wrtEncoder = new ChimpEncoder(new StreamBitWriter(wrtStream.AsStream(), true)))
+        using var wrtStream = new MemoryStream();
+        using (var wrtEncoder = new ChimpEncoder(new StreamBitWriter(wrtStream, true)))
         {
             foreach (var t in testArray)
             {
@@ -22,7 +25,8 @@ public class ChimpComplexTest(ITestOutputHelper log)
             }
         }
 
-        using (var rdrDecoder = new ChimpDecoder(new MemoryBitReader(wrtStream.WrittenMemory)))
+        var encoded = wrtStream.ToArray();
+        using (var rdrDecoder = new ChimpDecoder(new MemoryBitReader(encoded)))
         {
             for (int i = 0; i < count; i++)
             {
@@ -43,7 +47,7 @@ public class ChimpComplexTest(ITestOutputHelper log)
         }
 
         using var compressor = new Compressor(100);
-        var compressed = compressor.Wrap(wrtStream.WrittenMemory.Span);
+        var compressed = compressor.Wrap(encoded);
 
         if (!string.IsNullOrEmpty(label))
         {
@@ -51,12 +55,12 @@ public class ChimpComplexTest(ITestOutputHelper log)
         }
 
         var rawSize = count * sizeof(ulong);
-        var used = wrtStream.WrittenCount;
-        var avgBytes = used / (double)count;
-        var avgRatio = used / (double)rawSize;
+        var used = encoded.Length;
+        var avgBytes = count > 0 ? used / (double)count : 0;
+        var avgRatio = rawSize > 0 ? used / (double)rawSize : 0;
         var compressedSize = compressed.Length;
-        var compressionRatio = used / (double)compressedSize;
-        var compressedToRaw = compressedSize / (double)rawSize;
+        var compressionRatio = compressedSize > 0 ? used / (double)compressedSize : 0;
+        var compressedToRaw = rawSize > 0 ? compressedSize / (double)rawSize : 0;
 
         // Markdown-таблица
         log.WriteLine($"| Metric                | Value                               |");
@@ -82,7 +86,7 @@ public class ChimpComplexTest(ITestOutputHelper log)
     public void ChimpComplex_SerializeDeserializeConst_Works(int count)
     {
         var testArray = new ulong[count];
-        var seed = Random.Shared.Next<ulong>();
+        var seed = NextUInt64(Random.Shared);
         for (var i = 0; i < testArray.Length; i++)
         {
             testArray[i] = seed;
@@ -106,7 +110,7 @@ public class ChimpComplexTest(ITestOutputHelper log)
         var random = new Random(seed);
         for (var i = 0; i < testArray.Length; i++)
         {
-            testArray[i] = random.Next<ulong>();
+            testArray[i] = NextUInt64(random);
         }
 
         RunChimpRoundtrip(testArray, $"Seed: {seed}");

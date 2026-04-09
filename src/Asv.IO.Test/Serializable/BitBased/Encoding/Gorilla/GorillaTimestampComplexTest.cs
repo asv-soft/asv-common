@@ -1,6 +1,5 @@
 using System;
-using DotNext.Buffers;
-using DotNext.IO;
+using System.IO;
 using Xunit;
 using ZstdSharp;
 
@@ -16,10 +15,10 @@ public class GorillaTimestampComplexTest(ITestOutputHelper log)
     {
         var count = testArray.Length;
 
-        var wrtStream = new PoolingArrayBufferWriter<byte>();
+        using var wrtStream = new MemoryStream();
         using (
             var wrtEncoder = new GorillaTimestampEncoder(
-                new StreamBitWriter(wrtStream.AsStream()),
+                new StreamBitWriter(wrtStream),
                 firstDelta27Bits: firstDelta27Bits
             )
         )
@@ -30,9 +29,10 @@ public class GorillaTimestampComplexTest(ITestOutputHelper log)
             }
         }
 
+        var encoded = wrtStream.ToArray();
         using (
             var rdrDecoder = new GorillaTimestampDecoder(
-                new MemoryBitReader(wrtStream.WrittenMemory),
+                new MemoryBitReader(encoded),
                 firstDelta27Bits: firstDelta27Bits
             )
         )
@@ -56,7 +56,7 @@ public class GorillaTimestampComplexTest(ITestOutputHelper log)
         }
 
         using var compressor = new Compressor(100);
-        var compressed = compressor.Wrap(wrtStream.WrittenMemory.Span);
+        var compressed = compressor.Wrap(encoded);
 
         if (!string.IsNullOrEmpty(label))
         {
@@ -64,7 +64,7 @@ public class GorillaTimestampComplexTest(ITestOutputHelper log)
         }
 
         var rawSize = count * sizeof(long);
-        var used = wrtStream.WrittenCount;
+        var used = encoded.Length;
         var avgBytes = count > 0 ? used / (double)count : 0;
         var avgRatio = rawSize > 0 ? used / (double)rawSize : 0;
         var compressedSize = compressed.Length;

@@ -1,10 +1,8 @@
-using System;
-using System.Collections.Generic;
 using Asv.Common;
 using ObservableCollections;
 using R3;
 
-namespace Asv.IO;
+namespace Asv.Modeling;
 
 public static class ObservableMixin
 {

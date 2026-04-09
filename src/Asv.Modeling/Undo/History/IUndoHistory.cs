@@ -16,9 +16,7 @@ public interface IUndoHistory<TBase, TId> : IDisposable
 }
 
 public class UndoHistory<TBase, TId> : AsyncDisposableOnceBag, IUndoHistory<TBase, TId>
-    where TBase : ISupportRoutedEvents<TBase>,
-        ISupportNavigation<TBase, TId>,
-        ISupportUndo<TBase, TId>
+    where TBase : ISupportRoutedEvents<TBase>, ISupportNavigation<TBase, TId>
 {
     private readonly TBase _owner;
     private readonly IUndoHistoryStore<TId> _store;
@@ -50,7 +48,11 @@ public class UndoHistory<TBase, TId> : AsyncDisposableOnceBag, IUndoHistory<TBas
         if (_undoStack.TryPop(out var snapshot))
         {
             var contextPath = snapshot.Path;
-            var target = await _owner.NavigateByPath(contextPath);
+            var target = await _owner.NavigateByPath(contextPath) as ISupportUndo<TBase, TId>;
+            if (target == null)
+            {
+                throw new Exception($"Target {target} not support undo or not found");
+            }
             var handler = target.Undo.Find(snapshot.ChangeId);
             var change = handler.Create();
             _store.LoadChange(snapshot, change);
@@ -67,7 +69,11 @@ public class UndoHistory<TBase, TId> : AsyncDisposableOnceBag, IUndoHistory<TBas
         if (_redoStack.TryPop(out var snapshot))
         {
             var contextPath = snapshot.Path;
-            var target = await _owner.NavigateByPath(contextPath);
+            var target = await _owner.NavigateByPath(contextPath) as ISupportUndo<TBase, TId>;
+            if (target == null)
+            {
+                throw new Exception($"Target {target} not support undo or not found");
+            }
             var handler = target.Undo.Find(snapshot.ChangeId);
             var change = handler.Create();
             _store.LoadChange(snapshot, change);

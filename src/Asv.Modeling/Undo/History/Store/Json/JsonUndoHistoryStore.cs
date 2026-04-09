@@ -3,6 +3,8 @@ using System.Text.Json;
 using Asv.Common;
 using DotNext.Buffers;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+using ZLogger;
 
 namespace Asv.Modeling;
 
@@ -12,17 +14,17 @@ public class JsonUndoHistoryStore<TId> : AsyncDisposableOnceBag, IUndoHistorySto
     private const string UndoStackFileName = "undo-stack.jsonl";
     private const string RedoStackFileName = "redo-stack.jsonl";
     private const string DataFileName = ".undo";
-    private const string StaticHeader0 =
-        "|============================================================================ |";
-    private const string StaticHeader1 =
-        "| This file contains command history in JSON format. Do not edit it manually. |";
-
     private readonly string _storageDirectory;
+    private readonly Func<TId, string> _serializeId;
+    private readonly Func<string, TId> _deserializeId;
     private readonly int _inMemoryThresholdBytes;
+    private readonly ILogger _logger;
 
     public JsonUndoHistoryStore(
         string storageDirectory,
-        ILogger logger,
+        Func<TId, string> serializeId,
+        Func<string, TId> deserializeId,
+        ILogger? logger = null,
         int inMemoryThresholdBytes = DefaultInMemoryThresholdBytes
     )
     {
@@ -31,8 +33,15 @@ public class JsonUndoHistoryStore<TId> : AsyncDisposableOnceBag, IUndoHistorySto
             throw new ArgumentOutOfRangeException(nameof(inMemoryThresholdBytes));
         }
         _storageDirectory = storageDirectory;
+        _serializeId = serializeId;
+        _deserializeId = deserializeId;
         _inMemoryThresholdBytes = inMemoryThresholdBytes;
-        Directory.CreateDirectory(_storageDirectory);
+        _logger = logger ?? NullLogger.Instance;
+        if (Directory.Exists(_storageDirectory) == false)
+        {
+            _logger.ZLogDebug($"Create directory for undo history: {_storageDirectory}");
+            Directory.CreateDirectory(_storageDirectory);
+        }
     }
 
     public void LoadChange(IUndoSnapshot<TId> snapshot, IChange change)
@@ -152,9 +161,9 @@ public class JsonUndoHistoryStore<TId> : AsyncDisposableOnceBag, IUndoHistorySto
         return Path.Combine(_storageDirectory, RedoStackFileName);
     }
 
-    private static IEnumerable<UndoSnapshot<TId>> ReadStackFile(string path)
+    private IEnumerable<UndoSnapshot<TId>> ReadStackFile(string path)
     {
-        if (!File.Exists(path))
+        if (File.Exists(path) == false)
         {
             yield break;
         }
@@ -166,60 +175,49 @@ public class JsonUndoHistoryStore<TId> : AsyncDisposableOnceBag, IUndoHistorySto
                 continue;
             }
 
-            var trimmed = line.TrimStart();
-            if (trimmed.StartsWith("//", StringComparison.Ordinal))
+            var snapshot = JsonSerializer.Deserialize(
+                line,
+                JsonUndoSnapshotJsonContext.Default.JsonUndoSnapshot
+            );
+            if (snapshot == null)
             {
                 continue;
             }
 
-            var snapshot = DeserializeSnapshot(trimmed);
-            if (snapshot != null)
+            yield return new UndoSnapshot<TId>
             {
-                yield return snapshot;
-            }
+                Path = snapshot.Path.Select(_deserializeId).ToArray(),
+                ChangeId = snapshot.ChangeId,
+                DataRefId = Ulid.Parse(snapshot.DataRefId),
+                Data = string.IsNullOrEmpty(snapshot.Base64)
+                    ? null
+                    : Convert.FromBase64String(snapshot.Base64),
+            };
         }
     }
 
-    private static void WriteStackFile(string path, IEnumerable<UndoSnapshot<TId>> snapshots)
+    private void WriteStackFile(string path, IEnumerable<UndoSnapshot<TId>> snapshots)
     {
         using var stream = File.Create(path);
         using var writer = new StreamWriter(stream);
 
-        writer.WriteLine($"// {StaticHeader0}");
-        writer.WriteLine($"// {StaticHeader1}");
-        writer.WriteLine($"// {StaticHeader0}");
-
-        foreach (var snapshot in snapshots)
+        foreach (var snapshot in snapshots.Reverse())
         {
-            writer.WriteLine(SerializeSnapshot(snapshot));
-        }
-    }
+            var jsonSnapshot = new JsonUndoSnapshot
+            {
+                Path = snapshot.Path.Select(_serializeId).ToArray(),
+                ChangeId = snapshot.ChangeId,
+                DataRefId = snapshot.DataRefId.ToString(),
+                Base64 =
+                    snapshot.Data == null ? string.Empty : Convert.ToBase64String(snapshot.Data),
+            };
 
-    private static UndoSnapshot<TId>? DeserializeSnapshot(string json)
-    {
-        if (typeof(TId) == typeof(string))
-        {
-            return (UndoSnapshot<TId>?)
-                (object?)
-                    JsonSerializer.Deserialize(
-                        json,
-                        UndoSnapshotStringJsonContext.Default.UndoSnapshotString
-                    );
-        }
-
-        return JsonSerializer.Deserialize<UndoSnapshot<TId>>(json);
-    }
-
-    private static string SerializeSnapshot(UndoSnapshot<TId> snapshot)
-    {
-        if (typeof(TId) == typeof(string))
-        {
-            return JsonSerializer.Serialize(
-                (UndoSnapshot<string>)(object)snapshot,
-                UndoSnapshotStringJsonContext.Default.UndoSnapshotString
+            writer.WriteLine(
+                JsonSerializer.Serialize(
+                    jsonSnapshot,
+                    JsonUndoSnapshotJsonContext.Default.JsonUndoSnapshot
+                )
             );
         }
-
-        return JsonSerializer.Serialize(snapshot);
     }
 }

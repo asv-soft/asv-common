@@ -5,21 +5,28 @@ namespace Asv.Modeling;
 public abstract class UndoChangeHandler<TChange>(string id, Observable<IChange> changes)
     : IUndoHandler
 {
-    private bool _disableChanges = false;
+    private bool _muteChanges;
     public string ChangeId => id;
-    public Observable<IChange> Changes => changes.Where(_ => !_disableChanges);
+    public Observable<IChange> Changes => changes.Where(_ => !_muteChanges);
+
+    public bool MuteChanges
+    {
+        get => _muteChanges;
+        set => _muteChanges = value;
+    }
+
     public abstract IChange Create();
 
     public async ValueTask Undo(IChange change, CancellationToken cancel)
     {
         try
         {
-            _disableChanges = true;
+            _muteChanges = true;
             await InternalUndo((TChange)change, cancel);
         }
         finally
         {
-            _disableChanges = false;
+            _muteChanges = false;
         }
     }
 
@@ -29,12 +36,12 @@ public abstract class UndoChangeHandler<TChange>(string id, Observable<IChange> 
     {
         try
         {
-            _disableChanges = true;
+            _muteChanges = true;
             await InternalRedo((TChange)change, cancel);
         }
         finally
         {
-            _disableChanges = false;
+            _muteChanges = false;
         }
     }
 

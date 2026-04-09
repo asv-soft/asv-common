@@ -15,6 +15,8 @@
     <PackageReference Include="JetBrains.Annotations" Version="2025.2.1" />
     <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" Version="9.8.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="DotNext.IO" Version="$(DotNextVersion)" />
+    <PackageReference Include="DotNext" Version="$(DotNextVersion)" />
     <PackageReference Include="Moq" Version="4.20.72" />
     <PackageReference Include="Roslynator.Analyzers" Version="4.14.0">
       <PrivateAssets>all</PrivateAssets>
@@ -41,9 +43,6 @@
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>SpanBitHelperExtTest.cs</LastGenOutput>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
   </ItemGroup>
   <ItemGroup>
     <Compile Update="Serializers\SpanBitHelperExtTest.cs">
