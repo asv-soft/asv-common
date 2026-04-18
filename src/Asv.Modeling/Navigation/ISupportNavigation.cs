@@ -1,25 +1,34 @@
 namespace Asv.Modeling;
 
-public interface ISupportNavigation<TBase, TId> : ISupportId<TId>
+public interface ISupportNavigation<TBase> : ISupportId<NavId>
 {
-    ValueTask<TBase> Navigate(TId id);
+    ValueTask<TBase> Navigate(NavId id);
 }
 
 public static class NavigationMixin
 {
-    public static async ValueTask<TBase> NavigateByPath<TBase, TId>(
+    public static ValueTask<TBase> NavigateByPath<TBase>(
         this TBase src,
-        IEnumerable<TId> path
+        NavPath path
     )
-        where TBase : ISupportNavigation<TBase, TId>
+        where TBase : ISupportNavigation<TBase>
     {
-        var result = src;
-        foreach (var id in path)
+        if (path.Count == 0)
         {
-            src = await result.Navigate(id);
-            result = src;
+            return ValueTask.FromResult(src);
         }
 
-        return result;
+        return NavigateByPathCore(src, path);
+    }
+
+    private static async ValueTask<TBase> NavigateByPathCore<TBase>(TBase current, NavPath path)
+        where TBase : ISupportNavigation<TBase>
+    {
+        for (var i = 0; i < path.Count; i++)
+        {
+            current = await current.Navigate(path[i]).ConfigureAwait(false);
+        }
+
+        return current;
     }
 }

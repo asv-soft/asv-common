@@ -5,7 +5,7 @@ using R3;
 
 namespace Asv.Modeling.Test;
 
-[TestSubject(typeof(ISupportUndo<,>))]
+[TestSubject(typeof(ISupportUndo<>))]
 public class ISupportUndoTest
 {
     [Fact]
@@ -14,14 +14,14 @@ public class ISupportUndoTest
         var storageDirectory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
 
         var root = new RootViewModel("root", storageDirectory);
-        var child1 = new ViewModelBase("child1");
+        var child1 = new TestViewModelBase("child1");
         root.Children.Add(child1);
-        var child2 = new ViewModelBase("child2");
+        var child2 = new TestViewModelBase("child2");
         child1.Children.Add(child2);
-        var child3 = new ViewModelBase("child3");
+        var child3 = new TestViewModelBase("child3");
         child2.Children.Add(child3);
 
-        var longString = NavigationId.GenerateRandomAsString(5 * 1024);
+        var longString = NavId.GenerateRandomAsString(5 * 1024);
 
         child3.Prop1.Value = "1";
         child3.Prop1.Value = "2";
@@ -36,7 +36,7 @@ public class ISupportUndoTest
         Assert.Equal("2", child3.Prop1.Value);
         await root.UndoHistory.UndoAsync(TestContext.Current.CancellationToken);
         Assert.Equal("1", child3.Prop1.Value);
-        await root.DisposeAsync();
+        root.Dispose();
     }
 
     [Fact]
@@ -45,28 +45,28 @@ public class ISupportUndoTest
         var storageDirectory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
 
         var root = new RootViewModel("root", storageDirectory);
-        var child1 = new ViewModelBase("child1");
+        var child1 = new TestViewModelBase("child1");
         root.Children.Add(child1);
-        var child2 = new ViewModelBase("child2");
+        var child2 = new TestViewModelBase("child2");
         child1.Children.Add(child2);
-        var child3 = new ViewModelBase("child3");
+        var child3 = new TestViewModelBase("child3");
         child2.Children.Add(child3);
 
-        var longString = NavigationId.GenerateRandomAsString(5 * 1024);
+        var longString = NavId.GenerateRandomAsString(5 * 1024);
 
         child3.Prop1.Value = "1";
         child3.Prop1.Value = "2";
         child3.Prop1.Value = longString;
 
-        await root.DisposeAsync();
+        root.Dispose();
 
         // now it's restore stack
         root = new RootViewModel("root", storageDirectory);
-        child1 = new ViewModelBase("child1");
+        child1 = new TestViewModelBase("child1");
         root.Children.Add(child1);
-        child2 = new ViewModelBase("child2");
+        child2 = new TestViewModelBase("child2");
         child1.Children.Add(child2);
-        child3 = new ViewModelBase("child3");
+        child3 = new TestViewModelBase("child3");
         child2.Children.Add(child3);
 
         await root.UndoHistory.UndoAsync(TestContext.Current.CancellationToken);
@@ -78,7 +78,7 @@ public class ISupportUndoTest
         Assert.Equal("2", child3.Prop1.Value);
         await root.UndoHistory.UndoAsync(TestContext.Current.CancellationToken);
         Assert.Equal("1", child3.Prop1.Value);
-        await root.DisposeAsync();
+        root.Dispose();
     }
 
     [Fact]
@@ -87,11 +87,11 @@ public class ISupportUndoTest
         var storageDirectory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
 
         var root = new RootViewModel("root", storageDirectory);
-        var child1 = new ViewModelBase("child1");
+        var child1 = new TestViewModelBase("child1");
         root.Children.Add(child1);
-        var child2 = new ViewModelBase("child2");
+        var child2 = new TestViewModelBase("child2");
         child1.Children.Add(child2);
-        var child3 = new ViewModelBase("child3");
+        var child3 = new TestViewModelBase("child3");
         child2.Children.Add(child3);
 
         child3.Prop1.Value = "1";
@@ -113,7 +113,7 @@ public class ISupportUndoTest
         Assert.Equal(3, root.UndoHistory.UndoStack.Count);
         Assert.Empty(root.UndoHistory.RedoStack);
 
-        await root.DisposeAsync();
+        root.Dispose();
     }
 
     [Fact]
@@ -122,25 +122,25 @@ public class ISupportUndoTest
         var storageDirectory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
 
         var root = new RootViewModel("root", storageDirectory);
-        var child1 = new ViewModelBase("child1");
+        var child1 = new TestViewModelBase("child1");
         root.Children.Add(child1);
-        var child2 = new ViewModelBase("child2");
+        var child2 = new TestViewModelBase("child2");
         child1.Children.Add(child2);
-        var child3 = new ViewModelBase("child3");
+        var child3 = new TestViewModelBase("child3");
         child2.Children.Add(child3);
 
         child3.Prop1.Value = "1";
         child3.Prop1.Value = "2";
         child3.Prop1.Value = "3";
 
-        await root.DisposeAsync();
+        root.Dispose();
 
         root = new RootViewModel("root", storageDirectory);
-        child1 = new ViewModelBase("child1");
+        child1 = new TestViewModelBase("child1");
         root.Children.Add(child1);
-        child2 = new ViewModelBase("child2");
+        child2 = new TestViewModelBase("child2");
         child1.Children.Add(child2);
-        child3 = new ViewModelBase("child3");
+        child3 = new TestViewModelBase("child3");
         child2.Children.Add(child3);
 
         Assert.Equal(3, root.UndoHistory.UndoStack.Count);
@@ -158,58 +158,44 @@ public class ISupportUndoTest
         Assert.Equal(3, root.UndoHistory.UndoStack.Count);
         Assert.Empty(root.UndoHistory.RedoStack);
 
-        await root.DisposeAsync();
+        root.Dispose();
     }
 }
 
-public class RootViewModel : ViewModelBase, IHasUndoHistory<ViewModelBase, string>
+public class RootViewModel : UndoRootViewModel
 {
     public RootViewModel(string id, string storageDirectory)
-        : base(id)
+        : base(id, storageDirectory)
     {
-        UndoHistory = new UndoHistory<ViewModelBase, string>(
-            this,
-            new JsonUndoHistoryStore<string>(storageDirectory, static id => id, static id => id)
-        ).AddTo(ref DisposableBag);
     }
-
-    public IUndoHistory<ViewModelBase, string> UndoHistory { get; }
+    
+    public ObservableList<IViewModel> Children { get; } = new();
+    public override IEnumerable<IViewModel> GetChildren()
+    {
+        return Children;
+    }
 }
 
-public class ViewModelBase : AsyncDisposableOnceBag, ISupportUndo<ViewModelBase, string>
+public class TestViewModelBase : UndoableViewModel
 {
-    public ViewModelBase(string id)
+    public TestViewModelBase(string id) 
+        : base(id)
     {
-        Id = id;
-        Events = new RoutedEventController<ViewModelBase>(this);
-        Undo = new UndoController<ViewModelBase>(this).AddTo(ref DisposableBag);
-        Children.SetParent(this).AddTo(ref DisposableBag);
+        Children.SetParent<IViewModel,IViewModel>(this).AddTo(ref DisposableBag);
         Children.DisposeRemovedItems().AddTo(ref DisposableBag);
 
         Undo.Register(nameof(Prop1), Prop1).AddTo(ref DisposableBag);
         Undo.EnableChangePublication();
     }
 
-    public string Id { get; }
-    public IUndoController Undo { get; }
-    public IRoutedEventController<ViewModelBase> Events { get; }
-    public ViewModelBase Parent { get; set; }
-    public ObservableList<ViewModelBase> Children { get; } = new();
+    public ObservableList<IViewModel> Children { get; } = new();
 
-    public IEnumerable<ViewModelBase> GetChildren()
+    public override IEnumerable<IViewModel> GetChildren()
     {
         return Children;
     }
-
-    public ValueTask<ViewModelBase> Navigate(string id)
-    {
-        return ValueTask.FromResult(GetChildren().FirstOrDefault(c => c.Id == id));
-    }
-
     public ReactiveProperty<string> Prop1 { get; } = new();
 
-    public override string ToString()
-    {
-        return Id;
-    }
+
+   
 }

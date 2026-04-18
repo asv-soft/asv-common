@@ -8,22 +8,18 @@ using ZLogger;
 
 namespace Asv.Modeling;
 
-public class JsonUndoHistoryStore<TId> : AsyncDisposableOnceBag, IUndoHistoryStore<TId>
+public class JsonUndoHistoryStore<TId> : AsyncDisposableOnceBag, IUndoHistoryStore
 {
     private const int DefaultInMemoryThresholdBytes = 4 * 1024;
     private const string UndoStackFileName = "undo-stack.jsonl";
     private const string RedoStackFileName = "redo-stack.jsonl";
     private const string DataFileName = ".undo";
     private readonly string _storageDirectory;
-    private readonly Func<TId, string> _serializeId;
-    private readonly Func<string, TId> _deserializeId;
     private readonly int _inMemoryThresholdBytes;
     private readonly ILogger _logger;
 
     public JsonUndoHistoryStore(
         string storageDirectory,
-        Func<TId, string> serializeId,
-        Func<string, TId> deserializeId,
         ILogger? logger = null,
         int inMemoryThresholdBytes = DefaultInMemoryThresholdBytes
     )
@@ -33,10 +29,9 @@ public class JsonUndoHistoryStore<TId> : AsyncDisposableOnceBag, IUndoHistorySto
             throw new ArgumentOutOfRangeException(nameof(inMemoryThresholdBytes));
         }
         _storageDirectory = storageDirectory;
-        _serializeId = serializeId;
-        _deserializeId = deserializeId;
         _inMemoryThresholdBytes = inMemoryThresholdBytes;
         _logger = logger ?? NullLogger.Instance;
+        
         if (Directory.Exists(_storageDirectory) == false)
         {
             _logger.ZLogDebug($"Create directory for undo history: {_storageDirectory}");
@@ -44,11 +39,11 @@ public class JsonUndoHistoryStore<TId> : AsyncDisposableOnceBag, IUndoHistorySto
         }
     }
 
-    public void LoadChange(IUndoSnapshot<TId> snapshot, IChange change)
+    public void LoadChange(IUndoSnapshot snapshot, IChange change)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
         ArgumentNullException.ThrowIfNull(change);
-        if (snapshot is not UndoSnapshot<TId> undoSnapshot)
+        if (snapshot is not UndoSnapshot undoSnapshot)
         {
             throw new ArgumentException("Snapshot must be of type UndoSnapshot<TId>.");
         }
@@ -74,11 +69,11 @@ public class JsonUndoHistoryStore<TId> : AsyncDisposableOnceBag, IUndoHistorySto
         }
     }
 
-    public void SaveChange(IUndoSnapshot<TId> snapshot, IChange change)
+    public void SaveChange(IUndoSnapshot snapshot, IChange change)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
         ArgumentNullException.ThrowIfNull(change);
-        if (snapshot is not UndoSnapshot<TId> undoSnapshot)
+        if (snapshot is not UndoSnapshot undoSnapshot)
         {
             throw new ArgumentException("Snapshot must be of type UndoSnapshot<TId>.");
         }
@@ -98,7 +93,7 @@ public class JsonUndoHistoryStore<TId> : AsyncDisposableOnceBag, IUndoHistorySto
         }
     }
 
-    public void LoadUndoRedo(Action<IUndoSnapshot<TId>> addUndo, Action<IUndoSnapshot<TId>> addRedo)
+    public void LoadUndoRedo(Action<IUndoSnapshot> addUndo, Action<IUndoSnapshot> addRedo)
     {
         var dataIndex = new HashSet<Ulid>();
         foreach (var undo in ReadStackFile(GetUndoStackFilePath()))
@@ -125,21 +120,20 @@ public class JsonUndoHistoryStore<TId> : AsyncDisposableOnceBag, IUndoHistorySto
     }
 
     public void SaveUndoRedo(
-        IEnumerable<IUndoSnapshot<TId>> undo,
-        IEnumerable<IUndoSnapshot<TId>> redo
+        IEnumerable<IUndoSnapshot> undo,
+        IEnumerable<IUndoSnapshot> redo
     )
     {
-        WriteStackFile(GetUndoStackFilePath(), undo.Cast<UndoSnapshot<TId>>());
-        WriteStackFile(GetRedoStackFilePath(), redo.Cast<UndoSnapshot<TId>>());
+        WriteStackFile(GetUndoStackFilePath(), undo.Cast<UndoSnapshot>());
+        WriteStackFile(GetRedoStackFilePath(), redo.Cast<UndoSnapshot>());
     }
 
-    public IUndoSnapshot<TId> CreateSnapshot(IEnumerable<TId> path, string changeId)
+    public IUndoSnapshot CreateSnapshot(NavPath path, string changeId)
     {
-        ArgumentNullException.ThrowIfNull(path);
         ArgumentException.ThrowIfNullOrWhiteSpace(changeId);
-        return new UndoSnapshot<TId>
+        return new UndoSnapshot
         {
-            Path = path.ToArray(),
+            Path = path,
             ChangeId = changeId,
             DataRefId = Ulid.NewUlid(),
             Data = null,
@@ -161,7 +155,7 @@ public class JsonUndoHistoryStore<TId> : AsyncDisposableOnceBag, IUndoHistorySto
         return Path.Combine(_storageDirectory, RedoStackFileName);
     }
 
-    private IEnumerable<UndoSnapshot<TId>> ReadStackFile(string path)
+    private IEnumerable<UndoSnapshot> ReadStackFile(string path)
     {
         if (File.Exists(path) == false)
         {
@@ -184,9 +178,9 @@ public class JsonUndoHistoryStore<TId> : AsyncDisposableOnceBag, IUndoHistorySto
                 continue;
             }
 
-            yield return new UndoSnapshot<TId>
+            yield return new UndoSnapshot
             {
-                Path = snapshot.Path.Select(_deserializeId).ToArray(),
+                Path = NavPath.Parse(snapshot.Path),
                 ChangeId = snapshot.ChangeId,
                 DataRefId = Ulid.Parse(snapshot.DataRefId),
                 Data = string.IsNullOrEmpty(snapshot.Base64)
@@ -196,16 +190,17 @@ public class JsonUndoHistoryStore<TId> : AsyncDisposableOnceBag, IUndoHistorySto
         }
     }
 
-    private void WriteStackFile(string path, IEnumerable<UndoSnapshot<TId>> snapshots)
+    private void WriteStackFile(string path, IEnumerable<UndoSnapshot> snapshots)
     {
         using var stream = File.Create(path);
         using var writer = new StreamWriter(stream);
 
         foreach (var snapshot in snapshots.Reverse())
         {
+            
             var jsonSnapshot = new JsonUndoSnapshot
             {
-                Path = snapshot.Path.Select(_serializeId).ToArray(),
+                Path = snapshot.ToString() ?? throw new ArgumentException("Snapshot must be of type UndoSnapshot"),
                 ChangeId = snapshot.ChangeId,
                 DataRefId = snapshot.DataRefId.ToString(),
                 Base64 =

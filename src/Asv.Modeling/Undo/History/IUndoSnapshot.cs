@@ -1,8 +1,8 @@
 namespace Asv.Modeling;
 
-public interface IUndoSnapshot<out TId>
+public interface IUndoSnapshot
 {
-    IEnumerable<TId> Path { get; }
+    NavPath Path { get; }
     string ChangeId { get; }
     Ulid DataRefId { get; }
 }

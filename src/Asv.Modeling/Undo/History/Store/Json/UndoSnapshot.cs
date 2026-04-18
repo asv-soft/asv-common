@@ -1,12 +1,10 @@
-using System.IO.Pipelines;
 using System.Text.Json.Serialization;
-using DotNext.IO;
 
 namespace Asv.Modeling;
 
-public class UndoSnapshot<TId> : IUndoSnapshot<TId>
+public class UndoSnapshot : IUndoSnapshot
 {
-    public required IEnumerable<TId> Path { get; set; }
+    public required NavPath Path { get; set; }
     public required string ChangeId { get; set; }
     public required Ulid DataRefId { get; set; }
     public byte[]? Data { get; set; }
@@ -14,7 +12,7 @@ public class UndoSnapshot<TId> : IUndoSnapshot<TId>
 
 public class JsonUndoSnapshot
 {
-    public string[] Path { get; set; }
+    public string Path { get; set; }
     public string ChangeId { get; set; }
     public string DataRefId { get; set; }
     public string Base64 { get; set; }

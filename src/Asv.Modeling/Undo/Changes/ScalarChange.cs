@@ -1,6 +1,5 @@
 using System.Buffers;
 using MemoryPack;
-using MessagePack;
 
 namespace Asv.Modeling;
 

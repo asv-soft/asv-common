@@ -1,6 +1,6 @@
 using R3;
 
-namespace Asv.Modeling.Changes;
+namespace Asv.Modeling;
 
 public interface ISupportChanges
 {

@@ -8,8 +8,8 @@ namespace Asv.Common
     {
         private volatile CancellationTokenSource? _cancel;
         private volatile CompositeDisposable? _dispose;
-        private readonly object _sync1 = new();
-        private readonly object _sync2 = new();
+        private readonly Lock _sync1 = new();
+        private readonly Lock _sync2 = new();
 
         protected CancellationToken DisposeCancel
         {

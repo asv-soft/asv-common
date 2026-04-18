@@ -1,10 +1,10 @@
 namespace Asv.Modeling;
 
-public interface IUndoHistoryStore<TId> : IDisposable
+public interface IUndoHistoryStore : IDisposable
 {
-    void LoadUndoRedo(Action<IUndoSnapshot<TId>> addUndo, Action<IUndoSnapshot<TId>> addRedo);
-    void SaveUndoRedo(IEnumerable<IUndoSnapshot<TId>> undo, IEnumerable<IUndoSnapshot<TId>> redo);
-    IUndoSnapshot<TId> CreateSnapshot(IEnumerable<TId> path, string changeId);
-    void LoadChange(IUndoSnapshot<TId> snapshot, IChange change);
-    void SaveChange(IUndoSnapshot<TId> snapshot, IChange change);
+    void LoadUndoRedo(Action<IUndoSnapshot> addUndo, Action<IUndoSnapshot> addRedo);
+    void SaveUndoRedo(IEnumerable<IUndoSnapshot> undo, IEnumerable<IUndoSnapshot> redo);
+    IUndoSnapshot CreateSnapshot(NavPath path, string changeId);
+    void LoadChange(IUndoSnapshot snapshot, IChange change);
+    void SaveChange(IUndoSnapshot snapshot, IChange change);
 }

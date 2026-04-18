@@ -1,9 +1,9 @@
 namespace Asv.Modeling;
 
-public interface IHasUndoHistory<TBase, TId>
+public interface IHasUndoHistory<TBase>
     : ISupportRoutedEvents<TBase>,
-        ISupportNavigation<TBase, TId>
-    where TBase : ISupportRoutedEvents<TBase>, ISupportNavigation<TBase, TId>
+        ISupportNavigation<TBase>
+    where TBase : ISupportRoutedEvents<TBase>, ISupportNavigation<TBase>
 {
-    IUndoHistory<TBase, TId> UndoHistory { get; }
+    IUndoHistory<TBase> UndoHistory { get; }
 }

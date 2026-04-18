@@ -9,14 +9,10 @@ namespace Asv.Modeling;
 /// </summary>
 public interface IViewModel
     : IDisposable,
+        INotifyPropertyChanging,
         INotifyPropertyChanged,
-        ISupportId<NavigationId>,
-        ISupportRoutedEvents<IViewModel>
+        ISupportRoutedEvents<IViewModel>,
+        ISupportNavigation<IViewModel>
 {
-    void InitArgs(string? args);
-
-    /// <summary>
-    /// Gets a value indicating whether the view model has been disposed of.
-    /// </summary>
-    bool IsDisposed { get; }
+    
 }

@@ -3,10 +3,10 @@ using System.Threading.Tasks;
 
 namespace Asv.Common;
 
-public abstract class AsyncDisposableWithCancel : AsyncDisposableOnce
+public class AsyncDisposableOnceBagWithCancel : AsyncDisposableOnceBag
 {
     private CancellationTokenSource? _cancel;
-    private readonly Lock _sync2 = new();
+    private readonly Lock _gate = new();
 
     protected CancellationToken DisposeCancel
     {
@@ -17,7 +17,7 @@ public abstract class AsyncDisposableWithCancel : AsyncDisposableOnce
                 return IsDisposed ? CancellationToken.None : _cancel.Token;
             }
 
-            lock (_sync2)
+            lock (_gate)
             {
                 if (_cancel != null)
                 {
@@ -28,7 +28,7 @@ public abstract class AsyncDisposableWithCancel : AsyncDisposableOnce
             }
         }
     }
-
+    
     protected override void Dispose(bool disposing)
     {
         if (disposing)

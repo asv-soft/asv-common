@@ -1,9 +1,9 @@
 namespace Asv.Modeling;
 
-public interface ISupportUndo<TBase, TId>
+public interface ISupportUndo<TBase>
     : ISupportRoutedEvents<TBase>,
-        ISupportNavigation<TBase, TId>
-    where TBase : ISupportRoutedEvents<TBase>, ISupportNavigation<TBase, TId>
+        ISupportNavigation<TBase>
+    where TBase : ISupportRoutedEvents<TBase>, ISupportNavigation<TBase>
 {
     IUndoController Undo { get; }
 }

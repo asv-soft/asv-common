@@ -1,0 +1,19 @@
+using Asv.Common;
+using R3;
+
+namespace Asv.Modeling;
+
+public abstract class UndoRootViewModel : ViewModelBase, IHasUndoHistory<IViewModel>
+{
+    protected UndoRootViewModel(string typeId, string storageDirectory, NavArgs args = default)
+        : base(typeId, args)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(storageDirectory);
+        UndoHistory = new UndoHistory<IViewModel, NavId>(
+            this,
+            new JsonUndoHistoryStore<NavId>(storageDirectory)
+        ).AddTo(ref DisposableBag);
+    }
+
+    public IUndoHistory<IViewModel> UndoHistory { get; }
+}
