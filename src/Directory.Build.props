@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
-    <ProductVersion>3.5.0</ProductVersion>
-    <TargetFrameworksValue>net9.0;net10.0</TargetFrameworksValue>
+    <ProductVersion>3.6.0-dev.0</ProductVersion>
+    <TargetFrameworksValue>net10.0</TargetFrameworksValue>
     <DotNetVersion>10.0.0</DotNetVersion>
     <DotNextVersion>6.1.0</DotNextVersion>
     <XunitVersion>3.2.2</XunitVersion>
