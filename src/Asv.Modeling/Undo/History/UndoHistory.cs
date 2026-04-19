@@ -90,7 +90,7 @@ public class UndoHistory<TBase, TId> : AsyncDisposableOnceBag, IUndoHistory<TBas
     {
         if (disposing)
         {
-            _store.SaveUndoRedo(_undoStack, _redoStack);
+            _store.SaveUndoRedo(_undoStack.Reverse(), _redoStack.Reverse());
         }
 
         base.Dispose(disposing);
@@ -98,7 +98,7 @@ public class UndoHistory<TBase, TId> : AsyncDisposableOnceBag, IUndoHistory<TBas
 
     protected override async ValueTask DisposeAsyncCore()
     {
-        _store.SaveUndoRedo(_undoStack, _redoStack);
+        _store.SaveUndoRedo(_undoStack.Reverse(), _redoStack.Reverse());
         await base.DisposeAsyncCore();
     }
 }

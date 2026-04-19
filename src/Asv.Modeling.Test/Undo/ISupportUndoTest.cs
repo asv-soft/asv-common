@@ -13,7 +13,7 @@ public class ISupportUndoTest
     {
         var storageDirectory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
 
-        var root = new RootViewModel("root", storageDirectory);
+        var root = new HistoryViewModel("root", storageDirectory);
         var child1 = new TestViewModelBase("child1");
         root.Children.Add(child1);
         var child2 = new TestViewModelBase("child2");
@@ -23,6 +23,7 @@ public class ISupportUndoTest
 
         var longString = NavId.GenerateRandomAsString(5 * 1024);
 
+        child3.Undo.MuteChanges = false;
         child3.Prop1.Value = "1";
         child3.Prop1.Value = "2";
         child3.Prop1.Value = longString;
@@ -44,7 +45,7 @@ public class ISupportUndoTest
     {
         var storageDirectory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
 
-        var root = new RootViewModel("root", storageDirectory);
+        var root = new HistoryViewModel("root", storageDirectory);
         var child1 = new TestViewModelBase("child1");
         root.Children.Add(child1);
         var child2 = new TestViewModelBase("child2");
@@ -61,7 +62,7 @@ public class ISupportUndoTest
         root.Dispose();
 
         // now it's restore stack
-        root = new RootViewModel("root", storageDirectory);
+        root = new HistoryViewModel("root", storageDirectory);
         child1 = new TestViewModelBase("child1");
         root.Children.Add(child1);
         child2 = new TestViewModelBase("child2");
@@ -86,7 +87,7 @@ public class ISupportUndoTest
     {
         var storageDirectory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
 
-        var root = new RootViewModel("root", storageDirectory);
+        var root = new HistoryViewModel("root", storageDirectory);
         var child1 = new TestViewModelBase("child1");
         root.Children.Add(child1);
         var child2 = new TestViewModelBase("child2");
@@ -121,7 +122,7 @@ public class ISupportUndoTest
     {
         var storageDirectory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
 
-        var root = new RootViewModel("root", storageDirectory);
+        var root = new HistoryViewModel("root", storageDirectory);
         var child1 = new TestViewModelBase("child1");
         root.Children.Add(child1);
         var child2 = new TestViewModelBase("child2");
@@ -135,7 +136,7 @@ public class ISupportUndoTest
 
         root.Dispose();
 
-        root = new RootViewModel("root", storageDirectory);
+        root = new HistoryViewModel("root", storageDirectory);
         child1 = new TestViewModelBase("child1");
         root.Children.Add(child1);
         child2 = new TestViewModelBase("child2");
@@ -162,11 +163,13 @@ public class ISupportUndoTest
     }
 }
 
-public class RootViewModel : UndoRootViewModel
+public class HistoryViewModel : UndoHistoryViewModel
 {
-    public RootViewModel(string id, string storageDirectory)
+    public HistoryViewModel(string id, string storageDirectory)
         : base(id, storageDirectory)
     {
+        Children.SetParent<IViewModel, IViewModel>(this).AddTo(ref DisposableBag);
+        Children.DisposeRemovedItems().AddTo(ref DisposableBag);
     }
     
     public ObservableList<IViewModel> Children { get; } = new();

@@ -195,12 +195,12 @@ public class JsonUndoHistoryStore<TId> : AsyncDisposableOnceBag, IUndoHistorySto
         using var stream = File.Create(path);
         using var writer = new StreamWriter(stream);
 
-        foreach (var snapshot in snapshots.Reverse())
+        foreach (var snapshot in snapshots)
         {
             
             var jsonSnapshot = new JsonUndoSnapshot
             {
-                Path = snapshot.ToString() ?? throw new ArgumentException("Snapshot must be of type UndoSnapshot"),
+                Path = snapshot.Path.ToString(),
                 ChangeId = snapshot.ChangeId,
                 DataRefId = snapshot.DataRefId.ToString(),
                 Base64 =

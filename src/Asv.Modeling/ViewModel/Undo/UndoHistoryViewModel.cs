@@ -3,9 +3,9 @@ using R3;
 
 namespace Asv.Modeling;
 
-public abstract class UndoRootViewModel : ViewModelBase, IHasUndoHistory<IViewModel>
+public abstract class UndoHistoryViewModel : ViewModelBase, IHasUndoHistory<IViewModel>
 {
-    protected UndoRootViewModel(string typeId, string storageDirectory, NavArgs args = default)
+    protected UndoHistoryViewModel(string typeId, string storageDirectory, NavArgs args = default)
         : base(typeId, args)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(storageDirectory);
