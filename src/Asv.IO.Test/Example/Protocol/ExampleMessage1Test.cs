@@ -1,5 +1,5 @@
 using JetBrains.Annotations;
-using Xunit.Abstractions;
+using Xunit;
 
 namespace Asv.IO.Test.Example.Protocol;
 

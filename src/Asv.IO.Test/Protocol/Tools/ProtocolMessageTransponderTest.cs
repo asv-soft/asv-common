@@ -6,7 +6,6 @@ using Microsoft.Extensions.Logging;
 using R3;
 using TimeProviderExtensions;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Asv.IO.Test;
 

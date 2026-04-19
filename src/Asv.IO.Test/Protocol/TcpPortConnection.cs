@@ -3,7 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Asv.XUnit;
 using R3;
-using Xunit.Abstractions;
+using Xunit;
 using ZLogger;
 
 namespace Asv.IO.Test;

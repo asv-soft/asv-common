@@ -6,7 +6,7 @@ namespace Asv.Common;
 public abstract class AsyncDisposableWithCancel : AsyncDisposableOnce
 {
     private CancellationTokenSource? _cancel;
-    private readonly object _sync2 = new();
+    private readonly Lock _sync2 = new();
 
     protected CancellationToken DisposeCancel
     {

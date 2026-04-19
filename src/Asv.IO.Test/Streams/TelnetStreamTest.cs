@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using Asv.XUnit;
 using R3;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Asv.IO.Test
 {

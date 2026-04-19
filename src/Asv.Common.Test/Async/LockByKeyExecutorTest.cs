@@ -2,7 +2,6 @@ using System;
 using System.Diagnostics;
 using System.Threading;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Asv.Common.Test.Async;
 

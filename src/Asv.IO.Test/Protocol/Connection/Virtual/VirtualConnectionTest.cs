@@ -6,7 +6,6 @@ using AutoFixture;
 using JetBrains.Annotations;
 using R3;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Asv.IO.Test.Connection.Virtual;
 

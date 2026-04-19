@@ -20,6 +20,8 @@
   <Project Path="Asv.Composition/Asv.Composition.csproj" />
   <Project Path="Asv.IO.Test/Asv.IO.Test.csproj" />
   <Project Path="Asv.IO/Asv.IO.csproj" />
+  <Project Path="Asv.Modeling.Test/Asv.Modeling.Test.csproj" />
+  <Project Path="Asv.Modeling/Asv.Modeling.csproj" />
   <Project Path="Asv.Store.Test/Asv.Store.Test.csproj" />
   <Project Path="Asv.Store/Asv.Store.csproj" />
   <Project Path="Asv.XUnit/Asv.XUnit.csproj" />

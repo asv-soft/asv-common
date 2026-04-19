@@ -9,7 +9,6 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using R3;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Asv.Cfg.Test
 {

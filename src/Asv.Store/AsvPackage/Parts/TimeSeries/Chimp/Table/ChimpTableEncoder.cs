@@ -2,6 +2,7 @@
 using System.Collections.Immutable;
 using Asv.IO;
 using Asv.Store.Column;
+using CommunityToolkit.HighPerformance;
 using DotNext.Buffers;
 using DotNext.IO;
 using Microsoft.Extensions.Logging;

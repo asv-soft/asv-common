@@ -6,7 +6,6 @@ using Asv.XUnit;
 using JetBrains.Annotations;
 using TimeProviderExtensions;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Asv.IO.Test.Devices.Explorer;
 

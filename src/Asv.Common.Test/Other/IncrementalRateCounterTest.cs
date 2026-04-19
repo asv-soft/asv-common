@@ -1,7 +1,6 @@
 using System;
 using Microsoft.Extensions.Time.Testing;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Asv.Common.Test.Other;
 

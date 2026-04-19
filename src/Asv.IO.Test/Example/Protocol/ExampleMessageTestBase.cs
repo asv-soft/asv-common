@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using DeepEqual.Syntax;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Asv.IO.Test.Example.Protocol;
 

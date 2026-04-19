@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using Asv.XUnit;
 using JetBrains.Annotations;
 using R3;
-using Xunit.Abstractions;
+using Xunit;
 
 namespace Asv.IO.Test.Connection.Port.Impl;
 

@@ -4,7 +4,6 @@ using System.Threading;
 using Asv.XUnit;
 using AutoFixture;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Asv.Cfg.Test;
 

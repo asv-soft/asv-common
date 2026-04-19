@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="DotNext" Version="$(DotNextVersion)" />
+    <PackageReference Include="ObservableCollections.R3" Version="$(R3Collections)" />
+    <PackageReference Include="MemoryPack" Version="1.21.4" />
+    <PackageReference Include="ZLogger" Version="$(ZLoggerVersion)" />
+    <PackageReference Include="Ulid" Version="1.4.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Asv.Common\Asv.Common.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="ViewModel\Tree\" />
+  </ItemGroup>
+</Project>

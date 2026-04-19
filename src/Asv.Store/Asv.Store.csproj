@@ -6,8 +6,10 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Asv.IO\Asv.IO.csproj" />
+    <ProjectReference Include="..\Asv.Modeling\Asv.Modeling.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="CommunityToolkit.HighPerformance" Version="8.4.2" />
     <PackageReference Include="MessagePack" Version="3.1.4" />
     <PackageReference Include="System.IO.Packaging" Version="$(DotNetVersion)" />
   </ItemGroup>

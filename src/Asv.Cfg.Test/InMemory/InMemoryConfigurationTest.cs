@@ -1,7 +1,7 @@
 using System;
 using JetBrains.Annotations;
 using R3;
-using Xunit.Abstractions;
+using Xunit;
 
 namespace Asv.Cfg.Test
 {
