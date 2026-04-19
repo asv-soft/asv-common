@@ -15,9 +15,6 @@
     <PackageReference Include="JetBrains.Annotations" Version="2025.2.1" />
     <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" Version="9.8.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
-    <PackageReference Include="DotNext.IO" Version="$(DotNextVersion)" />
-    <PackageReference Include="DotNext" Version="$(DotNextVersion)" />
-    <PackageReference Include="Moq" Version="4.20.72" />
     <PackageReference Include="Roslynator.Analyzers" Version="4.14.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

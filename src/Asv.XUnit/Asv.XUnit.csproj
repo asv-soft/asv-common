@@ -51,8 +51,6 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="DeepEqual" Version="$(DeepEqualVersion)" />
-    <PackageReference Include="FluentAssertions" Version="8.6.0" />
     <PackageReference Include="Roslynator.Analyzers" Version="4.14.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

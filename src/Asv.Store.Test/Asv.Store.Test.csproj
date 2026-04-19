@@ -7,6 +7,8 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.4" />
+    <PackageReference Include="DeepEqual" Version="$(DeepEqualVersion)" />
+    <PackageReference Include="FluentAssertions" Version="8.6.0" />
     <PackageReference Include="JetBrains.Annotations" Version="2025.2.1" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference
@@ -18,7 +20,6 @@
     <Using Include="Xunit" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Asv.Modeling\Asv.Modeling.csproj" />
     <ProjectReference Include="..\Asv.Store\Asv.Store.csproj" />
     <ProjectReference Include="..\Asv.XUnit\Asv.XUnit.csproj" />
   </ItemGroup>

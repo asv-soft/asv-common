@@ -71,7 +71,6 @@
       Include="TestableIO.System.IO.Abstractions.Wrappers"
       Version="$(SystemIOAbstractionsVersion)"
     />
-    <PackageReference Include="System.IO.Pipelines" Version="$(DotNetVersion)" />
     <PackageReference Include="System.IO.Ports" Version="$(DotNetVersion)" />
     <PackageReference Include="DotNext" Version="$(DotNextVersion)" />
     <PackageReference Include="DotNext.IO" Version="$(DotNextVersion)" />
