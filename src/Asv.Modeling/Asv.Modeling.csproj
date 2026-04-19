@@ -14,7 +14,4 @@
   <ItemGroup>
     <ProjectReference Include="..\Asv.Common\Asv.Common.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="ViewModel\Tree\" />
-  </ItemGroup>
 </Project>

@@ -1,7 +1,7 @@
 namespace Asv.Modeling;
 
-public interface ISupportRoutedEvents<T> : ISupportParent<T>, ISupportChildren<T>
-    where T : ISupportRoutedEvents<T>
+public interface ISupportRoutedEvents<TBase> : ISupportParent<TBase>, ISupportChildren<TBase>
+    where TBase : ISupportRoutedEvents<TBase>
 {
-    IRoutedEventController<T> Events { get; }
+    IRoutedEventController<TBase> Events { get; }
 }

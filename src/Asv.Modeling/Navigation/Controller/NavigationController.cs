@@ -38,12 +38,12 @@ public class NavigationController<TBase> : AsyncDisposableOnce, INavigationContr
         
         store.Load(_forwardStack.Push, _backwardStack.Push);
         
-        _owner.Subscribe<TBase,NavigateEvent<TBase>>(OnNavigateEvent).AddTo(ref dispose);
+        _owner.Events.Catch<NavigateEvent<TBase>>(OnNavigateEvent).AddTo(ref dispose);
         
         _disposeIt = dispose.Build();
     }
 
-    private async ValueTask OnNavigateEvent(TBase owner, NavigateEvent<TBase> e)
+    private async ValueTask OnNavigateEvent(TBase owner, NavigateEvent<TBase> e, CancellationToken cancel)
     {
         var previousPath = _selectedPath.Value;
         if (previousPath == e.Path)

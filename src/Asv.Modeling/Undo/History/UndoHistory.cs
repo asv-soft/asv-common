@@ -4,7 +4,7 @@ using R3;
 
 namespace Asv.Modeling;
 
-public class UndoHistory<TBase, TId> : AsyncDisposableOnceBag, IUndoHistory<TBase>
+public class UndoHistory<TBase> : AsyncDisposableOnceBag, IUndoHistory<TBase>
     where TBase : ISupportRoutedEvents<TBase>, ISupportNavigation<TBase>
 {
     private readonly TBase _owner;
@@ -29,7 +29,7 @@ public class UndoHistory<TBase, TId> : AsyncDisposableOnceBag, IUndoHistory<TBas
             .AddTo(ref DisposableBag);
      
         owner
-            .Subscribe<TBase, UndoEvent<TBase>>(TryAddToHistory)
+            .Events.Catch<UndoEvent<TBase>>(TryAddToHistory)
             .AddTo(ref DisposableBag);
     }
 
@@ -76,7 +76,7 @@ public class UndoHistory<TBase, TId> : AsyncDisposableOnceBag, IUndoHistory<TBas
 
     public IObservableCollection<IUndoSnapshot> RedoStack => _redoStack;
 
-    private ValueTask TryAddToHistory(TBase x, UndoEvent<TBase> e)
+    private ValueTask TryAddToHistory(TBase x, UndoEvent<TBase> e, CancellationToken cancel)
     {
         var path = e.Sender.GetPathFrom<TBase, NavId>(_owner);
         var snapshot = _store.CreateSnapshot(new NavPath(path), e.ChangeId);

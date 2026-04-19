@@ -9,7 +9,7 @@ public abstract class UndoHistoryViewModel : ViewModelBase, IHasUndoHistory<IVie
         : base(typeId, args)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(storageDirectory);
-        UndoHistory = new UndoHistory<IViewModel, NavId>(
+        UndoHistory = new UndoHistory<IViewModel>(
             this,
             new JsonUndoHistoryStore<NavId>(storageDirectory)
         ).AddTo(ref DisposableBag);
