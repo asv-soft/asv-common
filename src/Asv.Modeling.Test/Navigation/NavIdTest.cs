@@ -106,4 +106,12 @@ public class NavIdTest
 
         Assert.NotEqual(withNull, withEmpty);
     }
+
+    [Fact]
+    public void Empty_ReturnsCanonicalEmptyValue()
+    {
+        Assert.True(NavId.Empty.Args.IsEmpty);
+        Assert.Equal(default, NavId.Empty);
+        Assert.Null(NavId.Empty.TypeId);
+    }
 }

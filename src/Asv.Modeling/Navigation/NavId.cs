@@ -9,6 +9,7 @@ namespace Asv.Modeling;
 public readonly partial struct NavId : IEquatable<NavId>
 {
     public const char Separator = '?';
+    public static NavId Empty => default;
 
     private const string TypeIdRegexString = "^[a-zA-Z0-9\\._\\-]+$";
 
