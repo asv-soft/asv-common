@@ -11,7 +11,7 @@ public abstract class UndoHistoryViewModel : ViewModelBase, IHasUndoHistory<IVie
         ArgumentException.ThrowIfNullOrWhiteSpace(storageDirectory);
         UndoHistory = new UndoHistory<IViewModel>(
             this,
-            new JsonUndoHistoryStore<NavId>(storageDirectory)
+            new JsonUndoHistoryStore(storageDirectory)
         ).AddTo(ref DisposableBag);
     }
 

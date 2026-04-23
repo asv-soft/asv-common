@@ -55,4 +55,11 @@ public class NavArgsTest
 
         Assert.Equal("file_path-id", args[0].Key);
     }
+
+    [Fact]
+    public void Empty_ReturnsCanonicalEmptyValue()
+    {
+        Assert.True(NavArgs.Empty.IsEmpty);
+        Assert.Equal(default, NavArgs.Empty);
+    }
 }

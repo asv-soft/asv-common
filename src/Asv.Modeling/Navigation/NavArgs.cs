@@ -12,6 +12,7 @@ public readonly partial struct NavArgs
     public const char ArgSeparator = '=';
     public const char KeyValueSeparator = '&';
     public const string ArgKeyRegexString = "^[a-zA-Z0-9_-]+$";
+    public static NavArgs Empty => default;
 
     [GeneratedRegex(ArgKeyRegexString, RegexOptions.Compiled)]
     private static partial Regex CreateArgKeyRegex();

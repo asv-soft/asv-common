@@ -8,7 +8,7 @@ using ZLogger;
 
 namespace Asv.Modeling;
 
-public class JsonUndoHistoryStore<TId> : AsyncDisposableOnceBag, IUndoHistoryStore
+public class JsonUndoHistoryStore : AsyncDisposableOnceBag, IUndoHistoryStore
 {
     private const int DefaultInMemoryThresholdBytes = 4 * 1024;
     private const string UndoStackFileName = "undo-stack.jsonl";
