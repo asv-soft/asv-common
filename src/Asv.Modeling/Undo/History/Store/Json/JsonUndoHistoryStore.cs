@@ -215,4 +215,12 @@ public class JsonUndoHistoryStore : AsyncDisposableOnceBag, IUndoHistoryStore
             );
         }
     }
+
+    private class UndoSnapshot : IUndoSnapshot
+    {
+        public required NavPath Path { get; set; }
+        public required string ChangeId { get; set; }
+        public required Ulid DataRefId { get; set; }
+        public byte[]? Data { get; set; }
+    }
 }
