@@ -185,6 +185,8 @@ public readonly partial struct NavId : IEquatable<NavId>
         this = new NavId(typeId, args);
     }
 
+    public static NavId Parse(string value) => new(value);
+
     public string TypeId { get; } = string.Empty;
 
     public NavArgs Args { get; }

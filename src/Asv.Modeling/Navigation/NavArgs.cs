@@ -26,7 +26,25 @@ public readonly partial struct NavArgs
         _items = args is { Length: > 0 } ? Normalize(args) : null;
     }
 
-    public NavArgs(IEnumerable<KeyValuePair<string, string?>> args)
+    public NavArgs(params (string Key, string? Value)[] args)
+    {
+        if (args.Length == 0)
+        {
+            _items = null;
+            return;
+        }
+
+        var result = new KeyValuePair<string, string?>[args.Length];
+        for (var i = 0; i < args.Length; i++)
+        {
+            ValidateKey(args[i].Key);
+            result[i] = new KeyValuePair<string, string?>(args[i].Key, args[i].Value);
+        }
+
+        _items = result;
+    }
+
+    public NavArgs(params IEnumerable<KeyValuePair<string, string?>> args)
     {
         ArgumentNullException.ThrowIfNull(args);
         _items = Normalize(args).ToArray();
@@ -40,7 +58,30 @@ public readonly partial struct NavArgs
 
     public bool IsEmpty => Count == 0;
 
-    public KeyValuePair<string, string?> this[int index] => (_items ?? Array.Empty<KeyValuePair<string, string?>>())[index];
+    public KeyValuePair<string, string?> this[int index] => (_items ?? [])[index];
+
+    public string? this[string key]
+    {
+        get
+        {
+            ArgumentNullException.ThrowIfNull(key);
+            if (_items == null)
+            {
+                return null;
+            }
+
+            for (var i = 0; i < _items.Length; i++)
+            {
+                var item = _items[i];
+                if (string.Equals(item.Key, key, StringComparison.Ordinal))
+                {
+                    return item.Value;
+                }
+            }
+
+            return null;
+        }
+    }
 
     public static NavArgs Parse(string? value)
     {
@@ -143,6 +184,8 @@ public readonly partial struct NavArgs
     public static bool operator ==(NavArgs left, NavArgs right) => left.Equals(right);
 
     public static bool operator !=(NavArgs left, NavArgs right) => !left.Equals(right);
+
+    public static explicit operator NavArgs(string? value) => Parse(value);
 
     public IEnumerator<KeyValuePair<string, string?>> GetEnumerator() =>
         ((_items ?? Array.Empty<KeyValuePair<string, string?>>()) as IEnumerable<KeyValuePair<string, string?>>).GetEnumerator();

@@ -47,6 +47,15 @@ public class NavIdTest
     }
 
     [Fact]
+    public void Parse_FromString_ParsesArgs()
+    {
+        var id = NavId.Parse("file.item?path=C%3A%5CTemp%5CMy+File.txt");
+
+        Assert.Equal("file.item", id.TypeId);
+        Assert.Equal(@"C:\Temp\My File.txt", id.Args["path"]);
+    }
+
+    [Fact]
     public void Equality_TypeIdIsCaseInsensitive_ArgsAreCaseSensitive()
     {
         var left = new NavId(

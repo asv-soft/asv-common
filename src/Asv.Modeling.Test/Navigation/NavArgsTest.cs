@@ -26,10 +26,45 @@ public class NavArgsTest
     }
 
     [Fact]
+    public void ExplicitOperator_ConvertsStringToNavArgs()
+    {
+        var args = (NavArgs)"path=C%3A%5CTemp%5CMy+File.txt&name=read+me";
+
+        Assert.Equal(@"C:\Temp\My File.txt", args["path"]);
+        Assert.Equal("read me", args["name"]);
+    }
+
+    [Fact]
     public void Constructor_Throws_WhenKeyDoesNotMatchRegex()
     {
         Assert.Throws<ArgumentException>(() =>
             new NavArgs(new KeyValuePair<string, string?>("bad.key", "value"))
+        );
+    }
+
+    [Fact]
+    public void TupleConstructor_CreatesArgs()
+    {
+        var args = new NavArgs(("path", @"C:\Temp\File.txt"), ("name", "read me"));
+
+        Assert.Equal(2, args.Count);
+        Assert.Equal(@"C:\Temp\File.txt", args["path"]);
+        Assert.Equal("read me", args["name"]);
+    }
+
+    [Fact]
+    public void TupleConstructor_ReturnsEmpty_WhenNoArgs()
+    {
+        var args = new NavArgs();
+
+        Assert.True(args.IsEmpty);
+    }
+
+    [Fact]
+    public void TupleConstructor_Throws_WhenKeyDoesNotMatchRegex()
+    {
+        Assert.Throws<ArgumentException>(() =>
+            new NavArgs(("bad.key", "value"))
         );
     }
 
@@ -54,6 +89,26 @@ public class NavArgsTest
         );
 
         Assert.Equal("file_path-id", args[0].Key);
+    }
+
+    [Fact]
+    public void StringIndexer_ReturnsValueByKey()
+    {
+        var args = new NavArgs(
+            new KeyValuePair<string, string?>("path", @"C:\Temp\File.txt"),
+            new KeyValuePair<string, string?>("name", "read me")
+        );
+
+        Assert.Equal(@"C:\Temp\File.txt", args["path"]);
+        Assert.Equal("read me", args["name"]);
+    }
+
+    [Fact]
+    public void StringIndexer_ReturnsNull_WhenKeyNotFound()
+    {
+        var args = new NavArgs(new KeyValuePair<string, string?>("path", @"C:\Temp\File.txt"));
+
+        Assert.Null(args["missing"]);
     }
 
     [Fact]
