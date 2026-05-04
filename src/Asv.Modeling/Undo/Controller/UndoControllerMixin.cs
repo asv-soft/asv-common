@@ -24,7 +24,7 @@ public static class UndoControllerMixin
 
         public IDisposable Register<T>(string name, ReactiveProperty<T> prop)
         {
-            return controller.Register(new ReactivePropertyChangeHandler<T>(name, prop));
+            return controller.Register(new ReactivePropertyUndoHandler<T>(name, prop));
         }
     }
 }

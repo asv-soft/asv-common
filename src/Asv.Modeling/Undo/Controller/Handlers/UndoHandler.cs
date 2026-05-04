@@ -2,17 +2,25 @@ using R3;
 
 namespace Asv.Modeling;
 
-public abstract class UndoHandler<TChange>(string id, Observable<IChange> changes)
-    : IUndoHandler where TChange : IChange
+public abstract class UndoHandler<TChange>(string id)
+    : IUndoHandler, IDisposable
+    where TChange : IChange
 {
+    private readonly Subject<IChange> _changes = new();
     private bool _muteChanges;
     public string ChangeId => id;
-    public Observable<IChange> Changes => changes.Where(_ => !_muteChanges);
+    public Observable<IChange> Changes => _changes;
 
     public bool MuteChanges
     {
         get => _muteChanges;
         set => _muteChanges = value;
+    }
+
+    protected void Publish(TChange change)
+    {
+        if (_muteChanges) return;
+        _changes.OnNext(change);
     }
 
     public abstract IChange Create();
@@ -46,4 +54,9 @@ public abstract class UndoHandler<TChange>(string id, Observable<IChange> change
     }
 
     protected abstract ValueTask InternalRedo(TChange change, CancellationToken cancel);
+
+    public void Dispose()
+    {
+        _changes.Dispose();
+    }
 }

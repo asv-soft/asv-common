@@ -4,18 +4,16 @@ using R3;
 
 namespace Asv.Modeling.Test;
 
-[TestSubject(typeof(CallbackUndoHandler<>))]
-public class CallbackUndoHandlerTest
+[TestSubject(typeof(ManualUndoHandler<>))]
+public class ManualUndoHandlerTest
 {
     [Fact]
     public void Create_ReturnsNewChangeInstance()
     {
-        using var publicator = new Subject<TestChange>();
-        var handler = new CallbackUndoHandler<TestChange>(
+        using var handler = new ManualUndoHandler<TestChange>(
             "change",
             (_, _) => ValueTask.CompletedTask,
-            (_, _) => ValueTask.CompletedTask,
-            publicator
+            (_, _) => ValueTask.CompletedTask
         );
 
         var change = handler.Create();
@@ -27,14 +25,13 @@ public class CallbackUndoHandlerTest
     [Fact]
     public async ValueTask Undo_InvokesCallbackWithTypedChangeAndCancellationToken()
     {
-        using var publicator = new Subject<TestChange>();
         var expected = new TestChange { Value = 42 };
         using var cts = new CancellationTokenSource();
         TestChange? actualChange = null;
         CancellationToken actualToken = default;
-        CallbackUndoHandler<TestChange>? handler = null;
+        ManualUndoHandler<TestChange>? handler = null;
 
-        handler = new CallbackUndoHandler<TestChange>(
+        handler = new ManualUndoHandler<TestChange>(
             "change",
             (change, cancel) =>
             {
@@ -43,9 +40,9 @@ public class CallbackUndoHandlerTest
                 Assert.True(handler!.MuteChanges);
                 return ValueTask.CompletedTask;
             },
-            (_, _) => ValueTask.CompletedTask,
-            publicator
+            (_, _) => ValueTask.CompletedTask
         );
+        using var _ = handler;
 
         await handler.Undo(expected, cts.Token);
 
@@ -57,14 +54,13 @@ public class CallbackUndoHandlerTest
     [Fact]
     public async ValueTask Redo_InvokesCallbackWithTypedChangeAndCancellationToken()
     {
-        using var publicator = new Subject<TestChange>();
         var expected = new TestChange { Value = 43 };
         using var cts = new CancellationTokenSource();
         TestChange? actualChange = null;
         CancellationToken actualToken = default;
-        CallbackUndoHandler<TestChange>? handler = null;
+        ManualUndoHandler<TestChange>? handler = null;
 
-        handler = new CallbackUndoHandler<TestChange>(
+        handler = new ManualUndoHandler<TestChange>(
             "change",
             (_, _) => ValueTask.CompletedTask,
             (change, cancel) =>
@@ -73,9 +69,9 @@ public class CallbackUndoHandlerTest
                 actualToken = cancel;
                 Assert.True(handler!.MuteChanges);
                 return ValueTask.CompletedTask;
-            },
-            publicator
+            }
         );
+        using var _ = handler;
 
         await handler.Redo(expected, cts.Token);
 
@@ -87,12 +83,10 @@ public class CallbackUndoHandlerTest
     [Fact]
     public void Changes_PublishesIncomingChangesAsIChange_WhenNotMuted()
     {
-        using var publicator = new Subject<TestChange>();
-        var handler = new CallbackUndoHandler<TestChange>(
+        using var handler = new ManualUndoHandler<TestChange>(
             "change",
             (_, _) => ValueTask.CompletedTask,
-            (_, _) => ValueTask.CompletedTask,
-            publicator
+            (_, _) => ValueTask.CompletedTask
         );
         var received = new List<IChange>();
         using var subscription = handler.Changes.Subscribe(received.Add);
@@ -100,9 +94,9 @@ public class CallbackUndoHandlerTest
         var first = new TestChange { Value = 1 };
         var second = new TestChange { Value = 2 };
 
-        publicator.OnNext(first);
+        handler.Publish(first);
         handler.MuteChanges = true;
-        publicator.OnNext(second);
+        handler.Publish(second);
         handler.MuteChanges = false;
 
         Assert.Single(received);
@@ -112,13 +106,11 @@ public class CallbackUndoHandlerTest
     [Fact]
     public async ValueTask Undo_RestoresMuteChanges_WhenCallbackThrows()
     {
-        using var publicator = new Subject<TestChange>();
         var expected = new InvalidOperationException("undo failed");
-        var handler = new CallbackUndoHandler<TestChange>(
+        using var handler = new ManualUndoHandler<TestChange>(
             "change",
             (_, _) => throw expected,
-            (_, _) => ValueTask.CompletedTask,
-            publicator
+            (_, _) => ValueTask.CompletedTask
         );
 
         var actual = await Assert.ThrowsAsync<InvalidOperationException>(
