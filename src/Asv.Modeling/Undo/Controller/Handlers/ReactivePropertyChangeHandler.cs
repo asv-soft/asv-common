@@ -3,7 +3,7 @@ using R3;
 namespace Asv.Modeling;
 
 public class ReactivePropertyChangeHandler<T>(string name, ReactiveProperty<T> property)
-    : UndoChangeHandler<ScalarChange<T>>(
+    : UndoHandler<ScalarChange<T>>(
         name,
         property
             .Pairwise()

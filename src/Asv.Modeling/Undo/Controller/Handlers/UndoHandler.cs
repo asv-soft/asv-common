@@ -2,8 +2,8 @@ using R3;
 
 namespace Asv.Modeling;
 
-public abstract class UndoChangeHandler<TChange>(string id, Observable<IChange> changes)
-    : IUndoHandler
+public abstract class UndoHandler<TChange>(string id, Observable<IChange> changes)
+    : IUndoHandler where TChange : IChange
 {
     private bool _muteChanges;
     public string ChangeId => id;

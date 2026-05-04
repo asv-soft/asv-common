@@ -1,8 +1,8 @@
 namespace Asv.Modeling;
 
-public class NullHistoryStore : IUndoHistoryStore
+public class NullUndoHistoryStore : IUndoHistoryStore
 {
-    public static NullHistoryStore Instance { get; } = new();
+    public static NullUndoHistoryStore Instance { get; } = new();
     
     public void Dispose()
     {
