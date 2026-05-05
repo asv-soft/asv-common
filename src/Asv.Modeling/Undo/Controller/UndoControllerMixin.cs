@@ -8,23 +8,36 @@ public static class UndoControllerMixin
     {
         public void DisableChangePublication()
         {
-            controller.MuteChanges = true;
+            controller.SuppressChanges = true;
         }
 
-        public void EnableChangePublication()
+        public void EnablePublication()
         {
-            controller.MuteChanges = false;
+            controller.SuppressChanges = false;
         }
 
         public IDisposable BeginChangePublication()
         {
-            controller.MuteChanges = true;
-            return Disposable.Create(controller, x => x.EnableChangePublication());
+            controller.SuppressChanges = true;
+            return Disposable.Create(controller, x => x.EnablePublication());
         }
 
-        public IDisposable Register<T>(string name, ReactiveProperty<T> prop)
+        public PropertyUndoHandler<T> CreateAndRegister<T>(string changeId, ReactiveProperty<T> prop)
         {
-            return controller.Register(new ReactivePropertyUndoHandler<T>(name, prop));
+            var handler = new PropertyUndoHandler<T>(changeId, prop);
+            controller.Register(handler);
+            return handler;
+        }
+        
+        public ManualUndoHandler<TChange> CreateAndRegister<TChange>(
+            string changeId,
+            ManualUndoHandler<TChange>.Delegate undo,
+            ManualUndoHandler<TChange>.Delegate redo)
+            where TChange : IChange, new()
+        {
+            var handler = new ManualUndoHandler<TChange>(changeId, undo, redo);
+            controller.Register(handler);
+            return handler;
         }
     }
 }

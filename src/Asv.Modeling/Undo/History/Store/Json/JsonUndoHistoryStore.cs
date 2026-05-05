@@ -60,7 +60,7 @@ public class JsonUndoHistoryStore : AsyncDisposableOnceBag, IUndoHistoryStore
             try
             {
                 fs.ReadExactly(array, 0, (int)fs.Length);
-                change.Deserialize(new ReadOnlySequence<byte>(array));
+                change.Deserialize(new ReadOnlySequence<byte>(array.AsMemory(0, (int)fs.Length)));
             }
             finally
             {

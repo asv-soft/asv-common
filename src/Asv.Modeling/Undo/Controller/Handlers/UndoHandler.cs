@@ -7,19 +7,19 @@ public abstract class UndoHandler<TChange>(string id)
     where TChange : IChange
 {
     private readonly Subject<IChange> _changes = new();
-    private bool _muteChanges;
+    private bool _suppressChanges;
     public string ChangeId => id;
     public Observable<IChange> Changes => _changes;
 
-    public bool MuteChanges
+    public bool SuppressChanges
     {
-        get => _muteChanges;
-        set => _muteChanges = value;
+        get => _suppressChanges;
+        set => _suppressChanges = value;
     }
 
     protected void Publish(TChange change)
     {
-        if (_muteChanges) return;
+        if (_suppressChanges) return;
         _changes.OnNext(change);
     }
 
@@ -29,12 +29,12 @@ public abstract class UndoHandler<TChange>(string id)
     {
         try
         {
-            _muteChanges = true;
+            _suppressChanges = true;
             await InternalUndo((TChange)change, cancel);
         }
         finally
         {
-            _muteChanges = false;
+            _suppressChanges = false;
         }
     }
 
@@ -44,12 +44,12 @@ public abstract class UndoHandler<TChange>(string id)
     {
         try
         {
-            _muteChanges = true;
+            _suppressChanges = true;
             await InternalRedo((TChange)change, cancel);
         }
         finally
         {
-            _muteChanges = false;
+            _suppressChanges = false;
         }
     }
 

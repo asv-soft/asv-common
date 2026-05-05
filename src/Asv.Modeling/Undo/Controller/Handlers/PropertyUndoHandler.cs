@@ -2,12 +2,12 @@ using R3;
 
 namespace Asv.Modeling;
 
-public sealed class ReactivePropertyUndoHandler<T> : UndoHandler<ScalarChange<T>>, IDisposable
+public sealed class PropertyUndoHandler<T> : UndoHandler<ScalarChange<T>>, IDisposable
 {
     private readonly ReactiveProperty<T> _property;
     private readonly IDisposable _sub1;
 
-    public ReactivePropertyUndoHandler(string name, ReactiveProperty<T> property) : base(name)
+    public PropertyUndoHandler(string name, ReactiveProperty<T> property) : base(name)
     {
         _property = property;
         _sub1 = _property

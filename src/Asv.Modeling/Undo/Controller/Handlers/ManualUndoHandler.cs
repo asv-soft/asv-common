@@ -9,10 +9,7 @@ public class ManualUndoHandler<TChange>(
     : UndoHandler<TChange>(id)
     where TChange : IChange, new()
 {
-    public new void Publish(TChange change)
-    {
-        base.Publish(change);
-    }
+    public new void Publish(TChange change) => base.Publish(change);
     public delegate ValueTask Delegate(TChange change, CancellationToken cancel);
     public override IChange Create() => new TChange();
     protected override ValueTask InternalUndo(TChange change, CancellationToken cancel) => undo(change, cancel);

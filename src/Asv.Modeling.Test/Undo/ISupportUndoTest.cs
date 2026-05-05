@@ -23,7 +23,7 @@ public class ISupportUndoTest
 
         var longString = NavId.GenerateRandomAsString(5 * 1024);
 
-        child3.Undo.MuteChanges = false;
+        child3.Undo.EnablePublication();
         child3.Prop1.Value = "1";
         child3.Prop1.Value = "2";
         child3.Prop1.Value = longString;
@@ -187,8 +187,8 @@ public class TestViewModelBase : UndoableViewModel
         Children.SetParent<IViewModel,IViewModel>(this).AddTo(ref DisposableBag);
         Children.DisposeRemovedItems().AddTo(ref DisposableBag);
 
-        Undo.Register(nameof(Prop1), Prop1).AddTo(ref DisposableBag);
-        Undo.EnableChangePublication();
+        Undo.CreateAndRegister(nameof(Prop1), Prop1).AddTo(ref DisposableBag);
+        Undo.EnablePublication();
     }
 
     public ObservableList<IViewModel> Children { get; } = new();

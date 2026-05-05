@@ -10,7 +10,8 @@ public interface IChange
 
 public interface IUndoController : IDisposable
 {
-    bool MuteChanges { get; set; }
-    IDisposable Register(IUndoHandler handler);
+    bool SuppressChanges { get; set; }
+    void Register(IUndoHandler handler);
+    void Unregister(IUndoHandler handler);
     IUndoHandler Find(string registrationId);
 }

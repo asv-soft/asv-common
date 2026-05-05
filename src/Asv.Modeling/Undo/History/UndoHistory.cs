@@ -39,17 +39,25 @@ public class UndoHistory<TBase> : AsyncDisposableOnceBag, IUndoHistory<TBase>
     {
         if (_undoStack.TryPop(out var snapshot))
         {
-            var contextPath = snapshot.Path;
-            var target = await _owner.NavigateByPath(contextPath) as ISupportUndo<TBase>;
-            if (target == null)
+            try
             {
-                throw new Exception($"Target {target} not support undo or not found");
+                var contextPath = snapshot.Path;
+                var target = await _owner.NavigateByPath(contextPath) as ISupportUndo<TBase>;
+                if (target == null)
+                {
+                    throw new Exception($"Target {target} not support undo or not found");
+                }
+                var handler = target.Undo.Find(snapshot.ChangeId);
+                var change = handler.Create();
+                _store.LoadChange(snapshot, change);
+                await handler.Undo(change, cancel);
+                _redoStack.Push(snapshot);
             }
-            var handler = target.Undo.Find(snapshot.ChangeId);
-            var change = handler.Create();
-            _store.LoadChange(snapshot, change);
-            await handler.Undo(change, cancel);
-            _redoStack.Push(snapshot);
+            catch
+            {
+                _undoStack.Push(snapshot);
+                throw;
+            }
         }
     }
 
@@ -60,17 +68,25 @@ public class UndoHistory<TBase> : AsyncDisposableOnceBag, IUndoHistory<TBase>
     {
         if (_redoStack.TryPop(out var snapshot))
         {
-            var contextPath = snapshot.Path;
-            var target = await _owner.NavigateByPath(contextPath) as ISupportUndo<TBase>;
-            if (target == null)
+            try
             {
-                throw new Exception($"Target {target} not support undo or not found");
+                var contextPath = snapshot.Path;
+                var target = await _owner.NavigateByPath(contextPath) as ISupportUndo<TBase>;
+                if (target == null)
+                {
+                    throw new Exception($"Target {target} not support undo or not found");
+                }
+                var handler = target.Undo.Find(snapshot.ChangeId);
+                var change = handler.Create();
+                _store.LoadChange(snapshot, change);
+                await handler.Redo(change, cancel);
+                _undoStack.Push(snapshot);
             }
-            var handler = target.Undo.Find(snapshot.ChangeId);
-            var change = handler.Create();
-            _store.LoadChange(snapshot, change);
-            await handler.Redo(change, cancel);
-            _undoStack.Push(snapshot);
+            catch
+            {
+                _redoStack.Push(snapshot);
+                throw;
+            }
         }
     }
 

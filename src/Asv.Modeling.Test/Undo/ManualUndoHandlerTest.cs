@@ -37,7 +37,7 @@ public class ManualUndoHandlerTest
             {
                 actualChange = change;
                 actualToken = cancel;
-                Assert.True(handler!.MuteChanges);
+                Assert.True(handler!.SuppressChanges);
                 return ValueTask.CompletedTask;
             },
             (_, _) => ValueTask.CompletedTask
@@ -48,7 +48,7 @@ public class ManualUndoHandlerTest
 
         Assert.Equal(expected, actualChange);
         Assert.Equal(cts.Token, actualToken);
-        Assert.False(handler.MuteChanges);
+        Assert.False(handler.SuppressChanges);
     }
 
     [Fact]
@@ -67,7 +67,7 @@ public class ManualUndoHandlerTest
             {
                 actualChange = change;
                 actualToken = cancel;
-                Assert.True(handler!.MuteChanges);
+                Assert.True(handler!.SuppressChanges);
                 return ValueTask.CompletedTask;
             }
         );
@@ -77,7 +77,7 @@ public class ManualUndoHandlerTest
 
         Assert.Equal(expected, actualChange);
         Assert.Equal(cts.Token, actualToken);
-        Assert.False(handler.MuteChanges);
+        Assert.False(handler.SuppressChanges);
     }
 
     [Fact]
@@ -95,9 +95,9 @@ public class ManualUndoHandlerTest
         var second = new TestChange { Value = 2 };
 
         handler.Publish(first);
-        handler.MuteChanges = true;
+        handler.SuppressChanges = true;
         handler.Publish(second);
-        handler.MuteChanges = false;
+        handler.SuppressChanges = false;
 
         Assert.Single(received);
         Assert.Equal(first, Assert.IsType<TestChange>(received[0]));
@@ -118,7 +118,7 @@ public class ManualUndoHandlerTest
         );
 
         Assert.Same(expected, actual);
-        Assert.False(handler.MuteChanges);
+        Assert.False(handler.SuppressChanges);
     }
 
     private struct TestChange : IChange
