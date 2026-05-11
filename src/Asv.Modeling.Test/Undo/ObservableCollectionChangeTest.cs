@@ -121,7 +121,9 @@ public class CollectionChangeTest
         }
 
         list.CollectionChanged += OnCollectionChanged;
-        using var subscription = Disposable.Create(() => list.CollectionChanged -= OnCollectionChanged);
+        using var subscription = Disposable.Create(() =>
+            list.CollectionChanged -= OnCollectionChanged
+        );
 
         list.Add("created");
 
@@ -146,7 +148,9 @@ public class CollectionChangeTest
         }
 
         list.CollectionChanged += OnCollectionChanged;
-        using var subscription = Disposable.Create(() => list.CollectionChanged -= OnCollectionChanged);
+        using var subscription = Disposable.Create(() =>
+            list.CollectionChanged -= OnCollectionChanged
+        );
 
         list.RemoveAt(1);
 
@@ -171,7 +175,9 @@ public class CollectionChangeTest
         }
 
         list.CollectionChanged += OnCollectionChanged;
-        using var subscription = Disposable.Create(() => list.CollectionChanged -= OnCollectionChanged);
+        using var subscription = Disposable.Create(() =>
+            list.CollectionChanged -= OnCollectionChanged
+        );
 
         list.InsertRange(1, ["second", "third"]);
 

@@ -2,8 +2,6 @@ using System.Buffers;
 
 namespace Asv.Modeling;
 
-
-
 public delegate ValueTask UndoCallback<in TChange>(TChange change, CancellationToken cancel)
     where TChange : IChange;
 

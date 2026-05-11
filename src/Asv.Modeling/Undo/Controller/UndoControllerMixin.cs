@@ -51,7 +51,9 @@ public static class UndoControllerMixin
             }
 
             list.CollectionChanged += OnCollectionChanged;
-            var subscription = Disposable.Create(() => list.CollectionChanged -= OnCollectionChanged);
+            var subscription = Disposable.Create(() =>
+                list.CollectionChanged -= OnCollectionChanged
+            );
             return Disposable.Combine(publisher, subscription);
         }
 
@@ -124,7 +126,11 @@ public static class UndoControllerMixin
             }
         }
 
-        private static void InsertRange<T>(ObservableList<T> list, int index, IReadOnlyList<T> items)
+        private static void InsertRange<T>(
+            ObservableList<T> list,
+            int index,
+            IReadOnlyList<T> items
+        )
         {
             for (var i = 0; i < items.Count; i++)
             {
@@ -140,7 +146,11 @@ public static class UndoControllerMixin
             }
         }
 
-        private static void ReplaceRange<T>(ObservableList<T> list, int index, IReadOnlyList<T> items)
+        private static void ReplaceRange<T>(
+            ObservableList<T> list,
+            int index,
+            IReadOnlyList<T> items
+        )
         {
             for (var i = 0; i < items.Count; i++)
             {

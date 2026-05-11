@@ -49,9 +49,7 @@ public partial struct CollectionChange<T> : IChange<T>
         NewItems = [];
     }
 
-    public static CollectionChange<T> From(
-        NotifyCollectionChangedEventArgs<T> args
-    )
+    public static CollectionChange<T> From(NotifyCollectionChangedEventArgs<T> args)
     {
         return args.Action switch
         {
