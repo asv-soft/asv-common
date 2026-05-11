@@ -4,10 +4,12 @@
     <File Path="../.github/workflows/release-debug-version.yml" />
     <File Path="../.gitignore" />
     <File Path="../build.bat" />
+    <File Path="../CLAUDE.md" />
     <File Path="../LICENSE" />
     <File Path="../publish_github.bat" />
     <File Path="../publish_nuget.bat" />
     <File Path="../README.md" />
+    <File Path=".aiassistant/rules/comments.md" />
     <File Path="CodeStyle.ruleset" />
     <File Path="Directory.Build.props" />
   </Folder>
