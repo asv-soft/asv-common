@@ -250,6 +250,36 @@ public class ISupportUndoTest
 
         root.Dispose();
     }
+
+    [Fact]
+    public async ValueTask ObservableListInsertRange_UndoRedo_RestoresCollection()
+    {
+        var storageDirectory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+
+        var root = new HistoryViewModel("root", storageDirectory);
+        var child = new TestViewModelBase("child");
+        root.Children.Add(child);
+
+        child.Prop2.Add("first");
+        child.Prop2.InsertRange(1, ["second", "third"]);
+
+        Assert.Equal(["first", "second", "third"], child.Prop2);
+        Assert.Equal(2, root.UndoHistory.UndoStack.Count);
+
+        await root.UndoHistory.UndoAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal(["first"], child.Prop2);
+        Assert.Single(root.UndoHistory.UndoStack);
+        Assert.Single(root.UndoHistory.RedoStack);
+
+        await root.UndoHistory.RedoAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal(["first", "second", "third"], child.Prop2);
+        Assert.Equal(2, root.UndoHistory.UndoStack.Count);
+        Assert.Empty(root.UndoHistory.RedoStack);
+
+        root.Dispose();
+    }
 }
 
 public class HistoryViewModel : UndoHistoryViewModel

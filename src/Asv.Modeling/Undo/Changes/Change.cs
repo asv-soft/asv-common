@@ -4,7 +4,7 @@ using MemoryPack;
 namespace Asv.Modeling;
 
 [MemoryPackable]
-public partial struct ScalarChange<T> : IChange<T>
+public partial struct Change<T> : IChange<T>
 {
     public ChangeOperation Operation { get; set; }
     public T OldValue { get; set; }

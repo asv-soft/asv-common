@@ -13,18 +13,18 @@ public static class UndoControllerMixin
                 changeId,
                 (change, _) =>
                 {
-                    prop.Value = ((ScalarChange<T>)change).OldValue;
+                    prop.Value = ((Change<T>)change).OldValue;
                     return ValueTask.CompletedTask;
                 },
                 (change, _) =>
                 {
-                    prop.Value = ((ScalarChange<T>)change).NewValue;
+                    prop.Value = ((Change<T>)change).NewValue;
                     return ValueTask.CompletedTask;
                 },
-                static () => new ScalarChange<T>()
+                static () => new Change<T>()
             );
             var subscription = prop.Pairwise()
-                .Select(x => new ScalarChange<T> { OldValue = x.Previous, NewValue = x.Current })
+                .Select(x => new Change<T> { OldValue = x.Previous, NewValue = x.Current })
                 .Subscribe(publisher.Publish);
             return Disposable.Combine(publisher, subscription);
         }
@@ -43,29 +43,16 @@ public static class UndoControllerMixin
                     ApplyCollectionRedo(list, change);
                     return ValueTask.CompletedTask;
                 },
-                static () => new ObservableCollectionChangeEvent<T>()
+                static () => new CollectionChange<T>()
             );
-            var addSubscription = list.ObserveAdd()
-                .Select(x => new ObservableCollectionChangeEvent<T>
-                {
-                    Operation = ChangeOperation.Create,
-                    OldIndex = -1,
-                    NewIndex = x.Index,
-                    OldValue = default!,
-                    NewValue = x.Value,
-                })
-                .Subscribe(publisher.Publish);
-            var removeSubscription = list.ObserveRemove()
-                .Select(x => new ObservableCollectionChangeEvent<T>
-                {
-                    Operation = ChangeOperation.Delete,
-                    OldIndex = x.Index,
-                    NewIndex = -1,
-                    OldValue = x.Value,
-                    NewValue = default!,
-                })
-                .Subscribe(publisher.Publish);
-            return Disposable.Combine(publisher, addSubscription, removeSubscription);
+            void OnCollectionChanged(in NotifyCollectionChangedEventArgs<T> args)
+            {
+                publisher.Publish(CollectionChange<T>.From(args));
+            }
+
+            list.CollectionChanged += OnCollectionChanged;
+            var subscription = Disposable.Create(() => list.CollectionChanged -= OnCollectionChanged);
+            return Disposable.Combine(publisher, subscription);
         }
 
         public IUndoPublisher<TChange> Create<TChange>(
@@ -85,19 +72,19 @@ public static class UndoControllerMixin
 
         private static void ApplyCollectionUndo<T>(
             ObservableList<T> list,
-            ObservableCollectionChangeEvent<T> change
+            CollectionChange<T> change
         )
         {
             switch (change.Operation)
             {
                 case ChangeOperation.Create:
-                    list.RemoveAt(change.NewIndex);
+                    RemoveRange(list, change.NewStartingIndex, change.NewItems.Length);
                     break;
                 case ChangeOperation.Delete:
-                    list.Insert(change.OldIndex, change.OldValue);
+                    InsertRange(list, change.OldStartingIndex, change.OldItems);
                     break;
                 case ChangeOperation.Update:
-                    list[change.OldIndex] = change.OldValue;
+                    ReplaceRange(list, change.OldStartingIndex, change.OldItems);
                     break;
                 case ChangeOperation.Read:
                     break;
@@ -112,19 +99,19 @@ public static class UndoControllerMixin
 
         private static void ApplyCollectionRedo<T>(
             ObservableList<T> list,
-            ObservableCollectionChangeEvent<T> change
+            CollectionChange<T> change
         )
         {
             switch (change.Operation)
             {
                 case ChangeOperation.Create:
-                    list.Insert(change.NewIndex, change.NewValue);
+                    InsertRange(list, change.NewStartingIndex, change.NewItems);
                     break;
                 case ChangeOperation.Delete:
-                    list.RemoveAt(change.OldIndex);
+                    RemoveRange(list, change.OldStartingIndex, change.OldItems.Length);
                     break;
                 case ChangeOperation.Update:
-                    list[change.NewIndex] = change.NewValue;
+                    ReplaceRange(list, change.NewStartingIndex, change.NewItems);
                     break;
                 case ChangeOperation.Read:
                     break;
@@ -134,6 +121,30 @@ public static class UndoControllerMixin
                         change.Operation,
                         "Unknown collection change operation"
                     );
+            }
+        }
+
+        private static void InsertRange<T>(ObservableList<T> list, int index, IReadOnlyList<T> items)
+        {
+            for (var i = 0; i < items.Count; i++)
+            {
+                list.Insert(index + i, items[i]);
+            }
+        }
+
+        private static void RemoveRange<T>(ObservableList<T> list, int index, int count)
+        {
+            for (var i = 0; i < count; i++)
+            {
+                list.RemoveAt(index);
+            }
+        }
+
+        private static void ReplaceRange<T>(ObservableList<T> list, int index, IReadOnlyList<T> items)
+        {
+            for (var i = 0; i < items.Count; i++)
+            {
+                list[index + i] = items[i];
             }
         }
     }

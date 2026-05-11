@@ -104,7 +104,7 @@ public class KeyValueChangeTest
     [Fact]
     public void ScalarChange_ImplementsGenericChangeContract()
     {
-        IChange<int> change = new ScalarChange<int>
+        IChange<int> change = new Change<int>
         {
             Operation = ChangeOperation.Update,
             OldValue = 1,
