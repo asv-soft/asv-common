@@ -17,8 +17,16 @@ public abstract class AsvPackage : AsvPackagePart
     )
     {
         var package = Package.Open(filePath, FileMode.Open, fileAccess);
-        ReadAndCheckMetadata(package, contentType, out var version);
-        return factory(package, version, logger ?? NullLogger.Instance);
+        try
+        {
+            ReadAndCheckMetadata(package, contentType, out var version);
+            return factory(package, version, logger ?? NullLogger.Instance);
+        }
+        catch
+        {
+            package.Close();
+            throw;
+        }
     }
 
     public static T Create<T>(
@@ -30,8 +38,16 @@ public abstract class AsvPackage : AsvPackagePart
     )
     {
         var package = Package.Open(filePath, FileMode.CreateNew, FileAccess.ReadWrite);
-        WriteMetadata(package, contentType, version);
-        return factory(package, version, logger ?? NullLogger.Instance);
+        try
+        {
+            WriteMetadata(package, contentType, version);
+            return factory(package, version, logger ?? NullLogger.Instance);
+        }
+        catch
+        {
+            package.Close();
+            throw;
+        }
     }
 
     private static void WriteMetadata(Package package, in string contentType, in int version)

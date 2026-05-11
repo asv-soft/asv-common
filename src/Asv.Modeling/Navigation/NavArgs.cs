@@ -96,7 +96,7 @@ public readonly partial struct NavArgs
         {
             var part = parts[i];
             var separatorIndex = part.IndexOf(ArgSeparator);
-            if (separatorIndex <= 0 || separatorIndex != part.LastIndexOf(ArgSeparator))
+            if (separatorIndex == -1)
             {
                 throw new ArgumentException(
                     $"Argument '{part}' must be in 'key{ArgSeparator}UrlEncode(value)' format.",

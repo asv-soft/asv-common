@@ -2,6 +2,7 @@ using System.Buffers.Binary;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Web;
 
 namespace Asv.Modeling;
 
@@ -180,11 +181,11 @@ public readonly partial struct NavId : IEquatable<NavId>
         var separatorIndex = value.IndexOf(Separator);
         if (separatorIndex < 0)
         {
-            this = new NavId(value, default);
+            this = new NavId(HttpUtility.UrlDecode(value), default);
             return;
         }
 
-        var typeId = value[..separatorIndex];
+        var typeId = HttpUtility.UrlDecode(value[..separatorIndex]);
         var args =
             separatorIndex == value.Length - 1
                 ? default
@@ -218,7 +219,8 @@ public readonly partial struct NavId : IEquatable<NavId>
 
     public override string ToString()
     {
-        return Args.IsEmpty ? TypeId : $"{TypeId}{Separator}{Args}";
+        var encodedTypeId = HttpUtility.UrlEncode(TypeId);
+        return Args.IsEmpty ? encodedTypeId : $"{encodedTypeId}{Separator}{Args}";
     }
 
     private static string ToStableTypeId(byte[] hash)
