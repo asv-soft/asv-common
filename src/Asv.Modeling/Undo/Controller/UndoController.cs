@@ -6,8 +6,11 @@ namespace Asv.Modeling;
 public class UndoController<TBase>(TBase owner) : AsyncDisposableOnce, IUndoController
     where TBase : ISupportRoutedEvents<TBase>
 {
-    private readonly Dictionary<string, (IUndoHandler Handler, IDisposable Subscription)> _registration = new(4);
-    public bool SuppressChanges { get; set; } = true;
+    private readonly Dictionary<
+        string,
+        (IUndoHandler Handler, IDisposable Subscription)
+    > _registration = new(4);
+    public bool SuppressChanges { get; set; } = false;
 
     public void Register(IUndoHandler handler)
     {
@@ -21,7 +24,7 @@ public class UndoController<TBase>(TBase owner) : AsyncDisposableOnce, IUndoCont
         if (!_registration.TryAdd(handler.ChangeId, (handler, subscription)))
         {
             subscription.Dispose();
-            throw new UndoExceptionException(
+            throw new UndoException(
                 $"Change handler with id '{handler.ChangeId}' already registered"
             );
         }

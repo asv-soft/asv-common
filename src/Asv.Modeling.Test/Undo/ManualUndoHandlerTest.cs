@@ -113,8 +113,8 @@ public class ManualUndoHandlerTest
             (_, _) => ValueTask.CompletedTask
         );
 
-        var actual = await Assert.ThrowsAsync<InvalidOperationException>(
-            async () => await handler.Undo(new TestChange(), TestContext.Current.CancellationToken)
+        var actual = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            await handler.Undo(new TestChange(), TestContext.Current.CancellationToken)
         );
 
         Assert.Same(expected, actual);
@@ -125,12 +125,8 @@ public class ManualUndoHandlerTest
     {
         public int Value { get; set; }
 
-        public void Serialize(IBufferWriter<byte> writer)
-        {
-        }
+        public void Serialize(IBufferWriter<byte> writer) { }
 
-        public void Deserialize(ReadOnlySequence<byte> data)
-        {
-        }
+        public void Deserialize(ReadOnlySequence<byte> data) { }
     }
 }

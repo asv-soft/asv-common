@@ -18,21 +18,25 @@ public static class UndoControllerMixin
 
         public IDisposable BeginChangePublication()
         {
-            controller.SuppressChanges = true;
-            return Disposable.Create(controller, x => x.EnablePublication());
+            controller.SuppressChanges = false;
+            return Disposable.Create(controller, x => x.DisableChangePublication());
         }
 
-        public PropertyUndoHandler<T> CreateAndRegister<T>(string changeId, ReactiveProperty<T> prop)
+        public PropertyUndoHandler<T> CreateAndRegister<T>(
+            string changeId,
+            ReactiveProperty<T> prop
+        )
         {
             var handler = new PropertyUndoHandler<T>(changeId, prop);
             controller.Register(handler);
             return handler;
         }
-        
+
         public ManualUndoHandler<TChange> CreateAndRegister<TChange>(
             string changeId,
             ManualUndoHandler<TChange>.Delegate undo,
-            ManualUndoHandler<TChange>.Delegate redo)
+            ManualUndoHandler<TChange>.Delegate redo
+        )
             where TChange : IChange, new()
         {
             var handler = new ManualUndoHandler<TChange>(changeId, undo, redo);

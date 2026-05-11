@@ -188,7 +188,10 @@ public readonly partial struct NavArgs
     public static explicit operator NavArgs(string? value) => Parse(value);
 
     public IEnumerator<KeyValuePair<string, string?>> GetEnumerator() =>
-        ((_items ?? Array.Empty<KeyValuePair<string, string?>>()) as IEnumerable<KeyValuePair<string, string?>>).GetEnumerator();
+        (
+            (_items ?? Array.Empty<KeyValuePair<string, string?>>())
+            as IEnumerable<KeyValuePair<string, string?>>
+        ).GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
@@ -203,9 +206,7 @@ public readonly partial struct NavArgs
         }
     }
 
-    private static KeyValuePair<string, string?>[] Normalize(
-        KeyValuePair<string, string?>[] args
-    )
+    private static KeyValuePair<string, string?>[] Normalize(KeyValuePair<string, string?>[] args)
     {
         var result = new KeyValuePair<string, string?>[args.Length];
         for (var i = 0; i < args.Length; i++)

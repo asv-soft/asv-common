@@ -36,7 +36,7 @@ public interface INavigationController<TBase>
     /// Gets the <see cref="ReactiveCommand"/> that triggers forward navigation.
     /// </summary>
     ReactiveCommand Forward { get; }
-    
+
     /// <summary>
     /// Gets the currently selected (focused) <see cref="TBase"/>.
     /// </summary>
@@ -46,9 +46,9 @@ public interface INavigationController<TBase>
     /// Gets the <see cref="NavPath"/> of the currently selected control.
     /// </summary>
     ReadOnlyReactiveProperty<NavPath> SelectedPath { get; }
-    
+
     ValueTask<TBase> GoTo(NavPath navPath);
-    
+
     /// <summary>
     /// Forces focus change to the specified routable control.
     /// </summary>

@@ -2,10 +2,7 @@ namespace Asv.Modeling;
 
 public static class NavigationMixin
 {
-    public static ValueTask<TBase> NavigateByPath<TBase>(
-        this TBase src,
-        NavPath path
-    )
+    public static ValueTask<TBase> NavigateByPath<TBase>(this TBase src, NavPath path)
         where TBase : ISupportNavigation<TBase>
     {
         if (path.Count == 0)

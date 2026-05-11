@@ -27,10 +27,8 @@ public class UndoHistory<TBase> : AsyncDisposableOnceBag, IUndoHistory<TBase>
             .ObserveCountChanged(true)
             .Subscribe(c => Redo.ChangeCanExecute(c != 0))
             .AddTo(ref DisposableBag);
-     
-        owner
-            .Events.Catch<UndoEvent<TBase>>(TryAddToHistory)
-            .AddTo(ref DisposableBag);
+
+        owner.Events.Catch<UndoEvent<TBase>>(TryAddToHistory).AddTo(ref DisposableBag);
     }
 
     public ReactiveCommand Undo { get; }
@@ -45,7 +43,9 @@ public class UndoHistory<TBase> : AsyncDisposableOnceBag, IUndoHistory<TBase>
                 var target = await _owner.NavigateByPath(contextPath) as ISupportUndo<TBase>;
                 if (target == null)
                 {
-                    throw new Exception($"Target {target} not support undo or not found");
+                    throw new Exception(
+                        $"Target '{contextPath}' does not support undo or was not found"
+                    );
                 }
                 var handler = target.Undo.Find(snapshot.ChangeId);
                 var change = handler.Create();
@@ -74,7 +74,9 @@ public class UndoHistory<TBase> : AsyncDisposableOnceBag, IUndoHistory<TBase>
                 var target = await _owner.NavigateByPath(contextPath) as ISupportUndo<TBase>;
                 if (target == null)
                 {
-                    throw new Exception($"Target {target} not support undo or not found");
+                    throw new Exception(
+                        $"Target '{contextPath}' does not support redo or was not found"
+                    );
                 }
                 var handler = target.Undo.Find(snapshot.ChangeId);
                 var change = handler.Create();

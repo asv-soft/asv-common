@@ -1,9 +1,17 @@
 namespace Asv.Modeling;
 
-public delegate ValueTask RoutedEventHandler<T>(T owner, AsyncRoutedEvent<T> e, CancellationToken cancel)
+public delegate ValueTask RoutedEventHandler<T>(
+    T owner,
+    AsyncRoutedEvent<T> e,
+    CancellationToken cancel
+)
     where T : ISupportRoutedEvents<T>;
 
-public delegate ValueTask RoutedEventHandler<in T, in TEvent>(T owner, TEvent e, CancellationToken cancel)
+public delegate ValueTask RoutedEventHandler<in T, in TEvent>(
+    T owner,
+    TEvent e,
+    CancellationToken cancel
+)
     where T : ISupportRoutedEvents<T>
     where TEvent : AsyncRoutedEvent<T>;
 

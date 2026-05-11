@@ -12,7 +12,4 @@ public interface IViewModel
         INotifyPropertyChanging,
         INotifyPropertyChanged,
         ISupportRoutedEvents<IViewModel>,
-        ISupportNavigation<IViewModel>
-{
-    
-}
+        ISupportNavigation<IViewModel> { }

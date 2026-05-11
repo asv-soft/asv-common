@@ -43,9 +43,10 @@ public readonly partial struct NavId : IEquatable<NavId>
             {
                 for (var i = 0; i < span.Length; i++)
                 {
-                    var index = rng == null
-                        ? RandomNumberGenerator.GetInt32(AllowedCharacters.Length)
-                        : rng.Next(AllowedCharacters.Length);
+                    var index =
+                        rng == null
+                            ? RandomNumberGenerator.GetInt32(AllowedCharacters.Length)
+                            : rng.Next(AllowedCharacters.Length);
                     span[i] = AllowedCharacters[index];
                 }
             }
@@ -107,7 +108,12 @@ public readonly partial struct NavId : IEquatable<NavId>
         return ToStableTypeId(hash.GetHashAndReset());
     }
 
-    public static string GenerateByHashAsString<T1, T2, T3, T4>(T1 value1, T2 value2, T3 value3, T4 value4)
+    public static string GenerateByHashAsString<T1, T2, T3, T4>(
+        T1 value1,
+        T2 value2,
+        T3 value3,
+        T4 value4
+    )
     {
         using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
         AppendValue(hash, value1);
@@ -133,7 +139,7 @@ public readonly partial struct NavId : IEquatable<NavId>
         AppendValue(hash, value5);
         return ToStableTypeId(hash.GetHashAndReset());
     }
-    
+
     private static void AppendValue<T>(IncrementalHash hash, T value)
     {
         if (value == null)
@@ -179,9 +185,10 @@ public readonly partial struct NavId : IEquatable<NavId>
         }
 
         var typeId = value[..separatorIndex];
-        var args = separatorIndex == value.Length - 1
-            ? default
-            : NavArgs.Parse(value[(separatorIndex + 1)..]);
+        var args =
+            separatorIndex == value.Length - 1
+                ? default
+                : NavArgs.Parse(value[(separatorIndex + 1)..]);
         this = new NavId(typeId, args);
     }
 
@@ -192,7 +199,8 @@ public readonly partial struct NavId : IEquatable<NavId>
     public NavArgs Args { get; }
 
     public bool Equals(NavId other) =>
-        string.Equals(TypeId, other.TypeId, StringComparison.OrdinalIgnoreCase) && Args.Equals(other.Args);
+        string.Equals(TypeId, other.TypeId, StringComparison.OrdinalIgnoreCase)
+        && Args.Equals(other.Args);
 
     public override bool Equals(object? obj) => obj is NavId other && Equals(other);
 
@@ -212,8 +220,6 @@ public readonly partial struct NavId : IEquatable<NavId>
     {
         return Args.IsEmpty ? TypeId : $"{TypeId}{Separator}{Args}";
     }
-
-    
 
     private static string ToStableTypeId(byte[] hash)
     {
