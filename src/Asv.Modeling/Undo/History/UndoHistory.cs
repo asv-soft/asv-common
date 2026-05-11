@@ -47,7 +47,7 @@ public class UndoHistory<TBase> : AsyncDisposableOnceBag, IUndoHistory<TBase>
                         $"Target '{contextPath}' does not support undo or was not found"
                     );
                 }
-                var handler = target.Undo.Find(snapshot.ChangeId);
+                var handler = target.Undo[snapshot.ChangeId];
                 var change = handler.Create();
                 _store.LoadChange(snapshot, change);
                 await handler.Undo(change, cancel);
@@ -78,7 +78,7 @@ public class UndoHistory<TBase> : AsyncDisposableOnceBag, IUndoHistory<TBase>
                         $"Target '{contextPath}' does not support redo or was not found"
                     );
                 }
-                var handler = target.Undo.Find(snapshot.ChangeId);
+                var handler = target.Undo[snapshot.ChangeId];
                 var change = handler.Create();
                 _store.LoadChange(snapshot, change);
                 await handler.Redo(change, cancel);

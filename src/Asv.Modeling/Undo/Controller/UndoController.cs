@@ -3,59 +3,86 @@ using R3;
 
 namespace Asv.Modeling;
 
-public class UndoController<TBase>(TBase owner) : AsyncDisposableOnce, IUndoController
+public class UndoController<TBase> : AsyncDisposableOnce, IUndoController
     where TBase : ISupportRoutedEvents<TBase>
 {
-    private readonly Dictionary<
-        string,
-        (IUndoHandler Handler, IDisposable Subscription)
-    > _registration = new(4);
-    public bool SuppressChanges { get; set; } = false;
+    private readonly Subject<(string, IChange)> _changes = new();
+    private readonly Dictionary<string, UndoRegistration> _registration = new(4);
+    private readonly IDisposable _subscription;
+    private int _suppressChangePublicationCount;
 
-    public void Register(IUndoHandler handler)
+    public UndoController(TBase owner)
     {
-        var subscription = handler
-            .Changes.Where(_ => !SuppressChanges)
+        _subscription = _changes
+            .Where(_ => !IsChangePublicationSuppressed)
             .SubscribeAwait(
-                handler.ChangeId,
-                (change, id, cancel) => RiseChangeEvent(id, change, cancel)
+                owner,
+                (change, sender, cancel) =>
+                    sender.Rise(new UndoEvent<TBase>(sender, change.Item2, change.Item1), cancel)
             );
+    }
 
-        if (!_registration.TryAdd(handler.ChangeId, (handler, subscription)))
+    private bool IsChangePublicationSuppressed =>
+        Volatile.Read(ref _suppressChangePublicationCount) > 0;
+
+    public IUndoPublisher<TChange> Create<TChange>(
+        string registrationId,
+        UndoCallback<TChange> undo,
+        UndoCallback<TChange> redo,
+        Func<TChange> factory
+    )
+        where TChange : IChange
+    {
+        if (_registration.ContainsKey(registrationId))
         {
-            subscription.Dispose();
             throw new UndoException(
-                $"Change handler with id '{handler.ChangeId}' already registered"
+                $"Change handler with id '{registrationId}' already registered"
             );
         }
+
+        var changes = new UndoRegistration<TChange>(
+            registrationId,
+            undo,
+            redo,
+            factory,
+            _changes,
+            RemoveRegistration
+        );
+        _registration.Add(registrationId, changes);
+        return changes;
     }
 
-    public void Unregister(IUndoHandler handler)
+    private void RemoveRegistration(string registrationId)
     {
-        if (_registration.Remove(handler.ChangeId, out var registration))
+        if (_registration.Remove(registrationId, out var registration))
         {
-            registration.Subscription.Dispose();
+            registration.Dispose();
         }
     }
 
-    public IUndoHandler Find(string changeId)
-    {
-        return _registration[changeId].Handler;
-    }
+    public IUndoHandler this[string registrationId] => _registration[registrationId];
 
-    private ValueTask RiseChangeEvent(string id, IChange change, CancellationToken cancel) =>
-        owner.Rise(new UndoEvent<TBase>(owner, change, id), cancel);
+    public IDisposable SuppressChangePublication()
+    {
+        Interlocked.Increment(ref _suppressChangePublicationCount);
+        return Disposable.Create(
+            this,
+            static controller =>
+                Interlocked.Decrement(ref controller._suppressChangePublicationCount)
+        );
+    }
 
     protected override void Dispose(bool disposing)
     {
         if (disposing)
         {
-            SuppressChanges = true;
-            foreach (var registration in _registration.Values)
+            _subscription.Dispose();
+            foreach (var registration in _registration.Values.ToArray())
             {
-                registration.Subscription.Dispose();
+                registration.Dispose();
             }
             _registration.Clear();
+            _changes.Dispose();
         }
 
         base.Dispose(disposing);
@@ -63,12 +90,13 @@ public class UndoController<TBase>(TBase owner) : AsyncDisposableOnce, IUndoCont
 
     protected override async ValueTask DisposeAsyncCore()
     {
-        SuppressChanges = true;
-        foreach (var registration in _registration.Values)
+        _subscription.Dispose();
+        foreach (var registration in _registration.Values.ToArray())
         {
-            registration.Subscription.Dispose();
+            await registration.DisposeAsync();
         }
-        await base.DisposeAsyncCore();
         _registration.Clear();
+        _changes.Dispose();
+        await base.DisposeAsyncCore();
     }
 }

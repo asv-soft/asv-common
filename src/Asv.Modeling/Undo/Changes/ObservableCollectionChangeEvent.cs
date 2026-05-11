@@ -4,9 +4,11 @@ using MemoryPack;
 namespace Asv.Modeling;
 
 [MemoryPackable]
-public partial struct ScalarChange<T> : IChange<T>
+public partial struct ObservableCollectionChangeEvent<T> : IChange<T>
 {
     public ChangeOperation Operation { get; set; }
+    public int OldIndex { get; set; }
+    public int NewIndex { get; set; }
     public T OldValue { get; set; }
     public T NewValue { get; set; }
 
