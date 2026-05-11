@@ -171,8 +171,9 @@ public class HistoryViewModel : UndoHistoryViewModel
         Children.SetParent<IViewModel, IViewModel>(this).AddTo(ref DisposableBag);
         Children.DisposeRemovedItems().AddTo(ref DisposableBag);
     }
-    
+
     public ObservableList<IViewModel> Children { get; } = new();
+
     public override IEnumerable<IViewModel> GetChildren()
     {
         return Children;
@@ -181,10 +182,10 @@ public class HistoryViewModel : UndoHistoryViewModel
 
 public class TestViewModelBase : UndoableViewModel
 {
-    public TestViewModelBase(string id) 
+    public TestViewModelBase(string id)
         : base(id)
     {
-        Children.SetParent<IViewModel,IViewModel>(this).AddTo(ref DisposableBag);
+        Children.SetParent<IViewModel, IViewModel>(this).AddTo(ref DisposableBag);
         Children.DisposeRemovedItems().AddTo(ref DisposableBag);
 
         Undo.CreateAndRegister(nameof(Prop1), Prop1).AddTo(ref DisposableBag);
@@ -197,8 +198,6 @@ public class TestViewModelBase : UndoableViewModel
     {
         return Children;
     }
+
     public ReactiveProperty<string> Prop1 { get; } = new();
-
-
-   
 }

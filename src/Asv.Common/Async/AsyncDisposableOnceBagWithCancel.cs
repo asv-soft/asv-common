@@ -28,7 +28,7 @@ public class AsyncDisposableOnceBagWithCancel : AsyncDisposableOnceBag
             }
         }
     }
-    
+
     protected override void Dispose(bool disposing)
     {
         if (disposing)

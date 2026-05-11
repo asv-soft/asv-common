@@ -1,12 +1,12 @@
 namespace Asv.Modeling;
 
-public class UndoExceptionException : Exception
+public class UndoException : Exception
 {
-    public UndoExceptionException() { }
+    public UndoException() { }
 
-    public UndoExceptionException(string message)
+    public UndoException(string message)
         : base(message) { }
 
-    public UndoExceptionException(string message, Exception inner)
+    public UndoException(string message, Exception inner)
         : base(message, inner) { }
 }

@@ -2,8 +2,6 @@ using System.Text.Json.Serialization;
 
 namespace Asv.Modeling;
 
-
-
 public class JsonUndoSnapshot
 {
     public string Path { get; set; }

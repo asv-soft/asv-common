@@ -38,10 +38,7 @@ public class NavPathTest
     {
         var source = new NavPath(
             new NavId("root"),
-            new NavId(
-                "folder",
-                new NavArgs(new KeyValuePair<string, string?>("name", "read me"))
-            ),
+            new NavId("folder", new NavArgs(new KeyValuePair<string, string?>("name", "read me"))),
             new NavId(
                 "file.item",
                 new NavArgs(new KeyValuePair<string, string?>("path", @"C:\Temp\File.txt"))

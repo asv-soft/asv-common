@@ -10,7 +10,7 @@ public class NavigationStore : INavigationStore
     private const string BackwardFile = "navigation.backward.txt";
     private readonly string _storageDirectory;
     private readonly ILogger _logger;
-    
+
     public NavigationStore(string storageDirectory, ILogger? logger = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(storageDirectory);
@@ -76,7 +76,10 @@ public class NavigationStore : INavigationStore
             }
             catch (Exception ex)
             {
-                _logger.ZLogWarning(ex, $"Skip invalid navigation history entry '{line}' from '{path}'");
+                _logger.ZLogWarning(
+                    ex,
+                    $"Skip invalid navigation history entry '{line}' from '{path}'"
+                );
             }
         }
     }

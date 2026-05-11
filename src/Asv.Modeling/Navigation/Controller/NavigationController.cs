@@ -22,7 +22,7 @@ public class NavigationController<TBase> : AsyncDisposableOnce, INavigationContr
         var dispose = Disposable.CreateBuilder();
         _selectedControl = new ReactiveProperty<TBase?>().AddTo(ref dispose);
         _selectedPath = new ReactiveProperty<NavPath>().AddTo(ref dispose);
-        
+
         Backward = new ReactiveCommand((_, _) => BackwardAsync()).AddTo(ref dispose);
         Forward = new ReactiveCommand((_, _) => ForwardAsync()).AddTo(ref dispose);
         _backwardStack
@@ -35,15 +35,19 @@ public class NavigationController<TBase> : AsyncDisposableOnce, INavigationContr
             .AddTo(ref dispose);
 
         ForceSelect(_owner);
-        
+
         store.Load(_forwardStack.Push, _backwardStack.Push);
-        
+
         _owner.Events.Catch<NavigateEvent<TBase>>(OnNavigateEvent).AddTo(ref dispose);
-        
+
         _disposeIt = dispose.Build();
     }
 
-    private async ValueTask OnNavigateEvent(TBase owner, NavigateEvent<TBase> e, CancellationToken cancel)
+    private async ValueTask OnNavigateEvent(
+        TBase owner,
+        NavigateEvent<TBase> e,
+        CancellationToken cancel
+    )
     {
         var previousPath = _selectedPath.Value;
         if (previousPath == e.Path)
@@ -61,6 +65,7 @@ public class NavigationController<TBase> : AsyncDisposableOnce, INavigationContr
     }
 
     public IObservableCollection<NavPath> BackwardStack => _backwardStack;
+
     public async ValueTask BackwardAsync()
     {
         if (_backwardStack.TryPop(out var path) == false)
@@ -86,6 +91,7 @@ public class NavigationController<TBase> : AsyncDisposableOnce, INavigationContr
 
     public ReactiveCommand Backward { get; }
     public IObservableCollection<NavPath> ForwardStack => _forwardStack;
+
     public async ValueTask ForwardAsync()
     {
         if (_forwardStack.TryPop(out var path) == false)
@@ -113,7 +119,7 @@ public class NavigationController<TBase> : AsyncDisposableOnce, INavigationContr
     {
         if (navPath.Count == 0)
         {
-            throw new ArgumentNullException(nameof(navPath));
+            throw new ArgumentException("Navigation path must not be empty.", nameof(navPath));
         }
 
         if (navPath[0] != _owner.Id)
@@ -135,6 +141,7 @@ public class NavigationController<TBase> : AsyncDisposableOnce, INavigationContr
     }
 
     public ReactiveCommand Forward { get; }
+
     public void ForceSelect(TBase? viewModel)
     {
         if (viewModel == null)
@@ -147,7 +154,7 @@ public class NavigationController<TBase> : AsyncDisposableOnce, INavigationContr
 
     public ReadOnlyReactiveProperty<TBase?> SelectedControl => _selectedControl;
     public ReadOnlyReactiveProperty<NavPath> SelectedPath => _selectedPath;
-    
+
     #region Dispose
 
     protected override void Dispose(bool disposing)

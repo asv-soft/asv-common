@@ -3,7 +3,7 @@ namespace Asv.Modeling;
 public class NullUndoHistoryStore : IUndoHistoryStore
 {
     public static NullUndoHistoryStore Instance { get; } = new();
-    
+
     public void Dispose()
     {
         // do nothing
@@ -41,4 +41,3 @@ public class NullUndoHistoryStore : IUndoHistoryStore
         public Ulid DataRefId { get; } = Ulid.NewUlid();
     }
 }
-

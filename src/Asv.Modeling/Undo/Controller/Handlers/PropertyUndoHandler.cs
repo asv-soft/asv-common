@@ -2,12 +2,13 @@ using R3;
 
 namespace Asv.Modeling;
 
-public sealed class PropertyUndoHandler<T> : UndoHandler<ScalarChange<T>>, IDisposable
+public sealed class PropertyUndoHandler<T> : UndoHandler<ScalarChange<T>>
 {
     private readonly ReactiveProperty<T> _property;
     private readonly IDisposable _sub1;
 
-    public PropertyUndoHandler(string name, ReactiveProperty<T> property) : base(name)
+    public PropertyUndoHandler(string name, ReactiveProperty<T> property)
+        : base(name)
     {
         _property = property;
         _sub1 = _property
@@ -33,18 +34,12 @@ public sealed class PropertyUndoHandler<T> : UndoHandler<ScalarChange<T>>, IDisp
         return ValueTask.CompletedTask;
     }
 
-    private void Dispose(bool disposing)
+    protected override void Dispose(bool disposing)
     {
         if (disposing)
         {
             _sub1.Dispose();
         }
-    }
-
-    public new void Dispose()
-    {
-        Dispose(true);
-        base.Dispose();
-        GC.SuppressFinalize(this);
+        base.Dispose(disposing);
     }
 }

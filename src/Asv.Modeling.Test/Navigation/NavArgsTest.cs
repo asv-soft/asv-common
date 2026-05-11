@@ -63,9 +63,7 @@ public class NavArgsTest
     [Fact]
     public void TupleConstructor_Throws_WhenKeyDoesNotMatchRegex()
     {
-        Assert.Throws<ArgumentException>(() =>
-            new NavArgs(("bad.key", "value"))
-        );
+        Assert.Throws<ArgumentException>(() => new NavArgs(("bad.key", "value")));
     }
 
     [Fact]

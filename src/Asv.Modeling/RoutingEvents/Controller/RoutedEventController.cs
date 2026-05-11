@@ -49,7 +49,8 @@ public class RoutedEventController<T>(T owner) : AsyncDisposableOnceBag, IRouted
         }
     }
 
-    public IDisposable Catch<TEvent>(RoutedEventHandler<T, TEvent> handler) where TEvent : AsyncRoutedEvent<T>
+    public IDisposable Catch<TEvent>(RoutedEventHandler<T, TEvent> handler)
+        where TEvent : AsyncRoutedEvent<T>
     {
         return Catch(Wrapper);
 
@@ -71,7 +72,7 @@ public class RoutedEventController<T>(T owner) : AsyncDisposableOnceBag, IRouted
         {
             if (e is TEvent ev)
             {
-                handler(ev);    
+                handler(ev);
             }
             return ValueTask.CompletedTask;
         }

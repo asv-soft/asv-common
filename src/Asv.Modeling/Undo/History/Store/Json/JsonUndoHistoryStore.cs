@@ -31,7 +31,7 @@ public class JsonUndoHistoryStore : AsyncDisposableOnceBag, IUndoHistoryStore
         _storageDirectory = storageDirectory;
         _inMemoryThresholdBytes = inMemoryThresholdBytes;
         _logger = logger ?? NullLogger.Instance;
-        
+
         if (Directory.Exists(_storageDirectory) == false)
         {
             _logger.ZLogDebug($"Create directory for undo history: {_storageDirectory}");
@@ -119,10 +119,7 @@ public class JsonUndoHistoryStore : AsyncDisposableOnceBag, IUndoHistoryStore
             .ForEach(File.Delete);
     }
 
-    public void SaveUndoRedo(
-        IEnumerable<IUndoSnapshot> undo,
-        IEnumerable<IUndoSnapshot> redo
-    )
+    public void SaveUndoRedo(IEnumerable<IUndoSnapshot> undo, IEnumerable<IUndoSnapshot> redo)
     {
         WriteStackFile(GetUndoStackFilePath(), undo.Cast<UndoSnapshot>());
         WriteStackFile(GetRedoStackFilePath(), redo.Cast<UndoSnapshot>());
@@ -197,7 +194,6 @@ public class JsonUndoHistoryStore : AsyncDisposableOnceBag, IUndoHistoryStore
 
         foreach (var snapshot in snapshots)
         {
-            
             var jsonSnapshot = new JsonUndoSnapshot
             {
                 Path = snapshot.Path.ToString(),

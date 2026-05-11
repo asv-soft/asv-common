@@ -17,7 +17,10 @@ public class NavigationControllerTest
 
         Assert.Same(child2, result);
         Assert.Same(child2, controller.SelectedControl.CurrentValue);
-        Assert.Equal(new NavPath(root.Id, child1.Id, child2.Id), controller.SelectedPath.CurrentValue);
+        Assert.Equal(
+            new NavPath(root.Id, child1.Id, child2.Id),
+            controller.SelectedPath.CurrentValue
+        );
     }
 
     [Fact]
@@ -37,14 +40,14 @@ public class NavigationControllerTest
         );
 
         Assert.Equal(
-            [
-                new NavPath(root.Id),
-                new NavPath(root.Id, child1.Id),
-            ],
+            [new NavPath(root.Id), new NavPath(root.Id, child1.Id)],
             controller.BackwardStack.Cast<NavPath>().Reverse().ToArray()
         );
         Assert.Empty(controller.ForwardStack);
-        Assert.Equal(new NavPath(root.Id, child1.Id, child2.Id), controller.SelectedPath.CurrentValue);
+        Assert.Equal(
+            new NavPath(root.Id, child1.Id, child2.Id),
+            controller.SelectedPath.CurrentValue
+        );
     }
 
     [Fact]
@@ -66,17 +69,33 @@ public class NavigationControllerTest
         await controller.BackwardAsync();
 
         Assert.Equal(new NavPath(root.Id, child1.Id), controller.SelectedPath.CurrentValue);
-        Assert.Equal([new NavPath(root.Id, child1.Id, child2.Id)], controller.ForwardStack.Cast<NavPath>().Reverse().ToArray());
-        Assert.Equal([new NavPath(root.Id)], controller.BackwardStack.Cast<NavPath>().Reverse().ToArray());
+        Assert.Equal(
+            [new NavPath(root.Id, child1.Id, child2.Id)],
+            controller.ForwardStack.Cast<NavPath>().Reverse().ToArray()
+        );
+        Assert.Equal(
+            [new NavPath(root.Id)],
+            controller.BackwardStack.Cast<NavPath>().Reverse().ToArray()
+        );
 
         await controller.ForwardAsync();
 
-        Assert.Equal(new NavPath(root.Id, child1.Id, child2.Id), controller.SelectedPath.CurrentValue);
-        Assert.Equal([new NavPath(root.Id), new NavPath(root.Id, child1.Id)], controller.BackwardStack.Cast<NavPath>().Reverse().ToArray());
+        Assert.Equal(
+            new NavPath(root.Id, child1.Id, child2.Id),
+            controller.SelectedPath.CurrentValue
+        );
+        Assert.Equal(
+            [new NavPath(root.Id), new NavPath(root.Id, child1.Id)],
+            controller.BackwardStack.Cast<NavPath>().Reverse().ToArray()
+        );
         Assert.Empty(controller.ForwardStack);
     }
 
-    private static (TestNavigationViewModel Root, TestNavigationViewModel Child1, TestNavigationViewModel Child2) CreateTree()
+    private static (
+        TestNavigationViewModel Root,
+        TestNavigationViewModel Child1,
+        TestNavigationViewModel Child2
+    ) CreateTree()
     {
         var root = new TestNavigationViewModel("root");
         var child1 = new TestNavigationViewModel("child1");
@@ -116,9 +135,7 @@ public class NavigationControllerTest
     private sealed class TestNavigationViewModel : ViewModelBase
     {
         public TestNavigationViewModel(string id)
-            : base(id)
-        {
-        }
+            : base(id) { }
 
         public ObservableList<IViewModel> Children { get; } = new();
 

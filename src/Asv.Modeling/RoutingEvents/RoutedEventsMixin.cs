@@ -2,8 +2,6 @@ using System.Runtime.CompilerServices;
 
 namespace Asv.Modeling;
 
-
-
 public static class RoutedEventsMixin
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

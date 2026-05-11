@@ -207,7 +207,7 @@ public abstract class ViewModelBase : IViewModel
         Parent = null;
         PropertyChanging = null;
         PropertyChanged = null;
-        
+
         var cancel = Interlocked.Exchange(ref _cancel, null);
         if (cancel?.Token.CanBeCanceled == true)
         {
