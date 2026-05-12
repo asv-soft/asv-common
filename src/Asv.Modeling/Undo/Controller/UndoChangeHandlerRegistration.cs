@@ -3,7 +3,7 @@ using R3;
 
 namespace Asv.Modeling;
 
-public abstract class UndoChangeRegistration(string id, Action<string> remove)
+internal abstract class UndoChangeHandlerRegistration(string id, Action<string> remove)
     : AsyncDisposableOnce,
         IUndoChangeHandler
 {
@@ -32,14 +32,14 @@ public abstract class UndoChangeRegistration(string id, Action<string> remove)
     }
 }
 
-public sealed class UndoChangeRegistration<TChange>(
+internal sealed class UndoChangeHandlerRegistration<TChange>(
     string id,
-    UndoCallback<TChange> undo,
-    UndoCallback<TChange> redo,
+    AsyncUndoCallback<TChange> undo,
+    AsyncUndoCallback<TChange> redo,
     Func<TChange> factory,
     Subject<(string, IUndoChange)> changes,
     Action<string> remove
-) : UndoChangeRegistration(id, remove), IUndoChangeSink<TChange>
+) : UndoChangeHandlerRegistration(id, remove), IUndoChangeSink<TChange>
     where TChange : IUndoChange
 {
     private bool _suppressChanges;

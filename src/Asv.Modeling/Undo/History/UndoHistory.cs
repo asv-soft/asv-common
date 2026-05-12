@@ -11,7 +11,7 @@ public class UndoHistory<TBase> : AsyncDisposableOnceBag, IUndoHistory<TBase>
     private readonly IUndoHistoryStore _store;
     private readonly ObservableStack<IUndoSnapshot> _undoStack = new();
     private readonly ObservableStack<IUndoSnapshot> _redoStack = new();
-    private readonly object _saveSync = new();
+    private readonly Lock _saveSync = new();
     private Task _saveTail = Task.CompletedTask;
 
     public UndoHistory(TBase owner, IUndoHistoryStore store)

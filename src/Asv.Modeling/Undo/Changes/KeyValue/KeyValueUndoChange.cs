@@ -5,7 +5,7 @@ using MessagePack;
 namespace Asv.Modeling;
 
 [DataContract]
-public struct KeyValueUndoChange<TKey, TValue> : IUndoChange<TValue>
+public struct KeyValueUndoChange<TKey, TValue> : IValueUndoChange<TValue>
 {
     [DataMember(Order = 0)]
     public ChangeOperation Operation { get; set; }

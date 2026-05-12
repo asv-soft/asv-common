@@ -7,7 +7,15 @@ namespace Asv.Modeling;
 /// <param name="change">The change to apply or revert.</param>
 /// <param name="cancel">A cancellation token for the operation.</param>
 /// <returns>A task-like value that completes when the operation finishes.</returns>
-public delegate ValueTask UndoCallback<in TChange>(TChange change, CancellationToken cancel)
+public delegate ValueTask AsyncUndoCallback<in TChange>(TChange change, CancellationToken cancel)
+    where TChange : IUndoChange;
+
+/// <summary>
+/// Executes synchronous undo or redo logic for a typed change.
+/// </summary>
+/// <typeparam name="TChange">The concrete undo change type.</typeparam>
+/// <param name="change">The change to apply or revert.</param>
+public delegate void UndoCallback<in TChange>(TChange change)
     where TChange : IUndoChange;
 
 /// <summary>
@@ -26,8 +34,8 @@ public interface IUndoController : IDisposable
     /// <returns>A sink used by the registered member to publish changes.</returns>
     IUndoChangeSink<TChange> Create<TChange>(
         string registrationId,
-        UndoCallback<TChange> undo,
-        UndoCallback<TChange> redo,
+        AsyncUndoCallback<TChange> undo,
+        AsyncUndoCallback<TChange> redo,
         Func<TChange> factory
     )
         where TChange : IUndoChange;

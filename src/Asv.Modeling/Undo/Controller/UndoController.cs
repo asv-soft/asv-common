@@ -7,7 +7,7 @@ public sealed class UndoController<TBase> : AsyncDisposableOnce, IUndoController
     where TBase : ISupportRoutedEvents<TBase>
 {
     private readonly Subject<(string, IUndoChange)> _changes = new();
-    private readonly Dictionary<string, UndoChangeRegistration> _registration = new(4);
+    private readonly Dictionary<string, UndoChangeHandlerRegistration> _registration = new(4);
     private readonly IDisposable _subscription;
     private int _suppressChangePublicationCount;
 
@@ -27,8 +27,8 @@ public sealed class UndoController<TBase> : AsyncDisposableOnce, IUndoController
 
     public IUndoChangeSink<TChange> Create<TChange>(
         string registrationId,
-        UndoCallback<TChange> undo,
-        UndoCallback<TChange> redo,
+        AsyncUndoCallback<TChange> undo,
+        AsyncUndoCallback<TChange> redo,
         Func<TChange> factory
     )
         where TChange : IUndoChange
@@ -40,7 +40,7 @@ public sealed class UndoController<TBase> : AsyncDisposableOnce, IUndoController
             );
         }
 
-        var changes = new UndoChangeRegistration<TChange>(
+        var changes = new UndoChangeHandlerRegistration<TChange>(
             registrationId,
             undo,
             redo,

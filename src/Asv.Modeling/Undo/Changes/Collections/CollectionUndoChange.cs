@@ -7,7 +7,7 @@ using ObservableCollections;
 namespace Asv.Modeling;
 
 [DataContract]
-public struct CollectionUndoChange<T> : IUndoChange<T>
+public struct CollectionUndoChange<T> : IValueUndoChange<T>
 {
     [DataMember(Order = 0)]
     public ChangeOperation Operation { get; set; }

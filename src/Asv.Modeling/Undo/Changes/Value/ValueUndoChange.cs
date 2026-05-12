@@ -5,7 +5,7 @@ using MessagePack;
 namespace Asv.Modeling;
 
 [DataContract]
-public struct UndoChange<T> : IUndoChange<T>
+public struct ValueUndoChange<T> : IValueUndoChange<T>
 {
     [DataMember(Order = 0)]
     public ChangeOperation Operation { get; set; }
@@ -23,6 +23,6 @@ public struct UndoChange<T> : IUndoChange<T>
 
     public void Deserialize(ReadOnlySequence<byte> data)
     {
-        this = MessagePackSerializer.Deserialize<UndoChange<T>>(data);
+        this = MessagePackSerializer.Deserialize<ValueUndoChange<T>>(data);
     }
 }

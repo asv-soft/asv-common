@@ -104,7 +104,7 @@ public class KeyValueUndoChangeTest
     [Fact]
     public void ScalarChange_ImplementsGenericChangeContract()
     {
-        IUndoChange<int> undoChange = new UndoChange<int>
+        IValueUndoChange<int> undoChange = new ValueUndoChange<int>
         {
             Operation = ChangeOperation.Update,
             OldValue = 1,
@@ -119,7 +119,7 @@ public class KeyValueUndoChangeTest
     [Fact]
     public void UndoChange_SerializeDeserialize_RoundTripsValues()
     {
-        var source = new UndoChange<string>
+        var source = new ValueUndoChange<string>
         {
             Operation = ChangeOperation.Update,
             OldValue = "old",
@@ -128,7 +128,7 @@ public class KeyValueUndoChangeTest
         var writer = new ArrayBufferWriter<byte>();
         source.Serialize(writer);
 
-        var actual = new UndoChange<string>();
+        var actual = new ValueUndoChange<string>();
         actual.Deserialize(new ReadOnlySequence<byte>(writer.WrittenMemory));
 
         Assert.Equal(source.Operation, actual.Operation);

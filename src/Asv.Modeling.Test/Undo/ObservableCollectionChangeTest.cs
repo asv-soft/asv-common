@@ -96,7 +96,7 @@ public class CollectionUndoChangeTest
     [Fact]
     public void ImplementsGenericChangeContract()
     {
-        IUndoChange<int> undoChange = new CollectionUndoChange<int>
+        IValueUndoChange<int> undoChange = new CollectionUndoChange<int>
         {
             Operation = ChangeOperation.Update,
             OldIndex = 1,
