@@ -3,6 +3,38 @@ namespace Asv.Modeling;
 using R3;
 
 /// <summary>
+/// Handles an old value asynchronously.
+/// </summary>
+/// <typeparam name="T">The value type.</typeparam>
+/// <param name="oldValue">The value before the change.</param>
+/// <param name="cancel">A cancellation token for the operation.</param>
+/// <returns>A task-like value that completes when the operation finishes.</returns>
+public delegate ValueTask AsyncOldValueCallback<in T>(T oldValue, CancellationToken cancel);
+
+/// <summary>
+/// Handles a new value asynchronously.
+/// </summary>
+/// <typeparam name="T">The value type.</typeparam>
+/// <param name="newValue">The value after the change.</param>
+/// <param name="cancel">A cancellation token for the operation.</param>
+/// <returns>A task-like value that completes when the operation finishes.</returns>
+public delegate ValueTask AsyncNewValueCallback<in T>(T newValue, CancellationToken cancel);
+
+/// <summary>
+/// Handles an old value synchronously.
+/// </summary>
+/// <typeparam name="T">The value type.</typeparam>
+/// <param name="oldValue">The value before the change.</param>
+public delegate void OldValueCallback<in T>(T oldValue);
+
+/// <summary>
+/// Handles a new value synchronously.
+/// </summary>
+/// <typeparam name="T">The value type.</typeparam>
+/// <param name="newValue">The value after the change.</param>
+public delegate void NewValueCallback<in T>(T newValue);
+
+/// <summary>
 /// Provides convenience methods for registering and publishing value undo changes.
 /// </summary>
 public static class ValueUndoChangeMixin
@@ -33,19 +65,19 @@ public static class ValueUndoChangeMixin
         /// </summary>
         /// <typeparam name="T">The type of value affected by the change.</typeparam>
         /// <param name="changeId">Unique identifier of the change registration within the controller.</param>
-        /// <param name="undo">Callback that receives the old value when the change is undone.</param>
-        /// <param name="redo">Callback that receives the new value when the change is redone.</param>
+        /// <param name="undoOldValue">Callback that receives the old value when the change is undone.</param>
+        /// <param name="redoNewValue">Callback that receives the new value when the change is redone.</param>
         /// <returns>A sink used to publish value changes for this registration.</returns>
         public IUndoChangeSink<ValueUndoChange<T>> CreateValueChange<T>(
             string changeId,
-            Func<T, CancellationToken, ValueTask> undo,
-            Func<T, CancellationToken, ValueTask> redo
+            AsyncOldValueCallback<T> undoOldValue,
+            AsyncNewValueCallback<T> redoNewValue
         )
         {
             return controller.Create(
                 changeId,
-                (change, cancel) => undo(change.OldValue, cancel),
-                (change, cancel) => redo(change.NewValue, cancel),
+                (change, cancel) => undoOldValue(change.OldValue, cancel),
+                (change, cancel) => redoNewValue(change.NewValue, cancel),
                 static () => new ValueUndoChange<T>()
             );
         }
@@ -55,25 +87,25 @@ public static class ValueUndoChangeMixin
         /// </summary>
         /// <typeparam name="T">The type of value affected by the change.</typeparam>
         /// <param name="changeId">Unique identifier of the change registration within the controller.</param>
-        /// <param name="undo">Callback that receives the old value when the change is undone.</param>
-        /// <param name="redo">Callback that receives the new value when the change is redone.</param>
+        /// <param name="undoOldValue">Callback that receives the old value when the change is undone.</param>
+        /// <param name="redoNewValue">Callback that receives the new value when the change is redone.</param>
         /// <returns>A sink used to publish value changes for this registration.</returns>
         public IUndoChangeSink<ValueUndoChange<T>> CreateValueChange<T>(
             string changeId,
-            Action<T> undo,
-            Action<T> redo
+            OldValueCallback<T> undoOldValue,
+            NewValueCallback<T> redoNewValue
         )
         {
             return controller.Create(
                 changeId,
                 (change, _) =>
                 {
-                    undo(change.OldValue);
+                    undoOldValue(change.OldValue);
                     return ValueTask.CompletedTask;
                 },
                 (change, cancel) =>
                 {
-                    redo(change.NewValue);
+                    redoNewValue(change.NewValue);
                     return ValueTask.CompletedTask;
                 },
                 static () => new ValueUndoChange<T>()
