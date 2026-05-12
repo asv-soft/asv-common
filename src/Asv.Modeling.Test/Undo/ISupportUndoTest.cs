@@ -295,9 +295,7 @@ public class ISupportUndoTest
 
         Assert.Single(root.UndoHistory.UndoStack);
 
-        var undoTask = root
-            .UndoHistory.UndoAsync(TestContext.Current.CancellationToken)
-            .AsTask();
+        var undoTask = root.UndoHistory.UndoAsync(TestContext.Current.CancellationToken).AsTask();
         var completed = await Task.WhenAny(
             undoTask,
             Task.Delay(100, TestContext.Current.CancellationToken)
@@ -408,13 +406,11 @@ public sealed class BlockingUndoHistoryStore : IUndoHistoryStore
     private readonly List<TestUndoSnapshot> _undo = [];
     private readonly List<TestUndoSnapshot> _redo = [];
 
-    public TaskCompletionSource SaveStarted { get; } = new(
-        TaskCreationOptions.RunContinuationsAsynchronously
-    );
+    public TaskCompletionSource SaveStarted { get; } =
+        new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-    public TaskCompletionSource AllowSave { get; } = new(
-        TaskCreationOptions.RunContinuationsAsynchronously
-    );
+    public TaskCompletionSource AllowSave { get; } =
+        new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     public bool SaveUndoRedoCalled { get; private set; }
 
@@ -464,11 +460,8 @@ public sealed class BlockingUndoHistoryStore : IUndoHistoryStore
 
     public void Dispose() { }
 
-    private sealed class TestUndoSnapshot(
-        NavPath path,
-        string changeId,
-        Ulid dataRefId
-    ) : IUndoSnapshot
+    private sealed class TestUndoSnapshot(NavPath path, string changeId, Ulid dataRefId)
+        : IUndoSnapshot
     {
         public NavPath Path { get; } = path;
         public string ChangeId { get; } = changeId;
