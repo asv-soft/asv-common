@@ -3,11 +3,11 @@ using R3;
 
 namespace Asv.Modeling;
 
-public class UndoController<TBase> : AsyncDisposableOnce, IUndoController
+public sealed class UndoController<TBase> : AsyncDisposableOnce, IUndoController
     where TBase : ISupportRoutedEvents<TBase>
 {
-    private readonly Subject<(string, IChange)> _changes = new();
-    private readonly Dictionary<string, UndoRegistration> _registration = new(4);
+    private readonly Subject<(string, IUndoChange)> _changes = new();
+    private readonly Dictionary<string, UndoChangeRegistration> _registration = new(4);
     private readonly IDisposable _subscription;
     private int _suppressChangePublicationCount;
 
@@ -25,13 +25,13 @@ public class UndoController<TBase> : AsyncDisposableOnce, IUndoController
     private bool IsChangePublicationSuppressed =>
         Volatile.Read(ref _suppressChangePublicationCount) > 0;
 
-    public IUndoPublisher<TChange> Create<TChange>(
+    public IUndoChangeSink<TChange> Create<TChange>(
         string registrationId,
         UndoCallback<TChange> undo,
         UndoCallback<TChange> redo,
         Func<TChange> factory
     )
-        where TChange : IChange
+        where TChange : IUndoChange
     {
         if (_registration.ContainsKey(registrationId))
         {
@@ -40,7 +40,7 @@ public class UndoController<TBase> : AsyncDisposableOnce, IUndoController
             );
         }
 
-        var changes = new UndoRegistration<TChange>(
+        var changes = new UndoChangeRegistration<TChange>(
             registrationId,
             undo,
             redo,
@@ -60,7 +60,7 @@ public class UndoController<TBase> : AsyncDisposableOnce, IUndoController
         }
     }
 
-    public IUndoHandler this[string registrationId] => _registration[registrationId];
+    public IUndoChangeHandler this[string registrationId] => _registration[registrationId];
 
     public IDisposable SuppressChangePublication()
     {

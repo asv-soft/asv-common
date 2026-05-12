@@ -1,59 +1,62 @@
 using System.Buffers;
 using System.Collections.Specialized;
-using MemoryPack;
+using System.Runtime.Serialization;
+using MessagePack;
 using ObservableCollections;
 
 namespace Asv.Modeling;
 
-[MemoryPackable]
-public partial struct CollectionChange<T> : IChange<T>
+[DataContract]
+public struct CollectionUndoChange<T> : IUndoChange<T>
 {
+    [DataMember(Order = 0)]
     public ChangeOperation Operation { get; set; }
+
+    [DataMember(Order = 1)]
     public int OldStartingIndex { get; set; }
+
+    [DataMember(Order = 2)]
     public int NewStartingIndex { get; set; }
+
+    [DataMember(Order = 3)]
     public T[] OldItems { get; set; }
+
+    [DataMember(Order = 4)]
     public T[] NewItems { get; set; }
 
-    [MemoryPackIgnore]
+    [IgnoreDataMember]
     public int OldIndex
     {
         get => OldStartingIndex;
         set => OldStartingIndex = value;
     }
 
-    [MemoryPackIgnore]
+    [IgnoreDataMember]
     public int NewIndex
     {
         get => NewStartingIndex;
         set => NewStartingIndex = value;
     }
 
-    [MemoryPackIgnore]
+    [IgnoreDataMember]
     public T OldValue
     {
         get => OldItems is { Length: > 0 } ? OldItems[0] : default!;
         set => OldItems = [value];
     }
 
-    [MemoryPackIgnore]
+    [IgnoreDataMember]
     public T NewValue
     {
         get => NewItems is { Length: > 0 } ? NewItems[0] : default!;
         set => NewItems = [value];
     }
 
-    [MemoryPackOnDeserializing]
-    private void OnDeserializing()
-    {
-        OldItems = [];
-        NewItems = [];
-    }
-
-    public static CollectionChange<T> From(NotifyCollectionChangedEventArgs<T> args)
+    public static CollectionUndoChange<T> From(NotifyCollectionChangedEventArgs<T> args)
     {
         return args.Action switch
         {
-            NotifyCollectionChangedAction.Add => new CollectionChange<T>
+            NotifyCollectionChangedAction.Add => new CollectionUndoChange<T>
             {
                 Operation = ChangeOperation.Create,
                 OldStartingIndex = -1,
@@ -61,7 +64,7 @@ public partial struct CollectionChange<T> : IChange<T>
                 OldItems = [],
                 NewItems = ToArray(args.IsSingleItem, args.NewItem, args.NewItems),
             },
-            NotifyCollectionChangedAction.Remove => new CollectionChange<T>
+            NotifyCollectionChangedAction.Remove => new CollectionUndoChange<T>
             {
                 Operation = ChangeOperation.Delete,
                 OldStartingIndex = args.OldStartingIndex,
@@ -69,7 +72,7 @@ public partial struct CollectionChange<T> : IChange<T>
                 OldItems = ToArray(args.IsSingleItem, args.OldItem, args.OldItems),
                 NewItems = [],
             },
-            NotifyCollectionChangedAction.Replace => new CollectionChange<T>
+            NotifyCollectionChangedAction.Replace => new CollectionUndoChange<T>
             {
                 Operation = ChangeOperation.Update,
                 OldStartingIndex = args.OldStartingIndex,
@@ -90,11 +93,13 @@ public partial struct CollectionChange<T> : IChange<T>
 
     public void Serialize(IBufferWriter<byte> writer)
     {
-        MemoryPackSerializer.Serialize(writer, this);
+        MessagePackSerializer.Serialize(writer, this);
     }
 
     public void Deserialize(ReadOnlySequence<byte> data)
     {
-        MemoryPackSerializer.Deserialize(in data, ref this);
+        this = MessagePackSerializer.Deserialize<CollectionUndoChange<T>>(data);
+        OldItems ??= [];
+        NewItems ??= [];
     }
 }

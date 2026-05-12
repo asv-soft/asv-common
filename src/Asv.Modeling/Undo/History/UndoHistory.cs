@@ -11,6 +11,8 @@ public class UndoHistory<TBase> : AsyncDisposableOnceBag, IUndoHistory<TBase>
     private readonly IUndoHistoryStore _store;
     private readonly ObservableStack<IUndoSnapshot> _undoStack = new();
     private readonly ObservableStack<IUndoSnapshot> _redoStack = new();
+    private readonly object _saveSync = new();
+    private Task _saveTail = Task.CompletedTask;
 
     public UndoHistory(TBase owner, IUndoHistoryStore store)
     {
@@ -35,6 +37,7 @@ public class UndoHistory<TBase> : AsyncDisposableOnceBag, IUndoHistory<TBase>
 
     public async ValueTask UndoAsync(CancellationToken cancel = default)
     {
+        await FlushPendingSaves(cancel);
         if (_undoStack.TryPop(out var snapshot))
         {
             try
@@ -66,6 +69,7 @@ public class UndoHistory<TBase> : AsyncDisposableOnceBag, IUndoHistory<TBase>
 
     public async ValueTask RedoAsync(CancellationToken cancel = default)
     {
+        await FlushPendingSaves(cancel);
         if (_redoStack.TryPop(out var snapshot))
         {
             try
@@ -98,16 +102,49 @@ public class UndoHistory<TBase> : AsyncDisposableOnceBag, IUndoHistory<TBase>
     {
         var path = e.Sender.GetPathFrom<TBase, NavId>(_owner);
         var snapshot = _store.CreateSnapshot(new NavPath(path), e.ChangeId);
-        _store.SaveChange(snapshot, e.Change); // TODO: move serialization to separate thread
         _undoStack.Push(snapshot);
         _redoStack.Clear();
+        QueueSaveChange(snapshot, e.UndoChange);
         return ValueTask.CompletedTask;
+    }
+
+    private void QueueSaveChange(IUndoSnapshot snapshot, IUndoChange undoChange)
+    {
+        lock (_saveSync)
+        {
+            _saveTail = _saveTail
+                .ContinueWith(
+                    async previous =>
+                    {
+                        await previous.ConfigureAwait(false);
+                        _store.SaveChange(snapshot, undoChange);
+                    },
+                    CancellationToken.None,
+                    TaskContinuationOptions.None,
+                    TaskScheduler.Default
+                )
+                .Unwrap();
+        }
+    }
+
+    private Task GetSaveTail()
+    {
+        lock (_saveSync)
+        {
+            return _saveTail;
+        }
+    }
+
+    private async ValueTask FlushPendingSaves(CancellationToken cancel = default)
+    {
+        await GetSaveTail().WaitAsync(cancel).ConfigureAwait(false);
     }
 
     protected override void Dispose(bool disposing)
     {
         if (disposing)
         {
+            FlushPendingSaves().AsTask().GetAwaiter().GetResult();
             _store.SaveUndoRedo(_undoStack.Reverse(), _redoStack.Reverse());
         }
 
@@ -116,6 +153,7 @@ public class UndoHistory<TBase> : AsyncDisposableOnceBag, IUndoHistory<TBase>
 
     protected override async ValueTask DisposeAsyncCore()
     {
+        await FlushPendingSaves();
         _store.SaveUndoRedo(_undoStack.Reverse(), _redoStack.Reverse());
         await base.DisposeAsyncCore();
     }

@@ -39,10 +39,10 @@ public class JsonUndoHistoryStore : AsyncDisposableOnceBag, IUndoHistoryStore
         }
     }
 
-    public void LoadChange(IUndoSnapshot snapshot, IChange change)
+    public void LoadChange(IUndoSnapshot snapshot, IUndoChange undoChange)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
-        ArgumentNullException.ThrowIfNull(change);
+        ArgumentNullException.ThrowIfNull(undoChange);
         if (snapshot is not UndoSnapshot undoSnapshot)
         {
             throw new ArgumentException("Snapshot must be of type UndoSnapshot<TId>.");
@@ -51,7 +51,7 @@ public class JsonUndoHistoryStore : AsyncDisposableOnceBag, IUndoHistoryStore
         if (undoSnapshot.Data != null)
         {
             var data = undoSnapshot.Data;
-            change.Deserialize(new ReadOnlySequence<byte>(data));
+            undoChange.Deserialize(new ReadOnlySequence<byte>(data));
         }
         else
         {
@@ -60,7 +60,7 @@ public class JsonUndoHistoryStore : AsyncDisposableOnceBag, IUndoHistoryStore
             try
             {
                 fs.ReadExactly(array, 0, (int)fs.Length);
-                change.Deserialize(new ReadOnlySequence<byte>(array.AsMemory(0, (int)fs.Length)));
+                undoChange.Deserialize(new ReadOnlySequence<byte>(array.AsMemory(0, (int)fs.Length)));
             }
             finally
             {
@@ -69,17 +69,17 @@ public class JsonUndoHistoryStore : AsyncDisposableOnceBag, IUndoHistoryStore
         }
     }
 
-    public void SaveChange(IUndoSnapshot snapshot, IChange change)
+    public void SaveChange(IUndoSnapshot snapshot, IUndoChange undoChange)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
-        ArgumentNullException.ThrowIfNull(change);
+        ArgumentNullException.ThrowIfNull(undoChange);
         if (snapshot is not UndoSnapshot undoSnapshot)
         {
             throw new ArgumentException("Snapshot must be of type UndoSnapshot<TId>.");
         }
 
         using var writer = new PoolingArrayBufferWriter<byte>();
-        change.Serialize(writer);
+        undoChange.Serialize(writer);
         if (writer.WrittenCount > _inMemoryThresholdBytes)
         {
             var filePath = GetDataFilePath(undoSnapshot.DataRefId);

@@ -3,13 +3,13 @@ using JetBrains.Annotations;
 
 namespace Asv.Modeling.Test;
 
-[TestSubject(typeof(KeyValueChange<,>))]
-public class KeyValueChangeTest
+[TestSubject(typeof(KeyValueUndoChange<,>))]
+public class KeyValueUndoChangeTest
 {
     [Fact]
     public void Default_HasDefaultValues()
     {
-        var change = new KeyValueChange<string, int>();
+        var change = new KeyValueUndoChange<string, int>();
 
         Assert.Equal(ChangeOperation.Update, change.Operation);
         Assert.Null(change.Key);
@@ -20,7 +20,7 @@ public class KeyValueChangeTest
     [Fact]
     public void Properties_StoreAssignedValues()
     {
-        var change = new KeyValueChange<string, int>
+        var change = new KeyValueUndoChange<string, int>
         {
             Operation = ChangeOperation.Delete,
             Key = "speed",
@@ -37,7 +37,7 @@ public class KeyValueChangeTest
     [Fact]
     public void SerializeDeserialize_RoundTripsValues()
     {
-        var source = new KeyValueChange<string, int>
+        var source = new KeyValueUndoChange<string, int>
         {
             Operation = ChangeOperation.Update,
             Key = "altitude",
@@ -56,7 +56,7 @@ public class KeyValueChangeTest
     [Fact]
     public void SerializeDeserialize_RoundTripsNullValue()
     {
-        var source = new KeyValueChange<string, string?>
+        var source = new KeyValueUndoChange<string, string?>
         {
             Operation = ChangeOperation.Create,
             Key = "name",
@@ -75,7 +75,7 @@ public class KeyValueChangeTest
     [Fact]
     public void Deserialize_OverwritesExistingValues()
     {
-        var source = new KeyValueChange<string, int>
+        var source = new KeyValueUndoChange<string, int>
         {
             Operation = ChangeOperation.Delete,
             Key = "target",
@@ -85,7 +85,7 @@ public class KeyValueChangeTest
         var writer = new ArrayBufferWriter<byte>();
         source.Serialize(writer);
 
-        var actual = new KeyValueChange<string, int>
+        var actual = new KeyValueUndoChange<string, int>
         {
             Operation = ChangeOperation.Create,
             Key = "other",
@@ -104,26 +104,46 @@ public class KeyValueChangeTest
     [Fact]
     public void ScalarChange_ImplementsGenericChangeContract()
     {
-        IChange<int> change = new Change<int>
+        IUndoChange<int> undoChange = new UndoChange<int>
         {
             Operation = ChangeOperation.Update,
             OldValue = 1,
             NewValue = 2,
         };
 
-        Assert.Equal(ChangeOperation.Update, change.Operation);
-        Assert.Equal(1, change.OldValue);
-        Assert.Equal(2, change.NewValue);
+        Assert.Equal(ChangeOperation.Update, undoChange.Operation);
+        Assert.Equal(1, undoChange.OldValue);
+        Assert.Equal(2, undoChange.NewValue);
     }
 
-    private static KeyValueChange<TKey, TValue> SerializeAndDeserialize<TKey, TValue>(
-        KeyValueChange<TKey, TValue> source
+    [Fact]
+    public void UndoChange_SerializeDeserialize_RoundTripsValues()
+    {
+        var source = new UndoChange<string>
+        {
+            Operation = ChangeOperation.Update,
+            OldValue = "old",
+            NewValue = "new",
+        };
+        var writer = new ArrayBufferWriter<byte>();
+        source.Serialize(writer);
+
+        var actual = new UndoChange<string>();
+        actual.Deserialize(new ReadOnlySequence<byte>(writer.WrittenMemory));
+
+        Assert.Equal(source.Operation, actual.Operation);
+        Assert.Equal(source.OldValue, actual.OldValue);
+        Assert.Equal(source.NewValue, actual.NewValue);
+    }
+
+    private static KeyValueUndoChange<TKey, TValue> SerializeAndDeserialize<TKey, TValue>(
+        KeyValueUndoChange<TKey, TValue> source
     )
     {
         var writer = new ArrayBufferWriter<byte>();
         source.Serialize(writer);
 
-        var actual = new KeyValueChange<TKey, TValue>();
+        var actual = new KeyValueUndoChange<TKey, TValue>();
         actual.Deserialize(new ReadOnlySequence<byte>(writer.WrittenMemory));
         return actual;
     }

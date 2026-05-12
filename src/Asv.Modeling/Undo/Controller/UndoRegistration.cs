@@ -3,17 +3,17 @@ using R3;
 
 namespace Asv.Modeling;
 
-public abstract class UndoRegistration(string id, Action<string> remove)
+public abstract class UndoChangeRegistration(string id, Action<string> remove)
     : AsyncDisposableOnce,
-        IUndoHandler
+        IUndoChangeHandler
 {
     protected string Id => id;
 
-    public abstract IChange Create();
+    public abstract IUndoChange Create();
 
-    public abstract ValueTask Undo(IChange change, CancellationToken cancel);
+    public abstract ValueTask Undo(IUndoChange undoChange, CancellationToken cancel);
 
-    public abstract ValueTask Redo(IChange change, CancellationToken cancel);
+    public abstract ValueTask Redo(IUndoChange undoChange, CancellationToken cancel);
 
     protected override void Dispose(bool disposing)
     {
@@ -32,15 +32,15 @@ public abstract class UndoRegistration(string id, Action<string> remove)
     }
 }
 
-public sealed class UndoRegistration<TChange>(
+public sealed class UndoChangeRegistration<TChange>(
     string id,
     UndoCallback<TChange> undo,
     UndoCallback<TChange> redo,
     Func<TChange> factory,
-    Subject<(string, IChange)> changes,
+    Subject<(string, IUndoChange)> changes,
     Action<string> remove
-) : UndoRegistration(id, remove), IUndoPublisher<TChange>
-    where TChange : IChange
+) : UndoChangeRegistration(id, remove), IUndoChangeSink<TChange>
+    where TChange : IUndoChange
 {
     private bool _suppressChanges;
 
@@ -52,19 +52,19 @@ public sealed class UndoRegistration<TChange>(
         changes.OnNext((Id, change));
     }
 
-    public override IChange Create()
+    public override IUndoChange Create()
     {
         ThrowIfDisposed();
         return factory();
     }
 
-    public override async ValueTask Undo(IChange change, CancellationToken cancel)
+    public override async ValueTask Undo(IUndoChange undoChange, CancellationToken cancel)
     {
         ThrowIfDisposed();
         try
         {
             _suppressChanges = true;
-            await undo((TChange)change, cancel);
+            await undo((TChange)undoChange, cancel);
         }
         finally
         {
@@ -72,13 +72,13 @@ public sealed class UndoRegistration<TChange>(
         }
     }
 
-    public override async ValueTask Redo(IChange change, CancellationToken cancel)
+    public override async ValueTask Redo(IUndoChange undoChange, CancellationToken cancel)
     {
         ThrowIfDisposed();
         try
         {
             _suppressChanges = true;
-            await redo((TChange)change, cancel);
+            await redo((TChange)undoChange, cancel);
         }
         finally
         {

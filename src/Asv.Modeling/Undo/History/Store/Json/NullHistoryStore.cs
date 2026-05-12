@@ -24,12 +24,12 @@ public class NullUndoHistoryStore : IUndoHistoryStore
         return new NullUndoSnapshot(path, changeId);
     }
 
-    public void LoadChange(IUndoSnapshot snapshot, IChange change)
+    public void LoadChange(IUndoSnapshot snapshot, IUndoChange undoChange)
     {
         // do nothing
     }
 
-    public void SaveChange(IUndoSnapshot snapshot, IChange change)
+    public void SaveChange(IUndoSnapshot snapshot, IUndoChange undoChange)
     {
         // do nothing
     }

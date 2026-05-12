@@ -13,18 +13,18 @@ public static class UndoControllerMixin
                 changeId,
                 (change, _) =>
                 {
-                    prop.Value = ((Change<T>)change).OldValue;
+                    prop.Value = ((UndoChange<T>)change).OldValue;
                     return ValueTask.CompletedTask;
                 },
                 (change, _) =>
                 {
-                    prop.Value = ((Change<T>)change).NewValue;
+                    prop.Value = ((UndoChange<T>)change).NewValue;
                     return ValueTask.CompletedTask;
                 },
-                static () => new Change<T>()
+                static () => new UndoChange<T>()
             );
             var subscription = prop.Pairwise()
-                .Select(x => new Change<T> { OldValue = x.Previous, NewValue = x.Current })
+                .Select(x => new UndoChange<T> { OldValue = x.Previous, NewValue = x.Current })
                 .Subscribe(publisher.Publish);
             return Disposable.Combine(publisher, subscription);
         }
@@ -43,11 +43,11 @@ public static class UndoControllerMixin
                     ApplyCollectionRedo(list, change);
                     return ValueTask.CompletedTask;
                 },
-                static () => new CollectionChange<T>()
+                static () => new CollectionUndoChange<T>()
             );
             void OnCollectionChanged(in NotifyCollectionChangedEventArgs<T> args)
             {
-                publisher.Publish(CollectionChange<T>.From(args));
+                publisher.Publish(CollectionUndoChange<T>.From(args));
             }
 
             list.CollectionChanged += OnCollectionChanged;
@@ -57,12 +57,12 @@ public static class UndoControllerMixin
             return Disposable.Combine(publisher, subscription);
         }
 
-        public IUndoPublisher<TChange> Create<TChange>(
+        public IUndoChangeSink<TChange> Create<TChange>(
             string changeId,
             Func<TChange, CancellationToken, ValueTask> undo,
             Func<TChange, CancellationToken, ValueTask> redo
         )
-            where TChange : IChange, new()
+            where TChange : IUndoChange, new()
         {
             return controller.Create(
                 changeId,
@@ -74,26 +74,26 @@ public static class UndoControllerMixin
 
         private static void ApplyCollectionUndo<T>(
             ObservableList<T> list,
-            CollectionChange<T> change
+            CollectionUndoChange<T> undoChange
         )
         {
-            switch (change.Operation)
+            switch (undoChange.Operation)
             {
                 case ChangeOperation.Create:
-                    RemoveRange(list, change.NewStartingIndex, change.NewItems.Length);
+                    RemoveRange(list, undoChange.NewStartingIndex, undoChange.NewItems.Length);
                     break;
                 case ChangeOperation.Delete:
-                    InsertRange(list, change.OldStartingIndex, change.OldItems);
+                    InsertRange(list, undoChange.OldStartingIndex, undoChange.OldItems);
                     break;
                 case ChangeOperation.Update:
-                    ReplaceRange(list, change.OldStartingIndex, change.OldItems);
+                    ReplaceRange(list, undoChange.OldStartingIndex, undoChange.OldItems);
                     break;
                 case ChangeOperation.Read:
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(
-                        nameof(change),
-                        change.Operation,
+                        nameof(undoChange),
+                        undoChange.Operation,
                         "Unknown collection change operation"
                     );
             }
@@ -101,26 +101,26 @@ public static class UndoControllerMixin
 
         private static void ApplyCollectionRedo<T>(
             ObservableList<T> list,
-            CollectionChange<T> change
+            CollectionUndoChange<T> undoChange
         )
         {
-            switch (change.Operation)
+            switch (undoChange.Operation)
             {
                 case ChangeOperation.Create:
-                    InsertRange(list, change.NewStartingIndex, change.NewItems);
+                    InsertRange(list, undoChange.NewStartingIndex, undoChange.NewItems);
                     break;
                 case ChangeOperation.Delete:
-                    RemoveRange(list, change.OldStartingIndex, change.OldItems.Length);
+                    RemoveRange(list, undoChange.OldStartingIndex, undoChange.OldItems.Length);
                     break;
                 case ChangeOperation.Update:
-                    ReplaceRange(list, change.NewStartingIndex, change.NewItems);
+                    ReplaceRange(list, undoChange.NewStartingIndex, undoChange.NewItems);
                     break;
                 case ChangeOperation.Read:
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(
-                        nameof(change),
-                        change.Operation,
+                        nameof(undoChange),
+                        undoChange.Operation,
                         "Unknown collection change operation"
                     );
             }

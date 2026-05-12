@@ -5,13 +5,13 @@ using R3;
 
 namespace Asv.Modeling.Test;
 
-[TestSubject(typeof(CollectionChange<>))]
-public class CollectionChangeTest
+[TestSubject(typeof(CollectionUndoChange<>))]
+public class CollectionUndoChangeTest
 {
     [Fact]
     public void Default_HasDefaultValues()
     {
-        var change = new CollectionChange<string>();
+        var change = new CollectionUndoChange<string>();
 
         Assert.Equal(ChangeOperation.Update, change.Operation);
         Assert.Equal(default, change.OldIndex);
@@ -23,7 +23,7 @@ public class CollectionChangeTest
     [Fact]
     public void Properties_StoreAssignedValues()
     {
-        var change = new CollectionChange<string?>
+        var change = new CollectionUndoChange<string?>
         {
             Operation = ChangeOperation.Create,
             OldIndex = -1,
@@ -42,7 +42,7 @@ public class CollectionChangeTest
     [Fact]
     public void SerializeDeserialize_RoundTripsValues()
     {
-        var source = new CollectionChange<string?>
+        var source = new CollectionUndoChange<string?>
         {
             Operation = ChangeOperation.Delete,
             OldIndex = 3,
@@ -54,7 +54,7 @@ public class CollectionChangeTest
         var writer = new ArrayBufferWriter<byte>();
         source.Serialize(writer);
 
-        var actual = new CollectionChange<string?>();
+        var actual = new CollectionUndoChange<string?>();
         actual.Deserialize(new ReadOnlySequence<byte>(writer.WrittenMemory));
 
         Assert.Equal(source.Operation, actual.Operation);
@@ -69,7 +69,7 @@ public class CollectionChangeTest
     [Fact]
     public void SerializeDeserialize_RoundTripsBatchUpdate()
     {
-        var source = new CollectionChange<string>
+        var source = new CollectionUndoChange<string>
         {
             Operation = ChangeOperation.Update,
             OldStartingIndex = 1,
@@ -81,7 +81,7 @@ public class CollectionChangeTest
         var writer = new ArrayBufferWriter<byte>();
         source.Serialize(writer);
 
-        var actual = new CollectionChange<string>();
+        var actual = new CollectionUndoChange<string>();
         actual.Deserialize(new ReadOnlySequence<byte>(writer.WrittenMemory));
 
         Assert.Equal(ChangeOperation.Update, actual.Operation);
@@ -96,7 +96,7 @@ public class CollectionChangeTest
     [Fact]
     public void ImplementsGenericChangeContract()
     {
-        IChange<int> change = new CollectionChange<int>
+        IUndoChange<int> undoChange = new CollectionUndoChange<int>
         {
             Operation = ChangeOperation.Update,
             OldIndex = 1,
@@ -105,19 +105,19 @@ public class CollectionChangeTest
             NewValue = 20,
         };
 
-        Assert.Equal(ChangeOperation.Update, change.Operation);
-        Assert.Equal(10, change.OldValue);
-        Assert.Equal(20, change.NewValue);
+        Assert.Equal(ChangeOperation.Update, undoChange.Operation);
+        Assert.Equal(10, undoChange.OldValue);
+        Assert.Equal(20, undoChange.NewValue);
     }
 
     [Fact]
     public void ObservableList_Add_MapsToCreateChange()
     {
         var list = new ObservableList<string>();
-        var received = new List<CollectionChange<string>>();
+        var received = new List<CollectionUndoChange<string>>();
         void OnCollectionChanged(in NotifyCollectionChangedEventArgs<string> args)
         {
-            received.Add(CollectionChange<string>.From(args));
+            received.Add(CollectionUndoChange<string>.From(args));
         }
 
         list.CollectionChanged += OnCollectionChanged;
@@ -141,10 +141,10 @@ public class CollectionChangeTest
     public void ObservableList_Remove_MapsToDeleteChange()
     {
         var list = new ObservableList<string> { "first", "second" };
-        var received = new List<CollectionChange<string>>();
+        var received = new List<CollectionUndoChange<string>>();
         void OnCollectionChanged(in NotifyCollectionChangedEventArgs<string> args)
         {
-            received.Add(CollectionChange<string>.From(args));
+            received.Add(CollectionUndoChange<string>.From(args));
         }
 
         list.CollectionChanged += OnCollectionChanged;
@@ -168,10 +168,10 @@ public class CollectionChangeTest
     public void ObservableList_InsertRange_MapsToSingleCreateChange()
     {
         var list = new ObservableList<string> { "first" };
-        var received = new List<CollectionChange<string>>();
+        var received = new List<CollectionUndoChange<string>>();
         void OnCollectionChanged(in NotifyCollectionChangedEventArgs<string> args)
         {
-            received.Add(CollectionChange<string>.From(args));
+            received.Add(CollectionUndoChange<string>.From(args));
         }
 
         list.CollectionChanged += OnCollectionChanged;
@@ -192,7 +192,7 @@ public class CollectionChangeTest
     [Fact]
     public void BatchUpdate_StoresAllOldAndNewItems()
     {
-        var change = new CollectionChange<string>
+        var change = new CollectionUndoChange<string>
         {
             Operation = ChangeOperation.Update,
             OldStartingIndex = 0,
