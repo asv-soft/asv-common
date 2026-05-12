@@ -76,6 +76,56 @@ public class JsonArrayAsvPackagePartTest(ITestOutputHelper log)
     }
 
     [Fact]
+    public async Task Read_LegacyJsonlPart_Works()
+    {
+        using var ms = new MemoryStream();
+        var logger = new TestLogger(log, TimeProvider.System, "JsonArrayAsvPackagePartTest");
+        var expected = new[]
+        {
+            new TestRow(1, "legacy-alpha", true),
+            new TestRow(2, "legacy-beta", false),
+        };
+
+        using (var pkg = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite))
+        {
+            var part = pkg.CreatePart(PartUri, ContentType, CompressionOption.NotCompressed);
+            await using var stream = part.GetStream(FileMode.Create, FileAccess.Write);
+            await using var writer = new StreamWriter(stream, Encoding.UTF8);
+
+            await writer.WriteAsync(
+                "/*|============================================================================ |*/\n"
+            );
+            await writer.WriteAsync(
+                "/*| This file contains table data in JSONL format. Do not edit it manually.     |*/\n"
+            );
+            await writer.WriteAsync(
+                "/*|============================================================================ |*/\n"
+            );
+            await writer.WriteAsync(
+                "/*0000*/{\"Id\":1,\"Name\":\"legacy-alpha\",\"IsActive\":true}/*0000*/\n"
+            );
+            await writer.WriteAsync(
+                "/*0001*/{\"Id\":2,\"Name\":\"legacy-beta\",\"IsActive\":false}/*0001*/\n"
+            );
+        }
+
+        ms.Position = 0;
+        using var readPackage = Package.Open(ms, FileMode.Open, FileAccess.Read);
+        var ctx = new AsvPackageContext(new Lock(), readPackage, logger);
+        var arrayPart = new JsonArrayAsvPackagePart<TestRow>(
+            PartUri,
+            ctx,
+            parent: null,
+            contentType: ContentType
+        );
+
+        var actual = new List<TestRow>();
+        await arrayPart.Read(actual.Add, CancellationToken.None);
+
+        Assert.Equal(expected, actual);
+    }
+
+    [Fact]
     public async Task Write_Twice_OverwritesPart()
     {
         using var ms = new MemoryStream();

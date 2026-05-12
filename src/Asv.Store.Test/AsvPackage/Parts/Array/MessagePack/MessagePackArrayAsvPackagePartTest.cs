@@ -76,6 +76,48 @@ public class MessagePackArrayAsvPackagePartTest(ITestOutputHelper log)
     }
 
     [Fact]
+    public async Task Read_LegacyMessagePackPart_Works()
+    {
+        using var ms = new MemoryStream();
+        var logger = new TestLogger(log, TimeProvider.System, "MessagePackArrayAsvPackagePartTest");
+        var expected = new[]
+        {
+            new TestRow(1, "legacy-alpha", true),
+            new TestRow(2, "legacy-beta", false),
+        };
+
+        using (var pkg = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite))
+        {
+            var part = pkg.CreatePart(PartUri, ContentType, CompressionOption.NotCompressed);
+            await using var stream = part.GetStream(FileMode.Create, FileAccess.Write);
+
+            foreach (var item in expected)
+            {
+                await MessagePackSerializer.SerializeAsync(
+                    stream,
+                    item,
+                    cancellationToken: CancellationToken.None
+                );
+            }
+        }
+
+        ms.Position = 0;
+        using var readPackage = Package.Open(ms, FileMode.Open, FileAccess.Read);
+        var ctx = new AsvPackageContext(new Lock(), readPackage, logger);
+        var arrayPart = new MessagePackArrayAsvPackagePart<TestRow>(
+            PartUri,
+            ctx,
+            parent: null,
+            contentType: ContentType
+        );
+
+        var actual = new List<TestRow>();
+        await arrayPart.Read(actual.Add, CancellationToken.None);
+
+        Assert.Equal(expected, actual);
+    }
+
+    [Fact]
     public async Task Write_Twice_OverwritesPart()
     {
         using var ms = new MemoryStream();

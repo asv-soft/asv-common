@@ -1,6 +1,4 @@
 using System.IO.Packaging;
-using Asv.IO;
-using DotNext.Threading.Tasks;
 
 namespace Asv.Store;
 
@@ -26,10 +24,10 @@ public abstract class ArrayAsvPackagePart<TRow>(
     {
         EnsureReadAccess();
 
-        Context.Lock.Enter();
-        Stream? stream = null;
-        try
+        Stream? stream;
+        using (Context.Lock.EnterScope())
         {
+            stream = null;
             if (Context.Package.PartExists(path))
             {
                 var existContentType = Context.Package.GetPart(path).ContentType;
@@ -42,13 +40,17 @@ public abstract class ArrayAsvPackagePart<TRow>(
 
                 var part = Context.Package.GetPart(path);
                 stream = part.GetStream(FileMode.Open, FileAccess.Read);
-                InternalRead(stream, visitor, cancel).Wait();
             }
         }
-        finally
+
+        if (stream == null)
         {
-            stream?.Dispose();
-            Context.Lock.Exit();
+            return;
+        }
+
+        await using (stream)
+        {
+            await InternalRead(stream, visitor, cancel);
         }
     }
 
@@ -58,10 +60,11 @@ public abstract class ArrayAsvPackagePart<TRow>(
         CancellationToken cancel
     );
 
-    public ValueTask Write(IEnumerable<TRow> values, CancellationToken cancel)
+    public async ValueTask Write(IEnumerable<TRow> values, CancellationToken cancel)
     {
         EnsureWriteAccess();
 
+        Stream stream;
         using (Context.Lock.EnterScope())
         {
             // If the part already exists, verify its content type matches the expected one
@@ -83,8 +86,12 @@ public abstract class ArrayAsvPackagePart<TRow>(
             var part = Context.Package.CreatePart(path, contentType, compressionOption);
 
             // Open the stream and delegate the actual serialization to the derived class
-            using var stream = part.GetStream(FileMode.Create, FileAccess.ReadWrite);
-            return InternalWrite(stream, values, cancel);
+            stream = part.GetStream(FileMode.Create, FileAccess.ReadWrite);
+        }
+
+        await using (stream)
+        {
+            await InternalWrite(stream, values, cancel);
         }
     }
 

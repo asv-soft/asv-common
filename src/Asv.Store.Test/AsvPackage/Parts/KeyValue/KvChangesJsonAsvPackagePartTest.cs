@@ -2,7 +2,6 @@ using System.IO.Packaging;
 using Asv.IO;
 using Asv.XUnit;
 using DotNext;
-using FluentAssertions;
 using JetBrains.Annotations;
 
 namespace Asv.Store.Test;
@@ -81,7 +80,10 @@ public class KvChangesJsonAsvPackagePartTest(ITestOutputHelper log)
         Assert.Equal(data.Length, arr.Length);
         for (int i = 0; i < data.Length; i++)
         {
-            data[i].Should().BeEquivalentTo(arr[i]);
+            Assert.Equal(data[i].Timestamp, arr[i].Timestamp);
+            Assert.Equal(data[i].Key, arr[i].Key);
+            Assert.Equal(data[i].OldValue, arr[i].OldValue);
+            Assert.Equal(data[i].NewValue, arr[i].NewValue);
         }
     }
 }
