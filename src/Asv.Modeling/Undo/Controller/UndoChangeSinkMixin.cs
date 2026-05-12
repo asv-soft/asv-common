@@ -9,11 +9,7 @@ public static class UndoChangeSinkMixin
     /// <param name="sink">The undo change sink.</param>
     /// <param name="oldValue">The value before the change.</param>
     /// <param name="newValue">The value after the change.</param>
-    public static void Publish<T>(
-        this IUndoChangeSink<UndoChange<T>> sink,
-        T oldValue,
-        T newValue
-    )
+    public static void Publish<T>(this IUndoChangeSink<UndoChange<T>> sink, T oldValue, T newValue)
     {
         sink.Publish(ChangeOperation.Update, oldValue, newValue);
     }
