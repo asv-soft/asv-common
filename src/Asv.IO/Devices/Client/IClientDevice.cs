@@ -26,6 +26,13 @@ public static class ClientDeviceHelper
         return src.Microservices.OfType<T>().FirstOrDefault();
     }
 
+    public static T GetRequiredMicroservice<T>(this IClientDevice src)
+        where T : class
+    {
+        return src.GetMicroservice<T>()
+            ?? throw new ClientDeviceMicroserviceNotFoundException(src, typeof(T));
+    }
+
     public static async Task WaitUntilConnect(
         this IClientDevice src,
         int timeoutMs,
