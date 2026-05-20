@@ -14,12 +14,14 @@ public abstract class LoadLayoutEvent<TBase>(TBase sender, string layoutId)
 public sealed class LoadLayoutEvent<TBase, TData>(TBase sender, string layoutId)
     : LoadLayoutEvent<TBase>(sender, layoutId)
     where TBase : ISupportRoutedEvents<TBase>
-    where TData : IJsonLayoutData<TData>
+    where TData : ILayoutData, new()
 {
-    private TData? _layoutData;
+    private TData _layoutData = default!;
 
     public TData LayoutData =>
-        _layoutData ?? throw new InvalidOperationException("Layout data has not been loaded yet.");
+        IsLoaded
+            ? _layoutData
+            : throw new InvalidOperationException("Layout data has not been loaded yet.");
 
     public override ILayoutData UntypedLayoutData => LayoutData;
 
@@ -31,6 +33,7 @@ public sealed class LoadLayoutEvent<TBase, TData>(TBase sender, string layoutId)
         }
 
         _layoutData = layoutData;
+        IsLoaded = true;
         return true;
     }
 }

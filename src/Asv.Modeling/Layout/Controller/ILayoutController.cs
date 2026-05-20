@@ -1,67 +1,19 @@
 namespace Asv.Modeling;
 
-/// <summary>
-/// Applies persisted layout data to a registered model member.
-/// </summary>
-/// <typeparam name="TData">The concrete layout data type.</typeparam>
-/// <param name="data">The restored layout data.</param>
-/// <param name="cancel">A cancellation token for the operation.</param>
-/// <returns>A task-like value that completes when the operation finishes.</returns>
-public delegate ValueTask AsyncLoadLayoutCallback<in TData>(TData data, CancellationToken cancel)
-    where TData : IJsonLayoutData<TData>;
-
-/// <summary>
-/// Captures current display state into a registered layout data object.
-/// </summary>
-/// <typeparam name="TData">The concrete layout data type.</typeparam>
-/// <param name="data">The layout data object to fill.</param>
-/// <param name="cancel">A cancellation token for the operation.</param>
-/// <returns>A task-like value that completes when the operation finishes.</returns>
-public delegate ValueTask AsyncSaveLayoutCallback<in TData>(TData data, CancellationToken cancel)
-    where TData : IJsonLayoutData<TData>;
-
-/// <summary>
-/// Applies persisted layout data to a registered model member.
-/// </summary>
-/// <typeparam name="TData">The concrete layout data type.</typeparam>
-/// <param name="data">The restored layout data.</param>
-public delegate void LoadLayoutCallback<in TData>(TData data)
-    where TData : IJsonLayoutData<TData>;
-
-/// <summary>
-/// Captures current display state into a registered layout data object.
-/// </summary>
-/// <typeparam name="TData">The concrete layout data type.</typeparam>
-/// <param name="data">The layout data object to fill.</param>
-public delegate void SaveLayoutCallback<in TData>(TData data)
-    where TData : IJsonLayoutData<TData>;
-
-/// <summary>
-/// Registered layout data handler.
-/// </summary>
-public interface ILayoutRegistration : IDisposable
+public interface ILayoutSink<in TData> : IDisposable
+    where TData : ILayoutData
 {
-    string Id { get; }
-    ILayoutData Create();
+    void Load();
+
     ValueTask LoadAsync(CancellationToken cancel = default);
-    ValueTask SaveAsync(CancellationToken cancel = default);
+
+    void Save(TData data);
 }
 
-/// <summary>
-/// Registers display state members and coordinates their persistence.
-/// </summary>
 public interface ILayoutController : IDisposable
 {
-    ILayoutRegistration Create<TData>(
-        string layoutId,
-        AsyncLoadLayoutCallback<TData> load,
-        AsyncSaveLayoutCallback<TData> save,
-        Func<TData> factory
-    )
-        where TData : IJsonLayoutData<TData>;
+    ILayoutSink<TData> Register<TData>(string layoutId, Action<TData> load)
+        where TData : ILayoutData, new();
 
-    ILayoutRegistration this[string layoutId] { get; }
-
-    ValueTask LoadAsync(CancellationToken cancel = default);
-    ValueTask SaveAsync(CancellationToken cancel = default);
+    void LoadAll();
 }

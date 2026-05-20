@@ -1,5 +1,3 @@
-using System.Text.Json.Serialization;
-using System.Text.Json.Serialization.Metadata;
 using Asv.Common;
 using JetBrains.Annotations;
 using ObservableCollections;
@@ -7,7 +5,7 @@ using R3;
 
 namespace Asv.Modeling.Test;
 
-[TestSubject(typeof(ISupportLayout<>))]
+[TestSubject(typeof(ISupportLayout))]
 public partial class ISupportLayoutTest : IDisposable
 {
     private readonly string _storageDirectory = Path.Combine(
@@ -29,7 +27,13 @@ public partial class ISupportLayoutTest : IDisposable
         child.Value = 10;
         nested.Value = 42;
 
-        await root.LayoutRoot.SaveAsync(TestContext.Current.CancellationToken);
+        SaveLayouts(root);
+        Assert.True(
+            SpinWait.SpinUntil(
+                () => File.Exists(Path.Combine(_storageDirectory, "layout.json")),
+                TimeSpan.FromSeconds(1)
+            )
+        );
         root.Dispose();
 
         root = new LayoutRootViewModel("root", new JsonLayoutStore(_storageDirectory));
@@ -38,7 +42,7 @@ public partial class ISupportLayoutTest : IDisposable
         nested = new TestLayoutViewModel("nested");
         child.Children.Add(nested);
 
-        await root.LayoutRoot.LoadAsync(TestContext.Current.CancellationToken);
+        await LoadLayoutsAsync(root, TestContext.Current.CancellationToken);
 
         Assert.Equal(10, child.Value);
         Assert.Equal(42, nested.Value);
@@ -52,7 +56,7 @@ public partial class ISupportLayoutTest : IDisposable
         var child = new TestLayoutViewModel("child");
         root.Children.Add(child);
 
-        await root.LayoutRoot.LoadAsync(TestContext.Current.CancellationToken);
+        await LoadLayoutsAsync(root, TestContext.Current.CancellationToken);
 
         Assert.False(child.WasLoaded);
         root.Dispose();
@@ -70,11 +74,44 @@ public partial class ISupportLayoutTest : IDisposable
         child.Value = 10;
         nested.Value = 42;
 
-        await root.LayoutRoot.SaveAsync(TestContext.Current.CancellationToken);
+        SaveLayouts(root);
 
-        Assert.True(File.Exists(Path.Combine(_storageDirectory, "layout.json")));
+        Assert.True(
+            SpinWait.SpinUntil(
+                () => File.Exists(Path.Combine(_storageDirectory, "layout.json")),
+                TimeSpan.FromSeconds(1)
+            )
+        );
         Assert.Empty(Directory.GetFiles(_storageDirectory, "*.layout.json"));
         root.Dispose();
+    }
+
+    private static void SaveLayouts(IViewModel current)
+    {
+        if (current is TestLayoutViewModel layout)
+        {
+            layout.SaveLayout();
+        }
+
+        foreach (var child in current.GetChildren())
+        {
+            SaveLayouts(child);
+        }
+    }
+
+    private static async ValueTask LoadLayoutsAsync(IViewModel current, CancellationToken cancel)
+    {
+        cancel.ThrowIfCancellationRequested();
+
+        if (current is TestLayoutViewModel layout)
+        {
+            await layout.LoadLayoutAsync(cancel);
+        }
+
+        foreach (var child in current.GetChildren())
+        {
+            await LoadLayoutsAsync(child, cancel);
+        }
     }
 
     public void Dispose()
@@ -92,12 +129,12 @@ public partial class ISupportLayoutTest : IDisposable
         {
             Children.SetParent<IViewModel, IViewModel>(this).AddTo(ref DisposableBag);
             Children.DisposeRemovedItems().AddTo(ref DisposableBag);
-            LayoutRoot = new LayoutRootController<IViewModel>(this, store).AddTo(ref DisposableBag);
+            LayoutManager = new LayoutManager<IViewModel>(this, store).AddTo(ref DisposableBag);
         }
 
         public ObservableList<IViewModel> Children { get; } = new();
 
-        public LayoutRootController<IViewModel> LayoutRoot { get; }
+        public LayoutManager<IViewModel> LayoutManager { get; }
 
         public override IEnumerable<IViewModel> GetChildren()
         {
@@ -105,9 +142,9 @@ public partial class ISupportLayoutTest : IDisposable
         }
     }
 
-    private sealed class TestLayoutViewModel : ViewModelBase, ISupportLayout<IViewModel>
+    private sealed class TestLayoutViewModel : ViewModelBase, ISupportLayout
     {
-        private readonly ILayoutRegistration _handler;
+        private readonly ILayoutSink<TestLayoutData> _handler;
 
         public TestLayoutViewModel(string id)
             : base(id)
@@ -117,14 +154,13 @@ public partial class ISupportLayoutTest : IDisposable
             Layout = new LayoutController<IViewModel>(this).DisposeItWith(Disposable);
 
             _handler = Layout
-                .Create<TestLayoutData>(
+                .Register<TestLayoutData>(
                     nameof(Value),
                     data =>
                     {
                         Value = data.Value;
                         WasLoaded = true;
-                    },
-                    data => data.Value = Value
+                    }
                 )
                 .AddTo(ref DisposableBag);
         }
@@ -143,20 +179,24 @@ public partial class ISupportLayoutTest : IDisposable
 
         public bool WasLoaded { get; private set; }
 
+        public void SaveLayout()
+        {
+            _handler.Save(new TestLayoutData { Value = Value });
+        }
+
+        public ValueTask LoadLayoutAsync(CancellationToken cancel)
+        {
+            return _handler.LoadAsync(cancel);
+        }
+
         public override IEnumerable<IViewModel> GetChildren()
         {
             return Children;
         }
     }
 
-    private sealed class TestLayoutData : IJsonLayoutData<TestLayoutData>
+    private sealed class TestLayoutData : ILayoutData
     {
-        public static JsonTypeInfo<TestLayoutData> JsonTypeInfo =>
-            TestLayoutJsonContext.Default.TestLayoutData;
-
         public int Value { get; set; }
     }
-
-    [JsonSerializable(typeof(TestLayoutData))]
-    private sealed partial class TestLayoutJsonContext : JsonSerializerContext;
 }

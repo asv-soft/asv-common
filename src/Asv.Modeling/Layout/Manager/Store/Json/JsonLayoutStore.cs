@@ -25,7 +25,7 @@ public class JsonLayoutStore : ILayoutStore
     }
 
     public bool TryLoad<TData>(NavPath path, string layoutId, out TData layoutData)
-        where TData : IJsonLayoutData<TData>
+        where TData : ILayoutData, new()
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(layoutId);
 
@@ -47,7 +47,7 @@ public class JsonLayoutStore : ILayoutStore
                 return false;
             }
 
-            var data = JsonSerializer.Deserialize(snapshot.Json, TData.JsonTypeInfo);
+            var data = JsonSerializer.Deserialize<TData>(snapshot.Json);
             if (data == null)
             {
                 layoutData = default!;
@@ -66,17 +66,20 @@ public class JsonLayoutStore : ILayoutStore
     }
 
     public void Save<TData>(NavPath path, string layoutId, TData layoutData)
-        where TData : IJsonLayoutData<TData>
+        where TData : ILayoutData
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(layoutId);
-        ArgumentNullException.ThrowIfNull(layoutData);
+        if (layoutData is null)
+        {
+            throw new ArgumentNullException(nameof(layoutData));
+        }
 
         var snapshot = new JsonLayoutSnapshot
         {
             Path = path.ToString(),
             LayoutId = layoutId,
             SchemaVersion = layoutData.SchemaVersion,
-            Json = JsonSerializer.Serialize(layoutData, TData.JsonTypeInfo),
+            Json = JsonSerializer.Serialize(layoutData),
         };
 
         _snapshots[GetLayoutKey(path, layoutId)] = snapshot;
@@ -150,4 +153,4 @@ public class JsonLayoutStore : ILayoutStore
 }
 
 [JsonSerializable(typeof(Dictionary<string, JsonLayoutSnapshot>))]
-internal partial class JsonLayoutStoreJsonContext : JsonSerializerContext;
+internal partial class JsonLayoutStoreJsonContext : JsonSerializerContext { }

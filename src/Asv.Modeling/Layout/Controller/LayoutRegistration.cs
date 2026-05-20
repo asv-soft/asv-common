@@ -2,17 +2,16 @@ using Asv.Common;
 
 namespace Asv.Modeling;
 
-internal abstract class LayoutRegistration(string id, Action<string> remove)
-    : AsyncDisposableOnce,
-        ILayoutRegistration
+internal abstract class LayoutRegistration(string id, Action<string> remove) : AsyncDisposableOnce
 {
     public string Id => id;
 
-    public abstract ILayoutData Create();
+    public void Load()
+    {
+        LoadAsync().SafeFireAndForget();
+    }
 
     public abstract ValueTask LoadAsync(CancellationToken cancel = default);
-
-    public abstract ValueTask SaveAsync(CancellationToken cancel = default);
 
     protected override void Dispose(bool disposing)
     {
@@ -34,20 +33,12 @@ internal abstract class LayoutRegistration(string id, Action<string> remove)
 internal sealed class LayoutRegistration<TBase, TData>(
     TBase owner,
     string id,
-    AsyncLoadLayoutCallback<TData> load,
-    AsyncSaveLayoutCallback<TData> save,
-    Func<TData> factory,
+    Action<TData> load,
     Action<string> remove
-) : LayoutRegistration(id, remove)
+) : LayoutRegistration(id, remove), ILayoutSink<TData>
     where TBase : ISupportRoutedEvents<TBase>
-    where TData : IJsonLayoutData<TData>
+    where TData : ILayoutData, new()
 {
-    public override ILayoutData Create()
-    {
-        ThrowIfDisposed();
-        return factory();
-    }
-
     public override async ValueTask LoadAsync(CancellationToken cancel = default)
     {
         ThrowIfDisposed();
@@ -55,17 +46,18 @@ internal sealed class LayoutRegistration<TBase, TData>(
         await owner.Rise(loadEvent, cancel).ConfigureAwait(false);
         if (loadEvent.IsLoaded)
         {
-            await load(loadEvent.LayoutData, cancel).ConfigureAwait(false);
+            load(loadEvent.LayoutData);
         }
     }
 
-    public override async ValueTask SaveAsync(CancellationToken cancel = default)
+    public void Save(TData data)
     {
         ThrowIfDisposed();
-        var data = factory();
-        await save(data, cancel).ConfigureAwait(false);
-        await owner
-            .Rise(new SaveLayoutEvent<TBase, TData>(owner, data, Id), cancel)
-            .ConfigureAwait(false);
+        if (data is null)
+        {
+            throw new ArgumentNullException(nameof(data));
+        }
+
+        owner.Rise(new SaveLayoutEvent<TBase, TData>(owner, data, Id)).SafeFireAndForget();
     }
 }

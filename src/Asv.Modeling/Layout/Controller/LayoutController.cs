@@ -14,18 +14,11 @@ public sealed class LayoutController<TBase> : AsyncDisposableOnce, ILayoutContro
         _owner = owner;
     }
 
-    public ILayoutRegistration Create<TData>(
-        string layoutId,
-        AsyncLoadLayoutCallback<TData> load,
-        AsyncSaveLayoutCallback<TData> save,
-        Func<TData> factory
-    )
-        where TData : IJsonLayoutData<TData>
+    public ILayoutSink<TData> Register<TData>(string layoutId, Action<TData> load)
+        where TData : ILayoutData, new()
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(layoutId);
         ArgumentNullException.ThrowIfNull(load);
-        ArgumentNullException.ThrowIfNull(save);
-        ArgumentNullException.ThrowIfNull(factory);
 
         if (_registration.ContainsKey(layoutId))
         {
@@ -38,29 +31,17 @@ public sealed class LayoutController<TBase> : AsyncDisposableOnce, ILayoutContro
             _owner,
             layoutId,
             load,
-            save,
-            factory,
             RemoveRegistration
         );
         _registration.Add(layoutId, registration);
         return registration;
     }
 
-    public ILayoutRegistration this[string layoutId] => _registration[layoutId];
-
-    public async ValueTask LoadAsync(CancellationToken cancel = default)
+    public void LoadAll()
     {
         foreach (var registration in _registration.Values.ToArray())
         {
-            await registration.LoadAsync(cancel).ConfigureAwait(false);
-        }
-    }
-
-    public async ValueTask SaveAsync(CancellationToken cancel = default)
-    {
-        foreach (var registration in _registration.Values.ToArray())
-        {
-            await registration.SaveAsync(cancel).ConfigureAwait(false);
+            registration.Load();
         }
     }
 
@@ -90,7 +71,7 @@ public sealed class LayoutController<TBase> : AsyncDisposableOnce, ILayoutContro
     {
         foreach (var registration in _registration.Values.ToArray())
         {
-            await registration.DisposeAsync().ConfigureAwait(false);
+            registration.Dispose();
         }
         _registration.Clear();
         await base.DisposeAsyncCore().ConfigureAwait(false);
