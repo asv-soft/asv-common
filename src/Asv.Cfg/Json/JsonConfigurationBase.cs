@@ -2,8 +2,10 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
@@ -31,12 +33,15 @@ public abstract class JsonConfigurationBase : ConfigurationBase
     /// <param name="flushToFileDelayMs">The optional delay used to defer saves.</param>
     /// <param name="sortKeysInFile">A value indicating whether keys are sorted when saved.</param>
     /// <param name="timeProvider">The time provider used for deferred saves.</param>
+    /// <param name="logger">The optional logger.</param>
     protected JsonConfigurationBase(
         Func<Stream> loadCallback,
         TimeSpan? flushToFileDelayMs = null,
         bool sortKeysInFile = false,
-        TimeProvider? timeProvider = null
+        TimeProvider? timeProvider = null,
+        ILogger? logger = null
     )
+        : base(logger)
     {
         _sortKeysInFile = sortKeysInFile;
         _serializer = JsonHelper.CreateDefaultJsonSerializer();
@@ -116,22 +121,40 @@ public abstract class JsonConfigurationBase : ConfigurationBase
         {
             try
             {
-                using var stream = BeginSaveChanges();
-                using var file = new StreamWriter(stream);
-                if (_sortKeysInFile)
+                using (var stream = BeginSaveChanges())
                 {
-                    _serializer.Serialize(file, new SortedDictionary<string, JToken>(_values));
-                }
-                else
-                {
-                    _serializer.Serialize(file, _values);
+                    using (
+                        var file = new StreamWriter(
+                            stream,
+                            new UTF8Encoding(false),
+                            1024,
+                            leaveOpen: true
+                        )
+                    )
+                    {
+                        if (_sortKeysInFile)
+                        {
+                            _serializer.Serialize(
+                                file,
+                                new SortedDictionary<string, JToken>(_values)
+                            );
+                        }
+                        else
+                        {
+                            _serializer.Serialize(file, _values);
+                        }
+
+                        file.Flush();
+                    }
+
+                    // this is to reduce file corruption
+                    if (stream is FileStream fileStream)
+                    {
+                        fileStream.Flush(true);
+                    }
                 }
 
-                // this is to reduce file corruption
-                if (stream is FileStream fileStream)
-                {
-                    fileStream.Flush(true);
-                }
+                EndSaveChanges();
             }
             catch (Exception e)
             {
@@ -142,10 +165,6 @@ public abstract class JsonConfigurationBase : ConfigurationBase
                 {
                     throw ex;
                 }
-            }
-            finally
-            {
-                EndSaveChanges();
             }
         }
     }

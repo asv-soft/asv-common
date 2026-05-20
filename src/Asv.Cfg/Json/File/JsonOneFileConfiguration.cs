@@ -42,17 +42,17 @@ namespace Asv.Cfg
                 () => LoadConfiguration(fileName, createIfNotExist, fileSystem, logger),
                 flushToFileDelayMs,
                 sortKeysInFile,
-                timeProvider
+                timeProvider,
+                logger
             )
         {
+            ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
             var fs = fileSystem ?? new FileSystem();
             var file = fs.Path.GetFullPath(fileName);
             _backupFileName = file + ".backup";
 
-            ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
-
-            _fileName = fileName;
-            _fileSystem = fileSystem ?? new FileSystem();
+            _fileName = file;
+            _fileSystem = fs;
         }
 
         private static Stream LoadConfiguration(
@@ -62,14 +62,14 @@ namespace Asv.Cfg
             ILogger? logger
         )
         {
+            ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
+
             var fs = fileSystem ?? new FileSystem();
             var file = fs.Path.GetFullPath(fileName);
             var backup = file + ".backup";
             logger ??= NullLogger.Instance;
 
-            ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
-
-            var dir = fs.Path.GetDirectoryName(fs.Path.GetFullPath(fileName));
+            var dir = fs.Path.GetDirectoryName(file);
             ArgumentException.ThrowIfNullOrWhiteSpace(dir);
 
             if (fs.Directory.Exists(dir) == false)
@@ -87,24 +87,30 @@ namespace Asv.Cfg
                 fs.Directory.CreateDirectory(dir);
             }
 
-            if (fs.File.Exists(fileName))
+            if (fs.File.Exists(file))
             {
-                try
+                if (IsValidJsonFile(fs, file) == false)
                 {
-                    using var stream = fs.File.OpenRead(fileName);
-                    using var streamReader = new StreamReader(stream);
-                    using var reader = new JsonTextReader(streamReader);
-                    JToken.ReadFrom(reader);
-                }
-                catch (Exception e)
-                {
-                    logger.ZLogCritical(
-                        $"Configuration file is corrupted: {fileName} => DELETE IT. Error: {e}"
-                    );
-                    fs.File.Delete(fileName);
+                    logger.ZLogCritical($"Configuration file is corrupted: {file} => DELETE IT");
+                    fs.File.Delete(file);
                 }
             }
-            if (fs.File.Exists(fileName) == false && fs.File.Exists(backup))
+            if (fs.File.Exists(file) == false && fs.File.Exists(backup))
+            {
+                if (createIfNotExist == false)
+                {
+                    throw new ConfigurationException($"Configuration file not exist {file}");
+                }
+
+                if (IsValidJsonFile(fs, backup) == false)
+                {
+                    logger.ZLogCritical(
+                        $"Configuration backup file is corrupted: {backup} => DELETE IT"
+                    );
+                    fs.File.Delete(backup);
+                }
+            }
+            if (fs.File.Exists(file) == false && fs.File.Exists(backup))
             {
                 logger.ZLogWarning(
                     $"Configuration file doesn't exist. Try to load from backup file: {backup} => {file}"
@@ -112,20 +118,36 @@ namespace Asv.Cfg
                 fs.File.Copy(backup, file, true);
             }
 
-            if (fs.File.Exists(fileName) == false)
+            if (fs.File.Exists(file) == false)
             {
                 if (createIfNotExist)
                 {
-                    logger.ZLogWarning($"Config file not exist. Try to create {fileName}");
-                    fs.File.WriteAllText(fileName, "{}");
+                    logger.ZLogWarning($"Config file not exist. Try to create {file}");
+                    fs.File.WriteAllText(file, "{}");
                 }
                 else
                 {
-                    throw new ConfigurationException($"Configuration file not exist {fileName}");
+                    throw new ConfigurationException($"Configuration file not exist {file}");
                 }
             }
 
             return fs.File.OpenRead(file);
+        }
+
+        private static bool IsValidJsonFile(IFileSystem fileSystem, string fileName)
+        {
+            try
+            {
+                using var stream = fileSystem.File.OpenRead(fileName);
+                using var streamReader = new StreamReader(stream);
+                using var reader = new JsonTextReader(streamReader);
+                JToken.ReadFrom(reader);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         /// <summary>
