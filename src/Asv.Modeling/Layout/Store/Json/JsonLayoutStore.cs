@@ -1,9 +1,7 @@
-using System.Buffers;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using Asv.Common;
-using DotNext.Buffers;
+using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using ZLogger;
@@ -12,97 +10,144 @@ namespace Asv.Modeling;
 
 public class JsonLayoutStore : ILayoutStore
 {
-    private const string LayoutFileExtension = ".layout.json";
-    private readonly string _storageDirectory;
+    private const string LayoutFileName = "layout.json";
+    private const string KeyPrefix = "layout_";
+    private readonly string _filePath;
+    private readonly Dictionary<string, JsonLayoutSnapshot> _snapshots;
     private readonly ILogger _logger;
 
     public JsonLayoutStore(string storageDirectory, ILogger? logger = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(storageDirectory);
-        _storageDirectory = storageDirectory;
         _logger = logger ?? NullLogger.Instance;
-
-        EnsureStorageDirectory();
+        _filePath = Path.Combine(storageDirectory, LayoutFileName);
+        _snapshots = LoadSnapshots();
     }
 
-    public bool Load(NavPath path, string layoutId, ILayoutData layoutData)
+    public bool TryLoad<TData>(NavPath path, string layoutId, out TData layoutData)
+        where TData : IJsonLayoutData<TData>
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(layoutId);
-        ArgumentNullException.ThrowIfNull(layoutData);
 
-        var filePath = GetLayoutFilePath(path, layoutId);
-        if (File.Exists(filePath) == false)
+        var key = GetLayoutKey(path, layoutId);
+        if (_snapshots.TryGetValue(key, out var snapshot) == false)
         {
+            layoutData = default!;
             return false;
         }
 
         try
         {
-            var snapshot = JsonSerializer.Deserialize(
-                File.ReadAllText(filePath),
-                JsonLayoutSnapshotJsonContext.Default.JsonLayoutSnapshot
-            );
-            if (snapshot?.Base64 == null)
+            if (snapshot.Path != path.ToString() || snapshot.LayoutId != layoutId)
             {
+                _logger.ZLogWarning(
+                    $"Skip layout '{layoutId}' for '{path}': stored snapshot metadata does not match"
+                );
+                layoutData = default!;
                 return false;
             }
 
-            var data = Convert.FromBase64String(snapshot.Base64);
-            layoutData.Deserialize(new ReadOnlySequence<byte>(data));
+            var data = JsonSerializer.Deserialize(snapshot.Json, TData.JsonTypeInfo);
+            if (data == null)
+            {
+                layoutData = default!;
+                return false;
+            }
+
+            layoutData = data;
             return true;
         }
         catch (Exception ex)
         {
-            _logger.ZLogWarning(ex, $"Skip invalid layout '{layoutId}' from '{filePath}'");
+            _logger.ZLogWarning(ex, $"Skip invalid layout '{layoutId}' for '{path}'");
+            layoutData = default!;
             return false;
         }
     }
 
-    public void Save(NavPath path, string layoutId, ILayoutData layoutData)
+    public void Save<TData>(NavPath path, string layoutId, TData layoutData)
+        where TData : IJsonLayoutData<TData>
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(layoutId);
         ArgumentNullException.ThrowIfNull(layoutData);
-
-        EnsureStorageDirectory();
-        using var writer = new PoolingArrayBufferWriter<byte>();
-        layoutData.Serialize(writer);
 
         var snapshot = new JsonLayoutSnapshot
         {
             Path = path.ToString(),
             LayoutId = layoutId,
-            Base64 = Convert.ToBase64String(writer.WrittenMemory.Span),
+            SchemaVersion = layoutData.SchemaVersion,
+            Json = JsonSerializer.Serialize(layoutData, TData.JsonTypeInfo),
         };
 
-        File.WriteAllText(
-            GetLayoutFilePath(path, layoutId),
-            JsonSerializer.Serialize(
-                snapshot,
-                JsonLayoutSnapshotJsonContext.Default.JsonLayoutSnapshot
-            )
-        );
+        _snapshots[GetLayoutKey(path, layoutId)] = snapshot;
+        SaveSnapshots();
     }
 
     public void Dispose() { }
 
-    private void EnsureStorageDirectory()
+    private Dictionary<string, JsonLayoutSnapshot> LoadSnapshots()
     {
-        if (Directory.Exists(_storageDirectory))
+        if (File.Exists(_filePath) == false)
         {
-            return;
+            return new Dictionary<string, JsonLayoutSnapshot>(StringComparer.Ordinal);
         }
 
-        _logger.ZLogDebug($"Create directory for layout store: {_storageDirectory}");
-        Directory.CreateDirectory(_storageDirectory);
+        try
+        {
+            using var stream = File.OpenRead(_filePath);
+            return JsonSerializer.Deserialize(
+                    stream,
+                    JsonLayoutStoreJsonContext.Default.DictionaryStringJsonLayoutSnapshot
+                ) ?? new Dictionary<string, JsonLayoutSnapshot>(StringComparer.Ordinal);
+        }
+        catch (Exception ex)
+        {
+            _logger.ZLogWarning(ex, $"Skip invalid layout store '{_filePath}'");
+            return new Dictionary<string, JsonLayoutSnapshot>(StringComparer.Ordinal);
+        }
     }
 
-    private string GetLayoutFilePath(NavPath path, string layoutId)
+    private void SaveSnapshots()
+    {
+        var directory = Path.GetDirectoryName(_filePath);
+        ArgumentException.ThrowIfNullOrWhiteSpace(directory);
+        Directory.CreateDirectory(directory);
+
+        var tempFilePath = Path.Combine(
+            directory,
+            $"{Path.GetFileName(_filePath)}.{Guid.NewGuid():N}.tmp"
+        );
+
+        try
+        {
+            using (var stream = File.Create(tempFilePath, 4096, FileOptions.WriteThrough))
+            {
+                JsonSerializer.Serialize(
+                    stream,
+                    _snapshots,
+                    JsonLayoutStoreJsonContext.Default.DictionaryStringJsonLayoutSnapshot
+                );
+                stream.Flush(true);
+            }
+
+            File.Move(tempFilePath, _filePath, overwrite: true);
+        }
+        finally
+        {
+            if (File.Exists(tempFilePath))
+            {
+                File.Delete(tempFilePath);
+            }
+        }
+    }
+
+    private static string GetLayoutKey(NavPath path, string layoutId)
     {
         var key = $"{path}\n{layoutId}";
         var hash = SHA256.HashData(Encoding.UTF8.GetBytes(key));
-        return Path.Combine(
-            _storageDirectory,
-            $"{Convert.ToHexString(hash).ToLowerInvariant()}{LayoutFileExtension}"
-        );
+        return $"{KeyPrefix}{Convert.ToHexString(hash).ToLowerInvariant()}";
     }
 }
+
+[JsonSerializable(typeof(Dictionary<string, JsonLayoutSnapshot>))]
+internal partial class JsonLayoutStoreJsonContext : JsonSerializerContext;

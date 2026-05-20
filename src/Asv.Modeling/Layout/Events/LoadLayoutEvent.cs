@@ -1,10 +1,37 @@
 namespace Asv.Modeling;
 
-public class LoadLayoutEvent<TBase>(TBase sender, ILayoutData layoutData, string layoutId)
+public abstract class LoadLayoutEvent<TBase>(TBase sender, string layoutId)
     : AsyncRoutedEvent<TBase>(sender, RoutingStrategy.Bubble)
     where TBase : ISupportRoutedEvents<TBase>
 {
     public string LayoutId => layoutId;
-    public ILayoutData LayoutData => layoutData;
+    public abstract ILayoutData UntypedLayoutData { get; }
     public bool IsLoaded { get; set; }
+
+    internal abstract bool TryLoad(ILayoutStore store, NavPath path);
+}
+
+public sealed class LoadLayoutEvent<TBase, TData>(TBase sender, string layoutId)
+    : LoadLayoutEvent<TBase>(sender, layoutId)
+    where TBase : ISupportRoutedEvents<TBase>
+    where TData : IJsonLayoutData<TData>
+{
+    private TData? _layoutData;
+
+    public TData LayoutData =>
+        _layoutData
+        ?? throw new InvalidOperationException("Layout data has not been loaded yet.");
+
+    public override ILayoutData UntypedLayoutData => LayoutData;
+
+    internal override bool TryLoad(ILayoutStore store, NavPath path)
+    {
+        if (store.TryLoad<TData>(path, LayoutId, out var layoutData) == false)
+        {
+            return false;
+        }
+
+        _layoutData = layoutData;
+        return true;
+    }
 }

@@ -37,7 +37,7 @@ public sealed class LayoutRootController<TBase> : AsyncDisposableOnceBag
     private ValueTask LoadLayout(TBase sender, LoadLayoutEvent<TBase> e, CancellationToken cancel)
     {
         var path = e.Sender.GetPathFrom<TBase, NavId>(_owner);
-        e.IsLoaded = _store.Load(new NavPath(path), e.LayoutId, e.LayoutData);
+        e.IsLoaded = e.TryLoad(_store, new NavPath(path));
         e.IsHandled = true;
         return ValueTask.CompletedTask;
     }
@@ -45,7 +45,7 @@ public sealed class LayoutRootController<TBase> : AsyncDisposableOnceBag
     private ValueTask SaveLayout(TBase sender, SaveLayoutEvent<TBase> e, CancellationToken cancel)
     {
         var path = e.Sender.GetPathFrom<TBase, NavId>(_owner);
-        _store.Save(new NavPath(path), e.LayoutId, e.LayoutData);
+        e.Save(_store, new NavPath(path));
         e.IsHandled = true;
         return ValueTask.CompletedTask;
     }

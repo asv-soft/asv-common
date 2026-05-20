@@ -10,6 +10,7 @@ public sealed class LayoutController<TBase> : AsyncDisposableOnce, ILayoutContro
 
     public LayoutController(TBase owner)
     {
+        ArgumentNullException.ThrowIfNull(owner);
         _owner = owner;
     }
 
@@ -19,7 +20,7 @@ public sealed class LayoutController<TBase> : AsyncDisposableOnce, ILayoutContro
         AsyncSaveLayoutCallback<TData> save,
         Func<TData> factory
     )
-        where TData : ILayoutData
+        where TData : IJsonLayoutData<TData>
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(layoutId);
         ArgumentNullException.ThrowIfNull(load);

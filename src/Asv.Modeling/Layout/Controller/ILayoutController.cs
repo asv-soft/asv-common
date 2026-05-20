@@ -8,7 +8,7 @@ namespace Asv.Modeling;
 /// <param name="cancel">A cancellation token for the operation.</param>
 /// <returns>A task-like value that completes when the operation finishes.</returns>
 public delegate ValueTask AsyncLoadLayoutCallback<in TData>(TData data, CancellationToken cancel)
-    where TData : ILayoutData;
+    where TData : IJsonLayoutData<TData>;
 
 /// <summary>
 /// Captures current display state into a registered layout data object.
@@ -18,7 +18,7 @@ public delegate ValueTask AsyncLoadLayoutCallback<in TData>(TData data, Cancella
 /// <param name="cancel">A cancellation token for the operation.</param>
 /// <returns>A task-like value that completes when the operation finishes.</returns>
 public delegate ValueTask AsyncSaveLayoutCallback<in TData>(TData data, CancellationToken cancel)
-    where TData : ILayoutData;
+    where TData : IJsonLayoutData<TData>;
 
 /// <summary>
 /// Applies persisted layout data to a registered model member.
@@ -26,7 +26,7 @@ public delegate ValueTask AsyncSaveLayoutCallback<in TData>(TData data, Cancella
 /// <typeparam name="TData">The concrete layout data type.</typeparam>
 /// <param name="data">The restored layout data.</param>
 public delegate void LoadLayoutCallback<in TData>(TData data)
-    where TData : ILayoutData;
+    where TData : IJsonLayoutData<TData>;
 
 /// <summary>
 /// Captures current display state into a registered layout data object.
@@ -34,7 +34,7 @@ public delegate void LoadLayoutCallback<in TData>(TData data)
 /// <typeparam name="TData">The concrete layout data type.</typeparam>
 /// <param name="data">The layout data object to fill.</param>
 public delegate void SaveLayoutCallback<in TData>(TData data)
-    where TData : ILayoutData;
+    where TData : IJsonLayoutData<TData>;
 
 /// <summary>
 /// Registered layout data handler.
@@ -58,7 +58,7 @@ public interface ILayoutController : IDisposable
         AsyncSaveLayoutCallback<TData> save,
         Func<TData> factory
     )
-        where TData : ILayoutData;
+        where TData : IJsonLayoutData<TData>;
 
     ILayoutRegistration this[string layoutId] { get; }
 

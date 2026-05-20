@@ -2,6 +2,9 @@ namespace Asv.Modeling;
 
 public interface ILayoutStore : IDisposable
 {
-    bool Load(NavPath path, string layoutId, ILayoutData layoutData);
-    void Save(NavPath path, string layoutId, ILayoutData layoutData);
+    bool TryLoad<TData>(NavPath path, string layoutId, out TData layoutData)
+        where TData : IJsonLayoutData<TData>;
+
+    void Save<TData>(NavPath path, string layoutId, TData layoutData)
+        where TData : IJsonLayoutData<TData>;
 }

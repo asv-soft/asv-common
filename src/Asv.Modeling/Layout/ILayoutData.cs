@@ -1,21 +1,31 @@
-using System.Buffers;
+using System.Text.Json.Serialization.Metadata;
 
 namespace Asv.Modeling;
 
 /// <summary>
-/// Represents serializable display state that can be persisted by the layout store.
+/// Represents display state that can be persisted by the layout store.
 /// </summary>
 public interface ILayoutData
 {
-    /// <summary>
-    /// Serializes this display state into the specified binary writer.
-    /// </summary>
-    /// <param name="writer">The destination buffer writer.</param>
-    void Serialize(IBufferWriter<byte> writer);
+    int SchemaVersion => 1;
+}
 
-    /// <summary>
-    /// Restores this display state from serialized binary data.
-    /// </summary>
-    /// <param name="data">The serialized layout payload.</param>
-    void Deserialize(ReadOnlySequence<byte> data);
+/// <summary>
+/// Represents display state with source-generated JSON serialization metadata.
+/// </summary>
+/// <typeparam name="TSelf">The concrete layout data type.</typeparam>
+public interface IJsonLayoutData<TSelf> : ILayoutData
+    where TSelf : IJsonLayoutData<TSelf>
+{
+    static abstract JsonTypeInfo<TSelf> JsonTypeInfo { get; }
+}
+
+/// <summary>
+/// Represents display state that can copy data from another instance of the same type.
+/// </summary>
+/// <typeparam name="TSelf">The concrete layout data type.</typeparam>
+public interface IMutableLayoutData<TSelf> : IJsonLayoutData<TSelf>
+    where TSelf : IMutableLayoutData<TSelf>
+{
+    void CopyFrom(TSelf source);
 }
