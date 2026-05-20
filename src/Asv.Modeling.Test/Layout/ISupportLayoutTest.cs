@@ -127,7 +127,6 @@ public partial class ISupportLayoutTest : IDisposable
                     data => data.Value = Value
                 )
                 .AddTo(ref DisposableBag);
-            
         }
 
         public bool BoolProperty

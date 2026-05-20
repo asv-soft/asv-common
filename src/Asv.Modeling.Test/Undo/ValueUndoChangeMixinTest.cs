@@ -80,7 +80,7 @@ public class ValueUndoChangeMixinTest
         ValueUndoChange<int>? undoChange = null;
         ValueUndoChange<int>? redoChange = null;
 
-        controller.Create<ValueUndoChange<int>>(
+        controller.Register<ValueUndoChange<int>>(
             "value",
             change => undoChange = change,
             change => redoChange = change

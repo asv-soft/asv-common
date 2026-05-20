@@ -12,6 +12,9 @@ using ZLogger;
 
 namespace Asv.Cfg
 {
+    /// <summary>
+    /// Stores each configuration value in a separate JSON file inside a folder.
+    /// </summary>
     public class JsonConfiguration : ConfigurationBase
     {
         private readonly string _folderPath;
@@ -23,6 +26,12 @@ namespace Asv.Cfg
         private readonly JsonSerializer _serializer;
         private readonly IFileSystem _fileSystem;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="JsonConfiguration"/> class.
+        /// </summary>
+        /// <param name="folderPath">The folder that contains configuration files.</param>
+        /// <param name="logger">The optional logger.</param>
+        /// <param name="fileSystem">The optional file system abstraction.</param>
         public JsonConfiguration(
             string folderPath,
             ILogger? logger = null,
@@ -42,6 +51,9 @@ namespace Asv.Cfg
             _serializer = JsonHelper.CreateDefaultJsonSerializer();
         }
 
+        /// <summary>
+        /// Gets the configuration working folder.
+        /// </summary>
         public string WorkingFolder => _folderPath;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -50,8 +62,10 @@ namespace Asv.Cfg
             return _fileSystem.Path.Combine(_folderPath, $"{key}.json");
         }
 
+        /// <inheritdoc />
         protected override IEnumerable<string> InternalSafeGetReservedParts() => [];
 
+        /// <inheritdoc />
         protected override IEnumerable<string> InternalSafeGetAvailableParts()
         {
             return _fileSystem
@@ -60,11 +74,13 @@ namespace Asv.Cfg
                 .Select(x => x ?? string.Empty);
         }
 
+        /// <inheritdoc />
         protected override bool InternalSafeExist(string key)
         {
             return _lock.Execute(key, GetFilePath(key), path => _fileSystem.File.Exists(path));
         }
 
+        /// <inheritdoc />
         protected override TPocoType InternalSafeGet<TPocoType>(
             string key,
             Lazy<TPocoType> defaultValue
@@ -88,6 +104,7 @@ namespace Asv.Cfg
             return value;
         }
 
+        /// <inheritdoc />
         protected override void InternalSafeSave<TPocoType>(string key, TPocoType value)
         {
             _lock.Execute(key, GetFilePath(key), value, InternalSet);
@@ -102,6 +119,7 @@ namespace Asv.Cfg
             file.Flush();
         }
 
+        /// <inheritdoc />
         protected override void InternalSafeRemove(string key)
         {
             _lock.Execute(key, GetFilePath(key), InternalRemove);
@@ -117,6 +135,7 @@ namespace Asv.Cfg
             _fileSystem.File.Delete(path);
         }
 
+        /// <inheritdoc />
         public override string ToString()
         {
             return $"JsonConfiguration[{_folderPath}]";

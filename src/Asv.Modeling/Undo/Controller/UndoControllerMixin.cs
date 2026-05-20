@@ -4,17 +4,17 @@ public static class UndoControllerMixin
 {
     extension(IUndoController controller)
     {
-        public IUndoChangeSink<TChange> Create<TChange>(
+        public IUndoChangeSink<TChange> Register<TChange>(
             string changeId,
             AsyncUndoCallback<TChange> undo,
             AsyncUndoCallback<TChange> redo
         )
             where TChange : IUndoChange, new()
         {
-            return controller.Create(changeId, undo, redo, static () => new TChange());
+            return controller.Register(changeId, undo, redo, static () => new TChange());
         }
 
-        public IUndoChangeSink<TChange> Create<TChange>(
+        public IUndoChangeSink<TChange> Register<TChange>(
             string changeId,
             UndoCallback<TChange> undo,
             UndoCallback<TChange> redo,
@@ -22,7 +22,7 @@ public static class UndoControllerMixin
         )
             where TChange : IUndoChange
         {
-            return controller.Create(
+            return controller.Register(
                 changeId,
                 (change, _) =>
                 {
@@ -38,14 +38,14 @@ public static class UndoControllerMixin
             );
         }
 
-        public IUndoChangeSink<TChange> Create<TChange>(
+        public IUndoChangeSink<TChange> Register<TChange>(
             string changeId,
             UndoCallback<TChange> undo,
             UndoCallback<TChange> redo
         )
             where TChange : IUndoChange, new()
         {
-            return controller.Create(changeId, undo, redo, static () => new TChange());
+            return controller.Register(changeId, undo, redo, static () => new TChange());
         }
     }
 }

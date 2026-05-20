@@ -19,7 +19,7 @@ public static class CollectionUndoChangeMixin
         /// <returns>A disposable subscription that unregisters the handler and collection listener.</returns>
         public IDisposable Create<T>(string changeId, ObservableList<T> list)
         {
-            var publisher = controller.Create(
+            var publisher = controller.Register(
                 changeId,
                 (change, _) =>
                 {

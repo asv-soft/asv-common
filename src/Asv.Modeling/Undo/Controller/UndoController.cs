@@ -25,7 +25,7 @@ public sealed class UndoController<TBase> : AsyncDisposableOnce, IUndoController
     private bool IsChangePublicationSuppressed =>
         Volatile.Read(ref _suppressChangePublicationCount) > 0;
 
-    public IUndoChangeSink<TChange> Create<TChange>(
+    public IUndoChangeSink<TChange> Register<TChange>(
         string registrationId,
         AsyncUndoCallback<TChange> undo,
         AsyncUndoCallback<TChange> redo,

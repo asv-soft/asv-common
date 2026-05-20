@@ -6,6 +6,17 @@ namespace Asv.Cfg;
 /// </summary>
 public interface ICustomConfigurable
 {
+    /// <summary>
+    /// Loads custom configuration data from the specified configuration store.
+    /// </summary>
+    /// <param name="key">The configuration key.</param>
+    /// <param name="configuration">The configuration store.</param>
     public void Load(string key, IConfiguration configuration);
+
+    /// <summary>
+    /// Saves custom configuration data to the specified configuration store.
+    /// </summary>
+    /// <param name="key">The configuration key.</param>
+    /// <param name="configuration">The configuration store.</param>
     public void Save(string key, IConfiguration configuration);
 }

@@ -11,6 +11,9 @@ using R3;
 
 namespace Asv.Cfg;
 
+/// <summary>
+/// Provides a base implementation for JSON-backed configuration stores.
+/// </summary>
 public abstract class JsonConfigurationBase : ConfigurationBase
 {
     private readonly ConcurrentDictionary<string, JToken> _values;
@@ -21,6 +24,13 @@ public abstract class JsonConfigurationBase : ConfigurationBase
     private readonly IDisposable _saveSubscribe;
     private readonly bool _deferredFlush;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="JsonConfigurationBase"/> class.
+    /// </summary>
+    /// <param name="loadCallback">The callback that opens a stream for loading configuration data.</param>
+    /// <param name="flushToFileDelayMs">The optional delay used to defer saves.</param>
+    /// <param name="sortKeysInFile">A value indicating whether keys are sorted when saved.</param>
+    /// <param name="timeProvider">The time provider used for deferred saves.</param>
     protected JsonConfigurationBase(
         Func<Stream> loadCallback,
         TimeSpan? flushToFileDelayMs = null,
@@ -47,12 +57,18 @@ public abstract class JsonConfigurationBase : ConfigurationBase
         _serializer.Populate(reader, _values);
     }
 
+    /// <summary>
+    /// Gets the number of configuration values currently loaded.
+    /// </summary>
     protected int Count => _values.Count;
 
+    /// <inheritdoc />
     protected override IEnumerable<string> InternalSafeGetAvailableParts() => _values.Keys;
 
+    /// <inheritdoc />
     protected override bool InternalSafeExist(string key) => _values.ContainsKey(key);
 
+    /// <inheritdoc />
     protected override TPocoType InternalSafeGet<TPocoType>(
         string key,
         Lazy<TPocoType> defaultValue
@@ -68,6 +84,7 @@ public abstract class JsonConfigurationBase : ConfigurationBase
         return inst;
     }
 
+    /// <inheritdoc />
     protected override void InternalSafeSave<TPocoType>(string key, TPocoType value)
     {
         using var stream = new MemoryStream();
@@ -84,6 +101,7 @@ public abstract class JsonConfigurationBase : ConfigurationBase
         _onNeedToSave.OnNext(Unit.Default);
     }
 
+    /// <inheritdoc />
     protected override void InternalSafeRemove(string key)
     {
         if (_values.TryRemove(key, out _))
@@ -132,9 +150,18 @@ public abstract class JsonConfigurationBase : ConfigurationBase
         }
     }
 
+    /// <summary>
+    /// Completes a save operation after the JSON payload has been written.
+    /// </summary>
     protected abstract void EndSaveChanges();
+
+    /// <summary>
+    /// Begins a save operation and returns the destination stream.
+    /// </summary>
+    /// <returns>The stream used to write configuration data.</returns>
     protected abstract Stream BeginSaveChanges();
 
+    /// <inheritdoc />
     protected override void Dispose(bool disposing)
     {
         if (disposing)
@@ -146,6 +173,7 @@ public abstract class JsonConfigurationBase : ConfigurationBase
         base.Dispose(disposing);
     }
 
+    /// <inheritdoc />
     protected override async ValueTask DisposeAsyncCore()
     {
         await CastAndDispose(_onNeedToSave);

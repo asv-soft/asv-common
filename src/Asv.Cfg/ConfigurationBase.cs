@@ -9,14 +9,21 @@ using ZLogger;
 
 namespace Asv.Cfg;
 
+/// <summary>
+/// Provides a base implementation for configuration stores.
+/// </summary>
 public abstract class ConfigurationBase(ILogger? logger = null)
     : AsyncDisposableOnce,
         IConfiguration
 {
+    /// <summary>
+    /// Gets the logger used by this configuration instance.
+    /// </summary>
     protected ILogger Logger { get; } = logger ?? NullLogger.Instance;
     private readonly Subject<ConfigurationException> _onError = new();
     private readonly Subject<KeyValuePair<string, object?>> _onChanged = new();
 
+    /// <inheritdoc />
     public IEnumerable<string> ReservedParts
     {
         get
@@ -34,7 +41,13 @@ public abstract class ConfigurationBase(ILogger? logger = null)
         }
     }
 
+    /// <summary>
+    /// Gets keys reserved by the concrete configuration store.
+    /// </summary>
+    /// <returns>The reserved configuration keys.</returns>
     protected abstract IEnumerable<string> InternalSafeGetReservedParts();
+
+    /// <inheritdoc />
     public IEnumerable<string> AvailableParts
     {
         get
@@ -52,8 +65,13 @@ public abstract class ConfigurationBase(ILogger? logger = null)
         }
     }
 
+    /// <summary>
+    /// Gets keys available in the concrete configuration store.
+    /// </summary>
+    /// <returns>The available configuration keys.</returns>
     protected abstract IEnumerable<string> InternalSafeGetAvailableParts();
 
+    /// <inheritdoc />
     public bool Exist(string key)
     {
         try
@@ -69,8 +87,14 @@ public abstract class ConfigurationBase(ILogger? logger = null)
         }
     }
 
+    /// <summary>
+    /// Determines whether a key exists in the concrete configuration store.
+    /// </summary>
+    /// <param name="key">The configuration key.</param>
+    /// <returns><see langword="true"/> if the key exists; otherwise, <see langword="false"/>.</returns>
     protected abstract bool InternalSafeExist(string key);
 
+    /// <inheritdoc />
     public TPocoType Get<TPocoType>(string key, Lazy<TPocoType> defaultValue)
     {
         try
@@ -94,11 +118,19 @@ public abstract class ConfigurationBase(ILogger? logger = null)
         }
     }
 
+    /// <summary>
+    /// Gets a value from the concrete configuration store.
+    /// </summary>
+    /// <typeparam name="TPocoType">The configuration value type.</typeparam>
+    /// <param name="key">The configuration key.</param>
+    /// <param name="defaultValue">The default value factory used when the key is missing.</param>
+    /// <returns>The loaded configuration value.</returns>
     protected abstract TPocoType InternalSafeGet<TPocoType>(
         string key,
         Lazy<TPocoType> defaultValue
     );
 
+    /// <inheritdoc />
     public void Set<TPocoType>(string key, TPocoType value)
     {
         try
@@ -121,8 +153,15 @@ public abstract class ConfigurationBase(ILogger? logger = null)
         }
     }
 
+    /// <summary>
+    /// Saves a value into the concrete configuration store.
+    /// </summary>
+    /// <typeparam name="TPocoType">The configuration value type.</typeparam>
+    /// <param name="key">The configuration key.</param>
+    /// <param name="value">The value to save.</param>
     protected abstract void InternalSafeSave<TPocoType>(string key, TPocoType value);
 
+    /// <inheritdoc />
     public void Remove(string key)
     {
         try
@@ -140,8 +179,17 @@ public abstract class ConfigurationBase(ILogger? logger = null)
         }
     }
 
+    /// <summary>
+    /// Removes a value from the concrete configuration store.
+    /// </summary>
+    /// <param name="key">The configuration key.</param>
     protected abstract void InternalSafeRemove(string key);
 
+    /// <summary>
+    /// Publishes a configuration error and returns it for throwing by the caller.
+    /// </summary>
+    /// <param name="e">The configuration error.</param>
+    /// <returns>The same configuration error.</returns>
     protected ConfigurationException InternalPublishError(ConfigurationException e)
     {
         Logger.ZLogError(e, $"{this} error: {e.Message}");
@@ -149,11 +197,15 @@ public abstract class ConfigurationBase(ILogger? logger = null)
         return e;
     }
 
+    /// <inheritdoc />
     public Observable<ConfigurationException> OnError => _onError;
+
+    /// <inheritdoc />
     public Observable<KeyValuePair<string, object?>> OnChanged => _onChanged;
 
     #region Dispose
 
+    /// <inheritdoc />
     protected override void Dispose(bool disposing)
     {
         Logger.ZLogTrace($"Dispose {GetType().Name}");
@@ -166,6 +218,7 @@ public abstract class ConfigurationBase(ILogger? logger = null)
         base.Dispose(disposing);
     }
 
+    /// <inheritdoc />
     protected override async ValueTask DisposeAsyncCore()
     {
         _onError.Dispose();

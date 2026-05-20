@@ -13,6 +13,9 @@ using ZLogger;
 
 namespace Asv.Cfg
 {
+    /// <summary>
+    /// Stores configuration values in memory.
+    /// </summary>
     public class InMemoryConfiguration(ILogger? logger = null) : ConfigurationBase
     {
         private readonly Dictionary<string, JToken> _values = new();
@@ -20,8 +23,10 @@ namespace Asv.Cfg
         private readonly ILogger _logger = logger ?? NullLogger.Instance;
         private readonly Subject<ConfigurationException> _onError = new();
 
+        /// <inheritdoc />
         protected override IEnumerable<string> InternalSafeGetReservedParts() => [];
 
+        /// <inheritdoc />
         protected override IEnumerable<string> InternalSafeGetAvailableParts()
         {
             try
@@ -35,6 +40,7 @@ namespace Asv.Cfg
             }
         }
 
+        /// <inheritdoc />
         protected override bool InternalSafeExist(string key)
         {
             try
@@ -48,6 +54,7 @@ namespace Asv.Cfg
             }
         }
 
+        /// <inheritdoc />
         protected override TPocoType InternalSafeGet<TPocoType>(
             string key,
             Lazy<TPocoType> defaultValue
@@ -72,6 +79,7 @@ namespace Asv.Cfg
             }
         }
 
+        /// <inheritdoc />
         protected override void InternalSafeSave<TPocoType>(string key, TPocoType value)
         {
             try
@@ -90,6 +98,7 @@ namespace Asv.Cfg
             }
         }
 
+        /// <inheritdoc />
         protected override void InternalSafeRemove(string key)
         {
             try
@@ -105,6 +114,7 @@ namespace Asv.Cfg
 
         #region Dispose
 
+        /// <inheritdoc />
         protected override void Dispose(bool disposing)
         {
             if (disposing)
@@ -117,6 +127,7 @@ namespace Asv.Cfg
             base.Dispose(disposing);
         }
 
+        /// <inheritdoc />
         protected override async ValueTask DisposeAsyncCore()
         {
             await CastAndDispose(_rw);

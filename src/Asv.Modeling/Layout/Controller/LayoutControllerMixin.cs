@@ -63,11 +63,7 @@ public static partial class LayoutControllerMixin
             );
         }
 
-        public ILayoutRegistration Create(
-            string layoutId,
-            Func<bool> get,
-            Action<bool> set
-        )
+        public ILayoutRegistration Create(string layoutId, Func<bool> get, Action<bool> set)
         {
             ArgumentNullException.ThrowIfNull(get);
             ArgumentNullException.ThrowIfNull(set);

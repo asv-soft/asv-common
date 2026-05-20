@@ -21,7 +21,7 @@ public delegate void UndoCallback<in TChange>(TChange change)
 /// <summary>
 /// Registers undoable model members and coordinates publication of their changes.
 /// </summary>
-public interface IUndoController : IDisposable
+public interface IUndoController
 {
     /// <summary>
     /// Creates a registration for a typed undo change.
@@ -32,7 +32,7 @@ public interface IUndoController : IDisposable
     /// <param name="redo">Callback that reapplies a change.</param>
     /// <param name="factory">Factory used to create empty changes for history deserialization.</param>
     /// <returns>A sink used by the registered member to publish changes.</returns>
-    IUndoChangeSink<TChange> Create<TChange>(
+    IUndoChangeSink<TChange> Register<TChange>(
         string registrationId,
         AsyncUndoCallback<TChange> undo,
         AsyncUndoCallback<TChange> redo,

@@ -19,8 +19,7 @@ public sealed class LoadLayoutEvent<TBase, TData>(TBase sender, string layoutId)
     private TData? _layoutData;
 
     public TData LayoutData =>
-        _layoutData
-        ?? throw new InvalidOperationException("Layout data has not been loaded yet.");
+        _layoutData ?? throw new InvalidOperationException("Layout data has not been loaded yet.");
 
     public override ILayoutData UntypedLayoutData => LayoutData;
 

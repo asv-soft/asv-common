@@ -74,7 +74,7 @@ public static class ValueUndoChangeMixin
             AsyncNewValueCallback<T> redoNewValue
         )
         {
-            return controller.Create(
+            return controller.Register(
                 changeId,
                 (change, cancel) => undoOldValue(change.OldValue, cancel),
                 (change, cancel) => redoNewValue(change.NewValue, cancel),
@@ -96,7 +96,7 @@ public static class ValueUndoChangeMixin
             NewValueCallback<T> redoNewValue
         )
         {
-            return controller.Create(
+            return controller.Register(
                 changeId,
                 (change, _) =>
                 {

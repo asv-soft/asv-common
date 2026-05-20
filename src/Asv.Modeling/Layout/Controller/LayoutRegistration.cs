@@ -39,7 +39,7 @@ internal sealed class LayoutRegistration<TBase, TData>(
     Func<TData> factory,
     Action<string> remove
 ) : LayoutRegistration(id, remove)
-    where TBase : ISupportRoutedEvents<TBase>, ISupportNavigation<TBase>
+    where TBase : ISupportRoutedEvents<TBase>
     where TData : IJsonLayoutData<TData>
 {
     public override ILayoutData Create()
@@ -64,7 +64,8 @@ internal sealed class LayoutRegistration<TBase, TData>(
         ThrowIfDisposed();
         var data = factory();
         await save(data, cancel).ConfigureAwait(false);
-        await owner.Rise(new SaveLayoutEvent<TBase, TData>(owner, data, Id), cancel)
+        await owner
+            .Rise(new SaveLayoutEvent<TBase, TData>(owner, data, Id), cancel)
             .ConfigureAwait(false);
     }
 }

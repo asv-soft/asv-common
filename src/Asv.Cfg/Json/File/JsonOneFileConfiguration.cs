@@ -10,12 +10,25 @@ using ZLogger;
 
 namespace Asv.Cfg
 {
+    /// <summary>
+    /// Stores all configuration values in a single JSON file.
+    /// </summary>
     public class JsonOneFileConfiguration : JsonConfigurationBase
     {
         private readonly string _fileName;
         private readonly IFileSystem _fileSystem;
         private readonly string _backupFileName;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="JsonOneFileConfiguration"/> class.
+        /// </summary>
+        /// <param name="fileName">The configuration file path.</param>
+        /// <param name="createIfNotExist">A value indicating whether the file is created when missing.</param>
+        /// <param name="flushToFileDelayMs">The optional delay used to defer saves.</param>
+        /// <param name="sortKeysInFile">A value indicating whether keys are sorted when saved.</param>
+        /// <param name="logger">The optional logger.</param>
+        /// <param name="fileSystem">The optional file system abstraction.</param>
+        /// <param name="timeProvider">The time provider used for deferred saves.</param>
         public JsonOneFileConfiguration(
             string fileName,
             bool createIfNotExist,
@@ -115,14 +128,19 @@ namespace Asv.Cfg
             return fs.File.OpenRead(file);
         }
 
+        /// <summary>
+        /// Gets the configuration file path.
+        /// </summary>
         public string FileName => _fileName;
 
+        /// <inheritdoc />
         protected override void EndSaveChanges()
         {
             _fileSystem.File.Copy(_backupFileName, _fileName, true);
             Logger.ZLogTrace($"Flush configuration to file '{_fileName}' [{Count} items] ");
         }
 
+        /// <inheritdoc />
         protected override Stream BeginSaveChanges()
         {
             if (_fileSystem.File.Exists(_backupFileName))
@@ -133,11 +151,13 @@ namespace Asv.Cfg
             return _fileSystem.File.Create(_backupFileName, 4096, FileOptions.WriteThrough);
         }
 
+        /// <inheritdoc />
         public override string ToString()
         {
             return $"{nameof(JsonOneFileConfiguration)}[{_fileName}]";
         }
 
+        /// <inheritdoc />
         protected override IEnumerable<string> InternalSafeGetReservedParts() => [];
     }
 }

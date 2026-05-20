@@ -3,7 +3,7 @@ using Asv.Common;
 namespace Asv.Modeling;
 
 public sealed class LayoutController<TBase> : AsyncDisposableOnce, ILayoutController
-    where TBase : ISupportRoutedEvents<TBase>, ISupportNavigation<TBase>
+    where TBase : ISupportRoutedEvents<TBase>
 {
     private readonly TBase _owner;
     private readonly Dictionary<string, LayoutRegistration> _registration = new(4);

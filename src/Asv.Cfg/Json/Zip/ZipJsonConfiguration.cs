@@ -13,6 +13,9 @@ using ZLogger;
 
 namespace Asv.Cfg
 {
+    /// <summary>
+    /// Stores configuration values as JSON entries inside a ZIP archive.
+    /// </summary>
     public class ZipJsonConfiguration : ConfigurationBase
     {
         private readonly ZipArchive _archive;
@@ -21,6 +24,12 @@ namespace Asv.Cfg
         private readonly ILogger _logger;
         private const string FixedFileExt = ".json";
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ZipJsonConfiguration"/> class.
+        /// </summary>
+        /// <param name="stream">The ZIP archive stream.</param>
+        /// <param name="leaveOpen">A value indicating whether the stream remains open after disposal.</param>
+        /// <param name="logger">The optional logger.</param>
         public ZipJsonConfiguration(Stream stream, bool leaveOpen = false, ILogger? logger = null)
         {
             ArgumentNullException.ThrowIfNull(stream);
@@ -29,6 +38,7 @@ namespace Asv.Cfg
             _serializer = JsonHelper.CreateDefaultJsonSerializer();
         }
 
+        /// <inheritdoc />
         public override string ToString()
         {
             if (IsDisposed)
@@ -42,11 +52,13 @@ namespace Asv.Cfg
             }
         }
 
+        /// <inheritdoc />
         protected override IEnumerable<string> InternalSafeGetReservedParts()
         {
             return [];
         }
 
+        /// <inheritdoc />
         protected override IEnumerable<string> InternalSafeGetAvailableParts()
         {
             using (_sync.EnterScope())
@@ -60,6 +72,7 @@ namespace Asv.Cfg
             }
         }
 
+        /// <inheritdoc />
         protected override bool InternalSafeExist(string key)
         {
             var fileName = GetFilePath(key);
@@ -74,6 +87,7 @@ namespace Asv.Cfg
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private string GetFilePath(string key) => $"{key}{FixedFileExt}";
 
+        /// <inheritdoc />
         protected override TPocoType InternalSafeGet<TPocoType>(
             string key,
             Lazy<TPocoType> defaultValue
@@ -107,6 +121,7 @@ namespace Asv.Cfg
             }
         }
 
+        /// <inheritdoc />
         protected override void InternalSafeSave<TPocoType>(string key, TPocoType value)
         {
             var fileName = GetFilePath(key);
@@ -121,6 +136,7 @@ namespace Asv.Cfg
             }
         }
 
+        /// <inheritdoc />
         protected override void InternalSafeRemove(string key)
         {
             var fileName = GetFilePath(key);
@@ -134,6 +150,7 @@ namespace Asv.Cfg
 
         #region Dispose
 
+        /// <inheritdoc />
         protected override void Dispose(bool disposing)
         {
             if (disposing)
@@ -147,6 +164,7 @@ namespace Asv.Cfg
             base.Dispose(disposing);
         }
 
+        /// <inheritdoc />
         protected override async ValueTask DisposeAsyncCore()
         {
             using (_sync.EnterScope())

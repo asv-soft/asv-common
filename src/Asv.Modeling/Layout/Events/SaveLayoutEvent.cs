@@ -10,11 +10,8 @@ public abstract class SaveLayoutEvent<TBase>(TBase sender, string layoutId)
     internal abstract void Save(ILayoutStore store, NavPath path);
 }
 
-public sealed class SaveLayoutEvent<TBase, TData>(
-    TBase sender,
-    TData layoutData,
-    string layoutId
-) : SaveLayoutEvent<TBase>(sender, layoutId)
+public sealed class SaveLayoutEvent<TBase, TData>(TBase sender, TData layoutData, string layoutId)
+    : SaveLayoutEvent<TBase>(sender, layoutId)
     where TBase : ISupportRoutedEvents<TBase>
     where TData : IJsonLayoutData<TData>
 {
