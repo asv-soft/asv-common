@@ -6,6 +6,21 @@ public static class LayoutControllerMixin
 {
     extension(ILayoutController controller)
     {
+        public ILayoutSink<TData> Register<TData>(string layoutId, Action<TData> load)
+            where TData : ILayoutData
+        {
+            ArgumentNullException.ThrowIfNull(load);
+
+            return controller.Register<TData>(
+                layoutId,
+                (data, _) =>
+                {
+                    load(data);
+                    return ValueTask.CompletedTask;
+                }
+            );
+        }
+
         public IDisposable Register<TValue, TAny>(
             string layoutId,
             Action<TValue> load,

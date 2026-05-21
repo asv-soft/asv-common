@@ -33,11 +33,11 @@ internal abstract class LayoutRegistration(string id, Action<string> remove) : A
 internal sealed class LayoutRegistration<TBase, TData>(
     TBase owner,
     string id,
-    Action<TData> load,
+    LoadLayoutCallback<TData> loadLayout,
     Action<string> remove
 ) : LayoutRegistration(id, remove), ILayoutSink<TData>
     where TBase : ISupportRoutedEvents<TBase>
-    where TData : ILayoutData, new()
+    where TData : ILayoutData
 {
     public override async ValueTask LoadAsync(CancellationToken cancel = default)
     {
@@ -46,7 +46,7 @@ internal sealed class LayoutRegistration<TBase, TData>(
         await owner.Rise(loadEvent, cancel).ConfigureAwait(false);
         if (loadEvent.IsLoaded)
         {
-            load(loadEvent.LayoutData);
+            await loadLayout(loadEvent.LayoutData, cancel).ConfigureAwait(false);
         }
     }
 

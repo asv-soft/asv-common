@@ -14,11 +14,11 @@ public sealed class LayoutController<TBase> : AsyncDisposableOnce, ILayoutContro
         _owner = owner;
     }
 
-    public ILayoutSink<TData> Register<TData>(string layoutId, Action<TData> load)
-        where TData : ILayoutData, new()
+    public ILayoutSink<TData> Register<TData>(string layoutId, LoadLayoutCallback<TData> loadLayout)
+        where TData : ILayoutData
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(layoutId);
-        ArgumentNullException.ThrowIfNull(load);
+        ArgumentNullException.ThrowIfNull(loadLayout);
 
         if (_registration.ContainsKey(layoutId))
         {
@@ -30,7 +30,7 @@ public sealed class LayoutController<TBase> : AsyncDisposableOnce, ILayoutContro
         var registration = new LayoutRegistration<TBase, TData>(
             _owner,
             layoutId,
-            load,
+            loadLayout,
             RemoveRegistration
         );
         _registration.Add(layoutId, registration);

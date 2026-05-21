@@ -5,7 +5,9 @@ public abstract class LoadLayoutEvent<TBase>(TBase sender, string layoutId)
     where TBase : ISupportRoutedEvents<TBase>
 {
     public string LayoutId => layoutId;
+
     public abstract ILayoutData UntypedLayoutData { get; }
+
     public bool IsLoaded { get; set; }
 
     internal abstract bool TryLoad(ILayoutStore store, NavPath path);
@@ -14,7 +16,7 @@ public abstract class LoadLayoutEvent<TBase>(TBase sender, string layoutId)
 public sealed class LoadLayoutEvent<TBase, TData>(TBase sender, string layoutId)
     : LoadLayoutEvent<TBase>(sender, layoutId)
     where TBase : ISupportRoutedEvents<TBase>
-    where TData : ILayoutData, new()
+    where TData : ILayoutData
 {
     private TData _layoutData = default!;
 

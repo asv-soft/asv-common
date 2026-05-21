@@ -12,6 +12,7 @@ class Program
         var app = ConsoleApp.Create();
         app.Add<TcpTest>();
         app.Add<SerialCommand>();
+        app.Add<LayoutStoreBenchmarkCommand>();
         await app.RunAsync(args);
     }
 }

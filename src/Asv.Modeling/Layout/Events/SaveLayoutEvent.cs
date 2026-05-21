@@ -5,6 +5,7 @@ public abstract class SaveLayoutEvent<TBase>(TBase sender, string layoutId)
     where TBase : ISupportRoutedEvents<TBase>
 {
     public string LayoutId => layoutId;
+
     public abstract ILayoutData UntypedLayoutData { get; }
 
     internal abstract void Save(ILayoutStore store, NavPath path);

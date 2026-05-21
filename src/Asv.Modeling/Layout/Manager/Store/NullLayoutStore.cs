@@ -7,7 +7,7 @@ public sealed class NullLayoutStore : ILayoutStore
     private NullLayoutStore() { }
 
     public bool TryLoad<TData>(NavPath path, string layoutId, out TData layoutData)
-        where TData : ILayoutData, new()
+        where TData : ILayoutData
     {
         layoutData = default!;
         return false;
@@ -15,6 +15,8 @@ public sealed class NullLayoutStore : ILayoutStore
 
     public void Save<TData>(NavPath path, string layoutId, TData layoutData)
         where TData : ILayoutData { }
+
+    public void Flush() { }
 
     public void Dispose() { }
 }

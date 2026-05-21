@@ -18,7 +18,7 @@ public partial class ISupportLayoutTest : IDisposable
     [Fact]
     public async ValueTask SaveLoad_RestoresRegisteredLayoutByPath()
     {
-        var root = new LayoutRootViewModel("root", new JsonLayoutStore(_storageDirectory));
+        var root = new LayoutRootViewModel("root", new JsonTokenLayoutStore(_storageDirectory));
         var child = new TestLayoutViewModel("child");
         root.Children.Add(child);
         var nested = new TestLayoutViewModel("nested");
@@ -30,13 +30,15 @@ public partial class ISupportLayoutTest : IDisposable
         SaveLayouts(root);
         Assert.True(
             SpinWait.SpinUntil(
-                () => File.Exists(Path.Combine(_storageDirectory, "layout.json")),
+                () => HasSavedLayout(root, child, 10) && HasSavedLayout(root, nested, 42),
                 TimeSpan.FromSeconds(1)
             )
         );
+        Assert.False(File.Exists(Path.Combine(_storageDirectory, "layout-token.json")));
         root.Dispose();
+        Assert.True(File.Exists(Path.Combine(_storageDirectory, "layout-token.json")));
 
-        root = new LayoutRootViewModel("root", new JsonLayoutStore(_storageDirectory));
+        root = new LayoutRootViewModel("root", new JsonTokenLayoutStore(_storageDirectory));
         child = new TestLayoutViewModel("child");
         root.Children.Add(child);
         nested = new TestLayoutViewModel("nested");
@@ -52,7 +54,7 @@ public partial class ISupportLayoutTest : IDisposable
     [Fact]
     public async ValueTask LoadAsync_DoesNotCallHandler_WhenLayoutWasNotSaved()
     {
-        var root = new LayoutRootViewModel("root", new JsonLayoutStore(_storageDirectory));
+        var root = new LayoutRootViewModel("root", new JsonTokenLayoutStore(_storageDirectory));
         var child = new TestLayoutViewModel("child");
         root.Children.Add(child);
 
@@ -63,9 +65,9 @@ public partial class ISupportLayoutTest : IDisposable
     }
 
     [Fact]
-    public async ValueTask SaveAsync_StoresLayoutsInSingleConfigurationFile()
+    public void Flush_StoresLayoutsInSingleJsonTokenFile()
     {
-        var root = new LayoutRootViewModel("root", new JsonLayoutStore(_storageDirectory));
+        var root = new LayoutRootViewModel("root", new JsonTokenLayoutStore(_storageDirectory));
         var child = new TestLayoutViewModel("child");
         root.Children.Add(child);
         var nested = new TestLayoutViewModel("nested");
@@ -75,15 +77,60 @@ public partial class ISupportLayoutTest : IDisposable
         nested.Value = 42;
 
         SaveLayouts(root);
-
         Assert.True(
             SpinWait.SpinUntil(
-                () => File.Exists(Path.Combine(_storageDirectory, "layout.json")),
+                () => HasSavedLayout(root, child, 10) && HasSavedLayout(root, nested, 42),
                 TimeSpan.FromSeconds(1)
             )
         );
-        Assert.Empty(Directory.GetFiles(_storageDirectory, "*.layout.json"));
+        Assert.False(File.Exists(Path.Combine(_storageDirectory, "layout-token.json")));
+
+        root.LayoutManager.Store.Flush();
+
+        Assert.True(File.Exists(Path.Combine(_storageDirectory, "layout-token.json")));
+        Assert.False(File.Exists(Path.Combine(_storageDirectory, "layout.json")));
         root.Dispose();
+    }
+
+    [Fact]
+    public void Save_FlushesLayoutsByInterval()
+    {
+        var root = new LayoutRootViewModel(
+            "root",
+            new JsonTokenLayoutStore(
+                _storageDirectory,
+                flushInterval: TimeSpan.FromMilliseconds(20)
+            )
+        );
+        var child = new TestLayoutViewModel("child");
+        root.Children.Add(child);
+        child.Value = 10;
+
+        SaveLayouts(root);
+
+        Assert.True(
+            SpinWait.SpinUntil(
+                () => File.Exists(Path.Combine(_storageDirectory, "layout-token.json")),
+                TimeSpan.FromSeconds(1)
+            )
+        );
+        Assert.False(File.Exists(Path.Combine(_storageDirectory, "layout.json")));
+        root.Dispose();
+    }
+
+    private static bool HasSavedLayout(
+        LayoutRootViewModel root,
+        IViewModel viewModel,
+        int expectedValue
+    )
+    {
+        var path = new NavPath(viewModel.GetPathFrom<IViewModel, NavId>(root));
+        return root.LayoutManager.Store.TryLoad<TestLayoutData>(
+                path,
+                nameof(TestLayoutViewModel.Value),
+                out var data
+            )
+            && data.Value == expectedValue;
     }
 
     private static void SaveLayouts(IViewModel current)

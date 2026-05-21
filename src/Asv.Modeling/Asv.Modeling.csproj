@@ -7,6 +7,7 @@
   <ItemGroup>
     <PackageReference Include="DotNext" Version="$(DotNextVersion)" />
     <PackageReference Include="MessagePack" Version="3.1.4" />
+    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
     <PackageReference Include="ObservableCollections.R3" Version="$(R3Collections)" />
     <PackageReference Include="MemoryPack" Version="1.21.4" />
     <PackageReference Include="ZLogger" Version="$(ZLoggerVersion)" />
