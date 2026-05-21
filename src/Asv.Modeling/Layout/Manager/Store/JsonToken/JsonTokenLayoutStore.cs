@@ -288,10 +288,7 @@ public sealed class JsonTokenLayoutStore : ILayoutStore
         var result = new Dictionary<string, JsonTokenLayoutSnapshot>(StringComparer.Ordinal);
         foreach (var snapshot in snapshots)
         {
-            if (
-                string.IsNullOrWhiteSpace(snapshot.Path)
-                || string.IsNullOrWhiteSpace(snapshot.LayoutId)
-            )
+            if (string.IsNullOrWhiteSpace(snapshot.LayoutId))
             {
                 continue;
             }

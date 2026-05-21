@@ -47,7 +47,7 @@ public static class LayoutControllerMixin
             Observable<TAny> trigger
         )
         {
-            var sink = controller.Register<TValue>(layoutId, load);
+            var sink = controller.Register(layoutId, load);
             var sub = trigger.Subscribe(_ =>
             {
                 if (save() is { } data)
