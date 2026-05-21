@@ -6,7 +6,7 @@ public abstract class LoadLayoutEvent<TBase>(TBase sender, string layoutId)
 {
     public string LayoutId => layoutId;
 
-    public abstract ILayoutData UntypedLayoutData { get; }
+    public abstract object UntypedLayoutData { get; }
 
     public bool IsLoaded { get; set; }
 
@@ -16,7 +16,6 @@ public abstract class LoadLayoutEvent<TBase>(TBase sender, string layoutId)
 public sealed class LoadLayoutEvent<TBase, TData>(TBase sender, string layoutId)
     : LoadLayoutEvent<TBase>(sender, layoutId)
     where TBase : ISupportRoutedEvents<TBase>
-    where TData : ILayoutData
 {
     private TData _layoutData = default!;
 
@@ -25,7 +24,7 @@ public sealed class LoadLayoutEvent<TBase, TData>(TBase sender, string layoutId)
             ? _layoutData
             : throw new InvalidOperationException("Layout data has not been loaded yet.");
 
-    public override ILayoutData UntypedLayoutData => LayoutData;
+    public override object UntypedLayoutData => LayoutData!;
 
     internal override bool TryLoad(ILayoutStore store, NavPath path)
     {

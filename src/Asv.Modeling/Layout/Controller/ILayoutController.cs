@@ -1,7 +1,6 @@
 namespace Asv.Modeling;
 
 public interface ILayoutSink<in TData> : IDisposable
-    where TData : ILayoutData
 {
     void Load();
 
@@ -17,8 +16,7 @@ public delegate ValueTask LoadLayoutCallback<in TData>(
 
 public interface ILayoutController : IDisposable
 {
-    ILayoutSink<TData> Register<TData>(string layoutId, LoadLayoutCallback<TData> loadLayout)
-        where TData : ILayoutData;
+    ILayoutSink<TData> Register<TData>(string layoutId, LoadLayoutCallback<TData> loadLayout);
 
     void LoadAll();
 }

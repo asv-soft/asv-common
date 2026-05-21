@@ -159,7 +159,7 @@ public class LayoutStoreBenchmarks
     }
 }
 
-public sealed class BenchmarkLayoutData : ILayoutData
+public sealed class BenchmarkLayoutData
 {
     public BenchmarkLayoutData() { }
 

@@ -52,7 +52,6 @@ public sealed class JsonTokenLayoutStore : ILayoutStore
     }
 
     public bool TryLoad<TData>(NavPath path, string layoutId, out TData layoutData)
-        where TData : ILayoutData
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(layoutId);
 
@@ -96,7 +95,6 @@ public sealed class JsonTokenLayoutStore : ILayoutStore
     }
 
     public void Save<TData>(NavPath path, string layoutId, TData layoutData)
-        where TData : ILayoutData
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(layoutId);
         ArgumentNullException.ThrowIfNull(layoutData);

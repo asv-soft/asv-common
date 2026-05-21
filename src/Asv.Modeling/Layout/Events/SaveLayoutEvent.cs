@@ -6,7 +6,7 @@ public abstract class SaveLayoutEvent<TBase>(TBase sender, string layoutId)
 {
     public string LayoutId => layoutId;
 
-    public abstract ILayoutData UntypedLayoutData { get; }
+    public abstract object UntypedLayoutData { get; }
 
     internal abstract void Save(ILayoutStore store, NavPath path);
 }
@@ -14,11 +14,10 @@ public abstract class SaveLayoutEvent<TBase>(TBase sender, string layoutId)
 public sealed class SaveLayoutEvent<TBase, TData>(TBase sender, TData layoutData, string layoutId)
     : SaveLayoutEvent<TBase>(sender, layoutId)
     where TBase : ISupportRoutedEvents<TBase>
-    where TData : ILayoutData
 {
     public TData LayoutData => layoutData;
 
-    public override ILayoutData UntypedLayoutData => layoutData;
+    public override object UntypedLayoutData => layoutData!;
 
     internal override void Save(ILayoutStore store, NavPath path)
     {

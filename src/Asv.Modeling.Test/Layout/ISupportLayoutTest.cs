@@ -242,7 +242,7 @@ public partial class ISupportLayoutTest : IDisposable
         }
     }
 
-    private sealed class TestLayoutData : ILayoutData
+    private sealed class TestLayoutData
     {
         public int Value { get; set; }
     }

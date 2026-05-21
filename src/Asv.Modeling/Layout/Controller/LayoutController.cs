@@ -15,7 +15,6 @@ public sealed class LayoutController<TBase> : AsyncDisposableOnce, ILayoutContro
     }
 
     public ILayoutSink<TData> Register<TData>(string layoutId, LoadLayoutCallback<TData> loadLayout)
-        where TData : ILayoutData
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(layoutId);
         ArgumentNullException.ThrowIfNull(loadLayout);

@@ -7,7 +7,6 @@ public static class LayoutControllerMixin
     extension(ILayoutController controller)
     {
         public ILayoutSink<TData> Register<TData>(string layoutId, Action<TData> load)
-            where TData : ILayoutData
         {
             ArgumentNullException.ThrowIfNull(load);
 
@@ -28,12 +27,12 @@ public static class LayoutControllerMixin
             Observable<TAny> trigger
         )
         {
-            var sink = controller.Register<LayoutScalar<TValue>>(layoutId, x => load(x.Value));
+            var sink = controller.Register<TValue>(layoutId, load);
             var sub = trigger.Subscribe(_ =>
             {
                 if (save() is { } data)
                 {
-                    sink.Save(new LayoutScalar<TValue> { Value = data });
+                    sink.Save(data);
                 }
             });
             return Disposable.Combine(sink, sub);

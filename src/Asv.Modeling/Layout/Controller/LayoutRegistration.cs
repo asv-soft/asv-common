@@ -37,7 +37,6 @@ internal sealed class LayoutRegistration<TBase, TData>(
     Action<string> remove
 ) : LayoutRegistration(id, remove), ILayoutSink<TData>
     where TBase : ISupportRoutedEvents<TBase>
-    where TData : ILayoutData
 {
     public override async ValueTask LoadAsync(CancellationToken cancel = default)
     {
