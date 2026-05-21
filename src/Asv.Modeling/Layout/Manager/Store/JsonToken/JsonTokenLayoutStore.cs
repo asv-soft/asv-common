@@ -9,9 +9,17 @@ using ZLogger;
 
 namespace Asv.Modeling;
 
+/// <summary>
+/// Stores layout values in a single human-readable JSON file using in-memory <see cref="JToken"/> snapshots.
+/// </summary>
+/// <remarks>
+/// Values are cached in memory. Calls to <see cref="Save{TData}"/> update the cache and mark the
+/// store as dirty. Pending changes are written to disk by <see cref="Flush"/>, <see cref="Dispose"/>,
+/// or the configured flush timer.
+/// </remarks>
 public sealed class JsonTokenLayoutStore : ILayoutStore
 {
-    private const string LayoutFileName = "layout-token.json";
+    private const string LayoutFileName = "layout.json";
     private const string KeyPrefix = "layout_";
     private static readonly TimeSpan DefaultFlushInterval = TimeSpan.FromSeconds(5);
     private readonly Lock _sync = new();
@@ -23,6 +31,15 @@ public sealed class JsonTokenLayoutStore : ILayoutStore
     private bool _dirty;
     private bool _disposed;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="JsonTokenLayoutStore"/> class.
+    /// </summary>
+    /// <param name="storageDirectory">The directory that contains the layout file.</param>
+    /// <param name="logger">The optional logger used for invalid data and flush errors.</param>
+    /// <param name="flushInterval">The interval for automatic flushing. The default is five seconds.</param>
+    /// <param name="timeProvider">The optional time provider used to create the flush timer.</param>
+    /// <exception cref="ArgumentException"><paramref name="storageDirectory"/> is null, empty, or whitespace.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="flushInterval"/> is less than or equal to zero.</exception>
     public JsonTokenLayoutStore(
         string storageDirectory,
         ILogger? logger = null,
@@ -51,6 +68,7 @@ public sealed class JsonTokenLayoutStore : ILayoutStore
         _flushTimer = timeProvider.CreateTimer(FlushFromTimer, null, interval, interval);
     }
 
+    /// <inheritdoc />
     public bool TryLoad<TData>(NavPath path, string layoutId, out TData layoutData)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(layoutId);
@@ -94,6 +112,7 @@ public sealed class JsonTokenLayoutStore : ILayoutStore
         }
     }
 
+    /// <inheritdoc />
     public void Save<TData>(NavPath path, string layoutId, TData layoutData)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(layoutId);
@@ -115,6 +134,7 @@ public sealed class JsonTokenLayoutStore : ILayoutStore
         }
     }
 
+    /// <inheritdoc />
     public void Flush()
     {
         using (_sync.EnterScope())
@@ -129,6 +149,7 @@ public sealed class JsonTokenLayoutStore : ILayoutStore
         }
     }
 
+    /// <inheritdoc />
     public void Dispose()
     {
         using (_sync.EnterScope())
@@ -173,8 +194,17 @@ public sealed class JsonTokenLayoutStore : ILayoutStore
             using var stream = File.OpenRead(_filePath);
             using var reader = new StreamReader(stream);
             using var jsonReader = new JsonTextReader(reader);
+            var token = JToken.Load(jsonReader);
+            if (token.Type == JTokenType.Array)
+            {
+                var snapshots =
+                    token.ToObject<List<JsonTokenLayoutSnapshot>>(_serializer)
+                    ?? new List<JsonTokenLayoutSnapshot>();
+                return ToSnapshotDictionary(snapshots);
+            }
+
             var loaded =
-                _serializer.Deserialize<Dictionary<string, JsonTokenLayoutSnapshot>>(jsonReader)
+                token.ToObject<Dictionary<string, JsonTokenLayoutSnapshot>>(_serializer)
                 ?? new Dictionary<string, JsonTokenLayoutSnapshot>(StringComparer.Ordinal);
             return new Dictionary<string, JsonTokenLayoutSnapshot>(loaded, StringComparer.Ordinal);
         }
@@ -208,9 +238,16 @@ public sealed class JsonTokenLayoutStore : ILayoutStore
                         leaveOpen: true
                     )
                 )
-                using (var jsonWriter = new JsonTextWriter(writer))
+                using (
+                    var jsonWriter = new JsonTextWriter(writer)
+                    {
+                        Formatting = Formatting.Indented,
+                        Indentation = 2,
+                        IndentChar = ' ',
+                    }
+                )
                 {
-                    _serializer.Serialize(jsonWriter, _snapshots);
+                    _serializer.Serialize(jsonWriter, GetOrderedSnapshots());
                     jsonWriter.Flush();
                 }
 
@@ -234,6 +271,35 @@ public sealed class JsonTokenLayoutStore : ILayoutStore
         {
             throw new ObjectDisposedException(GetType().FullName);
         }
+    }
+
+    private JsonTokenLayoutSnapshot[] GetOrderedSnapshots()
+    {
+        return _snapshots
+            .Values.OrderBy(x => x.Path, StringComparer.Ordinal)
+            .ThenBy(x => x.LayoutId, StringComparer.Ordinal)
+            .ToArray();
+    }
+
+    private static Dictionary<string, JsonTokenLayoutSnapshot> ToSnapshotDictionary(
+        IEnumerable<JsonTokenLayoutSnapshot> snapshots
+    )
+    {
+        var result = new Dictionary<string, JsonTokenLayoutSnapshot>(StringComparer.Ordinal);
+        foreach (var snapshot in snapshots)
+        {
+            if (
+                string.IsNullOrWhiteSpace(snapshot.Path)
+                || string.IsNullOrWhiteSpace(snapshot.LayoutId)
+            )
+            {
+                continue;
+            }
+
+            result[GetLayoutKey(NavPath.Parse(snapshot.Path), snapshot.LayoutId)] = snapshot;
+        }
+
+        return result;
     }
 
     private static string GetLayoutKey(NavPath path, string layoutId)

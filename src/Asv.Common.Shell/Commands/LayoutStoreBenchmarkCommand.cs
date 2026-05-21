@@ -135,7 +135,7 @@ public class LayoutStoreBenchmarks
 
     private string GetStoreFileName()
     {
-        return "layout-token.json";
+        return "layout.json";
     }
 
     private static string CreateTempDirectory(string prefix)

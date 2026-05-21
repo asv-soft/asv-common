@@ -34,9 +34,9 @@ public partial class ISupportLayoutTest : IDisposable
                 TimeSpan.FromSeconds(1)
             )
         );
-        Assert.False(File.Exists(Path.Combine(_storageDirectory, "layout-token.json")));
+        Assert.False(File.Exists(Path.Combine(_storageDirectory, "layout.json")));
         root.Dispose();
-        Assert.True(File.Exists(Path.Combine(_storageDirectory, "layout-token.json")));
+        Assert.True(File.Exists(Path.Combine(_storageDirectory, "layout.json")));
 
         root = new LayoutRootViewModel("root", new JsonTokenLayoutStore(_storageDirectory));
         child = new TestLayoutViewModel("child");
@@ -83,12 +83,38 @@ public partial class ISupportLayoutTest : IDisposable
                 TimeSpan.FromSeconds(1)
             )
         );
-        Assert.False(File.Exists(Path.Combine(_storageDirectory, "layout-token.json")));
+        Assert.False(File.Exists(Path.Combine(_storageDirectory, "layout.json")));
 
         root.LayoutManager.Store.Flush();
 
-        Assert.True(File.Exists(Path.Combine(_storageDirectory, "layout-token.json")));
-        Assert.False(File.Exists(Path.Combine(_storageDirectory, "layout.json")));
+        Assert.True(File.Exists(Path.Combine(_storageDirectory, "layout.json")));
+        root.Dispose();
+    }
+
+    [Fact]
+    public void Flush_StoresHumanReadableJson()
+    {
+        var root = new LayoutRootViewModel("root", new JsonTokenLayoutStore(_storageDirectory));
+        var child = new TestLayoutViewModel("child");
+        root.Children.Add(child);
+        child.Value = 10;
+
+        SaveLayouts(root);
+        Assert.True(
+            SpinWait.SpinUntil(() => HasSavedLayout(root, child, 10), TimeSpan.FromSeconds(1))
+        );
+
+        root.LayoutManager.Store.Flush();
+
+        var savedLayout = File.ReadAllText(Path.Combine(_storageDirectory, "layout.json"));
+        Assert.StartsWith("[", savedLayout.TrimStart());
+        Assert.Contains(Environment.NewLine, savedLayout);
+        Assert.Contains("  {", savedLayout);
+        Assert.Contains("\"Path\"", savedLayout);
+        Assert.Contains("\"LayoutId\"", savedLayout);
+        Assert.Contains("\"Data\"", savedLayout);
+        Assert.Contains("\"Value\": 10", savedLayout);
+        Assert.DoesNotContain("\"layout_", savedLayout);
         root.Dispose();
     }
 
@@ -110,11 +136,10 @@ public partial class ISupportLayoutTest : IDisposable
 
         Assert.True(
             SpinWait.SpinUntil(
-                () => File.Exists(Path.Combine(_storageDirectory, "layout-token.json")),
+                () => File.Exists(Path.Combine(_storageDirectory, "layout.json")),
                 TimeSpan.FromSeconds(1)
             )
         );
-        Assert.False(File.Exists(Path.Combine(_storageDirectory, "layout.json")));
         root.Dispose();
     }
 
