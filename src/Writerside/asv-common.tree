@@ -11,6 +11,7 @@
     <toc-element topic="Asv-Modeling.md">
         <toc-element topic="Tree.md"/>
         <toc-element topic="RoutedEvents.md"/>
+        <toc-element topic="Navigation.md"/>
         <toc-element topic="Undo.md"/>
     </toc-element>
     <toc-element topic="development.md"/>
