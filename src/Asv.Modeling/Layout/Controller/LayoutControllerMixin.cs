@@ -77,8 +77,9 @@ public static class LayoutControllerMixin
         {
             ArgumentNullException.ThrowIfNull(rootTracking);
 
-            return rootTracking.ExecuteWhenRootAttached(_ =>
-                controller.LoadAllAsync(cancel).AsTask().SafeFireAndForget()
+            return rootTracking.ExecuteWhenRootAttached(
+                (_, callbackCancel) =>
+                    controller.LoadAllAsync(cancel.CanBeCanceled ? cancel : callbackCancel)
             );
         }
     }

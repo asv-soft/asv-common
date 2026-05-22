@@ -140,6 +140,107 @@ public class ISupportRootTrackingTest
     }
 
     [Fact]
+    public void ExecuteWhenRootAttachedAsync_ExecutesImmediatelyOnce_WhenRootExists()
+    {
+        using var root = new TestRoot();
+        using var child = new TestNode();
+        root.AddChild(child);
+        TestRoot? actual = null;
+        var count = 0;
+
+        using var subscription = child.RootTracking.ExecuteWhenRootAttached(root =>
+        {
+            actual = root;
+            count++;
+            return ValueTask.CompletedTask;
+        });
+
+        Assert.Same(root, actual);
+        Assert.Equal(1, count);
+    }
+
+    [Fact]
+    public async Task ExecuteWhenRootAttachedAsync_ExecutesWhenRootAppears()
+    {
+        using var root = new TestRoot();
+        using var child = new TestNode();
+        var actual = new TaskCompletionSource<TestRoot>(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
+
+        using var subscription = child.RootTracking.ExecuteWhenRootAttached(async root =>
+        {
+            await Task.Yield();
+            actual.SetResult(root);
+        });
+        root.AddChild(child);
+
+        Assert.Same(
+            root,
+            await actual.Task.WaitAsync(
+                TimeSpan.FromSeconds(1),
+                TestContext.Current.CancellationToken
+            )
+        );
+    }
+
+    [Fact]
+    public void ExecuteWhenRootAttachedAsync_ExecutesEveryTimeRootAppears()
+    {
+        using var root = new TestRoot();
+        using var child = new TestNode();
+        var count = 0;
+
+        using var subscription = child.RootTracking.ExecuteWhenRootAttached(_ =>
+        {
+            count++;
+            return ValueTask.CompletedTask;
+        });
+        root.AddChild(child);
+        root.RemoveChild(child);
+        root.AddChild(child);
+
+        Assert.Equal(2, count);
+    }
+
+    [Fact]
+    public void ExecuteWhenRootAttachedAsync_DoesNotExecute_WhenSubscriptionDisposedBeforeAttach()
+    {
+        using var root = new TestRoot();
+        using var child = new TestNode();
+        var count = 0;
+
+        var subscription = child.RootTracking.ExecuteWhenRootAttached(_ =>
+        {
+            count++;
+            return ValueTask.CompletedTask;
+        });
+        subscription.Dispose();
+        root.AddChild(child);
+
+        Assert.Equal(0, count);
+    }
+
+    [Fact]
+    public void ExecuteWhenRootAttachedAsync_WithCancellationToken_ExecutesWhenRootAppears()
+    {
+        using var root = new TestRoot();
+        using var child = new TestNode();
+        TestRoot? actual = null;
+
+        using var subscription = child.RootTracking.ExecuteWhenRootAttached(
+            (root, _) =>
+            {
+                actual = root;
+                return ValueTask.CompletedTask;
+            }
+        );
+        root.AddChild(child);
+
+        Assert.Same(root, actual);
+    }
+
+    [Fact]
     public void Attached_EmitsRoot_WhenRootAppears()
     {
         using var root = new TestRoot();
