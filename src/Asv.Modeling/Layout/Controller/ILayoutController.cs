@@ -1,31 +1,6 @@
 namespace Asv.Modeling;
 
 /// <summary>
-/// Represents a registered layout entry that can load and save one layout value.
-/// </summary>
-/// <typeparam name="TData">The value type stored for the layout entry.</typeparam>
-public interface ILayoutSink<in TData> : IDisposable
-{
-    /// <summary>
-    /// Starts loading the registered layout value in the background.
-    /// </summary>
-    void Load();
-
-    /// <summary>
-    /// Loads the registered layout value and applies it through the registration callback.
-    /// </summary>
-    /// <param name="cancel">The cancellation token for the load operation.</param>
-    /// <returns>A task that completes when the layout value is loaded and applied.</returns>
-    ValueTask LoadAsync(CancellationToken cancel = default);
-
-    /// <summary>
-    /// Saves the specified layout value for this registration.
-    /// </summary>
-    /// <param name="data">The layout value to save.</param>
-    void Save(TData data);
-}
-
-/// <summary>
 /// Handles a loaded layout value.
 /// </summary>
 /// <typeparam name="TData">The loaded value type.</typeparam>
@@ -52,7 +27,9 @@ public interface ILayoutController : IDisposable
     ILayoutSink<TData> Register<TData>(string layoutId, LoadLayoutCallback<TData> loadLayout);
 
     /// <summary>
-    /// Starts loading all registered layout values.
+    /// Loads all registered layout values and applies them through their registration callbacks.
     /// </summary>
-    void LoadAll();
+    /// <param name="cancel">The cancellation token for the load operation.</param>
+    /// <returns>A task that completes when all registered layout values are loaded.</returns>
+    ValueTask LoadAllAsync(CancellationToken cancel = default);
 }

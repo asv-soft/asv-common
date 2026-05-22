@@ -1,4 +1,4 @@
-﻿namespace Asv.Modeling;
+namespace Asv.Modeling;
 
 public interface ISupportId<out TId>
 {

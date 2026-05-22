@@ -141,7 +141,7 @@ public class NavigationControllerTest
 
         public void AddChild(TestNavigationViewModel child)
         {
-            child.Parent = this;
+            child.SetParent(this);
             Children.Add(child);
         }
 

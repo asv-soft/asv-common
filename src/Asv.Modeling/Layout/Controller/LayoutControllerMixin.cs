@@ -1,3 +1,4 @@
+using Asv.Common;
 using R3;
 
 namespace Asv.Modeling;
@@ -48,12 +49,13 @@ public static class LayoutControllerMixin
         )
         {
             var sink = controller.Register(layoutId, load);
-            var sub = trigger.Subscribe(_ =>
+            var sub = trigger.SubscribeAwait((_,c) =>
             {
                 if (save() is { } data)
                 {
-                    sink.Save(data);
+                    return sink.SaveAsync(data, c);
                 }
+                return ValueTask.CompletedTask;
             });
             return Disposable.Combine(sink, sub);
         }

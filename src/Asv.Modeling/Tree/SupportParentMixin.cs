@@ -37,11 +37,11 @@ public static class SupportParentMixin
         TBase parent
     )
         where TBase : class, ISupportParent<TBase>
-        where TView : class, ISupportParent<TBase>
+        where TView : class, ISupportParentChange<TBase>
     {
-        src.ForEach(item => item.Parent = parent);
-        var sub1 = src.ObserveAdd().Subscribe(x => x.Value.View.Parent = parent);
-        var sub2 = src.ObserveRemove().Subscribe(x => x.Value.View.Parent = null);
+        src.ForEach(item => item.SetParent(parent));
+        var sub1 = src.ObserveAdd().Subscribe(x => x.Value.View.SetParent(parent));
+        var sub2 = src.ObserveRemove().Subscribe(x => x.Value.View.SetParent(null));
         return Disposable.Combine(sub1, sub2);
     }
 
@@ -51,11 +51,11 @@ public static class SupportParentMixin
         CompositeDisposable dispose
     )
         where TBase : class, ISupportParent<TBase>
-        where TView : class, ISupportParent<TBase>
+        where TView : class, ISupportParentChange<TBase>
     {
-        src.ForEach(item => item.Parent = parent);
-        src.ObserveAdd().Subscribe(x => x.Value.View.Parent = parent).DisposeItWith(dispose);
-        src.ObserveRemove().Subscribe(x => x.Value.View.Parent = null).DisposeItWith(dispose);
+        src.ForEach(item => item.SetParent(parent));
+        src.ObserveAdd().Subscribe(x => x.Value.View.SetParent(parent)).DisposeItWith(dispose);
+        src.ObserveRemove().Subscribe(x => x.Value.View.SetParent(null)).DisposeItWith(dispose);
         return src;
     }
 
@@ -64,11 +64,11 @@ public static class SupportParentMixin
         TBase parent
     )
         where TBase : class, ISupportParent<TBase>
-        where TModel : class, ISupportParent<TBase>
+        where TModel : class, ISupportParentChange<TBase>
     {
-        src.ForEach(item => item.Parent = parent);
-        var sub1 = src.ObserveAdd().Subscribe(x => x.Value.Parent = parent);
-        var sub2 = src.ObserveRemove().Subscribe(x => x.Value.Parent = null);
+        src.ForEach(item => item.SetParent(parent));
+        var sub1 = src.ObserveAdd().Subscribe(x => x.Value.SetParent(parent));
+        var sub2 = src.ObserveRemove().Subscribe(x => x.Value.SetParent(null));
         return Disposable.Combine(sub1, sub2);
     }
 }

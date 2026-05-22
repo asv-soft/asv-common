@@ -2,7 +2,7 @@ using R3;
 
 namespace Asv.Modeling;
 
-public interface ISupportChanges
+public interface ISupportChangeTracking
 {
     ReadOnlyReactiveProperty<bool> HasChanges { get; }
 }

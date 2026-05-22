@@ -11,5 +11,6 @@ public interface IViewModel
     : IDisposable,
         INotifyPropertyChanging,
         INotifyPropertyChanged,
+        ISupportParentChange<IViewModel>,
         ISupportRoutedEvents<IViewModel>,
         ISupportNavigation<IViewModel> { }

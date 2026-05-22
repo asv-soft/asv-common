@@ -358,7 +358,7 @@ public class HistoryViewModel : UndoHistoryViewModel
     }
 }
 
-public class StoreHistoryViewModel : ViewModelBase, IHasUndoHistory<IViewModel>
+public class StoreHistoryViewModel : ViewModelBase, ISupportUndoHistory<IViewModel>
 {
     public StoreHistoryViewModel(string id, IUndoHistoryStore store)
         : base(id)

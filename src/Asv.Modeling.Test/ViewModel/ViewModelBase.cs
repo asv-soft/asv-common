@@ -17,6 +17,7 @@ public abstract class ViewModelBase : IViewModel
     private int _isDisposed;
     private CancellationTokenSource? _cancel;
     private CompositeDisposable? _dispose;
+    private readonly Subject<IViewModel?> _parentChanged;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ViewModelBase"/> class.
@@ -27,6 +28,7 @@ public abstract class ViewModelBase : IViewModel
     protected ViewModelBase(string typeId, NavArgs args = default)
     {
         Id = new NavId(typeId, args);
+        _parentChanged = new Subject<IViewModel?>().AddTo(ref DisposableBag);
         Events = new RoutedEventController<IViewModel>(this).AddTo(ref DisposableBag);
     }
 
@@ -37,8 +39,15 @@ public abstract class ViewModelBase : IViewModel
     public IViewModel? Parent
     {
         get;
-        set => SetField(ref field, value);
+        private set => SetField(ref field, value);
     }
+
+    public void SetParent(IViewModel? parent)
+    {
+        Parent = parent;
+    }
+
+    public Observable<IViewModel?> ParentChanged => _parentChanged;
 
     public abstract IEnumerable<IViewModel> GetChildren();
 

@@ -6,11 +6,6 @@ internal abstract class LayoutRegistration(string id, Action<string> remove) : A
 {
     public string Id => id;
 
-    public void Load()
-    {
-        LoadAsync().SafeFireAndForget();
-    }
-
     public abstract ValueTask LoadAsync(CancellationToken cancel = default);
 
     protected override void Dispose(bool disposing)
@@ -49,7 +44,7 @@ internal sealed class LayoutRegistration<TBase, TData>(
         }
     }
 
-    public void Save(TData data)
+    public ValueTask SaveAsync(TData data, CancellationToken cancel = default)
     {
         ThrowIfDisposed();
         if (data is null)
@@ -57,6 +52,6 @@ internal sealed class LayoutRegistration<TBase, TData>(
             throw new ArgumentNullException(nameof(data));
         }
 
-        owner.Rise(new SaveLayoutEvent<TBase, TData>(owner, data, Id)).SafeFireAndForget();
+        return owner.Rise(new SaveLayoutEvent<TBase, TData>(owner, data, Id), cancel);
     }
 }

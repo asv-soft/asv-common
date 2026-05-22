@@ -3,7 +3,7 @@ using R3;
 
 namespace Asv.Modeling;
 
-public abstract class UndoHistoryViewModel : ViewModelBase, IHasUndoHistory<IViewModel>
+public abstract class UndoHistoryViewModel : ViewModelBase, ISupportUndoHistory<IViewModel>
 {
     protected UndoHistoryViewModel(string typeId, string storageDirectory, NavArgs args = default)
         : base(typeId, args)

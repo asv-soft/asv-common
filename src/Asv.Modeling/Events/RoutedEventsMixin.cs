@@ -24,7 +24,7 @@ public static class RoutedEventsMixin
     /// <summary>
     /// Triggers the specified asynchronous routed event within the event controller of the source object.
     /// </summary>
-    /// <typeparam name="TSelf">The type that implements <see cref="ISupportRoutedEvents{T}"/>.</typeparam>
+    /// <typeparam name="TSelf">The type that implements <see cref="ISupportRoutedEvents{TBase}"/>.</typeparam>
     /// <param name="source">The source object that triggers the routed event.</param>
     /// <param name="routedEvent">The routed event to be triggered.</param>
     /// <param name="cancel">A cancellation token used to cancel the operation if needed.</param>

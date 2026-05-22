@@ -4,7 +4,7 @@ namespace Asv.Modeling;
 /// Exposes a layout manager for an object tree.
 /// </summary>
 /// <typeparam name="TBase">The routed event and navigation base type.</typeparam>
-public interface IHasLayoutManager<TBase>
+public interface ISupportLayoutManager<TBase>
     where TBase : ISupportRoutedEvents<TBase>, ISupportNavigation<TBase>
 {
     /// <summary>

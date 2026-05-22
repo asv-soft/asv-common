@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Asv.Common;
 
 namespace Asv.Modeling;
@@ -7,7 +8,7 @@ namespace Asv.Modeling;
 /// </summary>
 /// <typeparam name="TBase">The routed event base type used by the owner.</typeparam>
 public sealed class LayoutController<TBase> : AsyncDisposableOnce, ILayoutController
-    where TBase : ISupportRoutedEvents<TBase>
+    where TBase : ISupportRoutedEvents<TBase>, INotifyPropertyChanged
 {
     private readonly TBase _owner;
     private readonly Dictionary<string, LayoutRegistration> _registration = new(4);
@@ -46,11 +47,11 @@ public sealed class LayoutController<TBase> : AsyncDisposableOnce, ILayoutContro
     }
 
     /// <inheritdoc />
-    public void LoadAll()
+    public async ValueTask LoadAllAsync(CancellationToken cancel = default)
     {
         foreach (var registration in _registration.Values.ToArray())
         {
-            registration.Load();
+            await registration.LoadAsync(cancel).ConfigureAwait(false);
         }
     }
 
@@ -80,7 +81,7 @@ public sealed class LayoutController<TBase> : AsyncDisposableOnce, ILayoutContro
     {
         foreach (var registration in _registration.Values.ToArray())
         {
-            registration.Dispose();
+            await registration.DisposeAsync();
         }
         _registration.Clear();
         await base.DisposeAsyncCore().ConfigureAwait(false);

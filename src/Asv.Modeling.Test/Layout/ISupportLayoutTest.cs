@@ -27,7 +27,7 @@ public partial class ISupportLayoutTest : IDisposable
         child.Value = 10;
         nested.Value = 42;
 
-        SaveLayouts(root);
+        await SaveLayoutsAsync(root, TestContext.Current.CancellationToken);
         Assert.True(
             SpinWait.SpinUntil(
                 () => HasSavedLayout(root, child, 10) && HasSavedLayout(root, nested, 42),
@@ -65,7 +65,7 @@ public partial class ISupportLayoutTest : IDisposable
     }
 
     [Fact]
-    public void Flush_StoresLayoutsInSingleJsonTokenFile()
+    public async ValueTask Flush_StoresLayoutsInSingleJsonTokenFile()
     {
         var root = new LayoutRootViewModel("root", new JsonTokenLayoutStore(_storageDirectory));
         var child = new TestLayoutViewModel("child");
@@ -76,7 +76,7 @@ public partial class ISupportLayoutTest : IDisposable
         child.Value = 10;
         nested.Value = 42;
 
-        SaveLayouts(root);
+        await SaveLayoutsAsync(root, TestContext.Current.CancellationToken);
         Assert.True(
             SpinWait.SpinUntil(
                 () => HasSavedLayout(root, child, 10) && HasSavedLayout(root, nested, 42),
@@ -92,14 +92,14 @@ public partial class ISupportLayoutTest : IDisposable
     }
 
     [Fact]
-    public void Flush_StoresHumanReadableJson()
+    public async ValueTask Flush_StoresHumanReadableJson()
     {
         var root = new LayoutRootViewModel("root", new JsonTokenLayoutStore(_storageDirectory));
         var child = new TestLayoutViewModel("child");
         root.Children.Add(child);
         child.Value = 10;
 
-        SaveLayouts(root);
+        await SaveLayoutsAsync(root, TestContext.Current.CancellationToken);
         Assert.True(
             SpinWait.SpinUntil(() => HasSavedLayout(root, child, 10), TimeSpan.FromSeconds(1))
         );
@@ -119,7 +119,7 @@ public partial class ISupportLayoutTest : IDisposable
     }
 
     [Fact]
-    public void Save_FlushesLayoutsByInterval()
+    public async ValueTask Save_FlushesLayoutsByInterval()
     {
         var root = new LayoutRootViewModel(
             "root",
@@ -132,7 +132,7 @@ public partial class ISupportLayoutTest : IDisposable
         root.Children.Add(child);
         child.Value = 10;
 
-        SaveLayouts(root);
+        await SaveLayoutsAsync(root, TestContext.Current.CancellationToken);
 
         Assert.True(
             SpinWait.SpinUntil(
@@ -158,16 +158,18 @@ public partial class ISupportLayoutTest : IDisposable
             && data.Value == expectedValue;
     }
 
-    private static void SaveLayouts(IViewModel current)
+    private static async ValueTask SaveLayoutsAsync(IViewModel current, CancellationToken cancel)
     {
+        cancel.ThrowIfCancellationRequested();
+
         if (current is TestLayoutViewModel layout)
         {
-            layout.SaveLayout();
+            await layout.SaveLayoutAsync(cancel);
         }
 
         foreach (var child in current.GetChildren())
         {
-            SaveLayouts(child);
+            await SaveLayoutsAsync(child, cancel);
         }
     }
 
@@ -251,9 +253,9 @@ public partial class ISupportLayoutTest : IDisposable
 
         public bool WasLoaded { get; private set; }
 
-        public void SaveLayout()
+        public ValueTask SaveLayoutAsync(CancellationToken cancel)
         {
-            _handler.Save(new TestLayoutData { Value = Value });
+            return _handler.SaveAsync(new TestLayoutData { Value = Value }, cancel);
         }
 
         public ValueTask LoadLayoutAsync(CancellationToken cancel)
