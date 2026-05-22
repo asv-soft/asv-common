@@ -1,4 +1,5 @@
 <Solution>
+  <Folder Name="/Docs/" />
   <Folder Name="/Solution Items/">
     <File Path="../.github/workflows/release-action.yml" />
     <File Path="../.github/workflows/release-debug-version.yml" />

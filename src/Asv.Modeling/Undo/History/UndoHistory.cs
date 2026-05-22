@@ -4,6 +4,10 @@ using R3;
 
 namespace Asv.Modeling;
 
+/// <summary>
+/// Default implementation of <see cref="IUndoHistory{TBase}"/>.
+/// </summary>
+/// <typeparam name="TBase">The routed and navigable tree node type.</typeparam>
 public class UndoHistory<TBase> : AsyncDisposableOnceBag, IUndoHistory<TBase>
     where TBase : ISupportRoutedEvents<TBase>, ISupportNavigation<TBase>
 {
@@ -14,6 +18,11 @@ public class UndoHistory<TBase> : AsyncDisposableOnceBag, IUndoHistory<TBase>
     private readonly Lock _saveSync = new();
     private Task _saveTail = Task.CompletedTask;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="UndoHistory{TBase}"/> class.
+    /// </summary>
+    /// <param name="owner">The root node used to route undo events and resolve change targets.</param>
+    /// <param name="store">The store used to persist undo history.</param>
     public UndoHistory(TBase owner, IUndoHistoryStore store)
     {
         _owner = owner;
@@ -33,8 +42,10 @@ public class UndoHistory<TBase> : AsyncDisposableOnceBag, IUndoHistory<TBase>
         owner.Events.Catch<UndoEvent<TBase>>(TryAddToHistory).AddTo(ref DisposableBag);
     }
 
+    /// <inheritdoc />
     public ReactiveCommand Undo { get; }
 
+    /// <inheritdoc />
     public async ValueTask UndoAsync(CancellationToken cancel = default)
     {
         await FlushPendingSaves(cancel);
@@ -64,9 +75,13 @@ public class UndoHistory<TBase> : AsyncDisposableOnceBag, IUndoHistory<TBase>
         }
     }
 
+    /// <inheritdoc />
     public IObservableCollection<IUndoSnapshot> UndoStack => _undoStack;
+
+    /// <inheritdoc />
     public ReactiveCommand Redo { get; }
 
+    /// <inheritdoc />
     public async ValueTask RedoAsync(CancellationToken cancel = default)
     {
         await FlushPendingSaves(cancel);
@@ -96,6 +111,7 @@ public class UndoHistory<TBase> : AsyncDisposableOnceBag, IUndoHistory<TBase>
         }
     }
 
+    /// <inheritdoc />
     public IObservableCollection<IUndoSnapshot> RedoStack => _redoStack;
 
     private ValueTask TryAddToHistory(TBase x, UndoEvent<TBase> e, CancellationToken cancel)

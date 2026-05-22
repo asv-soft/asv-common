@@ -49,15 +49,37 @@ public static class LayoutControllerMixin
         )
         {
             var sink = controller.Register(layoutId, load);
-            var sub = trigger.SubscribeAwait((_,c) =>
-            {
-                if (save() is { } data)
+            var sub = trigger.SubscribeAwait(
+                (_, c) =>
                 {
-                    return sink.SaveAsync(data, c);
+                    if (save() is { } data)
+                    {
+                        return sink.SaveAsync(data, c);
+                    }
+                    return ValueTask.CompletedTask;
                 }
-                return ValueTask.CompletedTask;
-            });
+            );
             return Disposable.Combine(sink, sub);
+        }
+
+        /// <summary>
+        /// Loads all registered layout values immediately when a root is already attached,
+        /// and again every time the owner is attached to a root.
+        /// </summary>
+        /// <typeparam name="TRoot">The tracked root type.</typeparam>
+        /// <param name="rootTracking">The root tracking controller that provides root attachment notifications.</param>
+        /// <param name="cancel">A cancellation token used to cancel layout loading.</param>
+        /// <returns>A disposable subscription that stops future layout loads when disposed.</returns>
+        public IDisposable LoadWhenRootAttached<TRoot>(
+            IRootTrackingController<TRoot> rootTracking,
+            CancellationToken cancel = default
+        )
+        {
+            ArgumentNullException.ThrowIfNull(rootTracking);
+
+            return rootTracking.ExecuteWhenRootAttached(_ =>
+                controller.LoadAllAsync(cancel).AsTask().SafeFireAndForget()
+            );
         }
     }
 }

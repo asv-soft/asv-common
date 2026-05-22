@@ -9,10 +9,13 @@ internal abstract class UndoChangeHandlerRegistration(string id, Action<string> 
 {
     protected string Id => id;
 
+    /// <inheritdoc />
     public abstract IUndoChange Create();
 
+    /// <inheritdoc />
     public abstract ValueTask Undo(IUndoChange undoChange, CancellationToken cancel);
 
+    /// <inheritdoc />
     public abstract ValueTask Redo(IUndoChange undoChange, CancellationToken cancel);
 
     protected override void Dispose(bool disposing)
@@ -44,6 +47,7 @@ internal sealed class UndoChangeHandlerRegistration<TChange>(
 {
     private bool _suppressChanges;
 
+    /// <inheritdoc />
     public void Publish(TChange change)
     {
         ThrowIfDisposed();
@@ -52,12 +56,14 @@ internal sealed class UndoChangeHandlerRegistration<TChange>(
         changes.OnNext((Id, change));
     }
 
+    /// <inheritdoc />
     public override IUndoChange Create()
     {
         ThrowIfDisposed();
         return factory();
     }
 
+    /// <inheritdoc />
     public override async ValueTask Undo(IUndoChange undoChange, CancellationToken cancel)
     {
         ThrowIfDisposed();
@@ -72,6 +78,7 @@ internal sealed class UndoChangeHandlerRegistration<TChange>(
         }
     }
 
+    /// <inheritdoc />
     public override async ValueTask Redo(IUndoChange undoChange, CancellationToken cancel)
     {
         ThrowIfDisposed();

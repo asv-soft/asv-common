@@ -6,24 +6,44 @@ using ObservableCollections;
 
 namespace Asv.Modeling;
 
+/// <summary>
+/// Represents a serializable undo change for an observable collection operation.
+/// </summary>
+/// <typeparam name="T">The collection item type.</typeparam>
 [DataContract]
 public struct CollectionUndoChange<T> : IValueUndoChange<T>
 {
+    /// <inheritdoc />
     [DataMember(Order = 0)]
     public ChangeOperation Operation { get; set; }
 
+    /// <summary>
+    /// Gets or sets the starting index of old items.
+    /// </summary>
     [DataMember(Order = 1)]
     public int OldStartingIndex { get; set; }
 
+    /// <summary>
+    /// Gets or sets the starting index of new items.
+    /// </summary>
     [DataMember(Order = 2)]
     public int NewStartingIndex { get; set; }
 
+    /// <summary>
+    /// Gets or sets the items that existed before the collection change.
+    /// </summary>
     [DataMember(Order = 3)]
     public T[] OldItems { get; set; }
 
+    /// <summary>
+    /// Gets or sets the items that exist after the collection change.
+    /// </summary>
     [DataMember(Order = 4)]
     public T[] NewItems { get; set; }
 
+    /// <summary>
+    /// Gets or sets the old item index for single-item changes.
+    /// </summary>
     [IgnoreDataMember]
     public int OldIndex
     {
@@ -31,6 +51,9 @@ public struct CollectionUndoChange<T> : IValueUndoChange<T>
         set => OldStartingIndex = value;
     }
 
+    /// <summary>
+    /// Gets or sets the new item index for single-item changes.
+    /// </summary>
     [IgnoreDataMember]
     public int NewIndex
     {
@@ -38,6 +61,7 @@ public struct CollectionUndoChange<T> : IValueUndoChange<T>
         set => NewStartingIndex = value;
     }
 
+    /// <inheritdoc />
     [IgnoreDataMember]
     public T OldValue
     {
@@ -45,6 +69,7 @@ public struct CollectionUndoChange<T> : IValueUndoChange<T>
         set => OldItems = [value];
     }
 
+    /// <inheritdoc />
     [IgnoreDataMember]
     public T NewValue
     {
@@ -52,6 +77,11 @@ public struct CollectionUndoChange<T> : IValueUndoChange<T>
         set => NewItems = [value];
     }
 
+    /// <summary>
+    /// Creates a collection undo change from observable collection event arguments.
+    /// </summary>
+    /// <param name="args">The observable collection event arguments.</param>
+    /// <returns>The collection undo change.</returns>
     public static CollectionUndoChange<T> From(NotifyCollectionChangedEventArgs<T> args)
     {
         return args.Action switch
@@ -91,11 +121,13 @@ public struct CollectionUndoChange<T> : IValueUndoChange<T>
         return isSingleItem ? [item] : items.ToArray();
     }
 
+    /// <inheritdoc />
     public void Serialize(IBufferWriter<byte> writer)
     {
         MessagePackSerializer.Serialize(writer, this);
     }
 
+    /// <inheritdoc />
     public void Deserialize(ReadOnlySequence<byte> data)
     {
         this = MessagePackSerializer.Deserialize<CollectionUndoChange<T>>(data);

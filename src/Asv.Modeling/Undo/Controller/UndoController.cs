@@ -3,6 +3,10 @@ using R3;
 
 namespace Asv.Modeling;
 
+/// <summary>
+/// Default implementation of <see cref="IUndoController"/> for a routed event owner.
+/// </summary>
+/// <typeparam name="TBase">The routed event node type.</typeparam>
 public sealed class UndoController<TBase> : AsyncDisposableOnce, IUndoController
     where TBase : ISupportRoutedEvents<TBase>
 {
@@ -11,6 +15,10 @@ public sealed class UndoController<TBase> : AsyncDisposableOnce, IUndoController
     private readonly IDisposable _subscription;
     private int _suppressChangePublicationCount;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="UndoController{TBase}"/> class.
+    /// </summary>
+    /// <param name="owner">The node that publishes undo events.</param>
     public UndoController(TBase owner)
     {
         _subscription = _changes
@@ -25,6 +33,7 @@ public sealed class UndoController<TBase> : AsyncDisposableOnce, IUndoController
     private bool IsChangePublicationSuppressed =>
         Volatile.Read(ref _suppressChangePublicationCount) > 0;
 
+    /// <inheritdoc />
     public IUndoChangeSink<TChange> Register<TChange>(
         string registrationId,
         AsyncUndoCallback<TChange> undo,
@@ -60,8 +69,10 @@ public sealed class UndoController<TBase> : AsyncDisposableOnce, IUndoController
         }
     }
 
+    /// <inheritdoc />
     public IUndoChangeHandler this[string registrationId] => _registration[registrationId];
 
+    /// <inheritdoc />
     public IDisposable SuppressChangePublication()
     {
         Interlocked.Increment(ref _suppressChangePublicationCount);

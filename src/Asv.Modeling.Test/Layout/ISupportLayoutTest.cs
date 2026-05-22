@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Asv.Common;
 using JetBrains.Annotations;
 using ObservableCollections;
@@ -143,6 +144,24 @@ public partial class ISupportLayoutTest : IDisposable
         root.Dispose();
     }
 
+    [Fact]
+    public void LoadWhenRootAttached_LoadsRegisteredLayouts_WhenParentAssigned()
+    {
+        using var store = new InMemoryLayoutStore();
+        using var root = new TrackingLayoutRootNode("root", store);
+        using var child = new TrackingLayoutNode("child");
+        store.Save(
+            new NavPath(child.Id),
+            nameof(TrackingLayoutNode.Value),
+            new TestLayoutData { Value = 42 }
+        );
+
+        root.AddChild(child);
+
+        Assert.True(SpinWait.SpinUntil(() => child.WasLoaded, TimeSpan.FromSeconds(1)));
+        Assert.Equal(42, child.Value);
+    }
+
     private static bool HasSavedLayout(
         LayoutRootViewModel root,
         IViewModel viewModel,
@@ -272,5 +291,144 @@ public partial class ISupportLayoutTest : IDisposable
     private sealed class TestLayoutData
     {
         public int Value { get; set; }
+    }
+
+    private sealed class InMemoryLayoutStore : ILayoutStore
+    {
+        private readonly Dictionary<(NavPath Path, string LayoutId), object> _layouts = new();
+
+        public bool TryLoad<TData>(NavPath path, string layoutId, out TData layoutData)
+        {
+            if (_layouts.TryGetValue((path, layoutId), out var data) && data is TData typedData)
+            {
+                layoutData = typedData;
+                return true;
+            }
+
+            layoutData = default!;
+            return false;
+        }
+
+        public void Save<TData>(NavPath path, string layoutId, TData layoutData)
+        {
+            _layouts[(path, layoutId)] = layoutData!;
+        }
+
+        public void Flush() { }
+
+        public void Dispose() { }
+    }
+
+    private class TrackingLayoutNode
+        : ISupportParentChange<TrackingLayoutNode>,
+            ISupportRoutedEvents<TrackingLayoutNode>,
+            ISupportNavigation<TrackingLayoutNode>,
+            ISupportRootTracking<TrackingLayoutNode, TrackingLayoutRootNode>,
+            ISupportLayout,
+            INotifyPropertyChanged,
+            IDisposable
+    {
+        private readonly List<TrackingLayoutNode> _children = [];
+        private readonly Subject<TrackingLayoutNode?> _parentChanged = new();
+        private readonly RoutedEventController<TrackingLayoutNode> _events;
+        private readonly RootTrackingController<
+            TrackingLayoutNode,
+            TrackingLayoutRootNode
+        > _rootTracking;
+        private readonly ILayoutSink<TestLayoutData> _handler;
+        private readonly CompositeDisposable _dispose = new();
+
+        public TrackingLayoutNode(string id)
+        {
+            Id = new NavId(id);
+            _events = new RoutedEventController<TrackingLayoutNode>(this);
+            _rootTracking = new RootTrackingController<TrackingLayoutNode, TrackingLayoutRootNode>(
+                this
+            );
+            Layout = new LayoutController<TrackingLayoutNode>(this);
+            _handler = Layout.Register<TestLayoutData>(
+                nameof(Value),
+                data =>
+                {
+                    Value = data.Value;
+                    WasLoaded = true;
+                }
+            );
+            Layout.LoadWhenRootAttached(RootTracking).DisposeItWith(_dispose);
+        }
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+
+        public IRoutedEventController<TrackingLayoutNode> Events => _events;
+
+        public NavId Id { get; }
+
+        public TrackingLayoutNode? Parent { get; private set; }
+
+        public Observable<TrackingLayoutNode?> ParentChanged => _parentChanged;
+
+        public IRootTrackingController<TrackingLayoutRootNode> RootTracking => _rootTracking;
+
+        public ILayoutController Layout { get; }
+
+        public int Value { get; private set; }
+
+        public bool WasLoaded { get; private set; }
+
+        public IEnumerable<TrackingLayoutNode> GetChildren()
+        {
+            return _children;
+        }
+
+        public ValueTask<TrackingLayoutNode> Navigate(NavId id)
+        {
+            return ValueTask.FromResult(_children.FirstOrDefault(x => x.Id == id) ?? this);
+        }
+
+        public void AddChild(TrackingLayoutNode child)
+        {
+            ArgumentNullException.ThrowIfNull(child);
+            _children.Add(child);
+            child.SetParent(this);
+        }
+
+        public void SetParent(TrackingLayoutNode? parent)
+        {
+            if (ReferenceEquals(Parent, parent))
+            {
+                return;
+            }
+
+            Parent = parent;
+            _parentChanged.OnNext(parent);
+        }
+
+        public void Dispose()
+        {
+            _handler.Dispose();
+            Layout.Dispose();
+            _rootTracking.Dispose();
+            _events.Dispose();
+            _parentChanged.Dispose();
+            _dispose.Dispose();
+            PropertyChanged = null;
+        }
+    }
+
+    private sealed class TrackingLayoutRootNode : TrackingLayoutNode
+    {
+        public TrackingLayoutRootNode(string id, ILayoutStore store)
+            : base(id)
+        {
+            LayoutManager = new LayoutManager<TrackingLayoutNode>(this, store);
+        }
+
+        public LayoutManager<TrackingLayoutNode> LayoutManager { get; }
+
+        public new void Dispose()
+        {
+            LayoutManager.Dispose();
+            base.Dispose();
+        }
     }
 }

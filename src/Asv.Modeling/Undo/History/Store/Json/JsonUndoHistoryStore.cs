@@ -8,6 +8,9 @@ using ZLogger;
 
 namespace Asv.Modeling;
 
+/// <summary>
+/// Stores undo history as JSON stack files and binary payload files.
+/// </summary>
 public class JsonUndoHistoryStore : AsyncDisposableOnceBag, IUndoHistoryStore
 {
     private const int DefaultInMemoryThresholdBytes = 4 * 1024;
@@ -18,6 +21,14 @@ public class JsonUndoHistoryStore : AsyncDisposableOnceBag, IUndoHistoryStore
     private readonly int _inMemoryThresholdBytes;
     private readonly ILogger _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="JsonUndoHistoryStore"/> class.
+    /// </summary>
+    /// <param name="storageDirectory">The directory used to store undo history data.</param>
+    /// <param name="logger">The optional logger used for storage diagnostics.</param>
+    /// <param name="inMemoryThresholdBytes">
+    /// The maximum serialized payload size stored directly in stack files. Larger payloads are stored in separate files.
+    /// </param>
     public JsonUndoHistoryStore(
         string storageDirectory,
         ILogger? logger = null,
@@ -39,6 +50,7 @@ public class JsonUndoHistoryStore : AsyncDisposableOnceBag, IUndoHistoryStore
         }
     }
 
+    /// <inheritdoc />
     public void LoadChange(IUndoSnapshot snapshot, IUndoChange undoChange)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
@@ -71,6 +83,7 @@ public class JsonUndoHistoryStore : AsyncDisposableOnceBag, IUndoHistoryStore
         }
     }
 
+    /// <inheritdoc />
     public void SaveChange(IUndoSnapshot snapshot, IUndoChange undoChange)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
@@ -95,6 +108,7 @@ public class JsonUndoHistoryStore : AsyncDisposableOnceBag, IUndoHistoryStore
         }
     }
 
+    /// <inheritdoc />
     public void LoadUndoRedo(Action<IUndoSnapshot> addUndo, Action<IUndoSnapshot> addRedo)
     {
         var dataIndex = new HashSet<Ulid>();
@@ -121,12 +135,14 @@ public class JsonUndoHistoryStore : AsyncDisposableOnceBag, IUndoHistoryStore
             .ForEach(File.Delete);
     }
 
+    /// <inheritdoc />
     public void SaveUndoRedo(IEnumerable<IUndoSnapshot> undo, IEnumerable<IUndoSnapshot> redo)
     {
         WriteStackFile(GetUndoStackFilePath(), undo.Cast<UndoSnapshot>());
         WriteStackFile(GetRedoStackFilePath(), redo.Cast<UndoSnapshot>());
     }
 
+    /// <inheritdoc />
     public IUndoSnapshot CreateSnapshot(NavPath path, string changeId)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(changeId);
@@ -216,9 +232,18 @@ public class JsonUndoHistoryStore : AsyncDisposableOnceBag, IUndoHistoryStore
 
     private class UndoSnapshot : IUndoSnapshot
     {
+        /// <inheritdoc />
         public required NavPath Path { get; set; }
+
+        /// <inheritdoc />
         public required string ChangeId { get; set; }
+
+        /// <inheritdoc />
         public required Ulid DataRefId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the serialized change payload when it is stored inline.
+        /// </summary>
         public byte[]? Data { get; set; }
     }
 }

@@ -3,7 +3,7 @@ namespace Asv.Modeling;
 public interface ISupportOrder
 {
     int Order { get; }
-    
+
     public class Comparer : IComparer<ISupportOrder>
     {
         public static IComparer<ISupportOrder> Instance { get; } = new Comparer();
