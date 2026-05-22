@@ -1,3 +1,4 @@
+using Asv.Common;
 using R3;
 
 namespace Asv.Modeling;
@@ -55,5 +56,57 @@ public interface IRootTrackingController<TRoot>
         }
 
         return Attached.Subscribe(action);
+    }
+
+    /// <summary>
+    /// Executes the specified asynchronous action immediately if a root is already attached,
+    /// and again every time a root is attached.
+    /// </summary>
+    /// <param name="action">The asynchronous action to execute with the attached root.</param>
+    /// <returns>A disposable subscription that stops future executions when disposed.</returns>
+    public IDisposable ExecuteWhenRootAttached(Func<TRoot, ValueTask> action)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+
+        return ExecuteWhenRootAttached((root, _) => action(root));
+    }
+
+    /// <summary>
+    /// Executes the specified asynchronous action immediately if a root is already attached,
+    /// and again every time a root is attached.
+    /// </summary>
+    /// <param name="action">The asynchronous action to execute with the attached root and cancellation token.</param>
+    /// <returns>A disposable subscription that stops future executions when disposed.</returns>
+    public IDisposable ExecuteWhenRootAttached(Func<TRoot, CancellationToken, ValueTask> action)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+
+        if (Root.CurrentValue is { } root)
+        {
+            action(root, default).SafeFireAndForget();
+            var isFirstNotification = true;
+            return Root.SubscribeAwait(
+                (next, cancel) =>
+                {
+                    if (isFirstNotification)
+                    {
+                        isFirstNotification = false;
+                        if (ReferenceEquals(next, root))
+                        {
+                            return ValueTask.CompletedTask;
+                        }
+                    }
+
+                    if (next is { } attachedRoot)
+                    {
+                        return action(attachedRoot, cancel);
+                    }
+
+                    return ValueTask.CompletedTask;
+                }
+            );
+        }
+
+        return Attached.SubscribeAwait(action);
     }
 }
