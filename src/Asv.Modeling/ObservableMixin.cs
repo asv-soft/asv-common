@@ -11,20 +11,36 @@ public static class ObservableMixin
         ICollection<TColl> dest,
         Func<TOrigin, TDest?> addAction,
         Func<TOrigin, TDest, bool> filterToRemove,
-        bool disposeDestRemoved = true
+        bool disposeDestRemoved = true,
+        SynchronizationContext? synchronizationContext = null
     )
         where TDest : TColl
     {
-        var sub1 = src.ObserveAdd().Select(x => x.Value).Subscribe(addAction, OnItemAdd);
+        var sub1 = src.ObserveAdd()
+            .Select(x => x.Value)
+            .ObserveOn(synchronizationContext)
+            .Subscribe(addAction, OnItemAdd);
 
-        var sub2 = src.ObserveRemove().Subscribe(dest, OnItemRemove);
+        var sub2 = src.ObserveRemove()
+            .ObserveOn(synchronizationContext)
+            .Subscribe(dest, OnItemRemove);
 
-        foreach (var item in src)
-        {
-            OnItemAdd(item, addAction);
-        }
+        InvokeOnContext(
+            synchronizationContext,
+            () =>
+            {
+                foreach (var item in src)
+                {
+                    OnItemAdd(item, addAction);
+                }
+            }
+        );
 
-        return Disposable.Combine(sub1, sub2, Disposable.Create(OnDisposed));
+        return Disposable.Combine(
+            sub1,
+            sub2,
+            Disposable.Create(() => InvokeOnContext(synchronizationContext, OnDisposed))
+        );
 
         // Local function to remove all populated items from dest
         void OnDisposed()
@@ -87,7 +103,8 @@ public static class ObservableMixin
     public static IDisposable OnAddOrRemove<TOrigin, TFilter>(
         this IObservableCollection<TOrigin> src,
         Action<TFilter> addAction,
-        Action<TFilter> removeAction
+        Action<TFilter> removeAction,
+        SynchronizationContext? synchronizationContext = null
     )
         where TFilter : TOrigin
     {
@@ -95,37 +112,51 @@ public static class ObservableMixin
             .Select(x => x.Value)
             .Where(x => x is TFilter)
             .Cast<TOrigin, TFilter>()
+            .ObserveOn(synchronizationContext)
             .Subscribe(addAction);
         var sub2 = src.ObserveRemove()
             .Select(x => x.Value)
             .Where(x => x is TFilter)
             .Cast<TOrigin, TFilter>()
+            .ObserveOn(synchronizationContext)
             .Subscribe(removeAction);
         return Disposable.Combine(sub1, sub2);
     }
 
-    public static IDisposable DisposeMany<TModel, TView>(this ISynchronizedView<TModel, TView> src)
+    public static IDisposable DisposeMany<TModel, TView>(
+        this ISynchronizedView<TModel, TView> src,
+        SynchronizationContext? synchronizationContext = null
+    )
         where TView : IDisposable
     {
-        return src.ObserveRemove().Subscribe(x => x.Value.View.Dispose());
+        return src.ObserveRemove()
+            .ObserveOn(synchronizationContext)
+            .Subscribe(x => x.Value.View.Dispose());
     }
 
     public static ISynchronizedView<TModel, TView> DisposeMany<TModel, TView>(
         this ISynchronizedView<TModel, TView> src,
-        CompositeDisposable subscriptionDispose
+        CompositeDisposable subscriptionDispose,
+        SynchronizationContext? synchronizationContext = null
     )
         where TView : IDisposable
     {
         src.ObserveRemove()
+            .ObserveOn(synchronizationContext)
             .Subscribe(x => x.Value.View.Dispose())
             .DisposeItWith(subscriptionDispose);
         return src;
     }
 
-    public static IDisposable DisposeRemovedItems<T>(this IObservableCollection<T> src)
+    public static IDisposable DisposeRemovedItems<T>(
+        this IObservableCollection<T> src,
+        SynchronizationContext? synchronizationContext = null
+    )
         where T : IDisposable
     {
-        return src.ObserveRemove().Subscribe(x => x.Value.Dispose());
+        return src.ObserveRemove()
+            .ObserveOn(synchronizationContext)
+            .Subscribe(x => x.Value.Dispose());
     }
 
     #region ClearWithItemsDispose
@@ -230,4 +261,27 @@ public static class ObservableMixin
     }
 
     #endregion
+
+    private static void InvokeOnContext(
+        SynchronizationContext? synchronizationContext,
+        Action action
+    )
+    {
+        if (
+            synchronizationContext is null
+            || SynchronizationContext.Current == synchronizationContext
+        )
+        {
+            action();
+            return;
+        }
+
+        synchronizationContext.Send(
+            static state =>
+            {
+                ((Action?)state)?.Invoke();
+            },
+            action
+        );
+    }
 }
