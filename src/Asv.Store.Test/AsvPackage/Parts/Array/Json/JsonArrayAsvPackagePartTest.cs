@@ -201,5 +201,187 @@ public class JsonArrayAsvPackagePartTest(ITestOutputHelper log)
         Assert.Contains("\"Name\": \"beta\"", raw);
     }
 
+    [Fact]
+    public async Task Read_OneHundredThousandRows_Works()
+    {
+        const int count = 100_000;
+        using var ms = new MemoryStream();
+        var logger = new TestLogger(log, TimeProvider.System, "JsonArrayAsvPackagePartTest");
+        var data = Enumerable
+            .Range(0, count)
+            .Select(i => new TestRow(i, $"row-{i}", i % 2 == 0))
+            .ToArray();
+
+        using (var pkg = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite))
+        {
+            var ctx = new AsvPackageContext(new Lock(), pkg, logger);
+            var part = new JsonArrayAsvPackagePart<TestRow>(
+                PartUri,
+                ctx,
+                parent: null,
+                contentType: ContentType,
+                compression: CompressionOption.Maximum
+            );
+
+            await part.Write(data, CancellationToken.None);
+            part.Dispose();
+        }
+
+        ms.Position = 0;
+        using var readPackage = Package.Open(ms, FileMode.Open, FileAccess.Read);
+        var readContext = new AsvPackageContext(new Lock(), readPackage, logger);
+        var readPart = new JsonArrayAsvPackagePart<TestRow>(
+            PartUri,
+            readContext,
+            parent: null,
+            contentType: ContentType
+        );
+        var readCount = 0;
+
+        await readPart.Read(
+            row =>
+            {
+                Assert.Equal(data[readCount], row);
+                readCount++;
+            },
+            CancellationToken.None
+        );
+
+        Assert.Equal(count, readCount);
+    }
+
+    [Fact]
+    public async Task Read_TaskNotAwaitedAndPackageDisposedDuringRead_RaisesUnobservedTaskException()
+    {
+        using var ms = new MemoryStream();
+        var logger = new TestLogger(log, TimeProvider.System, "JsonArrayAsvPackagePartTest");
+        var data = Enumerable
+            .Range(0, 4)
+            .Select(i => new TestRow(i, new string('x', 1024 * 1024), i % 2 == 0))
+            .ToArray();
+
+        using (var pkg = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite))
+        {
+            var ctx = new AsvPackageContext(new Lock(), pkg, logger);
+            var part = new JsonArrayAsvPackagePart<TestRow>(
+                PartUri,
+                ctx,
+                parent: null,
+                contentType: ContentType,
+                compression: CompressionOption.Maximum
+            );
+
+            await part.Write(data, CancellationToken.None);
+            part.Dispose();
+        }
+
+        ms.Position = 0;
+        var firstRowVisited = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
+        var releaseVisitor = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
+        var unobserved = new TaskCompletionSource<AggregateException>(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
+
+        void Handler(object? sender, UnobservedTaskExceptionEventArgs args)
+        {
+            if (ContainsObjectDisposedException(args.Exception))
+            {
+                args.SetObserved();
+                unobserved.TrySetResult(args.Exception);
+            }
+        }
+
+        TaskScheduler.UnobservedTaskException += Handler;
+        try
+        {
+            var readPackage = Package.Open(ms, FileMode.Open, FileAccess.Read);
+            var ctx = new AsvPackageContext(new Lock(), readPackage, logger);
+            var part = new JsonArrayAsvPackagePart<TestRow>(
+                PartUri,
+                ctx,
+                parent: null,
+                contentType: ContentType
+            );
+
+            var read = StartUnobservedRead(part, firstRowVisited, releaseVisitor);
+
+            await firstRowVisited.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            readPackage.Close();
+            releaseVisitor.SetResult();
+
+            await read.Completed.WaitAsync(TimeSpan.FromSeconds(5));
+            await WaitForUnobservedTaskException(read.TaskReference, unobserved);
+
+            var exception = await unobserved.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.Contains(
+                exception.Flatten().InnerExceptions,
+                ex => ex is ObjectDisposedException
+            );
+        }
+        finally
+        {
+            TaskScheduler.UnobservedTaskException -= Handler;
+        }
+    }
+
+    private static (WeakReference TaskReference, Task Completed) StartUnobservedRead(
+        IArrayPart<TestRow> part,
+        TaskCompletionSource firstRowVisited,
+        TaskCompletionSource releaseVisitor
+    )
+    {
+        var completed = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
+        var task = Task.Run(async () =>
+        {
+            await part.Read(
+                _ =>
+                {
+                    firstRowVisited.TrySetResult();
+                    releaseVisitor.Task.GetAwaiter().GetResult();
+                },
+                CancellationToken.None
+            );
+        });
+        var weakReference = new WeakReference(task);
+        _ = task.ContinueWith(
+            _ => completed.TrySetResult(),
+            CancellationToken.None,
+            TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default
+        );
+        return (weakReference, completed.Task);
+    }
+
+    private static async Task WaitForUnobservedTaskException(
+        WeakReference taskReference,
+        TaskCompletionSource<AggregateException> unobserved
+    )
+    {
+        for (var i = 0; i < 20 && !unobserved.Task.IsCompleted; i++)
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            if (!taskReference.IsAlive)
+            {
+                await Task.Yield();
+            }
+
+            await Task.Delay(50);
+        }
+    }
+
+    private static bool ContainsObjectDisposedException(AggregateException exception)
+    {
+        return exception.Flatten().InnerExceptions.Any(ex => ex is ObjectDisposedException);
+    }
+
     public sealed record TestRow(int Id, string Name, bool IsActive);
 }

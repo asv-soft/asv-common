@@ -108,14 +108,29 @@ public abstract class AsvPackage : AsvPackagePart
 
     protected override void Dispose(bool disposing)
     {
-        base.Dispose(disposing);
-        ((IDisposable)Context.Package).Dispose();
+        try
+        {
+            base.Dispose(disposing);
+        }
+        finally
+        {
+            if (disposing)
+            {
+                ((IDisposable)Context.Package).Dispose();
+            }
+        }
     }
 
     protected override async ValueTask DisposeAsyncCore()
     {
-        await base.DisposeAsyncCore();
-        await CastAndDispose(Context.Package);
+        try
+        {
+            await base.DisposeAsyncCore();
+        }
+        finally
+        {
+            await CastAndDispose(Context.Package);
+        }
 
         return;
 

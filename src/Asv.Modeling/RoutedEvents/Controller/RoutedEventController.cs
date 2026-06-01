@@ -10,16 +10,25 @@ public class RoutedEventController<T>(T owner) : AsyncDisposableOnceBag, IRouted
 
     public async ValueTask Rise(AsyncRoutedEvent<T> routedEvent, CancellationToken cancel = default)
     {
+        ArgumentNullException.ThrowIfNull(routedEvent);
+        cancel.ThrowIfCancellationRequested();
+
         if (IsDisposed)
         {
             return;
         }
-        if (_routedEventHandler != null)
+        var handlers = _routedEventHandler;
+        if (handlers != null)
         {
-            await _routedEventHandler.Invoke(Owner, routedEvent, cancel);
-            if (routedEvent.IsHandled)
+            foreach (var handler in handlers.GetInvocationList())
             {
-                return;
+                cancel.ThrowIfCancellationRequested();
+                await ((RoutedEventHandler<T>)handler)(Owner, routedEvent, cancel);
+
+                if (routedEvent.IsHandled)
+                {
+                    return;
+                }
             }
         }
 
@@ -28,12 +37,14 @@ public class RoutedEventController<T>(T owner) : AsyncDisposableOnceBag, IRouted
             case RoutingStrategy.Bubble:
                 if (Owner.Parent is not null)
                 {
+                    cancel.ThrowIfCancellationRequested();
                     await Owner.Parent.Events.Rise(routedEvent, cancel);
                 }
                 break;
             case RoutingStrategy.Tunnel:
                 foreach (var child in Owner.GetChildren())
                 {
+                    cancel.ThrowIfCancellationRequested();
                     await child.Events.Rise(routedEvent, cancel);
                     if (routedEvent.IsHandled)
                     {
@@ -52,6 +63,8 @@ public class RoutedEventController<T>(T owner) : AsyncDisposableOnceBag, IRouted
     public IDisposable Catch<TEvent>(RoutedEventHandler<T, TEvent> handler)
         where TEvent : AsyncRoutedEvent<T>
     {
+        ArgumentNullException.ThrowIfNull(handler);
+
         return Catch(Wrapper);
 
         async ValueTask Wrapper(T sender, AsyncRoutedEvent<T> e, CancellationToken cancel)
@@ -66,6 +79,8 @@ public class RoutedEventController<T>(T owner) : AsyncDisposableOnceBag, IRouted
     public IDisposable Catch<TEvent>(Action<TEvent> handler)
         where TEvent : AsyncRoutedEvent<T>
     {
+        ArgumentNullException.ThrowIfNull(handler);
+
         return Catch(Wrapper);
 
         ValueTask Wrapper(T sender, AsyncRoutedEvent<T> e, CancellationToken cancel)
@@ -80,6 +95,8 @@ public class RoutedEventController<T>(T owner) : AsyncDisposableOnceBag, IRouted
 
     public IDisposable Catch(RoutedEventHandler<T> handler)
     {
+        ArgumentNullException.ThrowIfNull(handler);
+
         _routedEventHandler += handler;
         return R3.Disposable.Create(handler, RemoveHandler);
     }

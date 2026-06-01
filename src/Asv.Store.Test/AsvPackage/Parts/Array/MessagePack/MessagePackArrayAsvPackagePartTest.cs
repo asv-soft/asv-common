@@ -25,7 +25,7 @@ public class MessagePackArrayAsvPackagePartTest(ITestOutputHelper log)
     [InlineData(1000, CompressionOption.SuperFast)]
     [InlineData(1000, CompressionOption.Fast)]
     [InlineData(1000, CompressionOption.Normal)]
-    [InlineData(1000, CompressionOption.Maximum)]
+    [InlineData(1_000_000, CompressionOption.Maximum)]
     public async Task WriteRead_Roundtrip_Works(int count, CompressionOption compression)
     {
         using var ms = new MemoryStream();
@@ -157,6 +157,92 @@ public class MessagePackArrayAsvPackagePartTest(ITestOutputHelper log)
 
             Assert.Equal(second, actual);
         }
+    }
+
+    [Fact]
+    public async Task Read_OneHundredThousandRows_Works()
+    {
+        const int count = 100_000;
+        using var ms = new MemoryStream();
+        var logger = new TestLogger(log, TimeProvider.System, "MessagePackArrayAsvPackagePartTest");
+        var data = Enumerable
+            .Range(0, count)
+            .Select(i => new TestRow(i, $"row-{i}", i % 2 == 0))
+            .ToArray();
+
+        using (var pkg = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite))
+        {
+            var ctx = new AsvPackageContext(new Lock(), pkg, logger);
+            var part = new MessagePackArrayAsvPackagePart<TestRow>(
+                PartUri,
+                ctx,
+                parent: null,
+                contentType: ContentType,
+                compression: CompressionOption.Maximum
+            );
+
+            await part.Write(data, CancellationToken.None);
+            part.Dispose();
+        }
+
+        ms.Position = 0;
+        using var readPackage = Package.Open(ms, FileMode.Open, FileAccess.Read);
+        var readContext = new AsvPackageContext(new Lock(), readPackage, logger);
+        var readPart = new MessagePackArrayAsvPackagePart<TestRow>(
+            PartUri,
+            readContext,
+            parent: null,
+            contentType: ContentType
+        );
+        var readCount = 0;
+
+        await readPart.Read(
+            row =>
+            {
+                Assert.Equal(data[readCount], row);
+                readCount++;
+            },
+            CancellationToken.None
+        );
+
+        Assert.Equal(count, readCount);
+    }
+
+    [Fact]
+    public async Task Write_CreatesExpectedMessagePackStream()
+    {
+        using var ms = new MemoryStream();
+        var logger = new TestLogger(log, TimeProvider.System, "MessagePackArrayAsvPackagePartTest");
+        var data = new[] { new TestRow(1, "alpha", true), new TestRow(2, "beta", false) };
+
+        using (var pkg = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite))
+        {
+            var ctx = new AsvPackageContext(new Lock(), pkg, logger);
+            var part = new MessagePackArrayAsvPackagePart<TestRow>(
+                PartUri,
+                ctx,
+                parent: null,
+                contentType: ContentType
+            );
+
+            await part.Write(data, CancellationToken.None);
+            part.Dispose();
+        }
+
+        ms.Position = 0;
+        using var pkgForRead = Package.Open(ms, FileMode.Open, FileAccess.Read);
+        var packagePart = pkgForRead.GetPart(PartUri);
+        Assert.Equal(ContentType, packagePart.ContentType);
+
+        using var stream = packagePart.GetStream(FileMode.Open, FileAccess.Read);
+        using var streamReader = new MessagePackStreamReader(stream);
+        var actual = new List<TestRow>();
+        while (await streamReader.ReadAsync(CancellationToken.None) is { } msgpack)
+        {
+            actual.Add(MessagePackSerializer.Deserialize<TestRow>(msgpack));
+        }
+
+        Assert.Equal(data, actual);
     }
 
     [MessagePackObject]
