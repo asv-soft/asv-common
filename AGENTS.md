@@ -121,6 +121,8 @@ Modules are MEF exports that implement `IModule`. Declare inter-module dependenc
 ## Comments and Documentation
 
 - Write all code comments, XML doc, Markdown, and README content in **English only** — no Russian or mixed-language text.
+- Use clear English names for types, members, variables, files, modules, and public APIs.
+- Keep terminology consistent across code, comments, and documentation.
 - Add comments only when they explain intent, constraints, assumptions, tradeoffs, or non-obvious behavior. Do not restate what the code already makes obvious.
 - Keep comments concise and up to date — remove or update them when the code changes.
 
@@ -132,13 +134,14 @@ Modules are MEF exports that implement `IModule`. Declare inter-module dependenc
 - Depend on abstractions at system boundaries when this improves testability or extensibility.
 - Keep public APIs explicit, stable, and easy to understand.
 - Eliminate duplicated logic through extraction rather than copying.
+- Avoid god objects, hidden side effects, and unclear ownership of responsibilities.
 
 ## Coding Guidelines
 
-**Think before coding:** State assumptions explicitly. If multiple interpretations exist, present them rather than picking silently. If something is unclear, ask before implementing.
+**Think before coding:** State assumptions explicitly. If multiple interpretations exist, present them rather than picking silently. If something is unclear, ask before implementing. If a simpler approach exists, say so; push back when warranted.
 
 **Simplicity first:** Write the minimum code that solves the problem. No speculative features, no abstractions for single-use code, no "flexibility" that wasn't requested, no error handling for impossible scenarios.
 
 **Surgical changes:** Touch only what the task requires. Do not improve adjacent code, comments, or formatting. Match existing style. If you notice unrelated dead code, mention it — don't delete it. Remove only imports/variables/functions that *your* changes made unused.
 
-**Goal-driven execution:** For multi-step tasks, state a brief plan with verifiable steps before starting.
+**Goal-driven execution:** For multi-step tasks, state a brief plan with verifiable steps before starting. Define success criteria and loop until the change is verified, for example by adding or running focused tests for bug fixes and validation changes.
