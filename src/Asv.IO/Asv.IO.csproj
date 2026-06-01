@@ -1,40 +1,35 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(TargetFrameworksValue)</TargetFrameworks>
-    <FileVersion>$(ProductVersion)</FileVersion>
-    <Version>$(ProductVersion)</Version>
-    <PackageVersion>$(ProductVersion)</PackageVersion>
-    <Authors>https://github.com/asv-soft</Authors>
-    <Company>https://github.com/asv-soft</Company>
-    <Copyright>https://github.com/asv-soft</Copyright>
-    <PackageProjectUrl>https://github.com/asv-soft/asv-common</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/asv-soft/asv-common</RepositoryUrl>
-    <PackageTags />
+    <PackageTags>asv;io;serialization;protocols;ports</PackageTags>
+    <Description>Provides IO, serialization, protocol, and device communication utilities for ASV-based libraries</Description>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageIcon>asv-io-128.png</PackageIcon>
-    <LangVersion>latest</LangVersion>
-    <Nullable>enable</Nullable>
-    <CodeAnalysisRuleSet>../CodeStyle.ruleset</CodeAnalysisRuleSet>
-    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
-    <WarningsAsErrors>
-          CS0169,
-          CS0618,
-          CS1502,
-          CS1503,
-          CS8524,
-          CS8600,
-          CS8601,
-          CS8602,
-          CS8603,
-          CS8604,
-          CS8625,
-          CS8629,
-          CS8762,
-          CA1510,
-          CA1851
-      </WarningsAsErrors>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="DotNext" Version="6.2.1" />
+    <PackageReference Include="DotNext.IO" Version="6.2.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <PackageReference Include="ObservableCollections.R3" Version="3.3.4" />
+    <PackageReference Include="RJCP.SerialPortStream" Version="3.0.5" />
+    <PackageReference Include="Roslynator.Analyzers" Version="4.15.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="StyleCop.Analyzers" Version="1.1.118">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="System.IO.Abstractions" Version="22.1.1" />
+    <PackageReference Include="System.IO.Ports" Version="10.0.8" />
+    <PackageReference Include="TestableIO.System.IO.Abstractions" Version="22.1.1" />
+    <PackageReference Include="TestableIO.System.IO.Abstractions.Wrappers" Version="22.1.1" />
+    <PackageReference Include="ZLogger" Version="2.5.10" />
+    <PackageReference Include="ZstdSharp.Port" Version="0.8.8" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Asv.Common\Asv.Common.csproj" />
+  </ItemGroup>
   <ItemGroup>
     <None Include="..\..\img\asv-io-128.png">
       <Pack>True</Pack>
@@ -48,36 +43,10 @@
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>SpanBitHelperExt.cs</LastGenOutput>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="ObservableCollections.R3" Version="$(R3Collections)" />
-    <PackageReference Include="RJCP.SerialPortStream" Version="3.0.4" />
-    <PackageReference Include="Roslynator.Analyzers" Version="4.14.0">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="StyleCop.Analyzers" Version="1.1.118">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="ZLogger" Version="$(ZLoggerVersion)" />
-    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
-    <PackageReference Include="System.IO.Abstractions" Version="$(SystemIOAbstractionsVersion)" />
-    <PackageReference
-      Include="TestableIO.System.IO.Abstractions"
-      Version="$(SystemIOAbstractionsVersion)"
-    />
-    <PackageReference
-      Include="TestableIO.System.IO.Abstractions.Wrappers"
-      Version="$(SystemIOAbstractionsVersion)"
-    />
-    <PackageReference Include="System.IO.Ports" Version="$(DotNetVersion)" />
-    <PackageReference Include="DotNext" Version="$(DotNextVersion)" />
-    <PackageReference Include="DotNext.IO" Version="$(DotNextVersion)" />
-    <PackageReference Include="ZstdSharp.Port" Version="0.8.6" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Asv.Common\Asv.Common.csproj" />
+    <None Update="Serializers\SpanBitHelperExt.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>SpanBitHelperExt.cs</LastGenOutput>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Compile Update="Serializers\SpanBitHelperExt.cs">
@@ -85,12 +54,6 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>SpanBitHelperExt.tt</DependentUpon>
     </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <None Update="Serializers\SpanBitHelperExt.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>SpanBitHelperExt.cs</LastGenOutput>
-    </None>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Store\" />

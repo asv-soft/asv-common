@@ -1,21 +1,19 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(TargetFrameworksValue)</TargetFrameworks>
     <IsPackable>false</IsPackable>
-    <FileVersion>$(ProductVersion)</FileVersion>
-    <Version>$(ProductVersion)</Version>
-    <LangVersion>latest</LangVersion>
-    <CodeAnalysisRuleSet>../CodeStyle.ruleset</CodeAnalysisRuleSet>
-    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="AutoFixture" Version="$(AutoFixtureVersion)" />
-    <PackageReference Include="DeepEqual" Version="$(DeepEqualVersion)" />
-    <PackageReference Include="FluentAssertions" Version="8.6.0" />
-    <PackageReference Include="JetBrains.Annotations" Version="2025.2.1" />
-    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" Version="9.8.0" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
-    <PackageReference Include="Roslynator.Analyzers" Version="4.14.0">
+    <PackageReference Include="AutoFixture" Version="4.18.1" />
+    <PackageReference Include="coverlet.collector" Version="10.0.1">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="DeepEqual" Version="5.1.0" />
+    <PackageReference Include="FluentAssertions" Version="8.10.0" />
+    <PackageReference Include="JetBrains.Annotations" Version="2025.2.4" />
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" Version="10.6.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.6.0" />
+    <PackageReference Include="Roslynator.Analyzers" Version="4.15.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
@@ -24,16 +22,13 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="TimeProviderExtensions" Version="1.0.0" />
-    <PackageReference Include="xunit.v3" Version="$(XunitVersion)" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="$(XunitRunnerVersion)" />
-    <PackageReference Include="coverlet.collector" Version="6.0.4">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5" />
+    <PackageReference Include="xunit.v3" Version="3.2.2" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Asv.Cfg.Test\Asv.Cfg.Test.csproj" />
     <ProjectReference Include="..\Asv.IO\Asv.IO.csproj" />
+    <ProjectReference Include="..\Asv.XUnit\Asv.XUnit.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="Serializers\SpanBitHelperExtTest.tt">
@@ -50,6 +45,5 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Store\" />
-    <ProjectReference Include="..\Asv.XUnit\Asv.XUnit.csproj" />
   </ItemGroup>
 </Project>

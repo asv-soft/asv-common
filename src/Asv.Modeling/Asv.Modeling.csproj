@@ -1,19 +1,24 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
+    <PackageIcon>asv-modeling-128.png</PackageIcon>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="DotNext" Version="$(DotNextVersion)" />
-    <PackageReference Include="MessagePack" Version="3.1.4" />
-    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
-    <PackageReference Include="ObservableCollections.R3" Version="$(R3Collections)" />
+    <PackageReference Include="DotNext" Version="6.2.1" />
     <PackageReference Include="MemoryPack" Version="1.21.4" />
-    <PackageReference Include="ZLogger" Version="$(ZLoggerVersion)" />
+    <PackageReference Include="MessagePack" Version="3.1.6" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <PackageReference Include="ObservableCollections.R3" Version="3.3.4" />
     <PackageReference Include="Ulid" Version="1.4.1" />
+    <PackageReference Include="ZLogger" Version="2.5.10" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Asv.Common\Asv.Common.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\img\asv-modeling-128.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
   </ItemGroup>
 </Project>

@@ -1,18 +1,38 @@
 <Project>
   <PropertyGroup>
-    <ProductVersion>3.6.0-dev.20</ProductVersion>
-    <TargetFrameworksValue>net10.0</TargetFrameworksValue>
-    <DotNetVersion>10.0.0</DotNetVersion>
-    <DotNextVersion>6.1.0</DotNextVersion>
-    <XunitVersion>3.2.2</XunitVersion>
-    <XunitRunnerVersion>3.1.1</XunitRunnerVersion>
-    <R3Version>1.3.0</R3Version>
-    <R3Collections>3.3.4</R3Collections>
-    <NewtonsoftJsonVersion>13.0.4</NewtonsoftJsonVersion>
-    <ZLoggerVersion>2.5.10</ZLoggerVersion>
-    <GeodesyVersion>4.1.0</GeodesyVersion>
-    <DeepEqualVersion>5.1.0</DeepEqualVersion>
-    <AutoFixtureVersion>4.18.1</AutoFixtureVersion>
-    <SystemIOAbstractionsVersion>22.0.16</SystemIOAbstractionsVersion>
+    <ProductVersion>3.6.0-dev.21</ProductVersion>
+    <TargetFramework>net10.0</TargetFramework>
+    <FileVersion>$(ProductVersion)</FileVersion>
+    <Version>$(ProductVersion)</Version>
+    <PackageVersion>$(ProductVersion)</PackageVersion>
+    <Authors>https://github.com/asv-soft</Authors>
+    <Company>https://github.com/asv-soft</Company>
+    <Copyright>https://github.com/asv-soft</Copyright>
+    <PackageProjectUrl>https://github.com/asv-soft/asv-common</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/asv-soft/asv-common</RepositoryUrl>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <CodeAnalysisRuleSet>../CodeStyle.ruleset</CodeAnalysisRuleSet>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <WarningsAsErrors
+      Condition="!$([System.String]::Copy('$(MSBuildProjectName)').EndsWith('.Test'))"
+    >
+      CS0169,
+      CS0618,
+      CS1502,
+      CS1503,
+      CS8524,
+      CS8600,
+      CS8601,
+      CS8602,
+      CS8603,
+      CS8604,
+      CS8625,
+      CS8629,
+      CS8762,
+      CA1510,
+      CA1851
+    </WarningsAsErrors
+    >
   </PropertyGroup>
 </Project>
