@@ -165,7 +165,7 @@ public readonly partial struct NavId : IEquatable<NavId>
         if (!TypeIdRegex.IsMatch(typeId))
         {
             throw new ArgumentException(
-                $"{nameof(typeId)} must match regex '{TypeIdRegexString}'.",
+                $"{nameof(typeId)} must match regex '{TypeIdRegexString}'. Got: '{typeId}'",
                 nameof(typeId)
             );
         }

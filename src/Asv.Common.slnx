@@ -3,6 +3,7 @@
     <File Path="../.github/workflows/release-action.yml" />
     <File Path="../.github/workflows/release-debug-version.yml" />
     <File Path="../.gitignore" />
+    <File Path="../AGENTS.md" />
     <File Path="../build.bat" />
     <File Path="../CLAUDE.md" />
     <File Path="../LICENSE" />
