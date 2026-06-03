@@ -25,22 +25,12 @@ public static class ObservableMixin
             .ObserveOn(synchronizationContext)
             .Subscribe(dest, OnItemRemove);
 
-        InvokeOnContext(
-            synchronizationContext,
-            () =>
-            {
-                foreach (var item in src)
-                {
-                    OnItemAdd(item, addAction);
-                }
-            }
-        );
+        foreach (var item in src)
+        {
+            OnItemAdd(item, addAction);
+        }
 
-        return Disposable.Combine(
-            sub1,
-            sub2,
-            Disposable.Create(() => InvokeOnContext(synchronizationContext, OnDisposed))
-        );
+        return Disposable.Combine(sub1, sub2, Disposable.Create(OnDisposed));
 
         // Local function to remove all populated items from dest
         void OnDisposed()
@@ -261,27 +251,4 @@ public static class ObservableMixin
     }
 
     #endregion
-
-    private static void InvokeOnContext(
-        SynchronizationContext? synchronizationContext,
-        Action action
-    )
-    {
-        if (
-            synchronizationContext is null
-            || SynchronizationContext.Current == synchronizationContext
-        )
-        {
-            action();
-            return;
-        }
-
-        synchronizationContext.Send(
-            static state =>
-            {
-                ((Action?)state)?.Invoke();
-            },
-            action
-        );
-    }
 }
