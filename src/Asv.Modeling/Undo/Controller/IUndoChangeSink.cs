@@ -8,6 +8,14 @@ public interface IUndoChangeSink<in TChange> : IDisposable
     where TChange : IUndoChange
 {
     /// <summary>
+    /// Temporarily suppresses publication of changes from this sink.
+    /// </summary>
+    /// <returns>
+    /// A disposable scope. Disposing the returned object restores publication for this scope.
+    /// </returns>
+    IDisposable SuppressChangePublication();
+
+    /// <summary>
     /// Publishes a change to the owning undo controller.
     /// </summary>
     /// <param name="change">The change to publish.</param>

@@ -192,6 +192,38 @@ public class ISupportUndoTest
     }
 
     [Fact]
+    public void SinkSuppressChangePublication_DoesNotCreateHistoryRecordsForThatSinkOnly()
+    {
+        var storageDirectory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+
+        var root = new HistoryViewModel("root", storageDirectory);
+        var child = new SinkScopedViewModel("child");
+        root.Children.Add(child);
+
+        child.Prop1.Value = "1";
+        child.Prop2.Value = "a";
+
+        using (child.Prop1Sink.SuppressChangePublication())
+        {
+            child.Prop1.Value = "2";
+            child.Prop2.Value = "b";
+            using (child.Prop1Sink.SuppressChangePublication())
+            {
+                child.Prop1.Value = "3";
+            }
+            child.Prop1.Value = "4";
+        }
+
+        child.Prop1.Value = "5";
+        child.Prop2.Value = "c";
+
+        Assert.Equal(5, root.UndoHistory.UndoStack.Count);
+        Assert.Empty(root.UndoHistory.RedoStack);
+
+        root.Dispose();
+    }
+
+    [Fact]
     public async ValueTask ObservableListAdd_UndoRedo_RestoresCollection()
     {
         var storageDirectory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
@@ -399,6 +431,53 @@ public class TestViewModelBase : UndoableViewModel
 
     public ReactiveProperty<string> Prop1 { get; } = new();
     public ObservableList<string> Prop2 { get; } = new();
+}
+
+public class SinkScopedViewModel : UndoableViewModel
+{
+    public SinkScopedViewModel(string id)
+        : base(id)
+    {
+        Children.SetParent<IViewModel, IViewModel>(this).AddTo(ref DisposableBag);
+        Children.DisposeRemovedItems().AddTo(ref DisposableBag);
+
+        Prop1Sink = Undo.CreateValueChange<string>(
+            nameof(Prop1),
+            value => Prop1.Value = value,
+            value => Prop1.Value = value
+        );
+        Prop1Sink.AddTo(ref DisposableBag);
+        Prop1
+            .Pairwise()
+            .Subscribe(change => Prop1Sink.Publish(change.Previous, change.Current))
+            .AddTo(ref DisposableBag);
+
+        Prop2Sink = Undo.CreateValueChange<string>(
+            nameof(Prop2),
+            value => Prop2.Value = value,
+            value => Prop2.Value = value
+        );
+        Prop2Sink.AddTo(ref DisposableBag);
+        Prop2
+            .Pairwise()
+            .Subscribe(change => Prop2Sink.Publish(change.Previous, change.Current))
+            .AddTo(ref DisposableBag);
+    }
+
+    public ObservableList<IViewModel> Children { get; } = new();
+
+    public IUndoChangeSink<ValueUndoChange<string>> Prop1Sink { get; }
+
+    public IUndoChangeSink<ValueUndoChange<string>> Prop2Sink { get; }
+
+    public ReactiveProperty<string> Prop1 { get; } = new();
+
+    public ReactiveProperty<string> Prop2 { get; } = new();
+
+    public override IEnumerable<IViewModel> GetChildren()
+    {
+        return Children;
+    }
 }
 
 public sealed class BlockingUndoHistoryStore : IUndoHistoryStore

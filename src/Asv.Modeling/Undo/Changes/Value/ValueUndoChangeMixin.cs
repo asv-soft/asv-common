@@ -134,6 +134,14 @@ public static class ValueUndoChangeMixin
         public void Publish(ChangeOperation operation, T oldValue, T newValue)
         {
             ArgumentNullException.ThrowIfNull(sink);
+            if (
+                operation == ChangeOperation.Update
+                && EqualityComparer<T>.Default.Equals(oldValue, newValue)
+            )
+            {
+                return;
+            }
+
             sink.Publish(
                 new ValueUndoChange<T>
                 {

@@ -115,6 +115,16 @@ public class ValueUndoChangeMixinTest
     }
 
     [Fact]
+    public void Publish_WithEqualOldAndNewValues_DoesNotPublishUpdateChange()
+    {
+        var sink = new TestUndoChangeSink<int>();
+
+        sink.Publish(1, 1);
+
+        Assert.Empty(sink.Changes);
+    }
+
+    [Fact]
     public void Publish_WithOperationAndValues_PublishesChange()
     {
         var sink = new TestUndoChangeSink<string>();
@@ -155,10 +165,23 @@ public class ValueUndoChangeMixinTest
 
     private sealed class TestUndoChangeSink<T> : IUndoChangeSink<ValueUndoChange<T>>
     {
+        private int _suppressChangePublicationCount;
+
         public List<ValueUndoChange<T>> Changes { get; } = [];
+
+        public IDisposable SuppressChangePublication()
+        {
+            Interlocked.Increment(ref _suppressChangePublicationCount);
+            return R3.Disposable.Create(
+                this,
+                static sink => Interlocked.Decrement(ref sink._suppressChangePublicationCount)
+            );
+        }
 
         public void Publish(ValueUndoChange<T> change)
         {
+            if (_suppressChangePublicationCount > 0)
+                return;
             Changes.Add(change);
         }
 

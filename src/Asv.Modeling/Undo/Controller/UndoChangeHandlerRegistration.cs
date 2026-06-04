@@ -45,13 +45,26 @@ internal sealed class UndoChangeHandlerRegistration<TChange>(
 ) : UndoChangeHandlerRegistration(id, remove), IUndoChangeSink<TChange>
     where TChange : IUndoChange
 {
-    private bool _suppressChanges;
+    private int _suppressChangePublicationCount;
+
+    private bool IsChangePublicationSuppressed =>
+        Volatile.Read(ref _suppressChangePublicationCount) > 0;
+
+    /// <inheritdoc />
+    public IDisposable SuppressChangePublication()
+    {
+        Interlocked.Increment(ref _suppressChangePublicationCount);
+        return Disposable.Create(
+            this,
+            static sink => Interlocked.Decrement(ref sink._suppressChangePublicationCount)
+        );
+    }
 
     /// <inheritdoc />
     public void Publish(TChange change)
     {
         ThrowIfDisposed();
-        if (_suppressChanges)
+        if (IsChangePublicationSuppressed)
             return;
         changes.OnNext((Id, change));
     }
@@ -67,14 +80,9 @@ internal sealed class UndoChangeHandlerRegistration<TChange>(
     public override async ValueTask Undo(IUndoChange undoChange, CancellationToken cancel)
     {
         ThrowIfDisposed();
-        try
+        using (SuppressChangePublication())
         {
-            _suppressChanges = true;
             await undo((TChange)undoChange, cancel);
-        }
-        finally
-        {
-            _suppressChanges = false;
         }
     }
 
@@ -82,14 +90,9 @@ internal sealed class UndoChangeHandlerRegistration<TChange>(
     public override async ValueTask Redo(IUndoChange undoChange, CancellationToken cancel)
     {
         ThrowIfDisposed();
-        try
+        using (SuppressChangePublication())
         {
-            _suppressChanges = true;
             await redo((TChange)undoChange, cancel);
-        }
-        finally
-        {
-            _suppressChanges = false;
         }
     }
 }
