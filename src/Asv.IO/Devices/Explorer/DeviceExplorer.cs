@@ -199,7 +199,6 @@ public class DeviceExplorer : AsyncDisposableOnce, IDeviceExplorer
             _sub1.Dispose();
             _sub2.Dispose();
             _sub3.Dispose();
-            _lock.Dispose();
             _timer.Dispose();
             _lastSeen.Clear();
 
@@ -208,6 +207,8 @@ public class DeviceExplorer : AsyncDisposableOnce, IDeviceExplorer
                 device.Value.Dispose();
             }
             _devices.Clear();
+
+            _lock.Dispose();
         }
 
         base.Dispose(disposing);
@@ -218,15 +219,28 @@ public class DeviceExplorer : AsyncDisposableOnce, IDeviceExplorer
         await CastAndDispose(_sub1);
         await CastAndDispose(_sub2);
         await CastAndDispose(_sub3);
-        await CastAndDispose(_lock);
-        _lastSeen.Clear();
-        foreach (var device in _devices)
-        {
-            await device.Value.DisposeAsync();
-        }
-        _devices.Clear();
         await _timer.DisposeAsync();
 
+        _lastSeen.Clear();
+        IClientDevice[] devices;
+        _lock.EnterWriteLock();
+        try
+        {
+            _lastSeen.Clear();
+            devices = _devices.Select(kvp => kvp.Value).ToArray();
+            _devices.Clear();
+        }
+        finally
+        {
+            _lock.ExitWriteLock();
+        }
+
+        foreach (var device in devices)
+        {
+            await device.DisposeAsync();
+        }
+
+        _lock.Dispose();
         await base.DisposeAsyncCore();
 
         return;
