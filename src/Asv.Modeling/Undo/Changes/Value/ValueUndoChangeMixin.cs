@@ -1,5 +1,6 @@
 namespace Asv.Modeling;
 
+using Asv.Common;
 using R3;
 
 /// <summary>
@@ -90,6 +91,22 @@ public static class ValueUndoChangeMixin
                     )
                 );
             return Disposable.Combine(publisher, subscription);
+        }
+
+        /// <summary>
+        /// Registers a GeoPoint reactive property change handler and stores values as strings.
+        /// </summary>
+        /// <param name="changeId">Unique identifier of the change registration within the controller.</param>
+        /// <param name="prop">The GeoPoint reactive property to track.</param>
+        /// <returns>A disposable subscription that unregisters the handler and property listener.</returns>
+        public IDisposable TrackGeoPointProperty(string changeId, ReactiveProperty<GeoPoint> prop)
+        {
+            return controller.TrackProperty<GeoPoint, string>(
+                changeId,
+                prop,
+                GeoPoint.Parse,
+                static value => value.ToString()
+            );
         }
 
         /// <summary>

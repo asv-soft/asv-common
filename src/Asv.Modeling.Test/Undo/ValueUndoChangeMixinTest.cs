@@ -1,4 +1,5 @@
 using System.Buffers;
+using Asv.Common;
 using JetBrains.Annotations;
 using R3;
 
@@ -107,7 +108,7 @@ public class ValueUndoChangeMixinTest
     public async ValueTask TrackProperty_WithEnumViewAndStoreConverter_SavesConvertedStoreValues()
     {
         var store = new RecordingUndoHistoryStore();
-        using var root = new EnumHistoryRoot(store);
+        using var root = new TrackingHistoryRoot(store);
         using var child = new EnumPropertyViewModel("child");
         root.AddChild(child);
 
@@ -115,7 +116,7 @@ public class ValueUndoChangeMixinTest
 
         await root.UndoHistory.UndoAsync(TestContext.Current.CancellationToken);
 
-        var storedChange = ReadLastStoredValueChange(store);
+        var storedChange = ReadLastStoredValueChange<int>(store);
         Assert.Equal(ChangeOperation.Update, storedChange.Operation);
         Assert.Equal((int)TrackedState.None, storedChange.OldValue);
         Assert.Equal((int)TrackedState.Active, storedChange.NewValue);
@@ -125,7 +126,7 @@ public class ValueUndoChangeMixinTest
     public async ValueTask TrackProperty_WithEnumViewAndStoreConverter_RestoresEnumValuesOnUndoRedo()
     {
         var store = new RecordingUndoHistoryStore();
-        using var root = new EnumHistoryRoot(store);
+        using var root = new TrackingHistoryRoot(store);
         using var child = new EnumPropertyViewModel("child");
         root.AddChild(child);
 
@@ -136,6 +137,29 @@ public class ValueUndoChangeMixinTest
 
         await root.UndoHistory.RedoAsync(TestContext.Current.CancellationToken);
         Assert.Equal(TrackedState.Armed, (TrackedState)child.State.Value);
+    }
+
+    [Fact]
+    public async ValueTask TrackGeoPointProperty_SavesStringValuesAndRestoresGeoPointOnUndoRedo()
+    {
+        var store = new RecordingUndoHistoryStore();
+        using var root = new TrackingHistoryRoot(store);
+        using var child = new GeoPointPropertyViewModel("child");
+        root.AddChild(child);
+        var newPosition = new GeoPoint(10, 20, 30);
+
+        child.Position.Value = newPosition;
+
+        await root.UndoHistory.UndoAsync(TestContext.Current.CancellationToken);
+
+        var storedChange = ReadLastStoredValueChange<string>(store);
+        Assert.Equal(ChangeOperation.Update, storedChange.Operation);
+        Assert.Equal(GeoPoint.Zero.ToString(), storedChange.OldValue);
+        Assert.Equal(newPosition.ToString(), storedChange.NewValue);
+        Assert.Equal(GeoPoint.Zero, child.Position.Value);
+
+        await root.UndoHistory.RedoAsync(TestContext.Current.CancellationToken);
+        Assert.Equal(newPosition, child.Position.Value);
     }
 
     [Fact]
@@ -200,9 +224,9 @@ public class ValueUndoChangeMixinTest
         Assert.Equal(0, change.NewValue);
     }
 
-    private static ValueUndoChange<int> ReadLastStoredValueChange(RecordingUndoHistoryStore store)
+    private static ValueUndoChange<T> ReadLastStoredValueChange<T>(RecordingUndoHistoryStore store)
     {
-        var change = new ValueUndoChange<int>();
+        var change = new ValueUndoChange<T>();
         change.Deserialize(new ReadOnlySequence<byte>(store.LastSavedData));
         return change;
     }
@@ -214,11 +238,11 @@ public class ValueUndoChangeMixinTest
         Active = 2,
     }
 
-    private sealed class EnumHistoryRoot : ViewModelBase, ISupportUndoHistory<IViewModel>
+    private sealed class TrackingHistoryRoot : ViewModelBase, ISupportUndoHistory<IViewModel>
     {
         private readonly List<IViewModel> _children = [];
 
-        public EnumHistoryRoot(IUndoHistoryStore store)
+        public TrackingHistoryRoot(IUndoHistoryStore store)
             : base("root")
         {
             UndoHistory = new UndoHistory<IViewModel>(this, store).AddTo(ref DisposableBag);
@@ -253,6 +277,22 @@ public class ValueUndoChangeMixinTest
         }
 
         public ReactiveProperty<Enum> State { get; } = new(TrackedState.None);
+
+        public override IEnumerable<IViewModel> GetChildren()
+        {
+            return [];
+        }
+    }
+
+    private sealed class GeoPointPropertyViewModel : UndoableViewModel
+    {
+        public GeoPointPropertyViewModel(string id)
+            : base(id)
+        {
+            Undo.TrackGeoPointProperty(nameof(Position), Position).AddTo(ref DisposableBag);
+        }
+
+        public ReactiveProperty<GeoPoint> Position { get; } = new(GeoPoint.Zero);
 
         public override IEnumerable<IViewModel> GetChildren()
         {
