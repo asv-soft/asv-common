@@ -19,6 +19,11 @@ namespace Asv.Common
 
         private static readonly Regex LongitudeDegreeRegex = GetLongitudeDegreeRegex();
 
+        [GeneratedRegex(@"^[\+-]?\d+\.\d+$", RegexOptions.Compiled)]
+        private static partial Regex GetDecimalDegreeRegex();
+
+        private static readonly Regex DecimalDegreeRegex = GetDecimalDegreeRegex();
+
         [GeneratedRegex(
             """^((?<s1>[WwEe+-]?\s*)?(?<deg>[0-9]{0,2}\d|180)\s*([:°˚º^~*°\.\s_-]+)\s*((?<min>[0-5]?\d|\d)(?:\.\d+)?|\d{1,2})\s*([′':;^~*\s_-]*)\s*(?<sec>([0-5]?\d|\d)(?:\.\d+)?\s*)?([""”˝¨^\s_-]*)\s*(?<s2>[WwEe+-]?\s*)?)\s*$""",
             RegexOptions.Compiled
@@ -65,7 +70,24 @@ namespace Asv.Common
                 return false;
             }
 
-            value = value.Replace(',', '.');
+            value = value.Trim().Replace(',', '.');
+            if (DecimalDegreeRegex.IsMatch(value))
+            {
+                if (
+                    double.TryParse(
+                        value,
+                        NumberStyles.Any,
+                        CultureInfo.InvariantCulture,
+                        out longitude
+                    ) == false
+                )
+                {
+                    return false;
+                }
+
+                return longitude is >= Min and <= Max;
+            }
+
             if (LongitudeDegreeRegex.IsMatch(value))
             {
                 if (

@@ -48,15 +48,47 @@ public static class ValueUndoChangeMixin
         /// <param name="changeId">Unique identifier of the change registration within the controller.</param>
         /// <param name="prop">The reactive property to track.</param>
         /// <returns>A disposable subscription that unregisters the handler and property listener.</returns>
-        public IDisposable Create<T>(string changeId, ReactiveProperty<T> prop)
+        public IDisposable TrackProperty<T>(string changeId, ReactiveProperty<T> prop)
         {
-            var publisher = controller.CreateValueChange<T>(
+            var publisher = controller.RegisterValue<T>(
                 changeId,
                 value => prop.Value = value,
                 value => prop.Value = value
             );
             var subscription = prop.Pairwise()
-                .Subscribe(change => publisher.Publish(change.Previous, change.Current));
+                .Subscribe(change => publisher.PublishUpdate(change.Previous, change.Current));
+            return Disposable.Combine(publisher, subscription);
+        }
+
+        /// <summary>
+        /// Registers a reactive property value change handler using a separate stored representation.
+        /// </summary>
+        /// <typeparam name="TView">The reactive property value type used by the view model.</typeparam>
+        /// <typeparam name="TStore">The value type stored in undo history.</typeparam>
+        /// <param name="changeId">Unique identifier of the change registration within the controller.</param>
+        /// <param name="prop">The reactive property to track.</param>
+        /// <param name="loadConverter">Converts a stored value back to the property value type during undo or redo.</param>
+        /// <param name="saveConverter">Converts a property value to the stored value type before publication.</param>
+        /// <returns>A disposable subscription that unregisters the handler and property listener.</returns>
+        public IDisposable TrackProperty<TView, TStore>(
+            string changeId,
+            ReactiveProperty<TView> prop,
+            Func<TStore, TView> loadConverter,
+            Func<TView, TStore> saveConverter
+        )
+        {
+            var publisher = controller.RegisterValue<TStore>(
+                changeId,
+                value => prop.Value = loadConverter(value),
+                value => prop.Value = loadConverter(value)
+            );
+            var subscription = prop.Pairwise()
+                .Subscribe(change =>
+                    publisher.PublishUpdate(
+                        saveConverter(change.Previous),
+                        saveConverter(change.Current)
+                    )
+                );
             return Disposable.Combine(publisher, subscription);
         }
 
@@ -68,7 +100,7 @@ public static class ValueUndoChangeMixin
         /// <param name="undoOldValue">Callback that receives the old value when the change is undone.</param>
         /// <param name="redoNewValue">Callback that receives the new value when the change is redone.</param>
         /// <returns>A sink used to publish value changes for this registration.</returns>
-        public IUndoChangeSink<ValueUndoChange<T>> CreateValueChange<T>(
+        public IUndoChangeSink<ValueUndoChange<T>> RegisterValue<T>(
             string changeId,
             AsyncOldValueCallback<T> undoOldValue,
             AsyncNewValueCallback<T> redoNewValue
@@ -90,7 +122,7 @@ public static class ValueUndoChangeMixin
         /// <param name="undoOldValue">Callback that receives the old value when the change is undone.</param>
         /// <param name="redoNewValue">Callback that receives the new value when the change is redone.</param>
         /// <returns>A sink used to publish value changes for this registration.</returns>
-        public IUndoChangeSink<ValueUndoChange<T>> CreateValueChange<T>(
+        public IUndoChangeSink<ValueUndoChange<T>> RegisterValue<T>(
             string changeId,
             OldValueCallback<T> undoOldValue,
             NewValueCallback<T> redoNewValue
@@ -120,9 +152,9 @@ public static class ValueUndoChangeMixin
         /// </summary>
         /// <param name="oldValue">The value before the change.</param>
         /// <param name="newValue">The value after the change.</param>
-        public void Publish(T oldValue, T newValue)
+        public void PublishUpdate(T oldValue, T newValue)
         {
-            sink.Publish(ChangeOperation.Update, oldValue, newValue);
+            sink.PublishUpdate(ChangeOperation.Update, oldValue, newValue);
         }
 
         /// <summary>
@@ -131,7 +163,7 @@ public static class ValueUndoChangeMixin
         /// <param name="operation">The logical operation represented by the change.</param>
         /// <param name="oldValue">The value before the change.</param>
         /// <param name="newValue">The value after the change.</param>
-        public void Publish(ChangeOperation operation, T oldValue, T newValue)
+        public void PublishUpdate(ChangeOperation operation, T oldValue, T newValue)
         {
             ArgumentNullException.ThrowIfNull(sink);
             if (
@@ -156,9 +188,9 @@ public static class ValueUndoChangeMixin
         /// Publishes an update change from an old/new value tuple.
         /// </summary>
         /// <param name="change">The old and new values.</param>
-        public void Publish((T OldValue, T NewValue) change)
+        public void PublishUpdate((T OldValue, T NewValue) change)
         {
-            sink.Publish(change.OldValue, change.NewValue);
+            sink.PublishUpdate(change.OldValue, change.NewValue);
         }
 
         /// <summary>
@@ -166,9 +198,9 @@ public static class ValueUndoChangeMixin
         /// </summary>
         /// <param name="operation">The logical operation represented by the change.</param>
         /// <param name="change">The old and new values.</param>
-        public void Publish(ChangeOperation operation, (T OldValue, T NewValue) change)
+        public void PublishUpdate(ChangeOperation operation, (T OldValue, T NewValue) change)
         {
-            sink.Publish(operation, change.OldValue, change.NewValue);
+            sink.PublishUpdate(operation, change.OldValue, change.NewValue);
         }
     }
 }

@@ -1,4 +1,6 @@
+using System.Buffers;
 using JetBrains.Annotations;
+using R3;
 
 namespace Asv.Modeling.Test;
 
@@ -12,7 +14,7 @@ public class ValueUndoChangeMixinTest
         string? undoValue = null;
         string? redoValue = null;
 
-        var sink = controller.CreateValueChange<string>(
+        var sink = controller.RegisterValue<string>(
             "value",
             (value, _) =>
             {
@@ -26,7 +28,7 @@ public class ValueUndoChangeMixinTest
             }
         );
 
-        sink.Publish("old", "new");
+        sink.PublishUpdate("old", "new");
 
         var handler = controller["value"];
         var change = new ValueUndoChange<string>
@@ -50,13 +52,13 @@ public class ValueUndoChangeMixinTest
         var undoValue = 0;
         var redoValue = 0;
 
-        var sink = controller.CreateValueChange<int>(
+        var sink = controller.RegisterValue<int>(
             "value",
             value => undoValue = value,
             value => redoValue = value
         );
 
-        sink.Publish((1, 2));
+        sink.PublishUpdate((1, 2));
 
         var handler = controller["value"];
         var change = new ValueUndoChange<int>
@@ -102,11 +104,46 @@ public class ValueUndoChangeMixinTest
     }
 
     [Fact]
+    public async ValueTask TrackProperty_WithEnumViewAndStoreConverter_SavesConvertedStoreValues()
+    {
+        var store = new RecordingUndoHistoryStore();
+        using var root = new EnumHistoryRoot(store);
+        using var child = new EnumPropertyViewModel("child");
+        root.AddChild(child);
+
+        child.State.Value = TrackedState.Active;
+
+        await root.UndoHistory.UndoAsync(TestContext.Current.CancellationToken);
+
+        var storedChange = ReadLastStoredValueChange(store);
+        Assert.Equal(ChangeOperation.Update, storedChange.Operation);
+        Assert.Equal((int)TrackedState.None, storedChange.OldValue);
+        Assert.Equal((int)TrackedState.Active, storedChange.NewValue);
+    }
+
+    [Fact]
+    public async ValueTask TrackProperty_WithEnumViewAndStoreConverter_RestoresEnumValuesOnUndoRedo()
+    {
+        var store = new RecordingUndoHistoryStore();
+        using var root = new EnumHistoryRoot(store);
+        using var child = new EnumPropertyViewModel("child");
+        root.AddChild(child);
+
+        child.State.Value = TrackedState.Armed;
+
+        await root.UndoHistory.UndoAsync(TestContext.Current.CancellationToken);
+        Assert.Equal(TrackedState.None, (TrackedState)child.State.Value);
+
+        await root.UndoHistory.RedoAsync(TestContext.Current.CancellationToken);
+        Assert.Equal(TrackedState.Armed, (TrackedState)child.State.Value);
+    }
+
+    [Fact]
     public void Publish_WithOldAndNewValues_PublishesUpdateChange()
     {
         var sink = new TestUndoChangeSink<int>();
 
-        sink.Publish(1, 2);
+        sink.PublishUpdate(1, 2);
 
         var change = Assert.Single(sink.Changes);
         Assert.Equal(ChangeOperation.Update, change.Operation);
@@ -119,7 +156,7 @@ public class ValueUndoChangeMixinTest
     {
         var sink = new TestUndoChangeSink<int>();
 
-        sink.Publish(1, 1);
+        sink.PublishUpdate(1, 1);
 
         Assert.Empty(sink.Changes);
     }
@@ -129,7 +166,7 @@ public class ValueUndoChangeMixinTest
     {
         var sink = new TestUndoChangeSink<string>();
 
-        sink.Publish(ChangeOperation.Create, "", "created");
+        sink.PublishUpdate(ChangeOperation.Create, "", "created");
 
         var change = Assert.Single(sink.Changes);
         Assert.Equal(ChangeOperation.Create, change.Operation);
@@ -142,7 +179,7 @@ public class ValueUndoChangeMixinTest
     {
         var sink = new TestUndoChangeSink<int>();
 
-        sink.Publish((10, 20));
+        sink.PublishUpdate((10, 20));
 
         var change = Assert.Single(sink.Changes);
         Assert.Equal(ChangeOperation.Update, change.Operation);
@@ -155,12 +192,113 @@ public class ValueUndoChangeMixinTest
     {
         var sink = new TestUndoChangeSink<int>();
 
-        sink.Publish(ChangeOperation.Delete, (10, 0));
+        sink.PublishUpdate(ChangeOperation.Delete, (10, 0));
 
         var change = Assert.Single(sink.Changes);
         Assert.Equal(ChangeOperation.Delete, change.Operation);
         Assert.Equal(10, change.OldValue);
         Assert.Equal(0, change.NewValue);
+    }
+
+    private static ValueUndoChange<int> ReadLastStoredValueChange(RecordingUndoHistoryStore store)
+    {
+        var change = new ValueUndoChange<int>();
+        change.Deserialize(new ReadOnlySequence<byte>(store.LastSavedData));
+        return change;
+    }
+
+    private enum TrackedState
+    {
+        None = 0,
+        Armed = 1,
+        Active = 2,
+    }
+
+    private sealed class EnumHistoryRoot : ViewModelBase, ISupportUndoHistory<IViewModel>
+    {
+        private readonly List<IViewModel> _children = [];
+
+        public EnumHistoryRoot(IUndoHistoryStore store)
+            : base("root")
+        {
+            UndoHistory = new UndoHistory<IViewModel>(this, store).AddTo(ref DisposableBag);
+        }
+
+        public IUndoHistory<IViewModel> UndoHistory { get; }
+
+        public void AddChild(IViewModel child)
+        {
+            child.SetParent(this);
+            _children.Add(child);
+        }
+
+        public override IEnumerable<IViewModel> GetChildren()
+        {
+            return _children;
+        }
+    }
+
+    private sealed class EnumPropertyViewModel : UndoableViewModel
+    {
+        public EnumPropertyViewModel(string id)
+            : base(id)
+        {
+            Undo.TrackProperty<Enum, int>(
+                    nameof(State),
+                    State,
+                    value => (TrackedState)value,
+                    value => (int)(TrackedState)value
+                )
+                .AddTo(ref DisposableBag);
+        }
+
+        public ReactiveProperty<Enum> State { get; } = new(TrackedState.None);
+
+        public override IEnumerable<IViewModel> GetChildren()
+        {
+            return [];
+        }
+    }
+
+    private sealed class RecordingUndoHistoryStore : IUndoHistoryStore
+    {
+        private readonly Dictionary<IUndoSnapshot, byte[]> _data = [];
+
+        public byte[] LastSavedData { get; private set; } = [];
+
+        public void LoadUndoRedo(Action<IUndoSnapshot> addUndo, Action<IUndoSnapshot> addRedo) { }
+
+        public void SaveUndoRedo(
+            IEnumerable<IUndoSnapshot> undo,
+            IEnumerable<IUndoSnapshot> redo
+        ) { }
+
+        public IUndoSnapshot CreateSnapshot(NavPath path, string changeId)
+        {
+            return new RecordingUndoSnapshot(path, changeId);
+        }
+
+        public void LoadChange(IUndoSnapshot snapshot, IUndoChange undoChange)
+        {
+            undoChange.Deserialize(new ReadOnlySequence<byte>(_data[snapshot]));
+        }
+
+        public void SaveChange(IUndoSnapshot snapshot, IUndoChange undoChange)
+        {
+            var writer = new ArrayBufferWriter<byte>();
+            undoChange.Serialize(writer);
+            LastSavedData = writer.WrittenMemory.ToArray();
+            _data[snapshot] = LastSavedData;
+        }
+
+        public void Dispose() { }
+
+        private sealed class RecordingUndoSnapshot(NavPath path, string changeId) : IUndoSnapshot
+        {
+            public NavPath Path { get; } = path;
+
+            public string ChangeId { get; } = changeId;
+        }
     }
 
     private sealed class TestUndoChangeSink<T> : IUndoChangeSink<ValueUndoChange<T>>

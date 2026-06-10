@@ -127,7 +127,12 @@ public class GeoPointLongitudeTest
 
     [Theory]
     [InlineData("85.536123", 85.536123)]
+    [InlineData("053.8724972", 53.8724972)]
+    [InlineData("153.8724972", 153.8724972)]
+    [InlineData("153,8724972", 153.8724972)]
+    [InlineData("-153.8724972", -153.8724972)]
     [InlineData("-65,536", -65.536)]
+    [InlineData("180.0000001", null)]
     [InlineData("180,536", null)]
     public void Check_double_values(string input, double? expected)
     {

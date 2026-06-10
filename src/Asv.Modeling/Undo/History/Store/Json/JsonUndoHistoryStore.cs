@@ -238,7 +238,6 @@ public class JsonUndoHistoryStore : AsyncDisposableOnceBag, IUndoHistoryStore
         /// <inheritdoc />
         public required string ChangeId { get; set; }
 
-        /// <inheritdoc />
         public required Ulid DataRefId { get; set; }
 
         /// <summary>

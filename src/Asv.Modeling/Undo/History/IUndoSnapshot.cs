@@ -14,9 +14,4 @@ public interface IUndoSnapshot
     /// Gets the change registration identifier.
     /// </summary>
     string ChangeId { get; }
-
-    /// <summary>
-    /// Gets the identifier of the serialized change payload.
-    /// </summary>
-    Ulid DataRefId { get; }
 }

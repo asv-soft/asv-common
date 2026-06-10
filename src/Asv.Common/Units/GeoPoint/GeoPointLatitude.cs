@@ -15,6 +15,11 @@ namespace Asv.Common
 
         private static readonly Regex LatitudeDegreeRegex = GetLatitudeDegreeRegex();
 
+        [GeneratedRegex(@"^[\+-]?\d+\.\d+$", RegexOptions.Compiled)]
+        private static partial Regex GetDecimalDegreeRegex();
+
+        private static readonly Regex DecimalDegreeRegex = GetDecimalDegreeRegex();
+
         [GeneratedRegex(
             """^(?<s1>[NSns+-]?\s*)?(?<deg>\d{1,2})\s*([:°˚º^~*°\.\s_-]*)\s*(?<min>\d{1,2}(?:\.\d+)?|\d{1,2})\s*([′':;^\s_-]*)\s*(?<sec>\d{1,2}(?:\.\d+)?\s*)?(["”˝¨^\s_-]*)\s*(?<s2>[NSns+-]?\s*)?$""",
             RegexOptions.Compiled
@@ -51,7 +56,24 @@ namespace Asv.Common
                 return false;
             }
 
-            value = value.Replace(',', '.');
+            value = value.Trim().Replace(',', '.');
+            if (DecimalDegreeRegex.IsMatch(value))
+            {
+                if (
+                    double.TryParse(
+                        value,
+                        NumberStyles.Any,
+                        CultureInfo.InvariantCulture,
+                        out latitude
+                    ) == false
+                )
+                {
+                    return false;
+                }
+
+                return latitude is >= Min and <= Max;
+            }
+
             if (LatitudeDegreeRegex.IsMatch(value))
             {
                 if (

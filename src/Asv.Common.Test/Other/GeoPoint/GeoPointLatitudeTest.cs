@@ -19,7 +19,11 @@ public class GeoPointLatitudeTest
 
     [Theory]
     [InlineData("65.536", 65.536)]
+    [InlineData("53.8724972", 53.8724972)]
+    [InlineData("53,8724972", 53.8724972)]
+    [InlineData("-53.8724972", -53.8724972)]
     [InlineData("-65,536", -65.536)]
+    [InlineData("90.0000001", null)]
     [InlineData("90,536", null)]
     public void Check_double_values(string input, double? expected)
     {

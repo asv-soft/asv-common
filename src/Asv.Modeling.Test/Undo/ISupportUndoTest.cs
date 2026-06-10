@@ -418,7 +418,7 @@ public class TestViewModelBase : UndoableViewModel
         Children.SetParent<IViewModel, IViewModel>(this).AddTo(ref DisposableBag);
         Children.DisposeRemovedItems().AddTo(ref DisposableBag);
 
-        Undo.Create(nameof(Prop1), Prop1).AddTo(ref DisposableBag);
+        Undo.TrackProperty(nameof(Prop1), Prop1).AddTo(ref DisposableBag);
         Undo.Create(nameof(Prop2), Prop2).AddTo(ref DisposableBag);
     }
 
@@ -441,7 +441,7 @@ public class SinkScopedViewModel : UndoableViewModel
         Children.SetParent<IViewModel, IViewModel>(this).AddTo(ref DisposableBag);
         Children.DisposeRemovedItems().AddTo(ref DisposableBag);
 
-        Prop1Sink = Undo.CreateValueChange<string>(
+        Prop1Sink = Undo.RegisterValue<string>(
             nameof(Prop1),
             value => Prop1.Value = value,
             value => Prop1.Value = value
@@ -449,10 +449,10 @@ public class SinkScopedViewModel : UndoableViewModel
         Prop1Sink.AddTo(ref DisposableBag);
         Prop1
             .Pairwise()
-            .Subscribe(change => Prop1Sink.Publish(change.Previous, change.Current))
+            .Subscribe(change => Prop1Sink.PublishUpdate(change.Previous, change.Current))
             .AddTo(ref DisposableBag);
 
-        Prop2Sink = Undo.CreateValueChange<string>(
+        Prop2Sink = Undo.RegisterValue<string>(
             nameof(Prop2),
             value => Prop2.Value = value,
             value => Prop2.Value = value
@@ -460,7 +460,7 @@ public class SinkScopedViewModel : UndoableViewModel
         Prop2Sink.AddTo(ref DisposableBag);
         Prop2
             .Pairwise()
-            .Subscribe(change => Prop2Sink.Publish(change.Previous, change.Current))
+            .Subscribe(change => Prop2Sink.PublishUpdate(change.Previous, change.Current))
             .AddTo(ref DisposableBag);
     }
 
