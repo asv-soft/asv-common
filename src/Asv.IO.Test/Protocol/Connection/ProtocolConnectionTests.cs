@@ -153,6 +153,86 @@ public class ProtocolConnectionTests
     }
 
     [Fact]
+    public async Task BroadcastingFeature_SuppressesDuplicateBroadcastByCrc32_Success()
+    {
+        // Arrange
+        var feature = new BroadcastingFeature<ExampleMessage1>(true);
+        var router = IO
+            .Protocol.Create(_ =>
+            {
+                _.Protocols.RegisterExampleProtocol();
+            })
+            .CreateRouter("Router");
+        var txCount = 0;
+        using var sub = router.OnTxMessage.Subscribe(_ => txCount++);
+
+        // Act
+        var first = await feature.ProcessRx(new ExampleMessage1(), router, CancellationToken.None);
+        var second = await feature.ProcessRx(new ExampleMessage1(), router, CancellationToken.None);
+
+        // Assert
+        Assert.NotNull(first);
+        Assert.NotNull(second);
+        Assert.Equal(1, txCount);
+    }
+
+    [Fact]
+    public async Task BroadcastingFeature_AllowsDuplicateBroadcastWhenLoopProtectionDisabled_Success()
+    {
+        // Arrange
+        var feature = new BroadcastingFeature<ExampleMessage1>(
+            new BroadcastingFeatureOptions { IsLoopProtectionEnabled = false }
+        );
+        var router = IO
+            .Protocol.Create(_ =>
+            {
+                _.Protocols.RegisterExampleProtocol();
+            })
+            .CreateRouter("Router");
+        var txCount = 0;
+        using var sub = router.OnTxMessage.Subscribe(_ => txCount++);
+
+        // Act
+        await feature.ProcessRx(new ExampleMessage1(), router, CancellationToken.None);
+        await feature.ProcessRx(new ExampleMessage1(), router, CancellationToken.None);
+
+        // Assert
+        Assert.Equal(2, txCount);
+    }
+
+    [Fact]
+    public async Task BroadcastingFeature_KeepsLoopProtectionCachePerRouter_Success()
+    {
+        // Arrange
+        var feature = new BroadcastingFeature<ExampleMessage1>(
+            new BroadcastingFeatureOptions
+            {
+                IsLoopProtectionEnabled = true,
+                LoopProtectionWindow = TimeSpan.FromMinutes(1),
+            }
+        );
+        var protocol = IO.Protocol.Create(_ =>
+        {
+            _.Protocols.RegisterExampleProtocol();
+        });
+        var router1 = protocol.CreateRouter("Router1");
+        var router2 = protocol.CreateRouter("Router2");
+        var router1TxCount = 0;
+        var router2TxCount = 0;
+        using var sub1 = router1.OnTxMessage.Subscribe(_ => router1TxCount++);
+        using var sub2 = router2.OnTxMessage.Subscribe(_ => router2TxCount++);
+
+        // Act
+        await feature.ProcessRx(new ExampleMessage1(), router1, CancellationToken.None);
+        await feature.ProcessRx(new ExampleMessage1(), router2, CancellationToken.None);
+        await feature.ProcessRx(new ExampleMessage1(), router1, CancellationToken.None);
+
+        // Assert
+        Assert.Equal(1, router1TxCount);
+        Assert.Equal(1, router2TxCount);
+    }
+
+    [Fact]
     public void Connection_RegisterSpecifiedFeatureWithNullValue_Fail()
     {
         IProtocolFeature feature = null;

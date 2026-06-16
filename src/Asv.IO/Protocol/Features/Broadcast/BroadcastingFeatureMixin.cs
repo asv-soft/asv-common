@@ -6,14 +6,40 @@ public static class BroadcastingFeatureMixin
 {
     private const string BroadCastTag = "broadcast";
 
-    public static void RegisterBroadcastFeature<TMessage>(this IProtocolFeatureBuilder builder)
+    public static void RegisterBroadcastFeature<TMessage>(
+        this IProtocolFeatureBuilder builder,
+        BroadcastingFeatureOptions? options = null
+    )
     {
-        builder.Register(new BroadcastingFeature<TMessage>());
+        builder.Register(
+            new BroadcastingFeature<TMessage>(options ?? BroadcastingFeatureOptions.Default)
+        );
     }
 
-    public static void RegisterBroadcastAllFeature(this IProtocolFeatureBuilder builder)
+    public static void RegisterBroadcastFeature<TMessage>(
+        this IProtocolFeatureBuilder builder,
+        bool isLoopProtectionEnabled
+    )
     {
-        builder.Register(new BroadcastingFeature<IProtocolMessage>());
+        builder.Register(new BroadcastingFeature<TMessage>(isLoopProtectionEnabled));
+    }
+
+    public static void RegisterBroadcastAllFeature(
+        this IProtocolFeatureBuilder builder,
+        BroadcastingFeatureOptions? options = null
+    )
+    {
+        builder.Register(
+            new BroadcastingFeature<IProtocolMessage>(options ?? BroadcastingFeatureOptions.Default)
+        );
+    }
+
+    public static void RegisterBroadcastAllFeature(
+        this IProtocolFeatureBuilder builder,
+        bool isLoopProtectionEnabled
+    )
+    {
+        builder.Register(new BroadcastingFeature<IProtocolMessage>(isLoopProtectionEnabled));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
