@@ -299,14 +299,15 @@ namespace Asv.IO.Test.Serializable.BitBased.Encoding.Gorilla
         }
 
         [Theory]
-        [InlineData(0UL)]
-        [InlineData(1UL)]
-        [InlineData(0x0000_0000UL)]
-        [InlineData(0x0000_FF00UL)]
-        [InlineData(0x7FFF_FFFFUL)]
-        [InlineData(0x8000_0000UL)] // still treated as +2147483648 when cast to long (then added to prevDelta)
-        [InlineData(0xFFFF_FFFFUL)]
-        public void DoD_Prefix1111_32bit_Unsigned(ulong dod32)
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2048)]
+        [InlineData(65_280)]
+        [InlineData(int.MaxValue)]
+        [InlineData(int.MinValue)]
+        [InlineData(-2049)]
+        [InlineData(-1)]
+        public void DoD_Prefix1111_32bit_Signed(long dod)
         {
             var b = new BitStreamBuilder();
             long t0 = 0;
@@ -315,15 +316,14 @@ namespace Asv.IO.Test.Serializable.BitBased.Encoding.Gorilla
             b.AddBits((ulong)t0, 64);
             b.AddSigned(delta1, 27);
             b.AddBits(0b1111, 4);
-            b.AddBits(dod32, 32); // unsigned 32-bit DoD
+            b.AddSigned(dod, 32);
 
             var rdr = new TestBitReader(b.ToBitArray());
             using var dec = new GorillaTimestampDecoder(rdr, true, leaveOpen: true);
 
             var t0r = dec.ReadNext();
             var t1r = dec.ReadNext();
-            var dodLong = (long)dod32; // decoder casts 32-bit unsigned to long as-is
-            var delta2 = ApplyDod(delta1, dodLong); // Δ2 = Δ1 + DoD
+            var delta2 = ApplyDod(delta1, dod);
             var t2r = dec.ReadNext();
 
             Assert.Equal(t0, t0r);
