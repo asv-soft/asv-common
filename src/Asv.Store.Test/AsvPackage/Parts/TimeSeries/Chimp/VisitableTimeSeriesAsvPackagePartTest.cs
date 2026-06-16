@@ -17,9 +17,18 @@ public class VisitableTimeSeriesAsvPackagePartTest(ITestOutputHelper log)
         SupportedTypesWithArraysAndSubs[] array,
         uint flushEvery,
         CompressionOption compressionOption,
-        bool useZstdForBatch
+        bool useZstdForBatch,
+        DateTime[]? timestamps = null
     )
     {
+        if (timestamps is not null && timestamps.Length != array.Length)
+        {
+            throw new ArgumentException(
+                "Timestamp count must match the record count.",
+                nameof(timestamps)
+            );
+        }
+
         var ms = new MemoryStream();
         var pkg = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite);
         var logger = new TestLogger(log, TimeProvider.System, "AsvFilePartTest");
@@ -36,9 +45,12 @@ public class VisitableTimeSeriesAsvPackagePartTest(ITestOutputHelper log)
         var sw = Stopwatch.StartNew();
         int size = 0;
         var start = DateTime.Now;
+        var expectedTimestamps = new DateTime[array.Length];
         for (var i = 0; i < array.Length; i++)
         {
-            part.Write(new TableRow((uint)i, start.AddSeconds(i), "test", array[i]));
+            var timestamp = timestamps?[i] ?? start.AddSeconds(i);
+            expectedTimestamps[i] = timestamp;
+            part.Write(new TableRow((uint)i, timestamp, "test", array[i]));
             size += SimpleBinaryMixin.GetSize(array[i]);
         }
 
@@ -65,7 +77,9 @@ public class VisitableTimeSeriesAsvPackagePartTest(ITestOutputHelper log)
                 var (r, o) = rec;
                 Assert.Equal("test", r.Id);
                 Assert.IsType<SupportedTypesWithArraysAndSubs>(r.Data);
-                rec.Item1.Data.ShouldDeepEqual(array[r.Index]);
+                var index = checked((int)r.Index);
+                Assert.Equal(expectedTimestamps[index], r.Timestamp);
+                rec.Item1.Data.ShouldDeepEqual(array[index]);
                 counter++;
             },
             id =>
@@ -118,6 +132,26 @@ public class VisitableTimeSeriesAsvPackagePartTest(ITestOutputHelper log)
         }
 
         Test(array, flushEvery, compressionOption, useZstdForBatch);
+    }
+
+    [Fact]
+    public void ReadWrite_ShouldPreserveTimestamps_WhenFirstDeltaExceeds27BitRange()
+    {
+        var array = new[]
+        {
+            new SupportedTypesWithArraysAndSubs().Randomize(),
+            new SupportedTypesWithArraysAndSubs().Randomize(),
+        };
+        var start = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var timestamps = new[] { start, start.AddHours(1) };
+
+        Test(
+            array,
+            flushEvery: 10,
+            compressionOption: CompressionOption.NotCompressed,
+            useZstdForBatch: false,
+            timestamps: timestamps
+        );
     }
 
     [Theory]

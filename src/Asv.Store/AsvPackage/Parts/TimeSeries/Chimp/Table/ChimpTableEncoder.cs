@@ -43,7 +43,10 @@ public sealed class ChimpTableEncoder : IDisposable
         _indexWrt = new PoolingArrayBufferWriter<byte>(ArrayPool<byte>.Shared);
         _index = new GorillaTimestampEncoder(new StreamBitWriter(_indexWrt.AsStream()));
         _timestampWrt = new PoolingArrayBufferWriter<byte>(ArrayPool<byte>.Shared);
-        _timestamp = new GorillaTimestampEncoder(new StreamBitWriter(_timestampWrt.AsStream()));
+        _timestamp = new GorillaTimestampEncoder(
+            new StreamBitWriter(_timestampWrt.AsStream()),
+            firstDelta27Bits: false
+        );
         var countVisitor = new ChimpColumnVisitor();
         msg.Data.Accept(countVisitor);
         var count = countVisitor.Count;
@@ -105,7 +108,10 @@ public sealed class ChimpTableEncoder : IDisposable
         _timestamp.Dispose();
         Save(_timestampWrt, _stream, "Timestamp", _useZstdForBatch);
         _timestampWrt.Clear(true);
-        _timestamp = new GorillaTimestampEncoder(new StreamBitWriter(_timestampWrt.AsStream()));
+        _timestamp = new GorillaTimestampEncoder(
+            new StreamBitWriter(_timestampWrt.AsStream()),
+            firstDelta27Bits: false
+        );
         for (var i = 0; i < _writers.Length; i++)
         {
             _streams[i].Dispose();

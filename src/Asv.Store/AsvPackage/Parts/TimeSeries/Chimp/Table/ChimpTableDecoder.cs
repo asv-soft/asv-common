@@ -85,7 +85,8 @@ public sealed class ChimpTableDecoder : IDisposable
             ReadField(_timestampRdr, "Timestamp");
 
             var timestamp = new GorillaTimestampDecoder(
-                new MemoryBitReader(_timestampRdr.WrittenMemory)
+                new MemoryBitReader(_timestampRdr.WrittenMemory),
+                firstDelta27Bits: false
             );
 
             var streams = new ChimpDecoder[_fieldCount];
