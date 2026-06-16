@@ -152,6 +152,19 @@ namespace Asv.IO.Test.Serializable.BitBased.Encoding.Gorilla
             Assert.Equal(ToString(bits), w.ToBitString());
         }
 
+        [Theory]
+        [InlineData(67_108_864L)]
+        [InlineData(-67_108_865L)]
+        public void Delta1_27bit_Throws_WhenOutOfRange(long delta1)
+        {
+            var w = new TestBitWriter();
+            using var enc = new GorillaTimestampEncoder(w, firstDelta27Bits: true);
+
+            enc.Add(0);
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => enc.Add(delta1));
+        }
+
         [Fact]
         public void Delta1_As_64bit_When_Option_False()
         {
@@ -278,12 +291,13 @@ namespace Asv.IO.Test.Serializable.BitBased.Encoding.Gorilla
 
         [Theory]
         [InlineData(0x0000_0800UL)] // 2048 — сразу за пределом 12-bit (max 2047)
-        [InlineData(0x0000_FF00UL)]
-        [InlineData(0x7FFF_FFFFUL)]
-        [InlineData(0x8000_0000UL)]
-        [InlineData(0xFFFF_FFFFUL)]
-        public void DoD_Prefix1111_32bit_Raw(ulong dod32)
+        [InlineData(65_280)]
+        [InlineData(int.MaxValue)]
+        [InlineData(int.MinValue)]
+        [InlineData(-2049)]
+        public void DoD_Prefix11110_32bit_Signed(object dodValue)
         {
+            var dod = Convert.ToInt64(dodValue);
             var w = new TestBitWriter();
             using var enc = new GorillaTimestampEncoder(w);
 
@@ -291,7 +305,7 @@ namespace Asv.IO.Test.Serializable.BitBased.Encoding.Gorilla
             const long delta1 = 0;
             var t1 = t0 + delta1;
 
-            var delta2 = (long)dod32; // DoD = delta2 - delta1 = dod32
+            var delta2 = dod;
             var t2 = t1 + delta2;
 
             enc.Add(t0);
@@ -301,8 +315,37 @@ namespace Asv.IO.Test.Serializable.BitBased.Encoding.Gorilla
             var exp = new List<byte>();
             AddBits(exp, (ulong)t0, 64);
             AddSigned(exp, delta1, 27);
-            AddBits(exp, 0b1111, 4);
-            AddBits(exp, dod32, 32);
+            AddBits(exp, 0b11110, 5);
+            AddSigned(exp, dod, 32);
+
+            Assert.Equal(ToString(exp), w.ToBitString());
+        }
+
+        [Theory]
+        [InlineData(2_147_483_648L)]
+        [InlineData(-2_147_483_649L)]
+        [InlineData(36_000_000_000L)]
+        [InlineData(-36_000_000_000L)]
+        public void DoD_Prefix11111_64bit_Signed(long dod)
+        {
+            var w = new TestBitWriter();
+            using var enc = new GorillaTimestampEncoder(w);
+
+            const long t0 = 0;
+            const long delta1 = 0;
+            var t1 = t0 + delta1;
+            var delta2 = dod;
+            var t2 = t1 + delta2;
+
+            enc.Add(t0);
+            enc.Add(t1);
+            enc.Add(t2);
+
+            var exp = new List<byte>();
+            AddBits(exp, (ulong)t0, 64);
+            AddSigned(exp, delta1, 27);
+            AddBits(exp, 0b11111, 5);
+            AddSigned(exp, dod, 64);
 
             Assert.Equal(ToString(exp), w.ToBitString());
         }
@@ -318,7 +361,7 @@ namespace Asv.IO.Test.Serializable.BitBased.Encoding.Gorilla
             const long dod7 = -1; // '10'  + 7
             const long dod9 = 200; // '110' + 9
             const long dod12 = -1000; // '1110' + 12
-            const ulong dod32 = 0x1_0000UL; // '1111' + 32 (65536 -> за пределами 12-бит)
+            const ulong dod32 = 0x1_0000UL; // '11110' + 32
 
             var t1 = t0 + delta1;
             var t2 = t1 + (delta1 + dod7);
@@ -331,7 +374,7 @@ namespace Asv.IO.Test.Serializable.BitBased.Encoding.Gorilla
             enc.Add(t2); // 2 + 7
             enc.Add(t3); // 3 + 9
             enc.Add(t4); // 4 + 12
-            enc.Add(t5); // 4 + 32
+            enc.Add(t5); // 5 + 32
 
             const long expectedBits =
                 64
@@ -344,7 +387,7 @@ namespace Asv.IO.Test.Serializable.BitBased.Encoding.Gorilla
                 + // '110' + 9
                 (4 + 12)
                 + // '1110'+ 12
-                (4 + 32); // '1111'+ 32
+                (5 + 32); // '11110'+ 32
 
             Assert.Equal(expectedBits, w.TotalBitsWritten);
         }

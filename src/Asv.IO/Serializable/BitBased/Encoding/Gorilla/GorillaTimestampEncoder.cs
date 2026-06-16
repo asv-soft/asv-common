@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
@@ -20,7 +21,8 @@ namespace Asv.IO;
 ///       '10'                 → 7-bit  two's complement  (range: -64  … +63)
 ///       '110'                → 9-bit  two's complement  (range: -256 … +255)
 ///       '1110'               → 12-bit two's complement  (range: -2048… +2047)
-///       '1111'               → 32-bit raw field (lower 32 bits of DoD are written)
+///       '11110'              → 32-bit two's complement
+///       '11111'              → 64-bit two's complement
 ///     </code>
 ///     Two's-complement packing is performed by masking to the target width.
 ///   </description></item>
@@ -89,6 +91,7 @@ public sealed class GorillaTimestampEncoder : AsyncDisposableOnce, IBitEncoder<l
                 if (_firstDelta27Bits)
                 {
                     // Δ1: 27-bit two's complement.
+                    EnsureSignedRange(delta, 27);
                     _bw.WriteBits(EncodeSigned(delta, 27), 27);
                 }
                 else
@@ -125,11 +128,13 @@ public sealed class GorillaTimestampEncoder : AsyncDisposableOnce, IBitEncoder<l
                         _bw.WriteBits(0b1110, 4); // '1110'
                         _bw.WriteBits(EncodeSigned(dod, 12), 12); // 12-bit two's complement
                         break;
+                    case >= int.MinValue and <= int.MaxValue:
+                        _bw.WriteBits(0b11110, 5); // '11110'
+                        _bw.WriteBits(EncodeSigned(dod, 32), 32); // 32-bit two's complement
+                        break;
                     default:
-                        _bw.WriteBits(0b1111, 4); // '1111'
-
-                        // Write lower 32 bits of DoD (unchecked truncation).
-                        _bw.WriteBits((ulong)dod, 32);
+                        _bw.WriteBits(0b11111, 5); // '11111'
+                        _bw.WriteBits((ulong)dod, 64); // 64-bit two's complement
                         break;
                 }
 
@@ -152,6 +157,34 @@ public sealed class GorillaTimestampEncoder : AsyncDisposableOnce, IBitEncoder<l
         // Two's-complement narrowing to the specified width:
         // keep the lower 'width' bits (mask).
         return (ulong)v & (width == 64 ? ulong.MaxValue : ((1UL << width) - 1));
+    }
+
+    /// <summary>
+    /// Ensures that a signed value fits into the specified fixed-width field.
+    /// </summary>
+    /// <param name="v">Signed value to validate.</param>
+    /// <param name="width">Target width in bits (1..63).</param>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// Thrown when <paramref name="v"/> does not fit into the signed <paramref name="width"/>-bit range.
+    /// </exception>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void EnsureSignedRange(long v, int width)
+    {
+        if (width is <= 0 or >= 64)
+        {
+            throw new ArgumentOutOfRangeException(nameof(width));
+        }
+
+        var min = -(1L << (width - 1));
+        var max = (1L << (width - 1)) - 1;
+        if (v < min || v > max)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(v),
+                v,
+                $"Value must fit in a signed {width}-bit field."
+            );
+        }
     }
 
     /// <inheritdoc />

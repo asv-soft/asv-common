@@ -189,4 +189,26 @@ public class GorillaTimestampComplexTest(ITestOutputHelper log)
 
         RunGorillaRoundtrip(values, firstDelta27Bits: true, label: "Negative 32-bit DoD");
     }
+
+    [Fact]
+    public void GorillaTimestamp_SerializeDeserialize_64BitDoD_Works()
+    {
+        long[] values = [0, 10_000_000, 36_020_000_000];
+
+        RunGorillaRoundtrip(values, firstDelta27Bits: true, label: "64-bit DoD");
+    }
+
+    [Fact]
+    public void GorillaTimestamp_SerializeDeserialize_64BitFirstDelta_Works()
+    {
+        var start = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        long[] values =
+        [
+            start.ToBinary(),
+            start.AddHours(1).ToBinary(),
+            start.AddHours(2).ToBinary(),
+        ];
+
+        RunGorillaRoundtrip(values, firstDelta27Bits: false, label: "64-bit first delta");
+    }
 }

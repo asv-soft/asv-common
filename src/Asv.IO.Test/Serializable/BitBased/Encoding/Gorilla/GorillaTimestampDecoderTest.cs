@@ -307,7 +307,7 @@ namespace Asv.IO.Test.Serializable.BitBased.Encoding.Gorilla
         [InlineData(int.MinValue)]
         [InlineData(-2049)]
         [InlineData(-1)]
-        public void DoD_Prefix1111_32bit_Signed(long dod)
+        public void DoD_Prefix11110_32bit_Signed(long dod)
         {
             var b = new BitStreamBuilder();
             long t0 = 0;
@@ -315,8 +315,37 @@ namespace Asv.IO.Test.Serializable.BitBased.Encoding.Gorilla
 
             b.AddBits((ulong)t0, 64);
             b.AddSigned(delta1, 27);
-            b.AddBits(0b1111, 4);
+            b.AddBits(0b11110, 5);
             b.AddSigned(dod, 32);
+
+            var rdr = new TestBitReader(b.ToBitArray());
+            using var dec = new GorillaTimestampDecoder(rdr, true, leaveOpen: true);
+
+            var t0r = dec.ReadNext();
+            var t1r = dec.ReadNext();
+            var delta2 = ApplyDod(delta1, dod);
+            var t2r = dec.ReadNext();
+
+            Assert.Equal(t0, t0r);
+            Assert.Equal(delta1, t1r - t0r);
+            Assert.Equal(delta2, t2r - t1r);
+        }
+
+        [Theory]
+        [InlineData(2_147_483_648L)]
+        [InlineData(-2_147_483_649L)]
+        [InlineData(36_000_000_000L)]
+        [InlineData(-36_000_000_000L)]
+        public void DoD_Prefix11111_64bit_Signed(long dod)
+        {
+            var b = new BitStreamBuilder();
+            long t0 = 0;
+            long delta1 = 2;
+
+            b.AddBits((ulong)t0, 64);
+            b.AddSigned(delta1, 27);
+            b.AddBits(0b11111, 5);
+            b.AddSigned(dod, 64);
 
             var rdr = new TestBitReader(b.ToBitArray());
             using var dec = new GorillaTimestampDecoder(rdr, true, leaveOpen: true);
@@ -340,7 +369,7 @@ namespace Asv.IO.Test.Serializable.BitBased.Encoding.Gorilla
             long dod7 = -1; // prefix '10' + 7 bits
             long dod9 = 200; // prefix '110' + 9 bits
             long dod12 = -1000; // prefix '1110' + 12 bits
-            ulong dod32 = 0x00000010; // prefix '1111' + 32 bits
+            ulong dod32 = 0x00000010; // prefix '11110' + 32 bits
 
             // Build stream
             b.AddBits((ulong)t0, 64);
@@ -351,7 +380,7 @@ namespace Asv.IO.Test.Serializable.BitBased.Encoding.Gorilla
             b.AddSigned(dod9, 9);
             b.AddBits(0b1110, 4);
             b.AddSigned(dod12, 12);
-            b.AddBits(0b1111, 4);
+            b.AddBits(0b11110, 5);
             b.AddBits(dod32, 32);
 
             long expected =
@@ -365,7 +394,7 @@ namespace Asv.IO.Test.Serializable.BitBased.Encoding.Gorilla
                 + // '110' + 9
                 (4 + 12)
                 + // '1110' + 12
-                (4 + 32); // '1111' + 32
+                (5 + 32); // '11110' + 32
 
             var rdr = new TestBitReader(b.ToBitArray());
             using var dec = new GorillaTimestampDecoder(
@@ -380,7 +409,7 @@ namespace Asv.IO.Test.Serializable.BitBased.Encoding.Gorilla
             _ = dec.ReadNext(); // after '10'
             _ = dec.ReadNext(); // after '110'
             _ = dec.ReadNext(); // after '1110'
-            _ = dec.ReadNext(); // after '1111'
+            _ = dec.ReadNext(); // after '11110'
 
             Assert.Equal(expected, dec.TotalBitsRead);
         }
