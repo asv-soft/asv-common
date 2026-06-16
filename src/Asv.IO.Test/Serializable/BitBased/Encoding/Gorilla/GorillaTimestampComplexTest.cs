@@ -181,4 +181,12 @@ public class GorillaTimestampComplexTest(ITestOutputHelper log)
             firstDelta27Bits: true,
             label: "Random monotonic (Δ≤1000)"
         );
+
+    [Fact]
+    public void GorillaTimestamp_SerializeDeserialize_Negative32BitDoD_Works()
+    {
+        long[] values = [0, 5_000, 7_951];
+
+        RunGorillaRoundtrip(values, firstDelta27Bits: true, label: "Negative 32-bit DoD");
+    }
 }

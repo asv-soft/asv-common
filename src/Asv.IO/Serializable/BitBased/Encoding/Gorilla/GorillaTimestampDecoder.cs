@@ -23,7 +23,7 @@ namespace Asv.IO;
 ///       '10'                 -> DoD is signed 7  bits
 ///       '110'                -> DoD is signed 9  bits
 ///       '1110'               -> DoD is signed 12 bits
-///       '1111'               -> DoD is unsigned 32 bits
+///       '1111'               -> DoD is signed 32 bits
 ///     </code>
 ///   </para>
 ///   </description></item>
@@ -114,7 +114,7 @@ public sealed class GorillaTimestampDecoder : AsyncDisposableOnce, IBitDecoder<l
                 // '10'                 -> 7-bit signed
                 // '110'                -> 9-bit signed
                 // '1110'               -> 12-bit signed
-                // '1111'               -> 32-bit unsigned
+                // '1111'               -> 32-bit signed
                 var p1 = _br.ReadBit();
                 long dod;
                 if (p1 == 0)
@@ -144,9 +144,7 @@ public sealed class GorillaTimestampDecoder : AsyncDisposableOnce, IBitDecoder<l
                             }
                             else
                             {
-                                // Note: 32-bit field is stored as unsigned in the stream.
-                                // It is added to the (signed) previous delta; the result fits Int64.
-                                dod = (long)_br.ReadBits(32);
+                                dod = SignExtend(_br.ReadBits(32), 32);
                             }
                         }
                     }
