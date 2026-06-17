@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.IO.Packaging;
 using Asv.IO;
+using Asv.Store.Column;
 using Asv.XUnit;
 using DeepEqual.Syntax;
 using JetBrains.Annotations;
@@ -106,6 +107,140 @@ public class VisitableTimeSeriesAsvPackagePartTest(ITestOutputHelper log)
         ms.Dispose();
     }
 
+    private byte[] EncodeCurrentTimestampPayload(DateTime[] timestamps)
+    {
+        var rows = CreateRows(timestamps);
+        var stream = new MemoryStream();
+        using (var encoder = new ChimpTableEncoder(rows[0], stream, 10, TestLogger(), false))
+        {
+            foreach (var row in rows)
+            {
+                encoder.Append(row);
+            }
+        }
+
+        using var readStream = new MemoryStream(stream.ToArray());
+        var header = new BatchHeader();
+        header.ReadFrom(readStream);
+        _ = ReadUncompressedFieldPayload(readStream);
+        return ReadUncompressedFieldPayload(readStream);
+    }
+
+    private MemoryStream CreateUnmarkedTableStream(
+        DateTime[] timestamps,
+        bool timestampFirstDelta27Bits
+    )
+    {
+        var rows = CreateRows(timestamps);
+        var countVisitor = new ChimpColumnVisitor();
+        rows[0].Data.Accept(countVisitor);
+
+        var indexStream = new MemoryStream();
+        var timestampStream = new MemoryStream();
+        var columnStreams = new MemoryStream[countVisitor.Count];
+        var columnEncoders = new ChimpEncoder[countVisitor.Count];
+
+        for (var i = 0; i < countVisitor.Count; i++)
+        {
+            columnStreams[i] = new MemoryStream();
+            columnEncoders[i] = new ChimpEncoder(
+                new StreamBitWriter(columnStreams[i], leaveOpen: true)
+            );
+        }
+
+        var index = new GorillaTimestampEncoder(new StreamBitWriter(indexStream, leaveOpen: true));
+        var timestamp = new GorillaTimestampEncoder(
+            new StreamBitWriter(timestampStream, leaveOpen: true),
+            firstDelta27Bits: timestampFirstDelta27Bits
+        );
+        var visitor = new ChimpColumnEncoderVisitor(columnEncoders);
+
+        foreach (var row in rows)
+        {
+            index.Add(row.Index);
+            timestamp.Add(row.Timestamp.ToBinary());
+            row.Data.Accept(visitor);
+            visitor.Reset();
+        }
+
+        index.Dispose();
+        timestamp.Dispose();
+        foreach (var columnEncoder in columnEncoders)
+        {
+            columnEncoder.Dispose();
+        }
+
+        var stream = new MemoryStream();
+        var header = new BatchHeader
+        {
+            Name = "test",
+            FieldCount = (uint)(countVisitor.Count + 2),
+            RowCount = (uint)rows.Length,
+        };
+        header.Serialize(stream);
+        WriteUncompressedField(stream, indexStream.ToArray());
+        WriteUncompressedField(stream, timestampStream.ToArray());
+        foreach (var columnStream in columnStreams)
+        {
+            WriteUncompressedField(stream, columnStream.ToArray());
+        }
+
+        stream.Position = 0;
+        return stream;
+    }
+
+    private List<TableRow> ReadRowsFromTableStream(Stream stream)
+    {
+        var rows = new List<TableRow>();
+        using var reader = new ChimpTableDecoder(
+            "test",
+            () => (new SupportedTypesWithArraysAndSubs(), new object()),
+            stream,
+            10,
+            TestLogger()
+        );
+
+        Assert.True(reader.Read(rec => rows.Add(rec.Item1)));
+        Assert.False(reader.Read(_ => { }));
+        return rows;
+    }
+
+    private static TableRow[] CreateRows(DateTime[] timestamps)
+    {
+        var rows = new TableRow[timestamps.Length];
+        for (var i = 0; i < timestamps.Length; i++)
+        {
+            rows[i] = new TableRow(
+                (uint)i,
+                timestamps[i],
+                "test",
+                new SupportedTypesWithArraysAndSubs().Randomize()
+            );
+        }
+
+        return rows;
+    }
+
+    private static byte[] ReadUncompressedFieldPayload(Stream stream)
+    {
+        var field = new FieldHeader();
+        field.ReadFrom(stream);
+        Assert.False(field.IsCompressed);
+
+        var payload = new byte[field.Size];
+        stream.ReadExactly(payload);
+        return payload;
+    }
+
+    private static void WriteUncompressedField(Stream stream, byte[] payload)
+    {
+        var field = new FieldHeader { IsCompressed = false, Size = payload.Length };
+        field.Serialize(stream);
+        stream.Write(payload);
+    }
+
+    private TestLogger TestLogger() => new(log, TimeProvider.System, "AsvFilePartTest");
+
     [Theory]
     [InlineData(1, 1, true, CompressionOption.Maximum)]
     [InlineData(10, 11, true, CompressionOption.Maximum)]
@@ -135,6 +270,16 @@ public class VisitableTimeSeriesAsvPackagePartTest(ITestOutputHelper log)
     }
 
     [Fact]
+    public void ReadWrite_ShouldWriteSelfDescribingTimestampField()
+    {
+        var start = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var payload = EncodeCurrentTimestampPayload([start, start.AddHours(1)]);
+        ReadOnlySpan<byte> expectedHeader = "ASVTS1"u8;
+
+        Assert.True(payload.AsSpan(0, expectedHeader.Length).SequenceEqual(expectedHeader));
+    }
+
+    [Fact]
     public void ReadWrite_ShouldPreserveTimestamps_WhenFirstDeltaExceeds27BitRange()
     {
         var array = new[]
@@ -152,6 +297,30 @@ public class VisitableTimeSeriesAsvPackagePartTest(ITestOutputHelper log)
             useZstdForBatch: false,
             timestamps: timestamps
         );
+    }
+
+    [Fact]
+    public void Read_ShouldDecodeLegacyUnmarkedTimestampField()
+    {
+        var start = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var timestamps = new[] { start, start.AddSeconds(1), start.AddSeconds(2) };
+        using var stream = CreateUnmarkedTableStream(timestamps, timestampFirstDelta27Bits: true);
+
+        var rows = ReadRowsFromTableStream(stream);
+
+        Assert.Equal(timestamps, rows.Select(row => row.Timestamp).ToArray());
+    }
+
+    [Fact]
+    public void Read_ShouldDecodeUnmarked64BitFirstDeltaTimestampField()
+    {
+        var start = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var timestamps = new[] { start, start.AddHours(1), start.AddHours(2) };
+        using var stream = CreateUnmarkedTableStream(timestamps, timestampFirstDelta27Bits: false);
+
+        var rows = ReadRowsFromTableStream(stream);
+
+        Assert.Equal(timestamps, rows.Select(row => row.Timestamp).ToArray());
     }
 
     [Theory]

@@ -84,9 +84,9 @@ public sealed class ChimpTableDecoder : IDisposable
             _timestampRdr.Clear();
             ReadField(_timestampRdr, "Timestamp");
 
-            var timestamp = new GorillaTimestampDecoder(
-                new MemoryBitReader(_timestampRdr.WrittenMemory),
-                firstDelta27Bits: false
+            var timestamps = DecodeTimestamps(
+                _timestampRdr.WrittenMemory,
+                checked((int)header.RowCount)
             );
 
             var streams = new ChimpDecoder[_fieldCount];
@@ -99,21 +99,13 @@ public sealed class ChimpTableDecoder : IDisposable
             }
 
             var decoder = new ChimpColumnDecoderVisitor(streams);
-            for (var i = 0; i < header.RowCount; i++)
+            for (var i = 0; i < timestamps.Length; i++)
             {
                 ii = i;
                 var msg = _factory();
                 msg.Item1.Accept(decoder);
                 visitor(
-                    (
-                        new TableRow(
-                            (uint)index.ReadNext(),
-                            DateTime.FromBinary(timestamp.ReadNext()),
-                            _id,
-                            msg.Item1
-                        ),
-                        msg.Item2
-                    )
+                    (new TableRow((uint)index.ReadNext(), timestamps[i], _id, msg.Item1), msg.Item2)
                 );
                 decoder.Reset();
             }
@@ -126,6 +118,125 @@ public sealed class ChimpTableDecoder : IDisposable
             return false;
         }
     }
+
+    private static DateTime[] DecodeTimestamps(ReadOnlyMemory<byte> payload, int rowCount)
+    {
+        if (ChimpTimestampFormat.TryReadVersion1Header(payload, out var versionedBody))
+        {
+            return DecodeTimestampValues(versionedBody, rowCount, firstDelta27Bits: false);
+        }
+
+        if (
+            TryDecodeTimestampValues(
+                payload,
+                rowCount,
+                firstDelta27Bits: true,
+                out var legacyTimestamps,
+                out var legacyError
+            )
+        )
+        {
+            return legacyTimestamps;
+        }
+
+        if (
+            TryDecodeTimestampValues(
+                payload,
+                rowCount,
+                firstDelta27Bits: false,
+                out var unmarked64BitTimestamps,
+                out var unmarked64BitError
+            )
+        )
+        {
+            return unmarked64BitTimestamps;
+        }
+
+        throw new InvalidDataException(
+            "Unable to decode the timestamp field as either legacy 27-bit or unmarked 64-bit first-delta data.",
+            unmarked64BitError ?? legacyError
+        );
+    }
+
+    private static bool TryDecodeTimestampValues(
+        ReadOnlyMemory<byte> payload,
+        int rowCount,
+        bool firstDelta27Bits,
+        out DateTime[] timestamps,
+        out Exception? error
+    )
+    {
+        try
+        {
+            timestamps = DecodeTimestampValues(payload, rowCount, firstDelta27Bits);
+            error = null;
+            return true;
+        }
+        catch (Exception ex) when (IsTimestampDecodeException(ex))
+        {
+            timestamps = [];
+            error = ex;
+            return false;
+        }
+    }
+
+    private static DateTime[] DecodeTimestampValues(
+        ReadOnlyMemory<byte> payload,
+        int rowCount,
+        bool firstDelta27Bits
+    )
+    {
+        var result = new DateTime[rowCount];
+        using var timestamp = new GorillaTimestampDecoder(
+            new MemoryBitReader(payload),
+            firstDelta27Bits: firstDelta27Bits
+        );
+
+        for (var i = 0; i < result.Length; i++)
+        {
+            result[i] = DateTime.FromBinary(timestamp.ReadNext());
+        }
+
+        if (!HasOnlyZeroPadding(payload, timestamp.TotalBitsRead))
+        {
+            throw new InvalidDataException(
+                "The timestamp field contains trailing data after decoded rows."
+            );
+        }
+
+        return result;
+    }
+
+    private static bool HasOnlyZeroPadding(ReadOnlyMemory<byte> payload, long bitsRead)
+    {
+        var totalBits = (long)payload.Length * 8;
+        if (bitsRead > totalBits)
+        {
+            return false;
+        }
+
+        var trailingBits = totalBits - bitsRead;
+        if (trailingBits > 7)
+        {
+            return false;
+        }
+
+        var span = payload.Span;
+        for (var bitIndex = bitsRead; bitIndex < totalBits; bitIndex++)
+        {
+            var byteIndex = (int)(bitIndex / 8);
+            var bitInByte = (int)(bitIndex % 8);
+            if ((span[byteIndex] & (1 << (7 - bitInByte))) != 0)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool IsTimestampDecodeException(Exception ex) =>
+        ex is ArgumentException or EndOfStreamException or InvalidDataException;
 
     private void ReadField(PoolingArrayBufferWriter<byte> rdr, string fieldName)
     {
