@@ -36,6 +36,7 @@ public sealed class GorillaTimestampDecoder : AsyncDisposableOnce, IBitDecoder<l
     private readonly IBitReader _br;
     private readonly bool _firstDelta27Bits;
     private readonly bool _leaveOpen;
+    private readonly bool _extendedDodEncoding;
 
     // Decoder state machine:
     // 0: read t0
@@ -64,12 +65,14 @@ public sealed class GorillaTimestampDecoder : AsyncDisposableOnce, IBitDecoder<l
     public GorillaTimestampDecoder(
         IBitReader input,
         bool firstDelta27Bits = true,
-        bool leaveOpen = false
+        bool leaveOpen = false,
+        bool extendedDodEncoding = true
     )
     {
         _br = input ?? throw new ArgumentNullException(nameof(input));
         _firstDelta27Bits = firstDelta27Bits;
         _leaveOpen = leaveOpen;
+        _extendedDodEncoding = extendedDodEncoding;
         _state = 0;
     }
 
@@ -146,11 +149,18 @@ public sealed class GorillaTimestampDecoder : AsyncDisposableOnce, IBitDecoder<l
                             }
                             else
                             {
-                                var p5 = _br.ReadBit();
-                                dod =
-                                    p5 == 0
-                                        ? SignExtend(_br.ReadBits(32), 32)
-                                        : SignExtend(_br.ReadBits(64), 64);
+                                if (_extendedDodEncoding)
+                                {
+                                    var p5 = _br.ReadBit();
+                                    dod =
+                                        p5 == 0
+                                            ? SignExtend(_br.ReadBits(32), 32)
+                                            : SignExtend(_br.ReadBits(64), 64);
+                                }
+                                else
+                                {
+                                    dod = SignExtend(_br.ReadBits(32), 32);
+                                }
                             }
                         }
                     }

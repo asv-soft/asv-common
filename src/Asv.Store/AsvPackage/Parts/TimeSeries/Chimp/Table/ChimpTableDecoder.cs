@@ -119,42 +119,76 @@ public sealed class ChimpTableDecoder : IDisposable
         }
     }
 
-    private static DateTime[] DecodeTimestamps(ReadOnlyMemory<byte> payload, int rowCount)
+    internal static DateTime[] DecodeTimestamps(ReadOnlyMemory<byte> payload, int rowCount)
     {
         if (ChimpTimestampFormat.TryReadVersion1Header(payload, out var versionedBody))
         {
-            return DecodeTimestampValues(versionedBody, rowCount, firstDelta27Bits: false);
-        }
-
-        if (
-            TryDecodeTimestampValues(
-                payload,
-                rowCount,
-                firstDelta27Bits: true,
-                out var legacyTimestamps,
-                out var legacyError
-            )
-        )
-        {
-            return legacyTimestamps;
-        }
-
-        if (
-            TryDecodeTimestampValues(
-                payload,
+            return DecodeTimestampValues(
+                versionedBody,
                 rowCount,
                 firstDelta27Bits: false,
-                out var unmarked64BitTimestamps,
-                out var unmarked64BitError
-            )
-        )
+                extendedDodEncoding: true
+            ).Values;
+        }
+
+        var legacyDecoded = TryDecodeTimestampValues(
+            payload,
+            rowCount,
+            firstDelta27Bits: true,
+            extendedDodEncoding: false,
+            out var legacyTimestamps,
+            out var legacyError
+        );
+        var current27BitDecoded = TryDecodeTimestampValues(
+            payload,
+            rowCount,
+            firstDelta27Bits: true,
+            extendedDodEncoding: true,
+            out var current27BitTimestamps,
+            out var current27BitError
+        );
+        var unmarked64BitDecoded = TryDecodeTimestampValues(
+            payload,
+            rowCount,
+            firstDelta27Bits: false,
+            extendedDodEncoding: true,
+            out var unmarked64BitTimestamps,
+            out var unmarked64BitError
+        );
+
+        if (legacyDecoded && legacyTimestamps.IsFullyConsumed)
         {
-            return unmarked64BitTimestamps;
+            return legacyTimestamps.Values;
+        }
+
+        if (current27BitDecoded && current27BitTimestamps.IsFullyConsumed)
+        {
+            return current27BitTimestamps.Values;
+        }
+
+        if (unmarked64BitDecoded && unmarked64BitTimestamps.IsFullyConsumed)
+        {
+            return unmarked64BitTimestamps.Values;
+        }
+
+        if (legacyDecoded)
+        {
+            return legacyTimestamps.Values;
+        }
+
+        if (current27BitDecoded)
+        {
+            return current27BitTimestamps.Values;
+        }
+
+        if (unmarked64BitDecoded)
+        {
+            return unmarked64BitTimestamps.Values;
         }
 
         throw new InvalidDataException(
-            "Unable to decode the timestamp field as either legacy 27-bit or unmarked 64-bit first-delta data.",
-            unmarked64BitError ?? legacyError
+            "Unable to decode the timestamp field as legacy or current unmarked data.",
+            unmarked64BitError ?? current27BitError ?? legacyError
         );
     }
 
@@ -162,34 +196,42 @@ public sealed class ChimpTableDecoder : IDisposable
         ReadOnlyMemory<byte> payload,
         int rowCount,
         bool firstDelta27Bits,
-        out DateTime[] timestamps,
+        bool extendedDodEncoding,
+        out TimestampDecodeResult timestamps,
         out Exception? error
     )
     {
         try
         {
-            timestamps = DecodeTimestampValues(payload, rowCount, firstDelta27Bits);
+            timestamps = DecodeTimestampValues(
+                payload,
+                rowCount,
+                firstDelta27Bits,
+                extendedDodEncoding
+            );
             error = null;
             return true;
         }
         catch (Exception ex) when (IsTimestampDecodeException(ex))
         {
-            timestamps = [];
+            timestamps = default;
             error = ex;
             return false;
         }
     }
 
-    private static DateTime[] DecodeTimestampValues(
+    private static TimestampDecodeResult DecodeTimestampValues(
         ReadOnlyMemory<byte> payload,
         int rowCount,
-        bool firstDelta27Bits
+        bool firstDelta27Bits,
+        bool extendedDodEncoding
     )
     {
         var result = new DateTime[rowCount];
         using var timestamp = new GorillaTimestampDecoder(
             new MemoryBitReader(payload),
-            firstDelta27Bits: firstDelta27Bits
+            firstDelta27Bits: firstDelta27Bits,
+            extendedDodEncoding: extendedDodEncoding
         );
 
         for (var i = 0; i < result.Length; i++)
@@ -197,15 +239,13 @@ public sealed class ChimpTableDecoder : IDisposable
             result[i] = DateTime.FromBinary(timestamp.ReadNext());
         }
 
-        if (!HasOnlyZeroPadding(payload, timestamp.TotalBitsRead))
-        {
-            throw new InvalidDataException(
-                "The timestamp field contains trailing data after decoded rows."
-            );
-        }
-
-        return result;
+        return new TimestampDecodeResult(
+            result,
+            HasOnlyZeroPadding(payload, timestamp.TotalBitsRead)
+        );
     }
+
+    private readonly record struct TimestampDecodeResult(DateTime[] Values, bool IsFullyConsumed);
 
     private static bool HasOnlyZeroPadding(ReadOnlyMemory<byte> payload, long bitsRead)
     {

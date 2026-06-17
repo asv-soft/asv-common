@@ -189,14 +189,14 @@ public class VisitableTimeSeriesAsvPackagePartTest(ITestOutputHelper log)
         return stream;
     }
 
-    private List<TableRow> ReadRowsFromTableStream(Stream stream)
+    private List<TableRow> ReadRowsFromTableStream(Stream stream, uint flushEvery = 10)
     {
         var rows = new List<TableRow>();
         using var reader = new ChimpTableDecoder(
             "test",
             () => (new SupportedTypesWithArraysAndSubs(), new object()),
             stream,
-            10,
+            flushEvery,
             TestLogger()
         );
 
@@ -309,6 +309,18 @@ public class VisitableTimeSeriesAsvPackagePartTest(ITestOutputHelper log)
         var rows = ReadRowsFromTableStream(stream);
 
         Assert.Equal(timestamps, rows.Select(row => row.Timestamp).ToArray());
+    }
+
+    [Fact]
+    public void Read_ShouldIgnoreTrailingTimestampPayload_WhenBatchRowCountIsNormalized()
+    {
+        var start = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var timestamps = new[] { start, start.AddSeconds(1), start.AddSeconds(2) };
+        using var stream = CreateUnmarkedTableStream(timestamps, timestampFirstDelta27Bits: true);
+
+        var rows = ReadRowsFromTableStream(stream, flushEvery: 2);
+
+        Assert.Equal([timestamps[0]], rows.Select(row => row.Timestamp).ToArray());
     }
 
     [Fact]

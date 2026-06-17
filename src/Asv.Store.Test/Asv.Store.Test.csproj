@@ -20,6 +20,9 @@
     <ProjectReference Include="..\Asv.XUnit\Asv.XUnit.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="AsvPackage\Parts\TimeSeries\Chimp\Resources\RsgaTimestampFixtures.json" />
+  </ItemGroup>
+  <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>
 </Project>
