@@ -52,13 +52,22 @@ public class DeviceExplorerTest : IDisposable
     {
         Assert.Equal(0, _explorer.Devices.Count);
 
-        await _link.Server.Send(new ExampleMessage1 { SenderId = 1 });
+        await _link.Server.Send(
+            new ExampleMessage1 { SenderId = 1 },
+            TestContext.Current.CancellationToken
+        );
         Assert.Equal(1, _explorer.Devices.Count);
 
-        await _link.Server.Send(new ExampleMessage1 { SenderId = 1 });
+        await _link.Server.Send(
+            new ExampleMessage1 { SenderId = 1 },
+            TestContext.Current.CancellationToken
+        );
         Assert.Equal(1, _explorer.Devices.Count);
 
-        await _link.Server.Send(new ExampleMessage1 { SenderId = 3 });
+        await _link.Server.Send(
+            new ExampleMessage1 { SenderId = 3 },
+            TestContext.Current.CancellationToken
+        );
         Assert.Equal(2, _explorer.Devices.Count);
 
         _routerTime.Advance(

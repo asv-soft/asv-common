@@ -55,7 +55,4 @@
       <DependentUpon>SpanBitHelperExt.tt</DependentUpon>
     </Compile>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Store\" />
-  </ItemGroup>
 </Project>

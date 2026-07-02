@@ -136,7 +136,10 @@ public class ProtocolConnectionTests
     public async Task Connection_InvokesObservableOnTransactMessage()
     {
         _clientRouter.OnTxMessage.Subscribe(_ => Assert.True(_.IsDeepEqual(new ExampleMessage1())));
-        await _clientRouter.Send(new ExampleMessage1());
+        await _clientRouter.Send(
+            new ExampleMessage1(),
+            TestContext.Current.CancellationToken
+        );
     }
 
     [Fact]

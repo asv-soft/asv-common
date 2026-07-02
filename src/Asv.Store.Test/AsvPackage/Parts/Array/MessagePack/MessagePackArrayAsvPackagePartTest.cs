@@ -237,9 +237,14 @@ public class MessagePackArrayAsvPackagePartTest(ITestOutputHelper log)
         using var stream = packagePart.GetStream(FileMode.Open, FileAccess.Read);
         using var streamReader = new MessagePackStreamReader(stream);
         var actual = new List<TestRow>();
-        while (await streamReader.ReadAsync(CancellationToken.None) is { } msgpack)
+        while (await streamReader.ReadAsync(TestContext.Current.CancellationToken) is { } msgpack)
         {
-            actual.Add(MessagePackSerializer.Deserialize<TestRow>(msgpack));
+            actual.Add(
+                MessagePackSerializer.Deserialize<TestRow>(
+                    msgpack,
+                    cancellationToken: TestContext.Current.CancellationToken
+                )
+            );
         }
 
         Assert.Equal(data, actual);

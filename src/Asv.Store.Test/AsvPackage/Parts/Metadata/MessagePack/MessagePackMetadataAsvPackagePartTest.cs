@@ -178,7 +178,10 @@ public class MessagePackMetadataAsvPackagePartTest(ITestOutputHelper log)
         ms.Position = 0;
         using var pkgForRead = Package.Open(ms, FileMode.Open, FileAccess.Read);
         using var stream = pkgForRead.GetPart(PartUri).GetStream(FileMode.Open, FileAccess.Read);
-        var raw = MessagePackSerializer.Deserialize<TestMetadata>(stream);
+        var raw = MessagePackSerializer.Deserialize<TestMetadata>(
+            stream,
+            cancellationToken: TestContext.Current.CancellationToken
+        );
 
         Assert.Equal(expected, raw);
     }

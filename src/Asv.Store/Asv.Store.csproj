@@ -2,6 +2,7 @@
   <PropertyGroup>
     <ImplicitUsings>enable</ImplicitUsings>
     <PackageIcon>asv-store-128.png</PackageIcon>
+    <LangVersion>preview</LangVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.HighPerformance" Version="8.4.2" />
@@ -17,5 +18,9 @@
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="AsvPackage\Parts\Dictionary\Json\" />
+    <Folder Include="AsvPackage\Parts\Dictionary\MessagePack\" />
   </ItemGroup>
 </Project>

@@ -414,7 +414,9 @@ public class VirtualConnectionTest
 
         //Assert
         // ReSharper disable once AssignNullToNotNullAttribute
-        await Assert.ThrowsAsync<ArgumentNullException>(async () => await link.Server.Send(null));
+        await Assert.ThrowsAsync<ArgumentNullException>(async () =>
+            await link.Server.Send(null, TestContext.Current.CancellationToken)
+        );
     }
 
     [Fact]
