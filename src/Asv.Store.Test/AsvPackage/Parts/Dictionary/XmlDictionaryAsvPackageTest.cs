@@ -200,10 +200,7 @@ public class XmlDictionaryAsvPackageTest(ITestOutputHelper log)
         var xml = XDocument.Load(stream);
         var reportNode = Assert.Single(xml.Root!.Elements(), x => x.Name.LocalName == "report");
         var typeNode = Assert.Single(reportNode.Elements(), x => x.Name.LocalName == "type");
-        var assemblyNode = Assert.Single(
-            typeNode.Elements(),
-            x => x.Name.LocalName == "assembly"
-        );
+        var assemblyNode = Assert.Single(typeNode.Elements(), x => x.Name.LocalName == "assembly");
 
         Assert.Null(typeNode.Attribute("type"));
         Assert.Equal(typeof(TestPilotDto).FullName, assemblyNode.Attribute("type")?.Value);

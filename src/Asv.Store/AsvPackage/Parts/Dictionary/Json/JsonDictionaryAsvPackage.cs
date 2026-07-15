@@ -447,7 +447,9 @@ public class JsonDictionaryAsvPackage(
     private JObject GetOrCreateEntries()
     {
         var dictionaryRoot = GetOrCreateDictionaryRoot();
-        if (dictionaryRoot.TryGetValue(EntriesPropertyName, StringComparison.Ordinal, out var value))
+        if (
+            dictionaryRoot.TryGetValue(EntriesPropertyName, StringComparison.Ordinal, out var value)
+        )
         {
             if (value is not JObject entries)
             {
@@ -466,7 +468,9 @@ public class JsonDictionaryAsvPackage(
 
     private JObject? FindDictionaryRoot()
     {
-        if (_document.TryGetValue(RootPropertyName, StringComparison.Ordinal, out var root) == false)
+        if (
+            _document.TryGetValue(RootPropertyName, StringComparison.Ordinal, out var root) == false
+        )
         {
             return null;
         }

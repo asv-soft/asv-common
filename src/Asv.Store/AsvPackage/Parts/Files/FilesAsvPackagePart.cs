@@ -20,7 +20,8 @@ public class FilesAsvPackagePart(
     private readonly Uri _manifestUri = CreatePartUri(
         $"{NormalizeRootPath(rootUri)}{ManifestFileName}"
     );
-    private readonly string _contentRootPath = $"{NormalizeRootPath(rootUri)}{ContentDirectoryName}/";
+    private readonly string _contentRootPath =
+        $"{NormalizeRootPath(rootUri)}{ContentDirectoryName}/";
 
     public IEnumerable<IStoredFile> Enumerate(
         string? relativeDirectory = null,
@@ -207,7 +208,11 @@ public class FilesAsvPackagePart(
             return;
         }
 
-        var manifestPart = Context.Package.CreatePart(_manifestUri, manifestContentType, compression);
+        var manifestPart = Context.Package.CreatePart(
+            _manifestUri,
+            manifestContentType,
+            compression
+        );
         using var stream = manifestPart.GetStream(FileMode.Create, FileAccess.ReadWrite);
         using var writer = new StreamWriter(stream);
         using var jsonWriter = new JsonTextWriter(writer)
@@ -318,7 +323,10 @@ public class FilesAsvPackagePart(
 
         if (path.EndsWith('/'))
         {
-            throw new ArgumentException("File path must include a file name.", nameof(relativePath));
+            throw new ArgumentException(
+                "File path must include a file name.",
+                nameof(relativePath)
+            );
         }
 
         var segments = path.Split('/');
@@ -417,10 +425,10 @@ public class FilesAsvPackagePart(
         long length
     ) : IStoredFile
     {
-        private readonly IReadOnlyDictionary<string, string> _metadata =
-            new ReadOnlyDictionary<string, string>(
-                new Dictionary<string, string>(metadata, StringComparer.Ordinal)
-            );
+        private readonly IReadOnlyDictionary<string, string> _metadata = new ReadOnlyDictionary<
+            string,
+            string
+        >(new Dictionary<string, string>(metadata, StringComparer.Ordinal));
 
         public string RelativePath { get; } = relativePath;
         public string Name { get; } = name;

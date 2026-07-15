@@ -25,7 +25,12 @@ public class FilesAsvPackagePartTest(ITestOutputHelper log)
         using (var pkg = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite))
         {
             var part = CreatePart(pkg);
-            part.Write("reports/pilot.txt", CreateStream("Pilot report"), TextContentType, metadata);
+            part.Write(
+                "reports/pilot.txt",
+                CreateStream("Pilot report"),
+                TextContentType,
+                metadata
+            );
             part.Dispose();
         }
 
@@ -94,7 +99,9 @@ public class FilesAsvPackagePartTest(ITestOutputHelper log)
         part.Write("reports/archive/old.txt", CreateStream("Old"), TextContentType);
         part.Write("other.txt", CreateStream("Other"), TextContentType);
 
-        var shallow = part.Enumerate("reports", recursive: false).Select(x => x.RelativePath).ToArray();
+        var shallow = part.Enumerate("reports", recursive: false)
+            .Select(x => x.RelativePath)
+            .ToArray();
         var recursive = part.Enumerate("reports").Select(x => x.RelativePath).ToArray();
 
         Assert.Equal(["reports/pilot.txt"], shallow);

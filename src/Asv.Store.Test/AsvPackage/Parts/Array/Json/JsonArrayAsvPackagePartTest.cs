@@ -309,14 +309,23 @@ public class JsonArrayAsvPackagePartTest(ITestOutputHelper log)
 
             var read = StartUnobservedRead(part, firstRowVisited, releaseVisitor);
 
-            await firstRowVisited.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+            await firstRowVisited.Task.WaitAsync(
+                TimeSpan.FromSeconds(5),
+                TestContext.Current.CancellationToken
+            );
             readPackage.Close();
             releaseVisitor.SetResult();
 
-            await read.Completed.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+            await read.Completed.WaitAsync(
+                TimeSpan.FromSeconds(5),
+                TestContext.Current.CancellationToken
+            );
             await WaitForUnobservedTaskException(read.TaskReference, unobserved);
 
-            var exception = await unobserved.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+            var exception = await unobserved.Task.WaitAsync(
+                TimeSpan.FromSeconds(5),
+                TestContext.Current.CancellationToken
+            );
             Assert.Contains(
                 exception.Flatten().InnerExceptions,
                 ex => ex is ObjectDisposedException
