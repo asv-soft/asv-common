@@ -380,8 +380,9 @@ public partial class ISupportLayoutTest : IDisposable
             return _children;
         }
 
-        public ValueTask<TrackingLayoutNode> Navigate(NavId id)
+        public ValueTask<TrackingLayoutNode> Navigate(NavId id, CancellationToken cancel = default)
         {
+            cancel.ThrowIfCancellationRequested();
             return ValueTask.FromResult(_children.FirstOrDefault(x => x.Id == id) ?? this);
         }
 

@@ -13,8 +13,9 @@ public interface INavigationController<TBase>
     /// <summary>
     /// Navigates to the previous item in the backward navigation stack.
     /// </summary>
+    /// <param name="cancel">The token used to cancel the operation.</param>
     /// <returns>A <see cref="ValueTask"/> representing the asynchronous operation.</returns>
-    ValueTask BackwardAsync();
+    ValueTask BackwardAsync(CancellationToken cancel = default);
 
     /// <summary>
     /// Gets the <see cref="ReactiveCommand"/> that triggers backward navigation.
@@ -29,8 +30,9 @@ public interface INavigationController<TBase>
     /// <summary>
     /// Navigates to the next item in the forward navigation stack.
     /// </summary>
+    /// <param name="cancel">The token used to cancel the operation.</param>
     /// <returns>A <see cref="ValueTask"/> representing an asynchronous operation.</returns>
-    ValueTask ForwardAsync();
+    ValueTask ForwardAsync(CancellationToken cancel = default);
 
     /// <summary>
     /// Gets the <see cref="ReactiveCommand"/> that triggers forward navigation.
@@ -47,7 +49,7 @@ public interface INavigationController<TBase>
     /// </summary>
     ReadOnlyReactiveProperty<NavPath> SelectedPath { get; }
 
-    ValueTask<TBase> GoTo(NavPath navPath);
+    ValueTask<TBase> GoTo(NavPath navPath, CancellationToken cancel = default);
 
     /// <summary>
     /// Forces focus change to the specified routable control.
