@@ -51,8 +51,9 @@ public abstract class ViewModelBase : IViewModel
 
     public abstract IEnumerable<IViewModel> GetChildren();
 
-    public ValueTask<IViewModel> Navigate(NavId id)
+    public ValueTask<IViewModel> Navigate(NavId id, CancellationToken cancel = default)
     {
+        cancel.ThrowIfCancellationRequested();
         return ValueTask.FromResult(GetChildren().FirstOrDefault(x => x.Id == id) ?? this);
     }
 

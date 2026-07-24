@@ -23,8 +23,8 @@ public class NavigationController<TBase> : AsyncDisposableOnce, INavigationContr
         _selectedControl = new ReactiveProperty<TBase?>().AddTo(ref dispose);
         _selectedPath = new ReactiveProperty<NavPath>().AddTo(ref dispose);
 
-        Backward = new ReactiveCommand((_, _) => BackwardAsync()).AddTo(ref dispose);
-        Forward = new ReactiveCommand((_, _) => ForwardAsync()).AddTo(ref dispose);
+        Backward = new ReactiveCommand((_, cancel) => BackwardAsync(cancel)).AddTo(ref dispose);
+        Forward = new ReactiveCommand((_, cancel) => ForwardAsync(cancel)).AddTo(ref dispose);
         _backwardStack
             .ObserveCountChanged(true)
             .Subscribe(c => Backward.ChangeCanExecute(c != 0))
@@ -55,7 +55,7 @@ public class NavigationController<TBase> : AsyncDisposableOnce, INavigationContr
             return;
         }
 
-        await GoTo(e.Path);
+        await GoTo(e.Path, cancel).ConfigureAwait(false);
         if (!previousPath.IsEmpty)
         {
             _backwardStack.Push(previousPath);
@@ -66,7 +66,7 @@ public class NavigationController<TBase> : AsyncDisposableOnce, INavigationContr
 
     public IObservableCollection<NavPath> BackwardStack => _backwardStack;
 
-    public async ValueTask BackwardAsync()
+    public async ValueTask BackwardAsync(CancellationToken cancel = default)
     {
         if (_backwardStack.TryPop(out var path) == false)
         {
@@ -76,7 +76,7 @@ public class NavigationController<TBase> : AsyncDisposableOnce, INavigationContr
         var previousPath = _selectedPath.Value;
         try
         {
-            await GoTo(path);
+            await GoTo(path, cancel).ConfigureAwait(false);
             if (!previousPath.IsEmpty)
             {
                 _forwardStack.Push(previousPath);
@@ -92,7 +92,7 @@ public class NavigationController<TBase> : AsyncDisposableOnce, INavigationContr
     public ReactiveCommand Backward { get; }
     public IObservableCollection<NavPath> ForwardStack => _forwardStack;
 
-    public async ValueTask ForwardAsync()
+    public async ValueTask ForwardAsync(CancellationToken cancel = default)
     {
         if (_forwardStack.TryPop(out var path) == false)
         {
@@ -102,7 +102,7 @@ public class NavigationController<TBase> : AsyncDisposableOnce, INavigationContr
         var previousPath = _selectedPath.Value;
         try
         {
-            await GoTo(path);
+            await GoTo(path, cancel).ConfigureAwait(false);
             if (!previousPath.IsEmpty)
             {
                 _backwardStack.Push(previousPath);
@@ -115,7 +115,7 @@ public class NavigationController<TBase> : AsyncDisposableOnce, INavigationContr
         }
     }
 
-    public async ValueTask<TBase> GoTo(NavPath navPath)
+    public async ValueTask<TBase> GoTo(NavPath navPath, CancellationToken cancel = default)
     {
         if (navPath.Count == 0)
         {
@@ -127,11 +127,13 @@ public class NavigationController<TBase> : AsyncDisposableOnce, INavigationContr
             throw new ArgumentException($"{nameof(navPath)} must start with root {_owner.Id}");
         }
 
+        cancel.ThrowIfCancellationRequested();
         var next = _owner;
         for (var i = 1; i < navPath.Count; i++)
         {
-            next = await next.Navigate(navPath[i]);
+            next = await next.Navigate(navPath[i], cancel).ConfigureAwait(false);
         }
+        cancel.ThrowIfCancellationRequested();
         ForceSelect(next);
         if (next is ISupportFocus nextWithFocus)
         {

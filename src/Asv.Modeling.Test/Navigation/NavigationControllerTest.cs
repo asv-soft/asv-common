@@ -13,7 +13,10 @@ public class NavigationControllerTest
         var store = new InMemoryNavigationStore();
         using var controller = new NavigationController<IViewModel>(root, store);
 
-        var result = await controller.GoTo(new NavPath(root.Id, child1.Id, child2.Id));
+        var result = await controller.GoTo(
+            new NavPath(root.Id, child1.Id, child2.Id),
+            TestContext.Current.CancellationToken
+        );
 
         Assert.Same(child2, result);
         Assert.Same(child2, controller.SelectedControl.CurrentValue);
@@ -21,6 +24,23 @@ public class NavigationControllerTest
             new NavPath(root.Id, child1.Id, child2.Id),
             controller.SelectedPath.CurrentValue
         );
+    }
+
+    [Fact]
+    public async ValueTask GoTo_WithCanceledToken_DoesNotChangeSelection()
+    {
+        var (root, child1, _) = CreateTree();
+        var store = new InMemoryNavigationStore();
+        using var controller = new NavigationController<IViewModel>(root, store);
+        using var cancel = new CancellationTokenSource();
+        cancel.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+            await controller.GoTo(new NavPath(root.Id, child1.Id), cancel.Token)
+        );
+
+        Assert.Same(root, controller.SelectedControl.CurrentValue);
+        Assert.Equal(new NavPath(root.Id), controller.SelectedPath.CurrentValue);
     }
 
     [Fact]
@@ -66,7 +86,7 @@ public class NavigationControllerTest
             TestContext.Current.CancellationToken
         );
 
-        await controller.BackwardAsync();
+        await controller.BackwardAsync(TestContext.Current.CancellationToken);
 
         Assert.Equal(new NavPath(root.Id, child1.Id), controller.SelectedPath.CurrentValue);
         Assert.Equal(
@@ -78,7 +98,7 @@ public class NavigationControllerTest
             controller.BackwardStack.Cast<NavPath>().Reverse().ToArray()
         );
 
-        await controller.ForwardAsync();
+        await controller.ForwardAsync(TestContext.Current.CancellationToken);
 
         Assert.Equal(
             new NavPath(root.Id, child1.Id, child2.Id),
@@ -86,6 +106,32 @@ public class NavigationControllerTest
         );
         Assert.Equal(
             [new NavPath(root.Id), new NavPath(root.Id, child1.Id)],
+            controller.BackwardStack.Cast<NavPath>().Reverse().ToArray()
+        );
+        Assert.Empty(controller.ForwardStack);
+    }
+
+    [Fact]
+    public async ValueTask BackwardAsync_WithCanceledToken_RestoresHistoryEntry()
+    {
+        var (root, child1, _) = CreateTree();
+        var store = new InMemoryNavigationStore();
+        using var controller = new NavigationController<IViewModel>(root, store);
+
+        await root.Rise(
+            new NavigateEvent<IViewModel>(root, new NavPath(root.Id, child1.Id)),
+            TestContext.Current.CancellationToken
+        );
+        using var cancel = new CancellationTokenSource();
+        cancel.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+            await controller.BackwardAsync(cancel.Token)
+        );
+
+        Assert.Equal(new NavPath(root.Id, child1.Id), controller.SelectedPath.CurrentValue);
+        Assert.Equal(
+            [new NavPath(root.Id)],
             controller.BackwardStack.Cast<NavPath>().Reverse().ToArray()
         );
         Assert.Empty(controller.ForwardStack);

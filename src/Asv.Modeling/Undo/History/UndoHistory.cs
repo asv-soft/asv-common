@@ -54,7 +54,9 @@ public class UndoHistory<TBase> : AsyncDisposableOnceBag, IUndoHistory<TBase>
             try
             {
                 var contextPath = snapshot.Path;
-                var target = await _owner.NavigateByPath(contextPath) as ISupportUndo<TBase>;
+                var target =
+                    await _owner.NavigateByPath(contextPath, cancel).ConfigureAwait(false)
+                    as ISupportUndo<TBase>;
                 if (target == null)
                 {
                     throw new Exception(
@@ -64,7 +66,7 @@ public class UndoHistory<TBase> : AsyncDisposableOnceBag, IUndoHistory<TBase>
                 var handler = target.Undo[snapshot.ChangeId];
                 var change = handler.Create();
                 _store.LoadChange(snapshot, change);
-                await handler.Undo(change, cancel);
+                await handler.Undo(change, cancel).ConfigureAwait(false);
                 _redoStack.Push(snapshot);
             }
             catch
@@ -90,7 +92,9 @@ public class UndoHistory<TBase> : AsyncDisposableOnceBag, IUndoHistory<TBase>
             try
             {
                 var contextPath = snapshot.Path;
-                var target = await _owner.NavigateByPath(contextPath) as ISupportUndo<TBase>;
+                var target =
+                    await _owner.NavigateByPath(contextPath, cancel).ConfigureAwait(false)
+                    as ISupportUndo<TBase>;
                 if (target == null)
                 {
                     throw new Exception(
@@ -100,7 +104,7 @@ public class UndoHistory<TBase> : AsyncDisposableOnceBag, IUndoHistory<TBase>
                 var handler = target.Undo[snapshot.ChangeId];
                 var change = handler.Create();
                 _store.LoadChange(snapshot, change);
-                await handler.Redo(change, cancel);
+                await handler.Redo(change, cancel).ConfigureAwait(false);
                 _undoStack.Push(snapshot);
             }
             catch
