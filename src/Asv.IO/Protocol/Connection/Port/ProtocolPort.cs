@@ -187,6 +187,7 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
         if (IsEnabled.CurrentValue)
         {
             _logger.ZLogWarning($"Port {this} already enabled, skip enable request");
+            return;
         }
         _logger.ZLogInformation($"Enable {this} port");
         _config.IsEnabled = true;
@@ -232,6 +233,7 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
         if (IsEnabled.CurrentValue == false)
         {
             _logger.ZLogWarning($"Port {this} already disabled, skip disable request");
+            return;
         }
         _config.IsEnabled = false;
         _isEnabled.Value = false;
