@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -134,20 +135,34 @@ public class DeviceExplorer : AsyncDisposableOnce, IDeviceExplorer
         }
     }
 
-    private void CheckNewDevice(IProtocolMessage msg)
+    public bool TryIdentify(IProtocolMessage message, [NotNullWhen(true)] out DeviceId? deviceId)
     {
-        var providers = _providers;
-        DeviceId? deviceId = null;
-        IClientDeviceFactory? currentProvider = null;
-        foreach (var provider in providers)
+        return TryIdentify(message, out deviceId, out _);
+    }
+
+    private bool TryIdentify(
+        IProtocolMessage message,
+        [NotNullWhen(true)] out DeviceId? deviceId,
+        [NotNullWhen(true)] out IClientDeviceFactory? factory
+    )
+    {
+        ArgumentNullException.ThrowIfNull(message);
+        foreach (var provider in _providers)
         {
-            if (provider.TryIdentify(msg, out deviceId))
+            if (provider.TryIdentify(message, out deviceId) && deviceId != null)
             {
-                currentProvider = provider;
-                break;
+                factory = provider;
+                return true;
             }
         }
-        if (deviceId == null || currentProvider == null)
+        deviceId = null;
+        factory = null;
+        return false;
+    }
+
+    private void CheckNewDevice(IProtocolMessage msg)
+    {
+        if (!TryIdentify(msg, out var deviceId, out var currentProvider))
         {
             return;
         }
