@@ -4,7 +4,7 @@
 
 Keep dependencies flowing from specialized packages toward shared primitives:
 
-```text
+```plain text
 Asv.Common
   <- Asv.Cfg
   <- Asv.Composition
@@ -24,7 +24,7 @@ When adding a new dependency, check that it does not create a cycle or pull impl
 | `Asv.Common` | Cross-cutting primitives that are useful without domain-specific dependencies. |
 | `Asv.Cfg` | Reading, writing, storing, and versioning configuration data. |
 | `Asv.Composition` | Module discovery, named exports, metadata, and composition container helpers. |
-| `Asv.IO` | Transport, protocol parsing, binary serialization, endpoint routing, and device communication. |
+| [Asv.IO](Asv-IO.md) | Transport, protocol parsing, binary serialization, endpoint routing, and device communication. |
 | `Asv.Modeling` | UI-agnostic application model behavior such as identity, tree structure, focus, navigation, layout, and undo. |
 | `Asv.Store` | Persistent storage formats, packages, hierarchical stores, and time-series data. |
 | `Asv.XUnit` | Shared test-only helpers for xUnit-based projects. |

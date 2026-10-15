@@ -40,13 +40,13 @@ flowchart LR
 
 `NavId` is the stable address of one node level. The `TypeId` allows letters, digits, `.`, `_`, and `-`. Optional args are encoded after `?`.
 
-```text
+```plain text
 file.item?path=C%3A%5CTemp%5CMy+File.txt
 ```
 
 `NavPath` joins `NavId` segments with `/`:
 
-```text
+```plain text
 root/folder?name=read+me/file.item?path=C%3A%5CTemp%5CFile.txt
 ```
 

@@ -25,7 +25,7 @@ dotnet test src/Asv.Common.Test/Asv.Common.Test.csproj
 
 ## Repository Layout
 
-```text
+```plain text
 src/
   Asv.Common/          common primitives
   Asv.Cfg/             configuration providers

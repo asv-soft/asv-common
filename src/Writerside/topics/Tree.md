@@ -155,7 +155,7 @@ using var subscription = node.RootTracking.ExecuteWhenRootAttached(
 );
 ```
 
-This pattern is useful for controllers that cannot fully initialize until their node is part of a rooted tree. Layout loading uses this approach so layout data is requested only after a node has an attached root.
+This pattern is useful for controllers that cannot fully initialize until their node is part of a rooted tree. [Layout](Layout.md) loading uses this approach so layout data is requested only after a node has an attached root.
 
 ## Design Rules
 

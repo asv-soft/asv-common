@@ -27,3 +27,7 @@ For Writerside topics:
 - Give files stable, descriptive names because they are used as generated page URLs.
 - Keep table-of-contents entries in `asv-common.tree` in reader workflow order.
 - Prefer linking to existing code or tests over copying long implementation details.
+
+## Code Block Languages
+
+Use `csharp` for C# examples, `bash` for shell commands, and `mermaid` for diagrams. For blocks without syntax highlighting, use Writerside's `plain text` identifier rather than `text`, which produces `CDE016` in this documentation. See the [Writerside code-block reference](https://www.jetbrains.com/help/writerside/semantic-markup-reference.html#code-block) for the plain-text language setting.
