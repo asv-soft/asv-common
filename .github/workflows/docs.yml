@@ -5,10 +5,12 @@ on:
     branches: [main]
     paths:
       - 'src/Writerside/**'
+      - 'src/Directory.Build.props'
       - '.github/workflows/docs.yml'
   pull_request:
     paths:
       - 'src/Writerside/**'
+      - 'src/Directory.Build.props'
       - '.github/workflows/docs.yml'
   workflow_dispatch:
 
@@ -29,6 +31,29 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Set documentation version from ProductVersion
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+          from xml.dom import minidom
+
+          props = ET.parse('src/Directory.Build.props')
+          versions = props.findall('./PropertyGroup/ProductVersion')
+          if len(versions) != 1 or not (version := (versions[0].text or '').strip()):
+              raise SystemExit('Expected one non-empty ProductVersion in src/Directory.Build.props')
+
+          path = Path('src/Writerside/writerside.cfg')
+          document = minidom.parse(str(path))
+          instances = [node for node in document.getElementsByTagName('instance')
+                       if node.getAttribute('src') == 'asv-common.tree']
+          if len(instances) != 1:
+              raise SystemExit('Expected one asv-common.tree instance in writerside.cfg')
+          instances[0].setAttribute('version', version)
+          path.write_bytes(document.toxml(encoding='UTF-8'))
+          print(f'Documentation version: {version}')
+          PY
 
       - name: Build Writerside documentation
         run: |

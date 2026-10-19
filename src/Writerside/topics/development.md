@@ -34,7 +34,9 @@ Use `csharp` for C# examples, `bash` for shell commands, and `mermaid` for diagr
 
 ## Publishing Documentation
 
-The `Publish documentation` GitHub Actions workflow builds and checks this Writerside instance. Pull requests that change `src/Writerside/**` or the workflow are checked without deployment. Matching changes pushed to `main` publish the site to [GitHub Pages](https://asv-soft.github.io/asv-common/). The workflow can also be started manually from the Actions tab; only runs on `main` deploy.
+The `Publish documentation` GitHub Actions workflow builds and checks this Writerside instance. Pull requests that change `src/Writerside/**`, `src/Directory.Build.props`, or the workflow are checked without deployment. Matching changes pushed to `main` publish the site to [GitHub Pages](https://asv-soft.github.io/asv-common/). The workflow can also be started manually from the Actions tab; only runs on `main` deploy.
+
+Before building, the workflow reads `ProductVersion` from `src/Directory.Build.props` and sets the instance's `version` attribute in its temporary checkout of `writerside.cfg`. Writerside displays this version next to the documentation name in the header, including development or release-candidate suffixes. There is no separate documentation version to update manually; local previews do not receive this CI-generated attribute.
 
 Before the first deployment, open the repository's **Settings → Pages** and select **GitHub Actions** as the build and deployment source. No custom deployment token is required: the workflow uses the built-in `GITHUB_TOKEN`.
 
