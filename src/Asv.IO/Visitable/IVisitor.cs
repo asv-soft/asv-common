@@ -50,4 +50,5 @@ public interface IFullVisitor
         DateOnlyType.IVisitor,
         DateOnlyOptionalType.IVisitor,
         TimeOnlyType.IVisitor,
-        TimeOnlyOptionalType.IVisitor;
+        TimeOnlyOptionalType.IVisitor
+{ }

@@ -74,14 +74,14 @@ public class GorillaTimestampComplexTest(ITestOutputHelper log)
         // Markdown-таблица
         log.WriteLine($"| Metric                | Value                               |");
         log.WriteLine($"|-----------------------|-------------------------------------|");
-        log.WriteLine($"| Count                 | {count, -20:N0} values         |");
-        log.WriteLine($"| Raw size              | {rawSize, -20:N0} bytes          |");
-        log.WriteLine($"| Encoded size          | {used, -20:N0} bytes          |");
-        log.WriteLine($"| Avg per value         | {avgBytes, -20:N2} bytes          |");
-        log.WriteLine($"| % of raw (encoded)    | {avgRatio, -20:P2}                |");
-        log.WriteLine($"| Compressed size (Zstd)| {compressedSize, -20:N0} bytes          |");
-        log.WriteLine($"| Ratio enc→comp        | {compressionRatio, -20:N2}                |");
-        log.WriteLine($"| % of raw (compressed) | {compressedToRaw, -20:P5}                |");
+        log.WriteLine($"| Count                 | {count,-20:N0} values         |");
+        log.WriteLine($"| Raw size              | {rawSize,-20:N0} bytes          |");
+        log.WriteLine($"| Encoded size          | {used,-20:N0} bytes          |");
+        log.WriteLine($"| Avg per value         | {avgBytes,-20:N2} bytes          |");
+        log.WriteLine($"| % of raw (encoded)    | {avgRatio,-20:P2}                |");
+        log.WriteLine($"| Compressed size (Zstd)| {compressedSize,-20:N0} bytes          |");
+        log.WriteLine($"| Ratio enc→comp        | {compressionRatio,-20:N2}                |");
+        log.WriteLine($"| % of raw (compressed) | {compressedToRaw,-20:P5}                |");
     }
 
     private static long[] BuildSequence(int count)

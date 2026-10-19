@@ -11,10 +11,10 @@ The repository contains several focused packages:
 | Package | Purpose |
 | --- | --- |
 | [Asv.Common](Asv-Common.md) | Common primitives, async helpers, collections, validation errors, math helpers, geodesy utilities, CRC, time services, and versioning helpers. |
-| `Asv.Cfg` | Configuration abstractions and providers for in-memory, file, folder, package, and versioned configuration storage. |
+| [Asv.Cfg](Asv-Cfg.md) | Configuration abstractions and providers for in-memory, file, folder, package, and versioned configuration storage. |
 | `Asv.Composition` | Lightweight module composition helpers based on `System.Composition`. |
 | [Asv.IO](Asv-IO.md) | Protocol, transport, serialization, routing, stream, schema, compression, device, and microservice utilities. |
-| `Asv.Modeling` | Application model primitives for identifiers, hierarchy, focus, routed events, navigation, layout, and undo/redo flows. |
+| [Asv.Modeling](Asv-Modeling.md) | Application model primitives for identifiers, hierarchy, focus, routed events, navigation, layout, and undo/redo flows. |
 | `Asv.Store` | Persistent package and hierarchical storage for metadata, arrays, key-value data, and time-series data. |
 | `Asv.XUnit` | xUnit v3 helpers for local/manual tests and test logging. |
 

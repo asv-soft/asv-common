@@ -124,35 +124,35 @@ public sealed class ChimpEncoder(IBitWriter writer, bool leaveOpen = false)
         }
         else
         {
-            var Ltrue = BitOperations.LeadingZeroCount(xor);
-            var Ttrue = BitOperations.TrailingZeroCount(xor);
+            var leadingZeros = BitOperations.LeadingZeroCount(xor);
+            var trailingZeros = BitOperations.TrailingZeroCount(xor);
 
             // Кодируемый L ограничен 31
-            var Lenc = Math.Min(Ltrue, 31);
+            var encodedLeadingZeros = Math.Min(leadingZeros, 31);
 
             // Критично: W считаем от trailing, чтобы сохранялась та же правая граница
-            var Wenc = 64 - Lenc - Ttrue;
-            if (Wenc <= 0)
+            var encodedWindowWidth = 64 - encodedLeadingZeros - trailingZeros;
+            if (encodedWindowWidth <= 0)
             {
-                Wenc = 1;
+                encodedWindowWidth = 1;
             }
 
-            if (Wenc > 64)
+            if (encodedWindowWidth > 64)
             {
-                Wenc = 64;
+                encodedWindowWidth = 64;
             }
 
             writer.WriteBits(0b11, 2);
-            writer.WriteBits((ulong)Lenc, 5);
-            writer.WriteBits((ulong)(Wenc - 1), 6);
+            writer.WriteBits((ulong)encodedLeadingZeros, 5);
+            writer.WriteBits((ulong)(encodedWindowWidth - 1), 6);
 
             // payload вырезаем сдвигом на истинный trailing
-            var payload = (Wenc == 64) ? xor : ((xor >> Ttrue) & ((1UL << Wenc) - 1));
-            writer.WriteBits(payload, Wenc);
+            var payload = (encodedWindowWidth == 64) ? xor : ((xor >> trailingZeros) & ((1UL << encodedWindowWidth) - 1));
+            writer.WriteBits(payload, encodedWindowWidth);
 
             // Обновляем «липкое» окно
-            _l = Lenc;
-            _w = Wenc;
+            _l = encodedLeadingZeros;
+            _w = encodedWindowWidth;
         }
 
         _prevBits = bits;

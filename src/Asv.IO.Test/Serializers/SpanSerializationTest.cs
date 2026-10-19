@@ -14,7 +14,7 @@ namespace Asv.IO.Test
 
         public class TestType : SpanKeyWithNameType<int>
         {
-            protected override void InternalValidateName(string name) { }
+            protected override void InternalValidateName(string? name) { }
 
             protected override int InternalReadKey(ref ReadOnlySpan<byte> buffer)
             {

@@ -314,7 +314,7 @@ public class VirtualConnectionTest
     [Fact]
     public async Task Statistic_IncrementRXPackets_Success()
     {
-        //Arrange
+        // Arrange
         uint count = 10;
         var link = Protocol
             .Create(builder =>
@@ -340,7 +340,7 @@ public class VirtualConnectionTest
             sendArray2[i] = fixture.Create<ExampleMessage2>();
         }
 
-        //Act
+        // Act
         foreach (var message1 in sendArray1)
         {
             await link.Server.Send(message1, cancel.Token);
@@ -351,14 +351,14 @@ public class VirtualConnectionTest
             await link.Client.Send(message2, cancel.Token);
         }
 
-        //Assert
+        // Assert
         Assert.Equal(count * 2, link.Statistic.RxMessages);
     }
 
     [Fact]
     public async Task Statistic_IncrementTXPackets_Success()
     {
-        //Arrange
+        // Arrange
         uint count = 10;
         var link = Protocol
             .Create(builder =>
@@ -384,7 +384,7 @@ public class VirtualConnectionTest
             sendArray2[i] = fixture.Create<ExampleMessage2>();
         }
 
-        //Act
+        // Act
         foreach (var message1 in sendArray1)
         {
             await link.Server.Send(message1, cancel.Token);
@@ -395,14 +395,14 @@ public class VirtualConnectionTest
             await link.Client.Send(message2, cancel.Token);
         }
 
-        //Assert
+        // Assert
         Assert.Equal(count * 2, link.Statistic.TxMessages);
     }
 
     [Fact]
     public async Task Statistic_SendNullMessage_Fail()
     {
-        //Arrange
+        // Arrange
         var link = Protocol
             .Create(builder =>
             {
@@ -412,17 +412,17 @@ public class VirtualConnectionTest
             })
             .CreateVirtualConnection();
 
-        //Assert
+        // Assert
         // ReSharper disable once AssignNullToNotNullAttribute
         await Assert.ThrowsAsync<ArgumentNullException>(async () =>
-            await link.Server.Send(null, TestContext.Current.CancellationToken)
+            await link.Server.Send(null!, TestContext.Current.CancellationToken)
         );
     }
 
     [Fact]
     public async Task Statistic_ParsedBytesCount_Success()
     {
-        //Arrange
+        // Arrange
         uint count = 10;
         var link = Protocol
             .Create(builder =>
@@ -444,7 +444,7 @@ public class VirtualConnectionTest
 
         var size = 0;
 
-        //Act
+        // Act
         foreach (var message1 in sendArray1)
         {
             await link.Server.Send(message1, cancel.Token);
@@ -456,7 +456,7 @@ public class VirtualConnectionTest
             await link.Client.Send(message1, cancel.Token);
         }
 
-        //Assert
+        // Assert
         Assert.Equal((uint)size * 2, link.Statistic.ParsedBytes);
     }
 }

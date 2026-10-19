@@ -83,7 +83,7 @@ namespace Asv.IO
                 }
                 catch (Exception)
                 {
-                    Debug.Assert(false);
+                    Debug.Assert(false, "Unexpected protocol or transport failure.");
 
                     // ignore
                 }
@@ -123,7 +123,7 @@ namespace Asv.IO
                         var buff = new byte[tcp.Available];
                         var readed = await tcp.GetStream()
                             .ReadAsync(buff, 0, buff.Length, cancellationTokenSource.Token);
-                        Debug.Assert(readed == buff.Length);
+                        Debug.Assert(readed == buff.Length, "Expected: readed == buff.Length");
                         if (readed != 0)
                         {
                             InternalOnData(buff);
@@ -146,9 +146,9 @@ namespace Asv.IO
             }
             catch (ThreadAbortException)
             {
-                Debug.Assert(false);
+                Debug.Assert(false, "Unexpected protocol or transport failure.");
 
-                //ignore
+                // ignore
             }
             catch (Exception e)
             {

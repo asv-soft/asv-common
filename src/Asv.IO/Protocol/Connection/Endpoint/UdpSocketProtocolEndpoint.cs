@@ -57,7 +57,7 @@ public class UdpSocketProtocolEndpoint(
     protected override ValueTask<int> InternalRead(Memory<byte> memory, CancellationToken cancel)
     {
         var span = new Span<byte>(_buffer, 0, _readSize);
-        Debug.Assert(memory.Length >= _readSize);
+        Debug.Assert(memory.Length >= _readSize, "Expected: memory.Length >= _readSize");
         span.CopyTo(memory.Span);
         _readSize = 0; // Reset read size to indicate that data has been consumed
         _waitDataRead.Set();

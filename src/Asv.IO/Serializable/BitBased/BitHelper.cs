@@ -29,7 +29,7 @@ namespace Asv.IO
         {
             var mask = 1u << (int)(len - 1);
 
-            if (len <= 0 || 32 < len)
+            if (len <= 0 || len > 32)
             {
                 return;
             }
@@ -51,7 +51,7 @@ namespace Asv.IO
         {
             var mask = 1u;
 
-            if (len <= 0 || 32 < len)
+            if (len <= 0 || len > 32)
             {
                 return;
             }
@@ -82,7 +82,7 @@ namespace Asv.IO
         public static int GetBitS(byte[] buff, uint pos, uint len)
         {
             var bits = GetBitU(buff, pos, len);
-            if (len <= 0 || 32 <= len || (bits & (1u << (int)(len - 1))) == 0)
+            if (len <= 0 || len >= 32 || (bits & (1u << (int)(len - 1))) == 0)
             {
                 return (int)bits;
             }
@@ -93,7 +93,7 @@ namespace Asv.IO
         public static int GetBitSReverse(byte[] buff, uint pos, uint len)
         {
             var bits = GetBitUReverse(buff, pos, len);
-            if (len <= 0 || 32 <= len || (bits & (1u << (int)(len - 1))) == 0)
+            if (len <= 0 || len >= 32 || (bits & (1u << (int)(len - 1))) == 0)
             {
                 return (int)bits;
             }

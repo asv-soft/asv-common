@@ -38,7 +38,5 @@ public class SerialCommand
             await router.Send(new ExampleMessage1());
             await Task.Delay(1000);
         }
-
-        return 0;
     }
 }

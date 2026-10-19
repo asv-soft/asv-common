@@ -15,7 +15,7 @@ public abstract class ProtocolMessageFormatter<TMessage> : IProtocolMessageForma
 
     public string Print(IProtocolMessage packet, PacketFormatting formatting)
     {
-        Debug.Assert(packet is TMessage);
+        Debug.Assert(packet is TMessage, "Expected: packet is TMessage");
         return Print((TMessage)packet, formatting);
     }
 

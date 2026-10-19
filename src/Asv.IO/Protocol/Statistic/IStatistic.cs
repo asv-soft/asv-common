@@ -56,7 +56,7 @@ public static class StatisticHelper
 
         void AddLine(string name, uint value)
         {
-            var line = $"{name, -nameWidth} {value}\n";
+            var line = $"{name,-nameWidth} {value}\n";
             writer.Write(line.AsSpan());
         }
 

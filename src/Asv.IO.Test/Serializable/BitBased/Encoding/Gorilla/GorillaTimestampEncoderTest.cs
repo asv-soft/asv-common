@@ -1,4 +1,4 @@
-// GorillaTimestampEncoderTests.cs
+// GorillaTimestampEncoderTest.cs
 
 using System;
 using System.Collections.Generic;
@@ -7,7 +7,7 @@ using Xunit;
 
 namespace Asv.IO.Test.Serializable.BitBased.Encoding.Gorilla
 {
-    public class GorillaTimestampEncoderTests
+    public class GorillaTimestampEncoderTest
     {
         /// <summary>Minimal MSB-first bit writer for testing.</summary>
         internal sealed class TestBitWriter : IBitWriter
@@ -122,7 +122,7 @@ namespace Asv.IO.Test.Serializable.BitBased.Encoding.Gorilla
             var w = new TestBitWriter();
             using var enc = new GorillaTimestampEncoder(w);
 
-            const long t0 = unchecked((long)0x0123_4567_89AB_CDEFUL);
+            const long t0 = 0x0123_4567_89AB_CDEFL;
             enc.Add(t0);
 
             var expected = BitsConcat(((ulong)t0, 64));
@@ -429,7 +429,7 @@ namespace Asv.IO.Test.Serializable.BitBased.Encoding.Gorilla
             var d3 = d2 + 63; // 7-bit max
             var d4 = d3 - 256; // 9-bit min
             var d5 = d4 + 2047; // 12-bit max
-            var d6 = d5 + (long)0x1_0000; // 32-bit bucket
+            var d6 = d5 + 0x1_0000L; // 32-bit bucket
 
             var t1 = t0 + d1;
             var t2 = t1 + d2;

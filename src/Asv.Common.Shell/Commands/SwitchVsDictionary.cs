@@ -5,7 +5,7 @@ namespace Asv.Common.Shell;
 
 public class SwitchVsDictionary
 {
-    private ImmutableDictionary<int, string> _dictionary;
+    private ImmutableDictionary<int, string> _dictionary = ImmutableDictionary<int, string>.Empty;
 
     [GlobalSetup]
     public void Setup()

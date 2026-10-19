@@ -141,7 +141,7 @@ public class TcpServerProtocolPort : ProtocolPort<TcpServerProtocolPortConfig>
                 catch (Exception ex)
                 {
                     _logger.ZLogError(ex, $"Unhandled exception:{ex.Message}");
-                    Debug.Assert(false);
+                    Debug.Assert(false, "Unexpected protocol or transport failure.");
                     InternalRisePortErrorAndReconnect(ex);
                 }
             }

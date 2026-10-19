@@ -36,7 +36,7 @@ public static class ConsoleAppHelper
                 options.UsePlainTextFormatter(formatter =>
                 {
                     formatter.SetPrefixFormatter(
-                        $"{0:HH:mm:ss.fff} | ={1:short}= | {2, -40} ",
+                        $"{0:HH:mm:ss.fff} | ={1:short}= | {2,-40} ",
                         (in MessageTemplate template, in LogInfo info) =>
                             template.Format(info.Timestamp, info.LogLevel, info.Category)
                     );
@@ -86,7 +86,6 @@ public static class ConsoleAppHelper
                 logger.ZLogCritical(ex, $"R3 unobserved exception: {ex.Message}");
                 Debug.Fail($"R3 unobserved exception: {ex.Message}");
             }
-            ;
         });
         TaskScheduler.UnobservedTaskException += (sender, args) =>
         {

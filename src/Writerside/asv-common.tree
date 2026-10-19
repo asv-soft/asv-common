@@ -13,6 +13,13 @@
         <toc-element topic="Common-Collections.md"/>
         <toc-element topic="Common-Values.md"/>
     </toc-element>
+    <toc-element topic="Asv-Cfg.md">
+        <toc-element topic="Cfg-Values.md"/>
+        <toc-element topic="Cfg-Json.md"/>
+        <toc-element topic="Cfg-Archives.md"/>
+        <toc-element topic="Cfg-Versioning.md"/>
+        <toc-element topic="Cfg-Integration.md"/>
+    </toc-element>
     <toc-element topic="Asv-IO.md">
         <toc-element topic="IO-Protocols.md"/>
         <toc-element topic="IO-Connections.md"/>

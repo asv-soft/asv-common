@@ -72,7 +72,7 @@ public class JsonPackageConfiguration : JsonConfigurationBase
             return part.GetStream(FileMode.Open, FileAccess.Read);
         }
         var newPart = package.CreatePart(partUri, contentType, compression);
-        return newPart.GetStream(FileMode.CreateNew);
+        return newPart.GetStream(FileMode.Create, FileAccess.ReadWrite);
     }
 
     /// <inheritdoc />
@@ -106,7 +106,7 @@ public class JsonPackageConfiguration : JsonConfigurationBase
                 _package.DeletePart(_partUri);
             }
             var part = _package.CreatePart(_partUri, _contentType, _compression);
-            return part.GetStream(FileMode.CreateNew);
+            return part.GetStream(FileMode.Create, FileAccess.ReadWrite);
         }
         finally
         {

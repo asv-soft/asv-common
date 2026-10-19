@@ -84,7 +84,7 @@ public partial class BinSerializeTest
         using var ms = new MemoryStream([0x01]); // only 1 byte
         Assert.Throws<EndOfStreamException>(() =>
         {
-            var _ = BinSerialize.ReadUShort(ms);
+            _ = BinSerialize.ReadUShort(ms);
         });
     }
 

@@ -1,4 +1,4 @@
-// ChimpDecoderTests.cs
+// ChimpDecoderTest.cs
 
 using System;
 using System.Collections.Generic;
@@ -8,7 +8,7 @@ using Xunit;
 
 namespace Asv.IO.Test.Serializable.BitBased.Encoding.Chimp
 {
-    public class ChimpDecoderTests
+    public class ChimpDecoderTest
     {
         // ----------------- Helpers -----------------
 
@@ -178,18 +178,18 @@ namespace Asv.IO.Test.Serializable.BitBased.Encoding.Chimp
             var prev = 0x0123_4567_89AB_CDEFUL;
 
             // Задаём L=1, W=3, payload=0b101 => xor = 0b101 << 60 = 0x5_0000_0000_0000_0000
-            int L = 1,
-                W = 3;
+            int l = 1,
+                w = 3;
             var payload = 0b101UL;
-            var cur = MakeValue(prev, L, W, payload);
+            var cur = MakeValue(prev, l, w, payload);
 
             // Encode:
             b.AddBits(prev, 64); // first
             b.AddBit(1);
             b.AddBit(1); // p1=1, p2=1
-            b.AddBits((ulong)L, 5); // L(5)
-            b.AddBits((ulong)(W - 1), 6); // (W-1)(6)
-            b.AddBits(payload, W); // payload(W)
+            b.AddBits((ulong)l, 5); // L(5)
+            b.AddBits((ulong)(w - 1), 6); // (W-1)(6)
+            b.AddBits(payload, w); // payload(W)
 
             var reader = new TestBitReader(b.ToBitArray());
             using var dec = new ChimpDecoder(reader, leaveOpen: true);
@@ -208,14 +208,14 @@ namespace Asv.IO.Test.Serializable.BitBased.Encoding.Chimp
             var prev = 0x0123_4567_89AB_CDEFUL;
 
             // Сначала объявим окно L=1, W=3, payload=0b101 → cur1.
-            int L = 1,
-                W = 3;
+            int l = 1,
+                w = 3;
             var payload1 = 0b101UL;
-            var cur1 = MakeValue(prev, L, W, payload1);
+            var cur1 = MakeValue(prev, l, w, payload1);
 
             // Теперь хотим XOR, который помещается в то же окно: payload=0b001 → бит в позиции 60.
             var payload2 = 0b001UL;
-            var cur2 = MakeValue(cur1, L, W, payload2);
+            var cur2 = MakeValue(cur1, l, w, payload2);
 
             // Encode:
             b.AddBits(prev, 64);
@@ -223,14 +223,14 @@ namespace Asv.IO.Test.Serializable.BitBased.Encoding.Chimp
             // define new window
             b.AddBit(1);
             b.AddBit(1);
-            b.AddBits((ulong)L, 5);
-            b.AddBits((ulong)(W - 1), 6);
-            b.AddBits(payload1, W);
+            b.AddBits((ulong)l, 5);
+            b.AddBits((ulong)(w - 1), 6);
+            b.AddBits(payload1, w);
 
             // reuse same window
             b.AddBit(1);
             b.AddBit(0);
-            b.AddBits(payload2, W);
+            b.AddBits(payload2, w);
 
             var reader = new TestBitReader(b.ToBitArray());
             using var dec = new ChimpDecoder(reader, leaveOpen: true);
@@ -249,8 +249,6 @@ namespace Asv.IO.Test.Serializable.BitBased.Encoding.Chimp
         {
             var b = new BitStreamBuilder();
             var prev = 0UL;
-            int L = 0,
-                W = 64;
             var payload = 0xF0F0_F0F0_F0F0_F0F0UL;
             var cur = prev ^ payload; // т.к. L=0, W=64, xor = payload без сдвига
 

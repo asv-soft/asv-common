@@ -1,4 +1,4 @@
-// GorillaTimestampDecoderTests.cs
+// GorillaTimestampDecoderTest.cs
 
 using System;
 using System.Collections.Generic;
@@ -8,7 +8,7 @@ using Xunit;
 
 namespace Asv.IO.Test.Serializable.BitBased.Encoding.Gorilla
 {
-    public class GorillaTimestampDecoderTests
+    public class GorillaTimestampDecoderTest
     {
         // -------- Helpers --------
         private sealed class BitStreamBuilder
@@ -131,7 +131,7 @@ namespace Asv.IO.Test.Serializable.BitBased.Encoding.Gorilla
         public void Reads_t0_Verbatim_AndCountsBits()
         {
             var b = new BitStreamBuilder();
-            long t0 = unchecked((long)0x0123_4567_89AB_CDEFUL);
+            long t0 = 0x0123_4567_89AB_CDEFL;
             b.AddBits((ulong)t0, 64);
 
             var rdr = new TestBitReader(b.ToBitArray());

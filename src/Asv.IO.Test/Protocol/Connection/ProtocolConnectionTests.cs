@@ -104,17 +104,17 @@ public class ProtocolConnectionTests
     [Fact]
     public void Connection_MessagePacketPrintInDifferentFormats_Success()
     {
-        //Arrange
+        // Arrange
         var message = new ExampleMessage1() { Value1 = 100, Tags = [] };
 
-        //Act
+        // Act
 
-        //simple format
+        // simple format
         var messageSimpleFormat = message.ToString();
         var messageSimplePrintedInline = _clientRouter.PrintMessage(message);
         Assert.Equal(messageSimpleFormat, messageSimplePrintedInline);
 
-        //packet custom type formatter
+        // packet custom type formatter
         _clientRouter = IO
             .Protocol.Create(_ =>
             {
@@ -235,7 +235,7 @@ public class ProtocolConnectionTests
     [Fact]
     public void Connection_RegisterSpecifiedFeatureWithNullValue_Fail()
     {
-        IProtocolFeature feature = null;
+        IProtocolFeature feature = null!;
         Assert.Throws<ArgumentNullException>(() =>
         {
             _clientRouter = IO

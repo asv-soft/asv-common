@@ -35,5 +35,5 @@ public abstract class FieldType<TSelf, TValue> : FieldType
         Accept(visitor, field, field.DataType, ref value);
     }
 
-    public interface IVisitor : IReferenceVisitor<TSelf, TValue>;
+    public interface IVisitor : IReferenceVisitor<TSelf, TValue> { }
 }

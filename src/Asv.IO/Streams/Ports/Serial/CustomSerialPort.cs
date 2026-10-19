@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System;
 using System.IO.Ports;
 using System.Threading;
@@ -90,9 +91,9 @@ namespace Asv.IO
                         _serial.Close();
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-                    // ignore close errors
+                    Debug.WriteLine(ex);
                 }
                 _serial.Dispose();
                 _serial = null;

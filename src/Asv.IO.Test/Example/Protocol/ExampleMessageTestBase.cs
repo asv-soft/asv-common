@@ -32,7 +32,7 @@ public abstract class ExampleMessageTestBase<T>(ITestOutputHelper output)
 
             origin.ShouldDeepEqual(restored);
         }
-        catch (Exception e)
+        catch (Exception)
         {
             output.WriteLine($"Random seed: {seed}");
             throw;

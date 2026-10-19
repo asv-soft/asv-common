@@ -5,9 +5,9 @@ using FluentAssertions;
 using Xunit;
 using System;
 
-namespace Asv.Tools.Test
+namespace Asv.IO.Test
 {
-    public class SpanBitHelperTest
+    public class SpanBitHelperExtTest
     {
         public const double Fraction1 = .00000001;
         public const double Offset1 = 0;

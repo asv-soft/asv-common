@@ -45,7 +45,7 @@ public sealed class StreamBitReader(Stream s, bool leaveOpen = false)
         ulong v = 0;
         for (var i = 0; i < count; i++)
         {
-            v = (v << 1) | (ulong)ReadBit();
+            v = (v << 1) | (uint)ReadBit();
         }
 
         return v;

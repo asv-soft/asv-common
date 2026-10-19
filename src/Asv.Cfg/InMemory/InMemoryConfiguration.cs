@@ -18,7 +18,7 @@ namespace Asv.Cfg
     /// </summary>
     public class InMemoryConfiguration(ILogger? logger = null) : ConfigurationBase
     {
-        private readonly Dictionary<string, JToken> _values = new();
+        private readonly Dictionary<string, JToken> _values = new(ConfigurationMixin.DefaultKeyComparer);
         private readonly ReaderWriterLockSlim _rw = new(LockRecursionPolicy.SupportsRecursion);
         private readonly ILogger _logger = logger ?? NullLogger.Instance;
         private readonly Subject<ConfigurationException> _onError = new();

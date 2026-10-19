@@ -59,7 +59,45 @@ public abstract class JsonConfigurationBase : ConfigurationBase
         using var stream = loadCallback();
         using var reader = new StreamReader(stream);
         _values = new ConcurrentDictionary<string, JToken>(ConfigurationMixin.DefaultKeyComparer);
-        _serializer.Populate(reader, _values);
+        using var jsonReader = new JsonTextReader(reader);
+        if (jsonReader.Read())
+        {
+            while (jsonReader.TokenType == JsonToken.Comment && jsonReader.Read()) { }
+            if (jsonReader.TokenType != JsonToken.StartObject)
+            {
+                throw new ConfigurationException("Configuration JSON must be an object.");
+            }
+            while (jsonReader.Read())
+            {
+                if (jsonReader.TokenType == JsonToken.Comment)
+                {
+                    continue;
+                }
+                if (jsonReader.TokenType == JsonToken.EndObject)
+                {
+                    break;
+                }
+                if (jsonReader.TokenType != JsonToken.PropertyName)
+                {
+                    throw new ConfigurationException("Expected a configuration key.");
+                }
+                var key = (string)jsonReader.Value!;
+                if (_values.ContainsKey(key))
+                {
+                    throw new ConfigurationException($"Conflicting configuration key: '{key}'.");
+                }
+                if (!jsonReader.Read())
+                {
+                    throw new ConfigurationException($"Missing value for configuration key '{key}'.");
+                }
+                var value = JToken.ReadFrom(jsonReader);
+                _values.TryAdd(key, value);
+            }
+            if (jsonReader.TokenType != JsonToken.EndObject)
+            {
+                throw new ConfigurationException("Configuration JSON is incomplete.");
+            }
+        }
     }
 
     /// <summary>

@@ -83,7 +83,7 @@ public class ListDataFileTests
 
         Assert.Throws<NullReferenceException>(() =>
         {
-            file.Write(0, null);
+            file.Write(0, null!);
         });
     }
 
@@ -135,7 +135,7 @@ public class ListDataFileTests
 
         var format = new ListDataFileFormat()
         {
-            Version = null,
+            Version = null!,
             Type = "type",
             MetadataMaxSize = 1234,
             ItemMaxSize = 567,
@@ -184,7 +184,7 @@ public class ListDataFileTests
         var format = new ListDataFileFormat()
         {
             Version = "1.0.0",
-            Type = null,
+            Type = null!,
             MetadataMaxSize = 1234,
             ItemMaxSize = 567,
         };

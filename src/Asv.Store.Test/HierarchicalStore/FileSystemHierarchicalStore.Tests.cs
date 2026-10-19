@@ -14,7 +14,6 @@ public class FileSystemHierarchicalStoreTest
         }
     }
 
-    private FileSystemHierarchicalStore<Guid, IListDataFile<AsvSdrRecordFileMetadata>> _store;
     private readonly MockFileSystem _fileSystem;
     private readonly AsvSdrListDataStoreFormat _format;
 
@@ -420,7 +419,7 @@ public class FileSystemHierarchicalStoreTest
         store.DeleteFolder(guid2);
         folders = store.GetFolders();
 
-        Assert.Equal(1, folders.Count);
+        Assert.Single(folders);
         store.Dispose();
 
         ClearAllDirectories(storeinfo.FullName);
@@ -461,7 +460,7 @@ public class FileSystemHierarchicalStoreTest
 
         folders = store.GetFolders();
 
-        Assert.Equal(1, folders.Count);
+        Assert.Single(folders);
         store.Dispose();
 
         ClearAllDirectories(storeinfo.FullName);
@@ -783,7 +782,7 @@ public class FileSystemHierarchicalStoreTest
         store.DeleteFolder(folderGuid1);
         entries = store.GetEntries();
 
-        Assert.Equal(1, entries.Count);
+        Assert.Single(entries);
 
         store.Dispose();
 

@@ -27,7 +27,7 @@ public abstract class DeviceId : IEquatable<DeviceId>
 
     public override bool Equals(object? obj)
     {
-        return ReferenceEquals(this, obj) || obj is DeviceId other && Equals(other);
+        return ReferenceEquals(this, obj) || (obj is DeviceId other && Equals(other));
     }
 
     public override int GetHashCode()

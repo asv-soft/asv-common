@@ -1,4 +1,4 @@
-// ChimpEncoderTests.cs
+// ChimpEncoderTest.cs
 
 using System;
 using System.Collections.Generic;
@@ -7,86 +7,86 @@ using Xunit;
 
 namespace Asv.IO.Test.Serializable.BitBased.Encoding.Chimp
 {
-    /// <summary>Minimal MSB-first bit writer for testing.</summary>
-    internal sealed class TestBitWriter : IBitWriter
+    public class ChimpEncoderTest
     {
-        private readonly List<byte> _bits = new(); // stores 0/1 per bit
-        private bool _disposed;
-
-        public long TotalBitsWritten { get; private set; }
-        public bool IsDisposed => _disposed;
-
-        public void WriteBit(int bit)
+        /// <summary>Minimal MSB-first bit writer for testing.</summary>
+        private sealed class TestBitWriter : IBitWriter
         {
-            EnsureNotDisposed();
-            if ((uint)bit > 1)
+            private readonly List<byte> _bits = new(); // stores 0/1 per bit
+            private bool _disposed;
+
+            public long TotalBitsWritten { get; private set; }
+            public bool IsDisposed => _disposed;
+
+            public void WriteBit(int bit)
             {
-                throw new ArgumentOutOfRangeException(nameof(bit));
+                EnsureNotDisposed();
+                if ((uint)bit > 1)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(bit));
+                }
+
+                _bits.Add((byte)bit);
+                TotalBitsWritten++;
             }
 
-            _bits.Add((byte)bit);
-            TotalBitsWritten++;
-        }
-
-        public void WriteBits(ulong value, int count)
-        {
-            EnsureNotDisposed();
-            if (count is <= 0 or > 64)
+            public void WriteBits(ulong value, int count)
             {
-                throw new ArgumentOutOfRangeException(nameof(count));
+                EnsureNotDisposed();
+                if (count is <= 0 or > 64)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(count));
+                }
+
+                for (var i = count - 1; i >= 0; i--)
+                {
+                    var b = (value >> i) & 1UL;
+                    _bits.Add((byte)b);
+                }
+                TotalBitsWritten += count;
             }
 
-            for (var i = count - 1; i >= 0; i--)
+            public void AlignToByte()
             {
-                var b = (value >> i) & 1UL;
-                _bits.Add((byte)b);
-            }
-            TotalBitsWritten += count;
-        }
-
-        public void AlignToByte()
-        {
-            throw new NotImplementedException();
-        }
-
-        public void Flush()
-        {
-            throw new NotImplementedException();
-        }
-
-        // Helpers for assertions
-        public IReadOnlyList<byte> Bits => _bits;
-
-        public string ToBitString()
-        {
-            var chars = new char[_bits.Count];
-            for (var i = 0; i < _bits.Count; i++)
-            {
-                chars[i] = _bits[i] == 0 ? '0' : '1';
+                throw new NotImplementedException();
             }
 
-            return new string(chars);
-        }
-
-        public void Dispose() => _disposed = true;
-
-        public ValueTask DisposeAsync()
-        {
-            _disposed = true;
-            return ValueTask.CompletedTask;
-        }
-
-        private void EnsureNotDisposed()
-        {
-            if (_disposed)
+            public void Flush()
             {
-                throw new ObjectDisposedException(nameof(TestBitWriter));
+                throw new NotImplementedException();
+            }
+
+            // Helpers for assertions
+            public IReadOnlyList<byte> Bits => _bits;
+
+            public string ToBitString()
+            {
+                var chars = new char[_bits.Count];
+                for (var i = 0; i < _bits.Count; i++)
+                {
+                    chars[i] = _bits[i] == 0 ? '0' : '1';
+                }
+
+                return new string(chars);
+            }
+
+            public void Dispose() => _disposed = true;
+
+            public ValueTask DisposeAsync()
+            {
+                _disposed = true;
+                return ValueTask.CompletedTask;
+            }
+
+            private void EnsureNotDisposed()
+            {
+                if (_disposed)
+                {
+                    throw new ObjectDisposedException(nameof(TestBitWriter));
+                }
             }
         }
-    }
 
-    public class ChimpEncoderTests
-    {
         private static void AddBits(List<byte> dst, ulong value, int width)
         {
             // MSB-first append
@@ -149,10 +149,10 @@ namespace Asv.IO.Test.Serializable.BitBased.Encoding.Chimp
             var prev = 0x0123_4567_89AB_CDEFUL;
 
             // Choose XOR window: L=1, W=3, payload=0b101 → xor = payload << (64-1-3) = << 60.
-            int L = 1,
-                W = 3;
+            int l = 1,
+                w = 3;
             var payload = 0b101UL;
-            var xor = payload << (64 - L - W);
+            var xor = payload << (64 - l - w);
             var cur = prev ^ xor;
 
             enc.Add(prev); // first
@@ -161,9 +161,9 @@ namespace Asv.IO.Test.Serializable.BitBased.Encoding.Chimp
             var expected = BitsConcat(
                 (prev, 64),
                 (0b11UL, 2),
-                ((ulong)L, 5),
-                ((ulong)(W - 1), 6),
-                (payload, W)
+                ((ulong)l, 5),
+                ((ulong)(w - 1), 6),
+                (payload, w)
             );
             Assert.Equal(expected, writer.ToBitString());
         }
@@ -177,15 +177,15 @@ namespace Asv.IO.Test.Serializable.BitBased.Encoding.Chimp
             var prev = 0x0123_4567_89AB_CDEFUL;
 
             // Define L=2, W=4, payload1=0b1111  → sig = 4
-            int L = 2,
-                W = 4;
+            int l = 2,
+                w = 4;
             ulong payload1 = 0b1111UL;
-            ulong xor1 = payload1 << (64 - L - W);
+            ulong xor1 = payload1 << (64 - l - w);
             ulong cur1 = prev ^ xor1;
 
             // Reuse in same [L,W] with payload2=0b0011
             ulong payload2 = 0b0011UL;
-            ulong xor2 = payload2 << (64 - L - W);
+            ulong xor2 = payload2 << (64 - l - w);
             ulong cur2 = cur1 ^ xor2;
 
             enc.Add(prev); // first
@@ -195,11 +195,11 @@ namespace Asv.IO.Test.Serializable.BitBased.Encoding.Chimp
             var expected = BitsConcat(
                 (prev, 64),
                 (0b11UL, 2),
-                ((ulong)L, 5),
-                ((ulong)(W - 1), 6),
-                (payload1, W),
+                ((ulong)l, 5),
+                ((ulong)(w - 1), 6),
+                (payload1, w),
                 (0b10UL, 2),
-                (payload2, W)
+                (payload2, w)
             );
             Assert.Equal(expected, writer.ToBitString());
         }
@@ -211,8 +211,6 @@ namespace Asv.IO.Test.Serializable.BitBased.Encoding.Chimp
             using var enc = new ChimpEncoder(writer, leaveOpen: true);
 
             var prev = 0UL;
-            int L = 0,
-                W = 64;
             var payload = 0xF0F0_F0F0_F0F0_F0F1UL;
             var cur = prev ^ payload; // xor == payload
 
@@ -238,17 +236,17 @@ namespace Asv.IO.Test.Serializable.BitBased.Encoding.Chimp
             var prev = 0xFFFF_0000_0000_0000UL;
 
             // First window: L1=0, W1=2, payload1=0b11
-            int L1 = 0,
-                W1 = 2;
+            int l1 = 0,
+                w1 = 2;
             var payload1 = 0b11UL;
-            var xor1 = payload1 << (64 - L1 - W1);
+            var xor1 = payload1 << (64 - l1 - w1);
             var cur1 = prev ^ xor1;
 
             // Second XOR: pattern 1010 in top nibble → фактически sig=3, W2=3, payload=0b101
-            int L2 = 0,
-                W2 = 3;
+            int l2 = 0,
+                w2 = 3;
             var payload2_effective = 0b101UL;
-            var xor2 = payload2_effective << (64 - L2 - W2); // то есть биты 63 и 61 установлены
+            var xor2 = payload2_effective << (64 - l2 - w2); // то есть биты 63 и 61 установлены
             var cur2 = cur1 ^ xor2;
 
             enc.Add(prev); // first
@@ -258,13 +256,13 @@ namespace Asv.IO.Test.Serializable.BitBased.Encoding.Chimp
             var expected = BitsConcat(
                 (prev, 64),
                 (0b11UL, 2),
-                ((ulong)L1, 5),
-                ((ulong)(W1 - 1), 6),
-                (payload1, W1),
+                ((ulong)l1, 5),
+                ((ulong)(w1 - 1), 6),
+                (payload1, w1),
                 (0b11UL, 2),
-                ((ulong)L2, 5),
-                ((ulong)(W2 - 1), 6),
-                (payload2_effective, W2)
+                ((ulong)l2, 5),
+                ((ulong)(w2 - 1), 6),
+                (payload2_effective, w2)
             );
 
             Assert.Equal(expected, writer.ToBitString());

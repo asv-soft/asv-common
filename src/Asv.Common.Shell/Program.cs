@@ -3,7 +3,7 @@ using ConsoleAppFramework;
 
 namespace Asv.Common.Shell;
 
-class Program
+static class Program
 {
     static async Task Main(string[] args)
     {

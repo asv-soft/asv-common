@@ -23,7 +23,7 @@ public class ExampleDeviceId(string @class, byte targetId)
 
     public override bool Equals(object? obj)
     {
-        return ReferenceEquals(this, obj) || obj is ExampleDeviceId other && Equals(other);
+        return ReferenceEquals(this, obj) || (obj is ExampleDeviceId other && Equals(other));
     }
 
     public override int GetHashCode()

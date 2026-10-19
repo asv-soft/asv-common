@@ -155,7 +155,7 @@ public abstract class ProtocolEndpoint : ProtocolConnection, IProtocolEndpoint
                     e
                 )
             );
-            Debug.Assert(false);
+            Debug.Assert(false, "Unexpected protocol or transport failure.");
             Debugger.Break();
         }
     }

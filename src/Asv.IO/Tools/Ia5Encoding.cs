@@ -15,9 +15,11 @@ namespace Asv.IO
         {
             data ??= string.Empty;
             if (data.Length > 4)
+            {
                 throw new ArgumentOutOfRangeException(
                     $"Param {nameof(data)} must be less than or equal to 4 letters. {nameof(data)} = {data.Length}"
                 );
+            }
 
             var length = 4;
 

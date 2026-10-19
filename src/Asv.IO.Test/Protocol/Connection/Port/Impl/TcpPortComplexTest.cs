@@ -128,7 +128,7 @@ public class TcpPortComplexTest
         }
         catch (Exception ex)
         {
-            Assert.False(true, $"{ex}");
+            Assert.Fail(ex.ToString());
             throw;
         }
         finally
@@ -145,7 +145,7 @@ public class TcpPortComplexTest
         string connectionString
     )
     {
-        _clientRouter.PortAdded.Subscribe(_ => Assert.False(true));
+        _clientRouter.PortAdded.Subscribe(_ => Assert.Fail());
         Assert.Throws<UriFormatException>(() =>
         {
             _clientRouter.AddPort(connectionString);
@@ -159,7 +159,7 @@ public class TcpPortComplexTest
         string connectionString
     )
     {
-        _clientRouter.PortAdded.Subscribe(_ => Assert.False(true));
+        _clientRouter.PortAdded.Subscribe(_ => Assert.Fail());
         Assert.Throws<ArgumentOutOfRangeException>(() => _clientRouter.AddPort(connectionString));
     }
 
@@ -169,7 +169,7 @@ public class TcpPortComplexTest
         string connectionString
     )
     {
-        _clientRouter.PortAdded.Subscribe(_ => Assert.False(true));
+        _clientRouter.PortAdded.Subscribe(_ => Assert.Fail());
         Assert.Throws<SocketException>(() => _clientRouter.AddPort(connectionString));
     }
 
@@ -179,7 +179,7 @@ public class TcpPortComplexTest
         string connectionString
     )
     {
-        _clientRouter.PortAdded.Subscribe(_ => Assert.False(true));
+        _clientRouter.PortAdded.Subscribe(_ => Assert.Fail());
         Assert.Throws<InvalidOperationException>(() => _clientRouter.AddPort(connectionString));
     }
 

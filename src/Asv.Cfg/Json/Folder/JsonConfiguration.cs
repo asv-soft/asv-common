@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Abstractions;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using Asv.Common;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -18,7 +17,7 @@ namespace Asv.Cfg
     public class JsonConfiguration : ConfigurationBase
     {
         private readonly string _folderPath;
-        private const string FixedSearchPattern = "*.json";
+        private const string FixedFileExtension = ".json";
         private readonly LockByKeyExecutor<string> _lock = new(
             ConfigurationMixin.DefaultKeyComparer
         );
@@ -56,10 +55,28 @@ namespace Asv.Cfg
         /// </summary>
         public string WorkingFolder => _folderPath;
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private IEnumerable<string> GetConfigurationFiles() =>
+            _fileSystem.Directory.EnumerateFiles(_folderPath)
+                .Where(path => ConfigurationMixin.DefaultKeyComparer.Equals(
+                    _fileSystem.Path.GetExtension(path), FixedFileExtension));
+
         private string GetFilePath(string key)
         {
-            return _fileSystem.Path.Combine(_folderPath, $"{key}.json");
+            string? match = null;
+            foreach (var path in GetConfigurationFiles())
+            {
+                if (!ConfigurationMixin.DefaultKeyComparer.Equals(
+                    _fileSystem.Path.GetFileNameWithoutExtension(path), key))
+                {
+                    continue;
+                }
+                if (match is not null)
+                {
+                    throw new ConfigurationException($"Conflicting configuration keys: '{match}' and '{path}'.");
+                }
+                match = path;
+            }
+            return match ?? _fileSystem.Path.Combine(_folderPath, $"{key}{FixedFileExtension}");
         }
 
         /// <inheritdoc />
@@ -68,16 +85,22 @@ namespace Asv.Cfg
         /// <inheritdoc />
         protected override IEnumerable<string> InternalSafeGetAvailableParts()
         {
-            return _fileSystem
-                .Directory.EnumerateFiles(_folderPath, FixedSearchPattern)
-                .Select(_fileSystem.Path.GetFileNameWithoutExtension)
-                .Select(x => x ?? string.Empty);
+            var keys = new HashSet<string>(ConfigurationMixin.DefaultKeyComparer);
+            foreach (var path in GetConfigurationFiles())
+            {
+                var key = _fileSystem.Path.GetFileNameWithoutExtension(path) ?? string.Empty;
+                if (!keys.Add(key))
+                {
+                    throw new ConfigurationException($"Conflicting configuration key: '{key}'.");
+                }
+            }
+            return keys.ToArray();
         }
 
         /// <inheritdoc />
         protected override bool InternalSafeExist(string key)
         {
-            return _lock.Execute(key, GetFilePath(key), path => _fileSystem.File.Exists(path));
+            return _lock.Execute(key, () => _fileSystem.File.Exists(GetFilePath(key)));
         }
 
         /// <inheritdoc />
@@ -86,7 +109,7 @@ namespace Asv.Cfg
             Lazy<TPocoType> defaultValue
         )
         {
-            return _lock.Execute(key, GetFilePath(key), defaultValue, InternalGet);
+            return _lock.Execute(key, () => InternalGet(GetFilePath(key), defaultValue));
         }
 
         private TPocoType InternalGet<TPocoType>(string path, Lazy<TPocoType> defaultValue)
@@ -107,7 +130,7 @@ namespace Asv.Cfg
         /// <inheritdoc />
         protected override void InternalSafeSave<TPocoType>(string key, TPocoType value)
         {
-            _lock.Execute(key, GetFilePath(key), value, InternalSet);
+            _lock.Execute(key, () => InternalSet(GetFilePath(key), value));
         }
 
         private void InternalSet<TPocoType>(string filepath, TPocoType value)
@@ -122,7 +145,7 @@ namespace Asv.Cfg
         /// <inheritdoc />
         protected override void InternalSafeRemove(string key)
         {
-            _lock.Execute(key, GetFilePath(key), InternalRemove);
+            _lock.Execute(key, () => InternalRemove(GetFilePath(key)));
         }
 
         private void InternalRemove(string path)

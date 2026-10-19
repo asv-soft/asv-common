@@ -169,7 +169,7 @@ public struct ProtocolTags
     /// <param name="tag">Key and value pair of the tag to add to the list.</param>
     private void AddToOverflow(KeyValuePair<string, object?> tag)
     {
-        Debug.Assert(_overflowTags is not null || _tagsCount == InlineTags.Length);
+        Debug.Assert(_overflowTags is not null || _tagsCount == InlineTags.Length, "Expected: _overflowTags is not null || _tagsCount == InlineTags.Length");
 
         if (_overflowTags is null)
         {
@@ -324,13 +324,13 @@ public struct ProtocolTags
     /// </summary>
     /// <returns>Returns an enumerator that iterates through the <see cref="T:ProtocolTags" />.</returns>
     public readonly IEnumerator<KeyValuePair<string, object?>> GetEnumerator() =>
-        new Enumerator(in this);
+        new Enumerator(this);
 
     /// <summary>
     /// Returns an enumerator that iterates through the <see cref="T:ProtocolTags" />.
     /// </summary>
     /// <returns>Returns an enumerator that iterates through the <see cref="T:ProtocolTags" />.</returns>
-    readonly IEnumerator IEnumerable.GetEnumerator() => new Enumerator(in this);
+    readonly IEnumerator IEnumerable.GetEnumerator() => new Enumerator(this);
 
     /// <summary>
     /// Searches for the specified tag and returns the zero-based index of the first occurrence within the entire <see cref="T:ProtocolTags" />.
@@ -386,7 +386,7 @@ public struct ProtocolTags
         private readonly ProtocolTags _tagList;
         private int _index;
 
-        internal Enumerator(in ProtocolTags tagList)
+        internal Enumerator(ProtocolTags tagList)
         {
             _index = -1;
             _tagList = tagList;

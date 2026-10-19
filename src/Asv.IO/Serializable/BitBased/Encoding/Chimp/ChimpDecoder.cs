@@ -103,18 +103,18 @@ public sealed class ChimpDecoder(IBitReader input, bool leaveOpen = false)
             // Define a new window:
             // L: 5 bits (0..31)
             // W: 6 bits stored as (W-1), so actual W is (read + 1) in range [1..64]
-            var L = (int)input.ReadBits(5);
-            var W = (int)input.ReadBits(6) + 1;
+            var leadingZeros = (int)input.ReadBits(5);
+            var windowWidth = (int)input.ReadBits(6) + 1;
 
-            var tWin = 64 - L - W; // trailing zeros for alignment
-            var payload = input.ReadBits(W); // read W significant bits
-            var xor = (W == 64) ? payload : (payload << tWin);
+            var tWin = 64 - leadingZeros - windowWidth; // trailing zeros for alignment
+            var payload = input.ReadBits(windowWidth); // read W significant bits
+            var xor = (windowWidth == 64) ? payload : (payload << tWin);
             var cur = _prevBits ^ xor;
 
             // Update the rolling state for potential reuse.
             _prevBits = cur;
-            _l = L;
-            _w = W;
+            _l = leadingZeros;
+            _w = windowWidth;
 
             return cur;
         }

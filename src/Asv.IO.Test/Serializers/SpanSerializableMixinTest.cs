@@ -61,7 +61,7 @@ public class SpanSerializableMixinTest
         var result = testObject.Serialize(buffer, 5);
 
         result.Should().Be(5);
-        buffer[5..(5 + result)].Should().BeEquivalentTo(testObject.Data);
+        buffer[5.. (5 + result)].Should().BeEquivalentTo(testObject.Data);
     }
 
     [Fact]
@@ -101,7 +101,7 @@ public class SpanSerializableMixinTest
         var result = testObject.Deserialize(buffer, 5);
 
         result.Should().Be(5);
-        testObject.Data.Should().BeEquivalentTo(buffer[5..(5 + result)]);
+        testObject.Data.Should().BeEquivalentTo(buffer[5.. (5 + result)]);
     }
 
     #endregion

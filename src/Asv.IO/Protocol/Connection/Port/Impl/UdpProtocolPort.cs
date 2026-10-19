@@ -158,8 +158,7 @@ public class UdpProtocolPort : ProtocolPort<UdpProtocolPortConfig>
                 {
                     continue;
                 }
-                var exist = (UdpSocketProtocolEndpoint?)
-                    Endpoints.FirstOrDefault(x =>
+                var exist = (UdpSocketProtocolEndpoint?)Endpoints.FirstOrDefault(x =>
                         recvAddrIPEndPoint.Equals(((UdpSocketProtocolEndpoint)x).RemoteEndPoint)
                     );
 

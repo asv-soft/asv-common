@@ -74,7 +74,7 @@ namespace Asv.IO
             catch (Exception e)
             {
                 InternalOnError(e);
-                Debug.Assert(false);
+                Debug.Assert(false, "Unexpected protocol or transport failure.");
             }
             finally
             {
@@ -118,9 +118,9 @@ namespace Asv.IO
             {
                 await client.GetStream().WriteAsync(data, 0, count, cancel).ConfigureAwait(false);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // Debug.Assert(false);
+                Debug.WriteLine(ex);
             }
         }
 
@@ -139,9 +139,9 @@ namespace Asv.IO
             {
                 await client.GetStream().WriteAsync(data, cancel).ConfigureAwait(false);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // Debug.Assert(false);
+                Debug.WriteLine(ex);
             }
         }
 
@@ -181,7 +181,7 @@ namespace Asv.IO
                 }
                 catch (Exception)
                 {
-                    Debug.Assert(false);
+                    Debug.Assert(false, "Unexpected protocol or transport failure.");
 
                     // ignore
                 }
@@ -224,7 +224,7 @@ namespace Asv.IO
                     catch (Exception)
                     {
                         // ignore
-                        Debug.Assert(false);
+                        Debug.Assert(false, "Unexpected protocol or transport failure.");
                     }
                 }
             }
@@ -337,7 +337,7 @@ namespace Asv.IO
             catch (Exception e)
             {
                 message = e.ToString();
-                Debug.Assert(false);
+                Debug.Assert(false, "Unexpected protocol or transport failure.");
             }
             finally
             {

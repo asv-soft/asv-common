@@ -63,12 +63,17 @@ namespace Asv.Cfg
         {
             using (_sync.EnterScope())
             {
-                return
-                [
-                    .. _archive
-                        .Entries.Where(x => Path.GetExtension(x.Name) == FixedFileExt)
-                        .Select(x => Path.GetFileNameWithoutExtension(x.Name)),
-                ];
+                var keys = new HashSet<string>(ConfigurationMixin.DefaultKeyComparer);
+                foreach (var entry in _archive.Entries.Where(x =>
+                    ConfigurationMixin.DefaultKeyComparer.Equals(Path.GetExtension(x.Name), FixedFileExt)))
+                {
+                    var key = Path.GetFileNameWithoutExtension(entry.Name);
+                    if (!keys.Add(key))
+                    {
+                        throw new ConfigurationException($"Conflicting configuration key: '{key}'.");
+                    }
+                }
+                return keys.ToArray();
             }
         }
 
@@ -78,10 +83,27 @@ namespace Asv.Cfg
             var fileName = GetFilePath(key);
             using (_sync.EnterScope())
             {
-                return _archive.Entries.Any(x =>
-                    ConfigurationMixin.DefaultKeyComparer.Equals(x.Name, fileName)
-                );
+                return FindEntry(fileName) is not null;
             }
+        }
+
+        // The caller holds _sync while resolving and modifying entries.
+        private ZipArchiveEntry? FindEntry(string fileName)
+        {
+            ZipArchiveEntry? match = null;
+            foreach (var entry in _archive.Entries)
+            {
+                if (!ConfigurationMixin.DefaultKeyComparer.Equals(entry.Name, fileName))
+                {
+                    continue;
+                }
+                if (match is not null)
+                {
+                    throw new ConfigurationException($"Conflicting configuration entries: '{match.FullName}' and '{entry.FullName}'.");
+                }
+                match = entry;
+            }
+            return match;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -96,9 +118,7 @@ namespace Asv.Cfg
             var fileName = GetFilePath(key);
             using (_sync.EnterScope())
             {
-                var entry = _archive.Entries.FirstOrDefault(x =>
-                    ConfigurationMixin.DefaultKeyComparer.Equals(x.Name, fileName)
-                );
+                var entry = FindEntry(fileName);
                 if (entry == null)
                 {
                     _logger.ZLogTrace(
@@ -127,8 +147,10 @@ namespace Asv.Cfg
             var fileName = GetFilePath(key);
             using (_sync.EnterScope())
             {
-                _archive.GetEntry(fileName)?.Delete();
-                var entry = _archive.CreateEntry(fileName);
+                var existing = FindEntry(fileName);
+                var storedName = existing?.FullName ?? fileName;
+                existing?.Delete();
+                var entry = _archive.CreateEntry(storedName);
                 using var file = entry.Open();
                 using var writer = new StreamWriter(file);
                 using var wrt = new JsonTextWriter(writer);
@@ -143,7 +165,7 @@ namespace Asv.Cfg
             using (_sync.EnterScope())
             {
                 _logger.ZLogTrace($"Remove configuration key [{key}]");
-                var entry = _archive.GetEntry(fileName);
+                var entry = FindEntry(fileName);
                 entry?.Delete();
             }
         }

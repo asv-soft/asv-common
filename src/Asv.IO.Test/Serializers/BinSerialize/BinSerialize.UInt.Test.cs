@@ -29,6 +29,6 @@ public partial class BinSerializeTest
         reserved = 133337;
 
         var readSpan = new ReadOnlySpan<byte>(buffer);
-        Assert.Equal((uint)133337, BinSerialize.ReadUInt(ref readSpan));
+        Assert.Equal(133337U, BinSerialize.ReadUInt(ref readSpan));
     }
 }

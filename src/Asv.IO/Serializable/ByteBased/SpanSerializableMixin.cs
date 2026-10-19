@@ -189,9 +189,11 @@ public static class SpanSerializableMixin
         {
             var read = src.Read(array, 0, size);
             if (read != size)
+            {
                 throw new Exception(
                     $"Error to read item {item}: file length error. Want read {size} bytes. Got {read} bytes."
                 );
+            }
             var span = new ReadOnlySpan<byte>(array, 0, size);
             item.Deserialize(ref span);
         }
@@ -218,7 +220,7 @@ public static class SpanSerializableMixin
             src.Serialize(ref span);
             var readSpan = new ReadOnlySpan<byte>(array, 0, size);
             dest.Deserialize(ref readSpan);
-            Debug.Assert(span.Length == readSpan.Length);
+            Debug.Assert(span.Length == readSpan.Length, "Expected: span.Length == readSpan.Length");
         }
         finally
         {
@@ -244,7 +246,7 @@ public static class SpanSerializableMixin
             src.Serialize(ref span);
             var readSpan = new ReadOnlySpan<byte>(array, 0, size);
             dest.Deserialize(ref readSpan);
-            Debug.Assert(span.Length == readSpan.Length);
+            Debug.Assert(span.Length == readSpan.Length, "Expected: span.Length == readSpan.Length");
             return dest;
         }
         finally

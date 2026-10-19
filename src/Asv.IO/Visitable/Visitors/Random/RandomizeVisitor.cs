@@ -121,8 +121,7 @@ namespace Asv.IO
         {
             if (random.NextBoolean())
             {
-                value = (ushort)
-                    random.Next(type.Min ?? ushort.MinValue, type.Max ?? ushort.MaxValue);
+                value = (ushort)random.Next(type.Min ?? ushort.MinValue, type.Max ?? ushort.MaxValue);
             }
             else
             {
