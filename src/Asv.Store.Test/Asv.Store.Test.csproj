@@ -4,16 +4,16 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="coverlet.collector" Version="10.0.1">
+    <PackageReference Include="coverlet.collector" Version="10.1.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="DeepEqual" Version="5.1.0" />
-    <PackageReference Include="JetBrains.Annotations" Version="2025.2.4" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.6.0" />
-    <PackageReference Include="TestableIO.System.IO.Abstractions.TestingHelpers" Version="22.1.1" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5" />
-    <PackageReference Include="xunit.v3" Version="3.2.2" />
+    <PackageReference Include="JetBrains.Annotations" Version="2026.2.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
+    <PackageReference Include="TestableIO.System.IO.Abstractions.TestingHelpers" Version="22.3.0" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="4.0.1" />
+    <PackageReference Include="xunit.v3.mtp-off" Version="4.0.2" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Asv.Store\Asv.Store.csproj" />

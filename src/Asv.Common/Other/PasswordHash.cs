@@ -28,6 +28,7 @@
 
 using System;
 using System.Security.Cryptography;
+using System.Text;
 
 namespace Asv.Common
 {
@@ -39,6 +40,8 @@ namespace Asv.Common
     /// </summary>
     public class PasswordHash
     {
+        public PasswordHash() { }
+
         // The following constants may be changed without breaking existing hashes.
         public const int SaltByteSize = 24;
         public const int HashByteSize = 24;
@@ -56,7 +59,7 @@ namespace Asv.Common
         public static string CreateHash(string password)
         {
             // Generate a random salt
-            var csprng = RandomNumberGenerator.Create();
+            using var csprng = RandomNumberGenerator.Create();
             var salt = new byte[SaltByteSize];
             csprng.GetBytes(salt);
 
@@ -117,9 +120,11 @@ namespace Asv.Common
         /// <returns>A hash of the password.</returns>
         private static byte[] Pbkdf2(string password, byte[] salt, int iterations, int outputBytes)
         {
-            var pbkdf2 = new Rfc2898DeriveBytes(password, salt);
-            pbkdf2.IterationCount = iterations;
-            return pbkdf2.GetBytes(outputBytes);
+            // Preserve the legacy UTF-8 encoding, SHA-1 algorithm and stored parameters.
+            ArgumentNullException.ThrowIfNull(password);
+            return Rfc2898DeriveBytes.Pbkdf2(
+                Encoding.UTF8.GetBytes(password), salt, iterations, HashAlgorithmName.SHA1, outputBytes
+            );
         }
     }
 }

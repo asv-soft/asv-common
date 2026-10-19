@@ -262,7 +262,7 @@ namespace Asv.Common
         /// <param name="comparisonValue">The comparison value.</param>
         /// <param name="comparisonType">Type of the comparison to allow case sensitive or insensitive comparison.</param>
         /// <returns>
-        /// 	<c>true</c> if input value contains the specified value, otherwise, <c>false</c>.
+        ///     <c>true</c> if input value contains the specified value, otherwise, <c>false</c>.
         /// </returns>
         public static bool Contains(
             this string inputValue,
@@ -355,7 +355,7 @@ namespace Asv.Common
         /// <param name="value">The input string.</param>
         /// <param name="regexPattern">The regular expression pattern.</param>
         /// <returns>
-        /// 	<c>true</c> if the value is matching to the specified pattern; otherwise, <c>false</c>.
+        ///     <c>true</c> if the value is matching to the specified pattern; otherwise, <c>false</c>.
         /// </returns>
         /// <example>
         /// <code>
@@ -375,7 +375,7 @@ namespace Asv.Common
         /// <param name="regexPattern">The regular expression pattern.</param>
         /// <param name="options">The regular expression options.</param>
         /// <returns>
-        /// 	<c>true</c> if the value is matching to the specified pattern; otherwise, <c>false</c>.
+        ///     <c>true</c> if the value is matching to the specified pattern; otherwise, <c>false</c>.
         /// </returns>
         /// <example>
         /// <code>
@@ -616,7 +616,6 @@ namespace Asv.Common
         }
 
         #endregion
-
 
         #region Bytes & Base64
 

@@ -5,6 +5,8 @@ namespace Asv.Common
 {
     public class MathEx
     {
+        public MathEx() { }
+
         private const double Pi2 = 2 * Math.PI;
 
         /// <summary>

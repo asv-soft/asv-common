@@ -16,11 +16,11 @@ namespace Asv.Common
         // wakes are missed, the number of awakees is not important.
         // Ideally, this would be "friend" for access only from InnerLock, but
         // whatever.
-        internal SemaphoreSlim _retry = new(0, 1);
+        private readonly SemaphoreSlim _retry = new(0, 1);
         private const long UnlockedId = 0x00; // "owning" task id when unlocked
-        internal long _owningId = UnlockedId;
-        internal int _owningThreadId = (int)UnlockedId;
-        private static long AsyncStackCounter = 0;
+        private long _owningId = UnlockedId;
+        private int _owningThreadId = (int)UnlockedId;
+        private static long _asyncStackCounter = 0;
 
         // An AsyncLocal<T> is not really the task-based equivalent to a ThreadLocal<T>, in that
         // it does not track the async flow (as the documentation describes) but rather it is
@@ -126,7 +126,7 @@ namespace Asv.Common
                         if (_parent._owningId == UnlockedId)
                         {
                             // Obtain a new async stack ID
-                            //_asyncId.Value = Interlocked.Increment(ref AsyncLock.AsyncStackCounter);
+                            // _asyncId.Value = Interlocked.Increment(ref AsyncLock._asyncStackCounter);
                             _parent._owningId = AsyncLock.AsyncId;
                         }
                         else if (_parent._owningId != _oldId)
@@ -162,7 +162,7 @@ namespace Asv.Common
             public void Dispose()
             {
 #if DEBUG
-                Debug.Assert(!_disposed);
+                Debug.Assert(!_disposed, "!_disposed");
                 _disposed = true;
 #endif
                 var @this = this;
@@ -202,7 +202,7 @@ namespace Asv.Common
         public Task<IDisposable> LockAsync(CancellationToken ct = default)
         {
             var @lock = new InnerLock(this, _asyncId.Value, ThreadId);
-            _asyncId.Value = Interlocked.Increment(ref AsyncLock.AsyncStackCounter);
+            _asyncId.Value = Interlocked.Increment(ref AsyncLock._asyncStackCounter);
             return @lock.ObtainLockAsync(ct);
         }
 
@@ -212,7 +212,7 @@ namespace Asv.Common
 
             // Increment the async stack counter to prevent a child task from getting
             // the lock at the same time as a child thread.
-            _asyncId.Value = Interlocked.Increment(ref AsyncLock.AsyncStackCounter);
+            _asyncId.Value = Interlocked.Increment(ref AsyncLock._asyncStackCounter);
             return @lock.ObtainLock();
         }
     }

@@ -172,7 +172,6 @@ namespace Asv.Common
             return ld - (DL(bd, ld, h, Dx9084, Dy9084, Dz9084) / 3600);
         }
 
-        //
         private static double CK42_PZ90_Lat(double bd, double ld, double h)
         {
             return bd + (DB(bd, ld, h, Dx4290, Dy4290, Dz4290) / 3600);
@@ -193,7 +192,6 @@ namespace Asv.Common
             return ld - (DL(bd, ld, h, Dx4290, Dy4290, Dz4290) / 3600);
         }
 
-        //
         private static double CK42_WGS84_Lat(double bd, double ld, double h)
         {
             return bd + (DB(bd, ld, h, Dx4284, Dy4284, Dz4284) / 3600);

@@ -31,3 +31,11 @@ For Writerside topics:
 ## Code Block Languages
 
 Use `csharp` for C# examples, `bash` for shell commands, and `mermaid` for diagrams. For blocks without syntax highlighting, use Writerside's `plain text` identifier rather than `text`, which produces `CDE016` in this documentation. See the [Writerside code-block reference](https://www.jetbrains.com/help/writerside/semantic-markup-reference.html#code-block) for the plain-text language setting.
+
+## Publishing Documentation
+
+The `Publish documentation` GitHub Actions workflow builds and checks this Writerside instance. Pull requests that change `src/Writerside/**` or the workflow are checked without deployment. Matching changes pushed to `main` publish the site to [GitHub Pages](https://asv-soft.github.io/asv-common/). The workflow can also be started manually from the Actions tab; only runs on `main` deploy.
+
+Before the first deployment, open the repository's **Settings → Pages** and select **GitHub Actions** as the build and deployment source. No custom deployment token is required: the workflow uses the built-in `GITHUB_TOKEN`.
+
+The workflow uses the [official Writerside Docker builder](https://www.jetbrains.com/help/writerside/build-with-docker.html) and checks its report before uploading the website. A failed build or documentation check prevents publication.

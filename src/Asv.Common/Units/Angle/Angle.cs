@@ -52,16 +52,16 @@ namespace Asv.Common
 
         public static bool TryParse(string? value, out double angle)
         {
-            //Initialize a new angle value with NaN
+            // Initialize a new angle value with NaN
             angle = double.NaN;
 
-            //Checks whether value is null or whitespace
+            // Checks whether value is null or whitespace
             if (string.IsNullOrWhiteSpace(value))
             {
                 return false;
             }
 
-            //Replace coma by dot
+            // Replace coma by dot
             value = value.Replace(',', '.');
 
             if (AngleInDegrees.IsMatch(value))
@@ -79,10 +79,10 @@ namespace Asv.Common
                 }
             }
 
-            //Checking value on specified potential regex matches
+            // Checking value on specified potential regex matches
             var match = AngleRegex.Match(value);
 
-            //Trying to parse value in angle as double
+            // Trying to parse value in angle as double
             if (match.Success == false)
             {
                 var sign1 = 1.0;
@@ -108,7 +108,7 @@ namespace Asv.Common
                 return result;
             }
 
-            //Getting all matching groups
+            // Getting all matching groups
             var signGroup = match.Groups["sign"];
             var degGroup = match.Groups["deg"];
             var minGroup = match.Groups["min"];
@@ -137,7 +137,7 @@ namespace Asv.Common
                 return false;
             }
 
-            //Initialize a new minutes and seconds values with zeros
+            // Initialize a new minutes and seconds values with zeros
             var min = 0;
             var sec = 0.0;
 

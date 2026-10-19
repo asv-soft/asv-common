@@ -293,4 +293,24 @@ public class CircularBuffer2Tests
 
         Assert.Equal([1, 2, 0, 0, 0], destination.ToArray());
     }
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(int.MinValue)]
+    public void Indexer_NegativeIndex_ThrowsWithoutChangingContents(int index)
+    {
+        var buffer = new CircularBuffer2<int>(3);
+        buffer.PushBack(10);
+        buffer.PushBack(20);
+        buffer.PopFront();
+
+        Assert.Throws<IndexOutOfRangeException>(() => buffer[index]);
+        Assert.Throws<IndexOutOfRangeException>(() => buffer[index] = 99);
+        Assert.Equal(new[] { 20 }, buffer.ToArray());
+
+        buffer.PushBack(30);
+        buffer.PushBack(40);
+        Assert.Throws<IndexOutOfRangeException>(() => buffer[index]);
+        Assert.Throws<IndexOutOfRangeException>(() => buffer[index] = 99);
+        Assert.Equal(new[] { 20, 30, 40 }, buffer.ToArray());
+    }
 }

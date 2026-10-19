@@ -4,7 +4,7 @@
     <PackageIcon>asv-composition-128.png</PackageIcon>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Roslynator.Analyzers" Version="4.15.0">
+    <PackageReference Include="Roslynator.Analyzers" Version="5.0.1">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
@@ -12,7 +12,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="System.Composition" Version="10.0.8" />
+    <PackageReference Include="System.Composition" Version="10.0.13" />
     <PackageReference Include="ZLogger" Version="2.5.10" />
   </ItemGroup>
   <ItemGroup>

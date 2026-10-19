@@ -86,7 +86,7 @@ public class DepthFirstSearchTest
         var edges = new ReadOnlyDictionary<int, int[]>(
             new Dictionary<int, int[]>()
             {
-                { 12, null },
+                { 12, null! },
                 { 1, [12] },
                 { 8, [7, 1] },
                 { 7, [10, 6, 3] },

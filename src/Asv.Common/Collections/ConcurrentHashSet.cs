@@ -122,10 +122,12 @@ namespace Asv.Common
         protected virtual void Dispose(bool disposing)
         {
             if (disposing)
+            {
                 if (_lock != null)
                 {
                     _lock.Dispose();
                 }
+            }
         }
 
         ~ConcurrentHashSet()
@@ -133,7 +135,6 @@ namespace Asv.Common
             Dispose(false);
         }
         #endregion
-
 
         public Queue<T> ToQueue()
         {

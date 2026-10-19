@@ -166,15 +166,16 @@ public class ShortGuidTests
         Assert.True(actual == actual);
 #pragma warning restore CS1718 // Comparison made to same variable
 
-        Assert.False(actual == null);
+        Assert.False(actual == null!);
 
         Assert.True(actual == SampleGuid);
-        Assert.True(SampleGuid == actual);
+        var guid = SampleGuid;
+        Assert.True(guid == actual);
 
         Assert.True(actual == SampleGuidString);
         Assert.True(actual == SampleShortGuidString);
 
-        Assert.True(null == ShortGuid.Empty);
+        Assert.True(null! == ShortGuid.Empty);
     }
 
     [Fact]

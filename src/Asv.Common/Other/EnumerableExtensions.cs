@@ -183,7 +183,7 @@ namespace Asv.Common
         ///
         /// object[] items = new object[]{ null, "Hello World!", null, "Good bye!" };
         /// foreach(var item in items.NotNull()){
-        ///		// result of items.NotNull() is enumerable with two strings
+        ///        // result of items.NotNull() is enumerable with two strings
         /// }
         /// </example>
         /// <remarks>Contributed by tencokacistromy, http://www.codeplex.com/site/users/view/tencokacistromy </remarks>

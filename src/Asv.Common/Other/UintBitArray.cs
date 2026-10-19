@@ -79,42 +79,6 @@ namespace Asv.Common
             0x7FFFFFFF,
         ];
 
-        private static readonly uint[] MutiplyMask =
-        [
-            0b0000_0000_0000_0000_0000_0000_0000_0000,
-            0b0000_0000_0000_0000_0000_0000_0000_0001,
-            0b0000_0000_0000_0000_0000_0000_0000_0011,
-            0b0000_0000_0000_0000_0000_0000_0000_0111,
-            0b0000_0000_0000_0000_0000_0000_0000_1111,
-            0b0000_0000_0000_0000_0000_0000_0001_1111,
-            0b0000_0000_0000_0000_0000_0000_0011_1111,
-            0b0000_0000_0000_0000_0000_0000_0111_1111,
-            0b0000_0000_0000_0000_0000_0000_1111_1111,
-            0b0000_0000_0000_0000_0000_0001_1111_1111,
-            0b0000_0000_0000_0000_0000_0011_1111_1111,
-            0b0000_0000_0000_0000_0000_0111_1111_1111,
-            0b0000_0000_0000_0000_0000_1111_1111_1111,
-            0b0000_0000_0000_0000_0001_1111_1111_1111,
-            0b0000_0000_0000_0000_0011_1111_1111_1111,
-            0b0000_0000_0000_0000_0111_1111_1111_1111,
-            0b0000_0000_0000_0000_1111_1111_1111_1111,
-            0b0000_0000_0000_0001_1111_1111_1111_1111,
-            0b0000_0000_0000_0011_1111_1111_1111_1111,
-            0b0000_0000_0000_0111_1111_1111_1111_1111,
-            0b0000_0000_0000_1111_1111_1111_1111_1111,
-            0b0000_0000_0001_1111_1111_1111_1111_1111,
-            0b0000_0000_0011_1111_1111_1111_1111_1111,
-            0b0000_0000_0111_1111_1111_1111_1111_1111,
-            0b0000_0001_1111_1111_1111_1111_1111_1111,
-            0b0000_0011_1111_1111_1111_1111_1111_1111,
-            0b0000_0111_1111_1111_1111_1111_1111_1111,
-            0b0000_1111_1111_1111_1111_1111_1111_1111,
-            0b0001_1111_1111_1111_1111_1111_1111_1111,
-            0b0011_1111_1111_1111_1111_1111_1111_1111,
-            0b0111_1111_1111_1111_1111_1111_1111_1111,
-            0b1111_1111_1111_1111_1111_1111_1111_1111,
-        ];
-
         private uint _value;
 
         public UintBitArray(uint value, int size)
@@ -153,36 +117,37 @@ namespace Asv.Common
 
         public uint GetBitU(int index, int size)
         {
-            if (index + size > Size)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(Size),
-                    $"Size + Index must be less then {Size} bit"
-                );
-            }
-
-            return (_value >> index) & MutiplyMask[size];
+            ValidateRange(index, size);
+            return (_value >> index) & CreateMask(size);
         }
 
         public void SetBitU(int index, int size, uint value)
         {
-            if (index + size > Size)
+            ValidateRange(index, size);
+            var mask = CreateMask(size);
+            _value = (_value & ~(mask << index)) | ((value & mask) << index);
+        }
+
+        private void ValidateRange(int index, int size)
+        {
+            if (index < 0 || index > Size)
             {
-                throw new ArgumentOutOfRangeException(
-                    nameof(Size),
-                    $"Size + Index must be less then {Size} bit"
-                );
+                throw new ArgumentOutOfRangeException(nameof(index));
             }
 
-            _value =
-                (_value & ~(MutiplyMask[size] << index)) | ((value & MutiplyMask[size]) << index);
+            if (size < 0 || size > Size - index)
+            {
+                throw new ArgumentOutOfRangeException(nameof(size));
+            }
         }
+
+        private static uint CreateMask(int size) => size == 32 ? uint.MaxValue : (1U << size) - 1;
 
         public bool this[int index]
         {
             get
             {
-                if (index > Size)
+                if (index < 0 || index >= Size)
                 {
                     throw new ArgumentOutOfRangeException(
                         nameof(index),
@@ -194,7 +159,7 @@ namespace Asv.Common
             }
             set
             {
-                if (index > Size)
+                if (index < 0 || index >= Size)
                 {
                     throw new ArgumentOutOfRangeException(
                         nameof(index),

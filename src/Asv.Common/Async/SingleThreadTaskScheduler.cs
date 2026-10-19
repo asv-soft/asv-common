@@ -55,7 +55,7 @@ namespace Asv.Common
 
         protected override void QueueTask(Task task)
         {
-            Debug.Assert(task != null);
+            Debug.Assert(task != null, "task != null");
             Debug.Assert(_tasks.Count < _tasks.BoundedCapacity, "Too many tasks");
             if (!_tasks.IsAddingCompleted)
             {

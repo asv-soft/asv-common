@@ -21,7 +21,7 @@ When adding a new dependency, check that it does not create a cycle or pull impl
 
 | Package | Add code here when it is about |
 | --- | --- |
-| `Asv.Common` | Cross-cutting primitives that are useful without domain-specific dependencies. |
+| [Asv.Common](Asv-Common.md) | Cross-cutting primitives that are useful without domain-specific dependencies. |
 | `Asv.Cfg` | Reading, writing, storing, and versioning configuration data. |
 | `Asv.Composition` | Module discovery, named exports, metadata, and composition container helpers. |
 | [Asv.IO](Asv-IO.md) | Transport, protocol parsing, binary serialization, endpoint routing, and device communication. |

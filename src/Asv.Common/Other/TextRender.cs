@@ -5,6 +5,8 @@ namespace Asv.Common
 {
     public class TextRender
     {
+        public TextRender() { }
+
         /// <summary>
         /// Example: ██████░░░░░░ 50%")]
         /// </summary>

@@ -10,7 +10,7 @@ The repository contains several focused packages:
 
 | Package | Purpose |
 | --- | --- |
-| `Asv.Common` | Common primitives, async helpers, collections, validation errors, math helpers, geodesy utilities, CRC, time services, and versioning helpers. |
+| [Asv.Common](Asv-Common.md) | Common primitives, async helpers, collections, validation errors, math helpers, geodesy utilities, CRC, time services, and versioning helpers. |
 | `Asv.Cfg` | Configuration abstractions and providers for in-memory, file, folder, package, and versioned configuration storage. |
 | `Asv.Composition` | Lightweight module composition helpers based on `System.Composition`. |
 | [Asv.IO](Asv-IO.md) | Protocol, transport, serialization, routing, stream, schema, compression, device, and microservice utilities. |

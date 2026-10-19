@@ -34,31 +34,21 @@ namespace Asv.Common
         public List<T> GetItemsWithTimeMoreThen(DateTime beginTime)
         {
             _lock.EnterReadLock();
-            var lastElement = _items.Last;
-            var result = new List<T>();
-            if (lastElement != null)
+            try
             {
-                while (true)
+                var current = _items.Last;
+                var result = new List<T>();
+                while (current != null && _getTimeCallback(current.Value) > beginTime)
                 {
-                    var lastTime = _getTimeCallback(lastElement.Value);
-                    if (lastTime <= beginTime)
-                    {
-                        result.Add(lastElement.Value);
-                        if (lastElement.Previous == null)
-                        {
-                            break;
-                        }
-
-                        lastElement = lastElement.Previous;
-                        continue;
-                    }
-
-                    break;
+                    result.Add(current.Value);
+                    current = current.Previous;
                 }
+                return result;
             }
-
-            _lock.ExitReadLock();
-            return result;
+            finally
+            {
+                _lock.ExitReadLock();
+            }
         }
 
         public void Push(T item)
@@ -115,6 +105,7 @@ namespace Asv.Common
             while (current != null)
             {
                 var rcvTime = _getTimeCallback(current.Value);
+
                 if (
                     rcvTime > now
                     || // Элемент из будущего!!! Вдруг системные часы резко ушли, поэтому заглядываем и проверяем, что элементы из будущего. Их тоже удаляем.
@@ -159,11 +150,9 @@ namespace Asv.Common
             while (current != null)
             {
                 var rcvTime = _getTimeCallback(current.Value);
-                if (
-                    rcvTime > now
-                    || // Элемент из будущего!!! Вдруг системные часы резко ушли, поэтому заглядываем и проверяем, что элементы из будущего. Их тоже удаляем.
-                    now - rcvTime >= _maxAge
-                ) // старый пакет
+
+                // Remove expired items and items from the future after a system clock change.
+                if (rcvTime > now || now - rcvTime >= _maxAge)
                 {
                     itemsToDeleteFromFirst++;
                     current = current.Next;

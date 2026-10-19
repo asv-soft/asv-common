@@ -62,7 +62,7 @@ public class IncrementalRateCounterTest
                 _testOutputHelper.WriteLine($"rate {i}: {rate}");
 
                 // The rate should be less than 1 during the loop
-                Assert.True(0 < rate);
+                Assert.True(rate > 0);
             }
         }
     }

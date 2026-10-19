@@ -13,9 +13,9 @@ public static class FloatingPointComparer
         where T : IFloatingPoint<T>
     {
         if (
-            T.IsNegativeInfinity(first) && T.IsNegativeInfinity(second)
-            || T.IsPositiveInfinity(first) && T.IsPositiveInfinity(second)
-            || T.IsNaN(first) && T.IsNaN(second)
+            (T.IsNegativeInfinity(first) && T.IsNegativeInfinity(second))
+            || (T.IsPositiveInfinity(first) && T.IsPositiveInfinity(second))
+            || (T.IsNaN(first) && T.IsNaN(second))
         )
         {
             return true;

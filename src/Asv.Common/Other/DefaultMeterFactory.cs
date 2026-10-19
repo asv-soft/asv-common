@@ -40,7 +40,7 @@ public class DefaultMeterFactory : IMeterFactory
             throw new InvalidOperationException("Meter scope");
         }
 
-        Debug.Assert(options.Name is not null);
+        Debug.Assert(options.Name is not null, "options.Name is not null");
 
         lock (_cachedMeters)
         {
@@ -212,8 +212,8 @@ public class DefaultMeterFactory : IMeterFactory
 
         public bool SetBit(int index)
         {
-            Debug.Assert(index >= 0);
-            Debug.Assert(index < _maxIndex);
+            Debug.Assert(index >= 0, "index >= 0");
+            Debug.Assert(index < _maxIndex, "index < _maxIndex");
 
             GetIndexAndMask(index, out var bitIndex, out var mask);
             var value = _bitMap[bitIndex];
@@ -223,8 +223,8 @@ public class DefaultMeterFactory : IMeterFactory
 
         public bool IsSet(int index)
         {
-            Debug.Assert(index >= 0);
-            Debug.Assert(index < _maxIndex);
+            Debug.Assert(index >= 0, "index >= 0");
+            Debug.Assert(index < _maxIndex, "index < _maxIndex");
 
             GetIndexAndMask(index, out var bitIndex, out var mask);
             var value = _bitMap[bitIndex];

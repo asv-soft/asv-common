@@ -19,7 +19,7 @@ public class LockByKeyExecutorTest
     {
         Assert.Throws<ArgumentNullException>(() =>
         {
-            var locker = new LockByKeyExecutor<string>(null);
+            var locker = new LockByKeyExecutor<string>(null!);
         });
     }
 
@@ -29,25 +29,25 @@ public class LockByKeyExecutorTest
         Assert.Throws<ArgumentNullException>(() =>
         {
             var locker = new LockByKeyExecutor<string>();
-            locker.Execute(null, () => { });
+            locker.Execute(null!, () => { });
         });
 
         Assert.Throws<ArgumentNullException>(() =>
         {
             var locker = new LockByKeyExecutor<string>();
-            locker.Execute("test", null);
+            locker.Execute("test", null!);
         });
 
         Assert.Throws<ArgumentNullException>(() =>
         {
             var locker = new LockByKeyExecutor<string>();
-            locker.Execute<string>("test", null);
+            locker.Execute<string>("test", null!);
         });
 
         Assert.Throws<ArgumentNullException>(() =>
         {
             var locker = new LockByKeyExecutor<string>();
-            locker.Execute<string>(null, () => null);
+            locker.Execute<string>(null!, () => null!);
         });
     }
 
@@ -97,7 +97,7 @@ public class LockByKeyExecutorTest
 
         threads[0].Start();
         threads[1].Start();
-        ready.Wait();
+        ready.Wait(TestContext.Current.CancellationToken);
         start.Set();
 
         foreach (var thread in threads)

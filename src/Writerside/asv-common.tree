@@ -8,6 +8,11 @@
     <toc-element topic="overview.md"/>
     <toc-element topic="getting-started.md"/>
     <toc-element topic="modules.md"/>
+    <toc-element topic="Asv-Common.md">
+        <toc-element topic="Common-Lifetime.md"/>
+        <toc-element topic="Common-Collections.md"/>
+        <toc-element topic="Common-Values.md"/>
+    </toc-element>
     <toc-element topic="Asv-IO.md">
         <toc-element topic="IO-Protocols.md"/>
         <toc-element topic="IO-Connections.md"/>

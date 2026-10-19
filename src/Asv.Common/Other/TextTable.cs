@@ -7,51 +7,6 @@ using System.Reflection;
 
 namespace Asv.Common
 {
-    public abstract class TextTableBorder
-    {
-        protected abstract string Source { get; }
-
-        public char TopLeft => Source[0];
-        public char TopCenter => Source[1];
-        public char TopIntersection => Source[2];
-        public char TopRight => Source[3];
-
-        public char Middle1Left => Source[4];
-        public char Middle1Center => Source[5];
-        public char Middle1Intersection => Source[6];
-        public char Middle1Right => Source[7];
-
-        public char Middle2Left => Source[8];
-        public char Middle2Center => Source[9];
-        public char Middle2Intersection => Source[10];
-        public char Middle2Right => Source[11];
-
-        public char BottomLeft => Source[12];
-        public char BottomCenter => Source[13];
-        public char BottomIntersection => Source[14];
-        public char BottomRight => Source[15];
-    }
-
-    public class EmptyTextTableBorder : TextTableBorder
-    {
-        protected override string Source => "    " + "    " + "    " + "    ";
-    }
-
-    public class DoubleTextTableBorder : TextTableBorder
-    {
-        protected override string Source => "╔═╦╗" + "║ ║║" + "╠═╬╣" + "╚═╩╝";
-    }
-
-    public class SingleTextTableBorder : TextTableBorder
-    {
-        protected override string Source => "┌─┬┐" + "│ ││" + "├─┼┤" + "└─┴┘";
-    }
-
-    public class AsciiTableBorderSingle : TextTableBorder
-    {
-        protected override string Source => "+-++" + "| ||" + "+-++" + "+-++";
-    }
-
     public static class TextTable
     {
         public static TextTableBorder Ascii { get; } = new AsciiTableBorderSingle();
@@ -246,18 +201,20 @@ namespace Asv.Common
         )
         {
             var t = typeof(T);
-#pragma warning disable CS8620 // Argument cannot be used for parameter due to differences in the nullability of reference types.
-#pragma warning disable CS8714 // The type cannot be used as type parameter in the generic type or method. Nullability of type argument doesn't match 'notnull' constraint.
             PrintTableFromObject(
                 write,
                 border,
                 padding,
                 maxLength,
                 items,
-                properties.ToDictionary(p => t.GetProperty(p.Key), p => p.Value)
+                properties.ToDictionary(
+                    p => t.GetProperty(p.Key)
+                        ?? throw new ArgumentException(
+                            $"Property '{p.Key}' was not found on {t}.", nameof(properties)
+                        ),
+                    p => p.Value
+                )
             );
-#pragma warning restore CS8714 // The type cannot be used as type parameter in the generic type or method. Nullability of type argument doesn't match 'notnull' constraint.
-#pragma warning restore CS8620 // Argument cannot be used for parameter due to differences in the nullability of reference types.
         }
 
         public static void PrintTable(

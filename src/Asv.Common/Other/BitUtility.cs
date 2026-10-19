@@ -494,7 +494,7 @@ namespace Asv.Common
         public static long RoundUpToMultiplePowerOfTwo(long n, int factor)
         {
             // Assert that factor is a power of two.
-            Debug.Assert(factor > 0 && (factor & (factor - 1)) == 0);
+            Debug.Assert(factor > 0 && (factor & (factor - 1)) == 0, "Factor must be a positive power of two.");
             return (n + (factor - 1)) & ~(factor - 1);
         }
 
@@ -507,13 +507,13 @@ namespace Asv.Common
         /// <returns>Number of bytes</returns>
         public static int ByteCount(int n)
         {
-            Debug.Assert(n >= 0);
+            Debug.Assert(n >= 0, "n >= 0");
             return (n / 8) + (n % 8 != 0 ? 1 : 0); // ceil(n / 8)
         }
 
         internal static int ReadInt32(ReadOnlyMemory<byte> value)
         {
-            Debug.Assert(value.Length >= sizeof(int));
+            Debug.Assert(value.Length >= sizeof(int), "value.Length >= sizeof(int)");
 
             return Unsafe.ReadUnaligned<int>(ref MemoryMarshal.GetReference(value.Span));
         }

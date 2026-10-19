@@ -266,7 +266,7 @@ public class InvariantNumberParserTest
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public void TryParseDouble_NullOrWhiteSpace_ShouldFailAsNullOrWhiteSpace(string input)
+    public void TryParseDouble_NullOrWhiteSpace_ShouldFailAsNullOrWhiteSpace(string? input)
     {
         var result = InvariantNumberParser.TryParse(input, out double value);
         Assert.False(result.IsSuccess);
@@ -350,7 +350,7 @@ public class InvariantNumberParserTest
     [InlineData(null)]
     [InlineData("")]
     [InlineData(" ")]
-    public void TryParseInt_NullOrWhiteSpace_ShouldFailAsNullOrWhiteSpace(string input)
+    public void TryParseInt_NullOrWhiteSpace_ShouldFailAsNullOrWhiteSpace(string? input)
     {
         var result = InvariantNumberParser.TryParse(input, out int value);
         Assert.False(result.IsSuccess);
@@ -440,12 +440,12 @@ public class InvariantNumberParserTest
     [InlineData(null)]
     [InlineData("")]
     [InlineData(" ")]
-    public void TryParseUInt_NullOrWhiteSpace_ShouldFailAsNullOrWhiteSpace(string input)
+    public void TryParseUInt_NullOrWhiteSpace_ShouldFailAsNullOrWhiteSpace(string? input)
     {
         var result = InvariantNumberParser.TryParse(input, out uint value);
         Assert.False(result.IsSuccess);
         Assert.Equal(ValidationResult.FailAsNullOrWhiteSpace, result);
-        Assert.Equal((uint)0, value);
+        Assert.Equal(0U, value);
     }
 
     [Theory]
@@ -457,7 +457,7 @@ public class InvariantNumberParserTest
         var result = InvariantNumberParser.TryParse(input, out uint value);
         Assert.False(result.IsSuccess);
         Assert.Equal(ValidationResult.FailAsNotNumber, result);
-        Assert.Equal((uint)0, value);
+        Assert.Equal(0U, value);
     }
 
     [Theory]

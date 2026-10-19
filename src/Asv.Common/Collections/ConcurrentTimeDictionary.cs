@@ -56,44 +56,55 @@ namespace Asv.Common
 
         public T GetValues<T>(TKey key, Func<TValue, T> getValues, Func<T> notFoundCallback)
         {
-            T result;
             _lock.EnterReadLock();
-            if (_dict.TryGetValue(key, out var value))
+            try
             {
-                result = getValues(value);
+                return _dict.TryGetValue(key, out var value)
+                    ? getValues(value)
+                    : notFoundCallback();
             }
-            else
+            finally
             {
-                result = notFoundCallback();
+                _lock.ExitReadLock();
             }
-            _lock.ExitReadLock();
-            return result;
         }
 
         public void ClearOld()
         {
             _lock.EnterUpgradeableReadLock();
-            var now = _timeService.Now;
-            var itemsToDelete = new List<TKey>();
-            foreach (var value in _dict)
+            try
             {
-                var valueTime = _getTimeCallback(value.Value);
-                if (now - valueTime < TimeSpan.Zero || now - valueTime > _maxAge)
+                var now = _timeService.Now;
+                var itemsToDelete = new List<TKey>();
+                foreach (var value in _dict)
                 {
-                    itemsToDelete.Add(value.Key);
+                    var valueTime = _getTimeCallback(value.Value);
+                    if (now - valueTime < TimeSpan.Zero || now - valueTime > _maxAge)
+                    {
+                        itemsToDelete.Add(value.Key);
+                    }
                 }
-            }
 
-            if (itemsToDelete.Count != 0)
-            {
-                _lock.EnterWriteLock();
-                foreach (var key in itemsToDelete)
+                if (itemsToDelete.Count != 0)
                 {
-                    _dict.Remove(key);
+                    _lock.EnterWriteLock();
+                    try
+                    {
+                        foreach (var key in itemsToDelete)
+                        {
+                            _dict.Remove(key);
+                        }
+                    }
+                    finally
+                    {
+                        _lock.ExitWriteLock();
+                    }
                 }
-                _lock.ExitWriteLock();
             }
-            _lock.ExitUpgradeableReadLock();
+            finally
+            {
+                _lock.ExitUpgradeableReadLock();
+            }
         }
 
         public void Dispose()
