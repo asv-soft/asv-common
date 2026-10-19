@@ -2,8 +2,18 @@
 
 # asv-common
 
+[![NuGet version](https://img.shields.io/nuget/v/Asv.Common)](https://www.nuget.org/packages/Asv.Common)
+[![Build and tests](https://github.com/asv-soft/asv-common/actions/workflows/code-quality.yml/badge.svg?branch=main)](https://github.com/asv-soft/asv-common/actions/workflows/code-quality.yml)
+[![Documentation](https://github.com/asv-soft/asv-common/actions/workflows/docs.yml/badge.svg?branch=main)](https://asv.me/asv-common/)
+[![GitHub Packages](https://img.shields.io/badge/GitHub-Packages-blue?logo=github)](https://github.com/asv-soft/asv-common/pkgs/nuget/Asv.Common)
+
 A set of shared .NET libraries for ASV projects: core utilities, configuration,
 I/O, application modeling, data storage, and supporting infrastructure for tests.
+
+## Documentation
+
+Read the [Asv.Common documentation](https://asv.me/asv-common/) for package
+overviews, configuration storage, I/O, application modeling, and development guides.
 
 ## Libraries
 
@@ -43,3 +53,9 @@ src/
   Asv.XUnit/        test helpers
   Asv.Common.Shell/ development commands and benchmarks
 ```
+
+## Links
+
+- Documentation: [asv.me/asv-common](https://asv.me/asv-common/)
+- Repository: [asv-soft/asv-common](https://github.com/asv-soft/asv-common)
+- Issues: [GitHub Issues](https://github.com/asv-soft/asv-common/issues)
