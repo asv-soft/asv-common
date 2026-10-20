@@ -4,26 +4,26 @@ This file provides guidance to Codex (Codex.ai/code) when working with code in t
 
 ## Overview
 
-**asv-common** is a multi-package .NET library suite (targeting `net10.0`) published to NuGet. It provides reusable components for reactive, modular applications. All source lives under `src/`; there is no solution file — projects are linked via `src/Directory.Build.props`.
+**asv-common** is a multi-package .NET library suite (targeting `net10.0`) published to NuGet. It provides reusable components for reactive, modular applications. All source lives under `src/`; the solution is `src/Asv.Common.slnx`, and shared project settings are in `src/Directory.Build.props`.
 
 ## Build Commands
 
 ```powershell
 # Restore
-dotnet restore src
+dotnet restore src/Asv.Common.slnx
 
 # Build (Release)
-dotnet build src -c Release
+dotnet build src/Asv.Common.slnx -c Release
 
 # Pack NuGet packages (after build)
-dotnet pack src -c Release --no-build --no-restore
+dotnet pack src/Asv.Common.slnx -c Release --no-build --no-restore
 ```
 
 ## Testing
 
 ```powershell
 # Run all tests
-dotnet test src
+dotnet test src/Asv.Common.slnx
 
 # Run tests for one module
 dotnet test src/Asv.Modeling.Test
@@ -32,15 +32,11 @@ dotnet test src/Asv.Modeling.Test
 dotnet test src/Asv.Modeling.Test --filter "DisplayName~MyTestName"
 ```
 
-Tests marked with `[LocalFact]` / `[LocalTheory]` (from **Asv.XUnit**) are skipped in CI — use standard `[Fact]`/`[Theory]` for code that must run everywhere.
+Tests marked with `[LocalFact]` / `[LocalTheory]` (from **Asv.XUnit**) are skipped when `CI` or `GITHUB_ACTIONS` is `true`. `[ManualFact]` / `[ManualTheory]` are always skipped by their current attribute implementations. Use standard `[Fact]`/`[Theory]` for code that must run everywhere.
 
 ## Version Management
 
-All packages share a single version in `src/Directory.Build.props`:
-
-```xml
-<ProductVersion>3.6.0-dev.9</ProductVersion>
-```
+All packages share the `ProductVersion` property in `src/Directory.Build.props`. Read its current value from that file rather than copying a version from documentation.
 
 Every `.csproj` inherits `Version`, `PackageVersion`, and `FileVersion` from this property — do not set them per-project.
 
@@ -48,7 +44,7 @@ Every `.csproj` inherits `Version`, `PackageVersion`, and `FileVersion` from thi
 
 - **Nullable reference types** are enabled across all library projects (`<Nullable>enable</Nullable>`).
 - **`<LangVersion>latest`** — use current C# features freely.
-- Specific warning codes are promoted to errors (see `WarningsAsErrors` in any `.csproj`). The most important are nullable violations (`CS8600`–`CS8604`, `CS8625`, `CS8629`, `CS8762`) and obsolete API usage (`CS0618`).
+- Specific warning codes are promoted to errors for non-test projects (see `WarningsAsErrors` in `src/Directory.Build.props`). The most important are nullable violations (`CS8600`–`CS8604`, `CS8625`, `CS8629`, `CS8762`) and obsolete API usage (`CS0618`).
 - StyleCop + Roslynator analyzers are active. Rules are configured in `src/CodeStyle.ruleset` — check there before suppressing any analyzer warning.
 
 ## Architecture

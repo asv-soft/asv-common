@@ -61,7 +61,7 @@ A protocol that needs outbound stream state can register an encoder alongside it
 builder.Protocols.RegisterEncoder(info, context => new MyProtocolEncoder());
 ```
 
-The factory must return a fresh stateful encoder on each call. Each endpoint creates and retains its own encoder for each protocol it sends. Receive parsers have separate state. Registering an encoder does not register a parser or add a protocol to `AvailableProtocols`; the usual parser registration remains necessary. `builder.Protocols.Clear()` clears both parser and encoder registrations. `ClearAll()` also performs this reset.
+The factory must return a fresh stateful encoder on each call. Each endpoint creates a registered encoder on its first send for that protocol and retains it for subsequent sends. Protocols without a custom registration use the shared stateless `DefaultProtocolEncoder.Instance`. Receive parsers have separate state. Registering an encoder does not register a parser or add a protocol to `AvailableProtocols`; the usual parser registration remains necessary. `builder.Protocols.Clear()` clears both parser and encoder registrations. `ClearAll()` also performs this reset.
 
 `IProtocolMessage`, `IProtocolBuilder`, and `IProtocolContext` keep their existing members. Encoder registration is an optional capability: `RegisterEncoder` requires a builder implementing `IProtocolEncoderBuilder` and throws `NotSupportedException` otherwise. A context without `IProtocolEncoderContext`, or without a factory for the requested protocol ID, uses `DefaultProtocolEncoder`. Existing custom builders and contexts therefore continue to support their existing protocols without implementing the new interfaces.
 
@@ -69,7 +69,7 @@ For a manually owned stream, `context.CreateEncoder(protocolId)` creates the app
 
 ## Parsing
 
-A parser receives individual bytes. `OnMessage` publishes a recognized message; `OnError` publishes parsing failures. `Push` returns a boolean recognition result rather than the decoded object.
+A parser receives individual bytes. `OnMessage` publishes a decoded message. The `ProtocolParser<TMessage, TMessageId>` base class reports parsing failures through the `OnError` observable's R3 error-resume channel, so subscribe with an `onErrorResume` callback to observe them. `Push` returns a boolean recognition result rather than the decoded object. A `true` result does not guarantee that `OnMessage` was raised: for example, `ExampleParser` can recognize a complete frame whose message ID or payload is rejected by the base parser.
 
 ```mermaid
 sequenceDiagram
@@ -85,13 +85,13 @@ sequenceDiagram
     Endpoint->>Subscriber: OnRxMessage(message), after processing
 ```
 
-An endpoint can run several registered parsers over incoming data. In the current endpoint read loop, a successful parser result resets the parser set. Do not assume that every parser sees one independently framed stream or that every input byte produces a message.
+An endpoint can run several registered parsers over incoming data. In the current endpoint read loop, a `true` parser result resets the parser set and stops dispatching that byte to the remaining parsers. Do not assume that every parser sees one independently framed stream or that every input byte produces a message.
 
 ## Ownership And Diagnostics
 
 Dispose standalone parsers, routers, and virtual connections when their owner finishes. A router owns its ports; ports own their endpoints. Keep subscriber lifetimes explicit as well.
 
-The current `VirtualConnection` forwards stream completion between its two sides. Disposing it can report an `ObjectDisposedException` through R3's unhandled-exception handler when the opposite subject has already been disposed. This cleanup limitation is separate from message decoding; do not interpret a successful round trip as proof that disposal is free of diagnostics.
+`VirtualConnection.Dispose()` and `DisposeAsync()` disconnect the byte-forwarding and logging subscriptions before disposing either port. This prevents stream completion from being forwarded to an already disposed subject. Each port still completes its own public message observables. Dispose the virtual connection as the owner of both sides.
 
 Use the configured `TimeProvider`, logger factory, and meter factory when implementing protocol components. This keeps timing and diagnostics consistent and permits deterministic tests.
 

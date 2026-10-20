@@ -24,7 +24,7 @@ The receive path above describes aggregation. Sending goes from a chosen connect
 | Construction and decoding | `IProtocolFactory`, `IProtocolBuilder`, `IProtocolParser` | [Protocols](IO-Protocols.md) |
 | Transport and aggregation | `IProtocolConnection`, `IProtocolRouter`, `IProtocolPort`, `IProtocolEndpoint` | [Connections](IO-Connections.md) |
 | Processing and formatting | `IProtocolFeature`, `IProtocolMessageFormatter` | [Features and formatters](IO-Features.md) |
-| Binary representation | `ISpanSerializable`, `ISizedSpanSerializable`, `IProtocolMessage` | [Serialization](IO-Serialization.md) |
+| Binary representation and outbound encoding | `ISpanSerializable`, `ISizedSpanSerializable`, `IProtocolMessage`, `IProtocolEncoder` | [Serialization](IO-Serialization.md) |
 | Structured field access | `IVisitable`, `IVisitor`, `Field`, `IFieldType` | [Fields and visitors](IO-Visitors.md) |
 | Device identity and lifecycle | `IDeviceExplorer`, `IClientDeviceFactory`, `IClientDevice` | [Devices](IO-Devices.md) |
 

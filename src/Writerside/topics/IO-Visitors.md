@@ -76,7 +76,7 @@ sequenceDiagram
 
 Maintain a stack of container frames when building a field tree. Arrays and lists need element indices, while structures need their member names. Keep the callback's type in the frame: a structure inside an array may reuse the array's `Field` descriptor while passing its own `StructType`.
 
-Optional scalar values are nullable. Optional structures report presence and a `createNew` result; an inspecting visitor must not request creation of missing data. Distinguish a missing value, an empty container, an unsupported field type, and a numeric zero.
+Optional scalar values are nullable. Optional structures report presence and a `createNew` result; an inspecting visitor must return `false`, because returning `true` replaces even an existing structure with a new instance. A read-only list visitor must likewise preserve the `size` passed by reference to `BeginList`, because changing it resizes the source list before visiting its elements. Distinguish a missing value, an empty container, an unsupported field type, and a numeric zero.
 
 ## Protocol Independence
 

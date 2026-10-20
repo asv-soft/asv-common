@@ -18,6 +18,14 @@ Before submitting a change:
 4. Check that new dependencies are necessary and remain inside the intended package boundary.
 5. Keep generated artifacts, local IDE files, and benchmark outputs out of commits unless they are part of the requested change.
 
+## Time And Synchronization In Tests
+
+Pass a controllable `TimeProvider` to the component whose timers are being tested, then advance that same provider explicitly. Creating a fake provider without injecting it does not control the component's timers or operating-system I/O.
+
+Use completion signals or observable events to wait for asynchronous work. Avoid `Thread.Sleep`, finite `Task.Delay`, and elapsed-time comparisons as substitutes for synchronization. A real-time timeout may bound a hung test; it should not determine when the expected behavior occurs.
+
+When an observable callback completes a test signal, use `TaskCompletionSource` with `RunContinuationsAsynchronously` and dispose the subscription when the wait ends. This keeps test continuations from changing state or adding subscriptions inside an in-flight notification. See `ProtocolPortLifecycleTest.WhenStatus` for this pattern and `Reconnect_UsesProviderAndDisableReleasesPendingTimer` for separate virtual-time advancement and completion checks.
+
 ## Documentation Checklist
 
 For Writerside topics:

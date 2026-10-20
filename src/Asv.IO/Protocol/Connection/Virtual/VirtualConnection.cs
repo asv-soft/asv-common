@@ -72,18 +72,18 @@ public sealed class VirtualConnection : IVirtualConnection
 
     public void Dispose()
     {
-        _server.Dispose();
-        _client.Dispose();
+        // Detach forwarding before either port completes its subjects.
         _sub1.Dispose();
         _sub2.Dispose();
         _sub3?.Dispose();
         _sub4?.Dispose();
+        _server.Dispose();
+        _client.Dispose();
     }
 
     public async ValueTask DisposeAsync()
     {
-        await _server.DisposeAsync();
-        await _client.DisposeAsync();
+        // Detach forwarding before either port completes its subjects.
         await CastAndDispose(_sub1);
         await CastAndDispose(_sub2);
         if (_sub3 != null)
@@ -95,6 +95,9 @@ public sealed class VirtualConnection : IVirtualConnection
         {
             await CastAndDispose(_sub4);
         }
+
+        await _server.DisposeAsync();
+        await _client.DisposeAsync();
 
         return;
 

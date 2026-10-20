@@ -88,7 +88,7 @@ This example knows the concrete type. For an unknown byte stream, use the protoc
 
 Treat lengths read from a stream as input to validate before allocating or resizing collections. The simple binary visitor checks a list's count against its existing `ListType.MinSize` and `MaxSize`, as well as the collection's `Int32` capacity, before changing the destination list. `ExampleMessage1` likewise enforces the bounds declared by its list fields. These checks preserve each schema's limits; there is no new global list limit.
 
-`BinSerialize` string prefixes describe the number of UTF-8 bytes, including when calculating the space needed for a multibyte string. Use an explicit byte limit when the surrounding protocol defines one:
+`BinSerialize` string prefixes describe the number of UTF-8 bytes, including when calculating the space needed for a multibyte string. The existing `string` write and size overloads normalize `null`, empty, and whitespace-only strings to an empty encoded string; the `ReadOnlySpan<char>` overloads preserve whitespace. Use an explicit byte limit when the surrounding protocol defines one:
 
 ```csharp
 string text = BinSerialize.ReadString(stream, maxByteCount: 64 * 1024);
@@ -102,9 +102,11 @@ bool complete = BinSerialize.TryReadString(
 
 Here `reader` is a `SequenceReader<byte>`. An oversized declared length throws `InvalidDataException`. Incomplete sequence input returns `false`, leaves the reader and destination value unchanged, and does not rent a payload buffer. Complete contiguous input is decoded directly; segmented input is copied only after checking that the whole payload is available.
 
-The stream reader checks the remaining length of seekable streams before renting. For non-seekable streams, temporary input storage is bounded to 4 KiB and UTF-8 decoder state survives chunk boundaries. The resulting string still requires memory proportional to the text actually read. Existing stream and sequence overloads retain their `Int32.MaxValue` default limit; the string-returning span overload retains its existing requirement that encoded text be smaller than 128 KiB.
+The stream reader checks the remaining length of seekable streams before renting. It reads byte input in chunks of at most 4 KiB, including for non-seekable streams, and preserves UTF-8 decoder state across chunk boundaries. Larger strings also use a pooled character buffer and a growing `StringBuilder`; the accumulated text and resulting string require memory proportional to the text actually read. Existing stream and sequence overloads retain their `Int32.MaxValue` default limit; the string-returning span and memory overloads retain their existing requirement that encoded text be smaller than 128 KiB.
 
-The `Deserialize(ref ReadOnlySequence<byte>)` helper consumes one complete value from the caller's sequence and leaves subsequent data available. If there are too few bytes, it returns `false` without advancing the sequence. General mutable deserializers do not promise rollback after an exception. In particular, reusing a `SpanArrayType<T>` replaces its previous items after a valid count header; a truncated payload can leave the successfully decoded new items in the same collection.
+The `Deserialize(ref ReadOnlySequence<byte>)` helper takes the expected input length from the destination object's current `GetByteSize()`. On success, it advances the sequence by that length and leaves subsequent data available. If there are fewer than that many bytes, it returns `false` without advancing the sequence. It does not discover a variable-length frame or derive its size from an incoming header; use a protocol parser when the expected size is not already known.
+
+General mutable deserializers do not promise rollback after an exception. In particular, `SpanArrayType<T>` clears its previous items after reading the count prefix, including when the new count is zero. It has no `ListType` schema limits; a truncated payload can leave the successfully decoded new items in the same collection.
 
 ## Buffer And Object Ownership
 

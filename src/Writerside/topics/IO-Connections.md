@@ -56,7 +56,9 @@ sequenceDiagram
 
 The diagram shows different observation stages, not a guaranteed scheduling order between the router callback and the endpoint write loop. Router TX indicates completion of router-level sending to ports. A physical endpoint publishes TX after its write operation; it is still not a remote acknowledgement.
 
-RX aggregation flows from endpoint to port to router. Built-in connections await an internal forwarding handler at each level, including asynchronous RX features, so a slow parent can apply backpressure to the endpoint reader. Public `OnRxMessage` observations remain available at each level. Observing every level without recording the level produces duplicate-looking observations of the same message.
+RX aggregation flows from endpoint to port to router. Physical endpoints await an internal forwarding handler at each built-in connection level, including asynchronous RX features, so a slow parent can apply backpressure to the endpoint reader. Virtual ports and custom connections that use synchronous publication follow the fallback policy described below. Public `OnRxMessage` observations remain available at each level. Observing every level without recording the level produces duplicate-looking observations of the same message.
+
+Error streams are also level-specific. Routers and ports forward RX messages, but do not aggregate their children's `OnRxError` or `OnTxError` streams. Observe an endpoint directly for its transport errors. A port watches endpoint `LastError` to remove the failed endpoint and, where configured by the port implementation, reconnect.
 
 ## Observe A Known Endpoint
 
@@ -93,13 +95,15 @@ Parser `Push` and message emission are synchronous. With the RX wait policy, the
 
 The protected synchronous `InternalPublishRxMessage` entry point remains available to existing derived connections and is used by the virtual port. It processes one publication at a time with a FIFO of up to 100 waiting messages. If that queue is full, the incoming message is dropped and the RX drop statistic increases. This fallback cannot pause its synchronous producer; its drop-newest policy is separate from the physical endpoint channel settings.
 
-Awaiting `Send` at an aggregate level completes forwarding to endpoint queues. It does not establish successful delivery to a remote application.
+For a physical endpoint, `Send` waits only for admission to the TX queue. Its caller's cancellation token governs that wait; cancelling it after enqueueing does not withdraw the message or cancel the later write. The write loop uses the endpoint's lifetime token.
 
-The physical endpoint's single-reader transmit loop applies TX filters before selecting an encoder and encoding the resulting message. Messages dropped from the queue or rejected by a filter do not advance encoder state. Each endpoint retains a separate encoder per protocol, so sending the same message through multiple endpoints keeps each outbound stream independent. Routers and ports forward message objects without sharing a stateful encoder between endpoints.
+Routers and ports await `Send` on each child in their current collection. Completion does not establish successful delivery: a filter can reject the message, an aggregate can have no children, and a disposed or failed physical endpoint returns without enqueueing. A physical endpoint can also skip a queued message whose protocol has no parser enabled, or discard it under the configured drop policy. Endpoint `OnTxMessage` indicates a completed local write; a remote acknowledgement requires a protocol-level response.
 
-Only the actual encoded bytes are sent and counted in TX statistics. TCP endpoints pass the complete frame to `Socket.SendAsync`. If a transport reports an incomplete write or fails, the endpoint reports the error, completes its channels, and cancels its loops. It does not roll back encoding or automatically resend a possibly partial frame. A replacement endpoint starts with fresh encoder instances.
+The physical endpoint's single-reader transmit loop applies TX filters before selecting an encoder and encoding the resulting message. Messages dropped from the queue or rejected by a filter do not advance encoder state. Each endpoint retains its own registered encoder per protocol, so sending the same message through multiple endpoints keeps each stateful outbound stream independent. Protocols without a custom encoder use the shared stateless `DefaultProtocolEncoder.Instance`. Routers and ports forward message objects without sharing a stateful encoder between endpoints.
 
-Virtual ports also honor the actual encoded length. A semaphore serializes filtering, encoding, and delivery to the virtual byte stream, keeping encoder state changes in the same order as the emitted frames. An encoding or delivery error is reported through TX errors and `LastError`; subsequent sends do not continue that failed virtual stream.
+Only the actual encoded bytes are passed to the transport. TCP endpoints submit the complete frame in one `Socket.SendAsync` call. TX byte and message statistics advance after a complete write; bytes from an incomplete write are not added to those counters. If a transport reports an incomplete write or fails, the endpoint reports the error, completes its channels, and cancels its loops. It does not roll back encoding or automatically resend a possibly partial frame. A replacement endpoint starts with fresh encoder instances.
+
+Virtual ports also honor the actual encoded length. A semaphore serializes filtering, encoding, and publication to the virtual byte stream, keeping encoder state changes in the same order as the emitted frames. If encoding or byte publication throws, `Send` reports the exception through TX errors and `LastError` without rethrowing it; subsequent sends return without publishing another frame. Filter exceptions occur outside this error handler and propagate to the caller.
 
 Direct `IDataStream` and `Stream` encoding helpers have no endpoint queue. Their caller owns synchronization and must serialize the complete encode-and-send operation when sharing a stateful encoder. See [Serialization](IO-Serialization.md) for explicit helpers and buffer lifetime requirements.
 
@@ -117,9 +121,9 @@ Removing a port through the router disposes that port. A monitor observes these 
 
 UDP endpoints ignore empty datagrams. Cancellation or disposal releases the shared receive producer if it is waiting for an endpoint to consume a datagram. A failed serial endpoint construction releases the parsers it was given.
 
-The legacy `TcpServerPort` byte stream has a per-recipient forwarding FIFO of 100 frames. Queued frames own a byte copy so the receive buffer can be reused. Forwarding does not wait for a slow peer; a full forwarding queue disconnects that peer. An explicit `Send` awaits the queued socket write. A graceful remote close removes and disposes the client, and asynchronous server disposal waits for receive, accept, and writer shutdown.
+The legacy `TcpServerPort` byte stream has a per-recipient send FIFO of 100 frames, shared by forwarded data and explicit sends. Queued frames own a byte copy so the receive buffer can be reused. Forwarding does not wait for a slow peer; a full forwarding queue disconnects that peer. When the server is connected, an explicit `Send` awaits the queued writes to its current clients and returns a Boolean result through `PortBase`; with no clients, it can return `true` without sending any bytes. A graceful remote close removes and disposes the client. Asynchronous server disposal waits for the tracked receive and accept loops and the writers of clients captured when the server stops.
 
-Text and Telnet sends and JSON requests are cancelled when their owning wrapper is disposed. Telnet exposes received text through `OnReceive`, and completion of a text stream ends a pending `RequestText` wait.
+Disposing a text or Telnet wrapper cancels the token passed to an active send; the underlying `IDataStream` must honor that token for the send to finish promptly. JSON requests link their cancellation token to wrapper disposal, while standalone JSON `Send` and `SendText` use only the caller's token. Telnet exposes received text through `OnReceive`, and completion of a text stream ends the response wait in the `ITextStream.RequestText` helper. Text and Telnet wrappers release their subscriptions without disposing the underlying byte stream. A JSON wrapper disposes its text stream only when constructed with `disposeStream: true`.
 
 ## Source Files
 

@@ -47,6 +47,18 @@ Calling one entry point prevents the other from performing cleanup later. If a d
 
 `AsyncDisposableOnceBag` adds an R3 disposable bag. Cancellation-aware variants include `DisposableOnceWithCancel`, `AsyncDisposableWithCancel`, and `AsyncDisposableOnceBagWithCancel`. Their protected members differ; inspect the chosen base class before adding an override. A disposal cancellation token signals shutdown; owners must still observe completion of work that they start.
 
+Capture `DisposeCancel` while the object is alive and pass that token to background work. Accessing the property after disposal is not a reliable way to obtain an already-cancelled token.
+
+`AsyncDisposableOnceBagWithCancel` cancels its token, disposes the token source, and then releases the inherited `DisposableBag` on both disposal paths. The bag is also released if the token was never requested or a cancellation callback throws. Callback exceptions are propagated after cleanup. Derived classes should call the corresponding base override.
+
+## Timeout ownership
+
+For an owned timeout, construct `CancellationTokenSource` with both the delay and `TimeProvider`, then dispose the source when the operation ends. This stops the timer immediately after success, failure, or external cancellation. Combine it with a scoped linked source when both a timeout and an owner or caller token should cancel the operation.
+
+The compatibility `CancelAfter(delay, timeProvider)` extension delegates to the normal source method for `TimeProvider.System`. With another provider it creates an external timer and holds only a weak reference to the source. Cancelling the source releases that timer, but merely disposing the source does not notify it; the timer may remain until its due time. Repeated calls with a custom provider create independent timers rather than rescheduling a single timer. Prefer the provider-aware constructor for new timeout scopes.
+
+`TimeBasedLinkIndicatorBase` owns its periodic timer and releases it on both disposal paths. `TimeBasedObservableLinkIndicator<T>` additionally owns and releases its input subscription. Pass a controlled provider in tests to advance timeout behavior without waiting for real time.
+
 ## Execution helpers
 
 `LockByKeyExecutor<TKey>` executes synchronous callbacks under a lock associated with a key. Calls using the same executor and equal keys are serialized; different keys can execute concurrently.

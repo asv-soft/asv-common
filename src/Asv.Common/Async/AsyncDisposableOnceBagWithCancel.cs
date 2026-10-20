@@ -31,28 +31,45 @@ public class AsyncDisposableOnceBagWithCancel : AsyncDisposableOnceBag
 
     protected override void Dispose(bool disposing)
     {
-        if (disposing)
+        try
         {
-            if (_cancel != null)
+            if (disposing)
             {
-                if (_cancel.Token.CanBeCanceled)
+                try
                 {
-                    _cancel.Cancel(false);
+                    _cancel?.Cancel(false);
                 }
-                _cancel.Dispose();
+                finally
+                {
+                    _cancel?.Dispose();
+                }
             }
+        }
+        finally
+        {
+            base.Dispose(disposing);
         }
     }
 
     protected override async ValueTask DisposeAsyncCore()
     {
-        if (_cancel != null)
+        try
         {
-            if (_cancel.Token.CanBeCanceled)
+            try
             {
-                await _cancel.CancelAsync();
+                if (_cancel != null)
+                {
+                    await _cancel.CancelAsync();
+                }
             }
-            _cancel.Dispose();
+            finally
+            {
+                _cancel?.Dispose();
+            }
+        }
+        finally
+        {
+            await base.DisposeAsyncCore();
         }
     }
 }

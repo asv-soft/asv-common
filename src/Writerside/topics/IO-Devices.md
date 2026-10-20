@@ -82,9 +82,21 @@ flowchart TD
     Complete --> Initialized["InitializedDevices"]
 ```
 
-`Devices` includes discovered devices; `InitializedDevices` tracks initialized devices according to their state notifications. Initialization and link connectivity are distinct concepts, so use the relevant state instead of assuming that being present in the explorer means a device is ready.
+`Devices` includes discovered devices. `InitializedDevices` adds each device on its first `Complete` notification and removes it when the device is removed from `Devices`; it does not continuously filter the current initialization or link state. Initialization and link connectivity are distinct concepts, so inspect the relevant state when readiness matters.
 
-The timeout timer removes inactive devices according to `ClientDeviceBrowserConfig.DeviceTimeoutMs` and `DeviceCheckIntervalMs`. `TryIdentify` does not refresh those timers. Dispose the explorer to stop discovery subscriptions, its timer, and its owned devices; dispose the connection through its own owner.
+The timeout timer removes inactive devices according to `ClientDeviceBrowserConfig.DeviceTimeoutMs` and `DeviceCheckIntervalMs`. Elapsed time and timer scheduling use the explorer's `TimeProvider`. Configure it with `IDeviceExplorerBuilder.SetTimeProvider`; the builder defaults independently to `TimeProvider.System`, even if the connection uses another provider. `TryIdentify` does not refresh last-seen timestamps. Dispose the explorer to stop discovery subscriptions, its timer, and its owned devices and clear both device collections; dispose the connection through its own owner.
+
+`ClientDevice<TDeviceId>.Initialize()` starts initialization without returning an awaitable completion. Repeated calls are ignored after initialization has started successfully; they do not create another microservice generation. An initialization failure in the asynchronous attempt sets `Failed` and schedules another attempt through `Context.TimeProvider` after `ClientDeviceConfig.RequestDelayAfterFailMs`. Observe `State` to track completion.
+
+## Requests And Periodic Sending
+
+`MicroserviceBase<TBaseMessage>` request helpers subscribe for a matching response before sending. Each attempt owns a timeout source using `Context.TimeProvider` and links it to caller cancellation and the microservice's disposal token. The subscription, linked source, and timeout source are disposed when the attempt finishes, including an early response.
+
+`InternalCall` uses `timeoutMs` per attempt and `attemptCount` as the total number of attempts. Exhausted response timeouts produce `TimeoutException`; caller cancellation and microservice disposal stop retries. The public connection `SendAndWaitAnswer` timeout overloads accept their own optional `TimeProvider`, defaulting to `TimeProvider.System`. These helpers do not automatically link response waiting to connection disposal; supply a caller lifetime token for that scope.
+
+`WaitUntilConnect` waits for link connectivity. `WaitUntilConnectAndInit` then waits for initialization with a new timeout scope: its `timeoutMs` applies separately to each phase, rather than as one total deadline. Both helpers use the supplied provider and release their timeout sources and subscriptions on completion.
+
+`ProtocolMessageTransponder<TMessage>` uses its supplied provider for periodic sends. Starting it again replaces its timer. If a previous send is still running, the next tick is skipped instead of queued. `Set` serializes message updates with sending, so it can block until an active send finishes; do not call it from the per-send callback. `Stop` prevents future ticks but does not cancel a send already in progress. Disposal cancels the active send; first-call `DisposeAsync` also awaits its completion before releasing resources, while `Dispose` defers that cleanup.
 
 ## Identity Is Optional Per Message
 
@@ -97,6 +109,9 @@ The shared layer has no mandatory system/component fields or protocol-specific a
 - `src/Asv.IO/Devices/Explorer/IDeviceExplorer.cs` and `DeviceExplorer.cs`.
 - `src/Asv.IO/Devices/Explorer/Factories/IClientDeviceFactory.cs`.
 - `src/Asv.IO/Devices/Client/IClientDevice.cs` and `DeviceId.cs`.
+- `src/Asv.IO/Devices/Client/ClientDevice.cs`, `Devices/MicroserviceBase.cs`, and `Protocol/ProtocolHelper.cs`.
+- `src/Asv.IO/Protocol/Tools/ProtocolMessageTransponder.cs`.
 - `src/Asv.IO.Test/Devices/Explorer/DeviceExplorerTest.cs`, including `TryIdentify_KnownMessage_DoesNotCreateDevice`, `TryIdentify_FactoriesRegisteredOutOfOrder_UsesFirstMatchingPriority`, and `TryIdentify_ExistingDevice_DoesNotRefreshLastSeen`.
+- `src/Asv.IO.Test/Devices/DeviceLifetimeRegressionTest.cs`, `ProtocolRequestLifetimeTest.cs`, and `Protocol/Tools/ProtocolMessageTransponderLifetimeTest.cs`.
 
 See [Connections](IO-Connections.md) for transport identity and [Fields and visitors](IO-Visitors.md) for protocol-independent field inspection.

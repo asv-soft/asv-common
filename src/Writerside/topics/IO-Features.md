@@ -26,6 +26,10 @@ flowchart LR
 
 Features can run at endpoint, port, and router levels. Check the supplied connection type when behavior belongs to one particular level. A TX feature is a processing hook, not evidence that bytes have already been written.
 
+Feature calls for one message at a given connection level are awaited sequentially. Built-in physical endpoints also await RX forwarding through their parent port and router, so slow features apply backpressure to the receive pipeline. The synchronous compatibility RX publisher used by virtual ports and custom synchronous publishers instead holds up to 100 pending messages in FIFO order and drops a new arrival when that queue is full. See [Connections](IO-Connections.md) for queue and event-stage details.
+
+Honor the supplied cancellation token in asynchronous feature work. Connection shutdown can stop waiting for a feature that ignores cancellation, but cannot stop the feature's own task or release resources that task retains. Feature instances are shared by connections created from the same factory, so independent connections can invoke one feature concurrently; keep per-connection state isolated and release it in `Unregister`.
+
 ## Endpoint Identity Tags
 
 `EndpointIdTagFeature` sets an endpoint identity tag on received messages. Register it through the feature builder:
@@ -52,7 +56,7 @@ The feature currently populates the message tag on RX, not TX. Treat the tag as 
 
 ## Broadcasting
 
-`BroadcastingFeature<TMessage>` can retransmit matching incoming messages through the router. It uses connection/message tags and loop-protection state. Use the explicit `BroadcastingFeatureOptions` when configuring loop protection; do not assume a general router broadcasts received traffic automatically.
+`BroadcastingFeature<TMessage>` can retransmit matching incoming messages through the router. It uses connection/message tags to avoid sending a message back to its source endpoint. Additional loop protection is disabled by default; enable it explicitly through `BroadcastingFeatureOptions.IsLoopProtectionEnabled`. Its bounded cache compares serialized-message CRCs within a time window measured with `Stopwatch`, independently of the protocol's `TimeProvider`. A general router does not broadcast received traffic automatically.
 
 Broadcasting changes traffic. A passive inspector should normally observe endpoint events rather than implement forwarding as part of its capture logic.
 
