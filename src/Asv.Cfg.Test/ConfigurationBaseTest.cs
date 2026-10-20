@@ -83,13 +83,9 @@ public abstract class ConfigurationBaseTest<T>(ITestOutputHelper log)
     {
         using var cleanup = CreateForTest(out var cfg);
         cfg.Set("test1", new TestClass() { Name = "Test1" });
-        Thread.Sleep(50);
         cfg.Set("test2", new TestClass() { Name = "Test2" });
-        Thread.Sleep(50);
         cfg.Set("test3", new TestClass() { Name = "Test3" });
-        Thread.Sleep(50);
         cfg.Set("test4", new TestClass() { Name = "Test4" });
-        Thread.Sleep(50);
 
         var expectedResult = new string[] { "test1", "test2", "test3", "test4" };
         var exclude = cfg.ReservedParts.ToHashSet();

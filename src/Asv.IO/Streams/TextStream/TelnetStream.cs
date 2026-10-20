@@ -18,9 +18,9 @@ namespace Asv.IO
         private readonly Subject<Exception> _onErrorSubject;
         private readonly byte[] _buffer;
         private readonly Lock _sync = new();
-        private readonly Subject<string> _onReceive = new();
         private readonly IDisposable _sub1;
         private readonly CancellationTokenSource _disposeCancel = new();
+        private int _disposed;
 
         public TelnetStream(
             IDataStream strm,
@@ -32,9 +32,9 @@ namespace Asv.IO
             _input = strm ?? throw new ArgumentNullException(nameof(strm));
             _encoding = encoding;
             _buffer = new byte[bufferSize];
-            _sub1 = _input.OnReceive.Subscribe(OnData);
             _onErrorSubject = new Subject<Exception>();
             _endBytes = _encoding.GetBytes(endChars);
+            _sub1 = _input.OnReceive.Subscribe(OnData);
         }
 
         private void OnData(byte[] dataArray)
@@ -53,7 +53,7 @@ namespace Asv.IO
                         _readIndex = 0;
                     }
                     _buffer[_readIndex++] = data;
-                    if (_readIndex <= _endBytes.Length)
+                    if (_readIndex < _endBytes.Length)
                     {
                         continue;
                     }
@@ -93,7 +93,7 @@ namespace Asv.IO
         }
 
         private CancellationToken DisposeCancel => _disposeCancel.Token;
-        public Observable<string> OnReceive => _onReceive;
+        public Observable<string> OnReceive => _output;
 
         public Observable<Exception> OnError => _onErrorSubject;
 
@@ -112,6 +112,10 @@ namespace Asv.IO
                 _endBytes.CopyTo(data, writed);
                 await _input.Send(data, dataSize, linkedCancel.Token).ConfigureAwait(false);
             }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
             catch (Exception ex)
             {
                 _onErrorSubject.OnNext(
@@ -129,19 +133,27 @@ namespace Asv.IO
 
         public void Dispose()
         {
+            if (Interlocked.Exchange(ref _disposed, 1) != 0)
+            {
+                return;
+            }
+            _disposeCancel.Cancel();
+            _sub1.Dispose();
             _output.Dispose();
             _onErrorSubject.Dispose();
-            _onReceive.Dispose();
-            _sub1.Dispose();
             _disposeCancel.Dispose();
         }
 
         public async ValueTask DisposeAsync()
         {
+            if (Interlocked.Exchange(ref _disposed, 1) != 0)
+            {
+                return;
+            }
+            await _disposeCancel.CancelAsync();
+            await CastAndDispose(_sub1);
             await CastAndDispose(_output);
             await CastAndDispose(_onErrorSubject);
-            await CastAndDispose(_onReceive);
-            await CastAndDispose(_sub1);
             await CastAndDispose(_disposeCancel);
 
             return;

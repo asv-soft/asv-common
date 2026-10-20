@@ -23,6 +23,8 @@ namespace Asv.IO
         private readonly IDisposable _sub1;
         private readonly CancellationTokenSource _disposeCancel = new();
         private ITimer? _reconnectTimer;
+        private readonly Lock _reconnectSync = new();
+        private long _reconnectGeneration;
         private volatile int _isDisposed;
 
         protected PortBase(TimeProvider? timeProvider, ILogger? logger)
@@ -64,6 +66,10 @@ namespace Asv.IO
                 Interlocked.Add(ref _txBytes, count);
                 return true;
             }
+            catch (OperationCanceledException) when (cancel.IsCancellationRequested)
+            {
+                return false;
+            }
             catch (Exception exception)
             {
                 InternalOnError(exception);
@@ -89,6 +95,10 @@ namespace Asv.IO
                 Interlocked.Add(ref _txBytes, data.Length);
                 return true;
             }
+            catch (OperationCanceledException) when (cancel.IsCancellationRequested)
+            {
+                return false;
+            }
             catch (Exception exception)
             {
                 InternalOnError(exception);
@@ -106,6 +116,7 @@ namespace Asv.IO
         public void Disable()
         {
             _enableStream.Value = false;
+            CancelReconnect();
             _portStateStream.Value = PortState.Disabled;
             Task.Factory.StartNew(Stop, DisposeCancel);
         }
@@ -131,12 +142,12 @@ namespace Asv.IO
             }
             try
             {
-                if (!_enableStream.Value)
+                if (IsDisposed || !_enableStream.Value)
                 {
                     return;
                 }
 
-                if (IsDisposed)
+                if (_portStateStream.Value == PortState.Connected)
                 {
                     return;
                 }
@@ -176,15 +187,56 @@ namespace Asv.IO
 
         protected void InternalOnError(Exception exception)
         {
+            if (IsDisposed || !_enableStream.Value)
+            {
+                return;
+            }
             _portStateStream.Value = PortState.Error;
             _portErrorStream.OnNext(exception);
-            _reconnectTimer = _timeProvider.CreateTimer(
-                x => TryConnect(),
-                null,
-                ReconnectTimeout,
-                Timeout.InfiniteTimeSpan
-            );
             Stop();
+            using (_reconnectSync.EnterScope())
+            {
+                if (IsDisposed || !_enableStream.Value)
+                {
+                    return;
+                }
+                var generation = ++_reconnectGeneration;
+                _reconnectTimer?.Dispose();
+                _reconnectTimer = _timeProvider.CreateTimer(
+                    Reconnect,
+                    generation,
+                    ReconnectTimeout,
+                    Timeout.InfiniteTimeSpan
+                );
+            }
+        }
+
+        private void Reconnect(object? state)
+        {
+            using (_reconnectSync.EnterScope())
+            {
+                if (
+                    IsDisposed
+                    || state is not long generation
+                    || generation != _reconnectGeneration
+                )
+                {
+                    return;
+                }
+                _reconnectTimer?.Dispose();
+                _reconnectTimer = null;
+            }
+            TryConnect();
+        }
+
+        private void CancelReconnect()
+        {
+            using (_reconnectSync.EnterScope())
+            {
+                ++_reconnectGeneration;
+                _reconnectTimer?.Dispose();
+                _reconnectTimer = null;
+            }
         }
 
         protected CancellationToken DisposeCancel => _disposeCancel.Token;
@@ -196,13 +248,13 @@ namespace Asv.IO
         {
             if (disposing)
             {
+                CancelReconnect();
                 _portErrorStream.Dispose();
                 _portStateStream.Dispose();
                 _enableStream.Dispose();
                 _outputData.Dispose();
                 _sub1.Dispose();
                 _disposeCancel.Dispose();
-                _reconnectTimer?.Dispose();
             }
         }
 
@@ -219,16 +271,13 @@ namespace Asv.IO
 
         protected virtual async ValueTask DisposeAsyncCore()
         {
+            CancelReconnect();
             await CastAndDispose(_portErrorStream);
             await CastAndDispose(_portStateStream);
             await CastAndDispose(_enableStream);
             await CastAndDispose(_outputData);
             await CastAndDispose(_sub1);
             await CastAndDispose(_disposeCancel);
-            if (_reconnectTimer != null)
-            {
-                await _reconnectTimer.DisposeAsync();
-            }
 
             return;
 

@@ -1,5 +1,4 @@
 using System;
-using System.Buffers;
 using System.Text;
 
 namespace Asv.IO
@@ -8,34 +7,7 @@ namespace Asv.IO
     {
         public static string GetString(this ReadOnlySpan<byte> span, Encoding encoding)
         {
-            unsafe
-            {
-                var maxCharCount = encoding.GetMaxCharCount(span.Length);
-                var charBuffer = ArrayPool<char>.Shared.Rent(maxCharCount); // faster then  stackalloc char[maxCharCount]; (https://stackoverflow.com/questions/55229518/why-allocation-on-arraypool-is-faster-then-allocation-on-stack)
-                try
-                {
-                    int actualCharCount;
-                    fixed (byte* bytePointer = span)
-                    fixed (char* charPointer = charBuffer)
-                    {
-                        actualCharCount = encoding
-                            .GetDecoder()
-                            .GetChars(
-                                bytePointer,
-                                span.Length,
-                                charPointer,
-                                maxCharCount,
-                                flush: false
-                            );
-                    }
-
-                    return new string(charBuffer, startIndex: 0, length: actualCharCount);
-                }
-                finally
-                {
-                    ArrayPool<char>.Shared.Return(charBuffer);
-                }
-            }
+            return encoding.GetString(span);
         }
 
         public static void CopyTo(this string source, ref Span<byte> span, Encoding encoding)

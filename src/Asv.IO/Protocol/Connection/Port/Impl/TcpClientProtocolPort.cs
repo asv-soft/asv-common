@@ -63,8 +63,11 @@ public class TcpClientProtocolPort : ProtocolPort<TcpClientProtocolPortConfig>
 
     protected override void InternalSafeEnable(CancellationToken token)
     {
+        token.ThrowIfCancellationRequested();
         _socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
+        token.ThrowIfCancellationRequested();
         _socket.Connect(_remoteEndpoint);
+        token.ThrowIfCancellationRequested();
         _socket.SendBufferSize = _config.WriteBufferSize;
         _socket.SendTimeout = _config.WriteTimeout;
         _socket.ReceiveBufferSize = _config.ReadBufferSize;
@@ -78,7 +81,8 @@ public class TcpClientProtocolPort : ProtocolPort<TcpClientProtocolPortConfig>
             _context,
             StatisticHandler
         );
-        InternalAddEndpoint(_endpoint);
+        token.ThrowIfCancellationRequested();
+        InternalAddEndpoint(_endpoint, token);
     }
 
     #region Dispose

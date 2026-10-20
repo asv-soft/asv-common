@@ -1,21 +1,38 @@
 using System;
 using System.Buffers;
+using System.Threading.Tasks;
 
 namespace Asv.IO;
 
-public class ExampleParser(
-    IProtocolMessageFactory<ExampleMessageBase, byte> messageFactory,
-    IProtocolContext context,
-    IStatisticHandler? statisticHandler
-) : ProtocolParser<ExampleMessageBase, byte>(messageFactory, context, statisticHandler)
+public class ExampleParser : ProtocolParser<ExampleMessageBase, byte>
 {
-    private const int MaxMessageSize = 255;
+    private const int MaxMessageSize = byte.MaxValue + 5;
     public const byte SyncByte = 0x0A;
 
     private State _state = State.Sync;
-    private readonly byte[] _buffer = ArrayPool<byte>.Shared.Rent(MaxMessageSize);
+    private readonly ArrayPool<byte> _pool;
+    private readonly byte[] _buffer;
     private byte _size;
     private int _read;
+
+    public ExampleParser(
+        IProtocolMessageFactory<ExampleMessageBase, byte> messageFactory,
+        IProtocolContext context,
+        IStatisticHandler? statisticHandler
+    )
+        : this(messageFactory, context, statisticHandler, ArrayPool<byte>.Shared) { }
+
+    internal ExampleParser(
+        IProtocolMessageFactory<ExampleMessageBase, byte> messageFactory,
+        IProtocolContext context,
+        IStatisticHandler? statisticHandler,
+        ArrayPool<byte> pool
+    )
+        : base(messageFactory, context, statisticHandler)
+    {
+        _pool = pool;
+        _buffer = pool.Rent(MaxMessageSize);
+    }
 
     public override ProtocolInfo Info => ExampleProtocol.Info;
 
@@ -31,6 +48,8 @@ public class ExampleParser(
 
     public override bool Push(byte data)
     {
+        ThrowIfDisposed();
+
         // [SYNC:1][SENDER_ID:1][MSG_ID:1][PAYLOAD_SIZE:1][PAYLOAD:SIZE][CRC:1, RANGE=1..^1]
         switch (_state)
         {
@@ -100,6 +119,7 @@ public class ExampleParser(
 
     public override void Reset()
     {
+        ThrowIfDisposed();
         _state = State.Sync;
     }
 
@@ -107,8 +127,14 @@ public class ExampleParser(
     {
         if (disposing)
         {
-            ArrayPool<byte>.Shared.Return(_buffer);
+            _pool.Return(_buffer);
         }
         base.Dispose(disposing);
+    }
+
+    protected override async ValueTask DisposeAsyncCore()
+    {
+        _pool.Return(_buffer);
+        await base.DisposeAsyncCore().ConfigureAwait(false);
     }
 }

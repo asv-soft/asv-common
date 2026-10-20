@@ -1,410 +1,431 @@
 using System;
 using System.Buffers;
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using R3;
 
-namespace Asv.IO
+namespace Asv.IO;
+
+public class TcpServerPort : PortBase
 {
-    public class TcpServerPort : PortBase
+    private readonly TcpPortConfig _cfg;
+    private readonly Lock _clientsSync = new();
+    private ImmutableArray<ClientConnection> _clients = [];
+    private readonly Subject<TcpClient> _removeTcpClientSubject = new();
+    private readonly Subject<TcpClient> _addTcpClientSubject = new();
+    private TcpListener? _tcp;
+    private CancellationTokenSource? _stop;
+    private Task _acceptTask = Task.CompletedTask;
+    private Task _readTask = Task.CompletedTask;
+    private Task _shutdownTask = Task.CompletedTask;
+
+    public TcpServerPort(
+        TcpPortConfig cfg,
+        TimeProvider? timeProvider = null,
+        ILogger? logger = null
+    )
+        : base(timeProvider, logger)
     {
-        private readonly TcpPortConfig _cfg;
-        private TcpListener? _tcp;
-        private CancellationTokenSource? _stop;
-        private readonly List<TcpClient> _clients = [];
-        private readonly ReaderWriterLockSlim _rw = new();
-        private readonly Subject<TcpClient> _removeTcpClientSubject;
-        private readonly Subject<TcpClient> _addTcpClientSubject;
-        private readonly ITimer _timer;
+        _cfg = cfg;
+    }
 
-        public TcpServerPort(
-            TcpPortConfig cfg,
-            TimeProvider? timeProvider = null,
-            ILogger? logger = null
-        )
-            : base(timeProvider, logger)
+    public Observable<TcpClient> OnTcpClientRemoved => _removeTcpClientSubject;
+    public Observable<TcpClient> OnTcpClientAdded => _addTcpClientSubject;
+    public override PortType PortType => PortType.Tcp;
+    public override string PortLogName => _cfg.ToString();
+    internal EndPoint? LocalEndPoint => _tcp?.LocalEndpoint;
+
+    private ImmutableArray<ClientConnection> GetClients()
+    {
+        using (_clientsSync.EnterScope())
         {
-            _cfg = cfg;
-            _removeTcpClientSubject = new Subject<TcpClient>();
-            _addTcpClientSubject = new Subject<TcpClient>();
-            _timer = TimeProvider.CreateTimer(
-                DeleteClients,
-                null,
-                TimeSpan.FromSeconds(1),
-                TimeSpan.FromSeconds(3)
-            );
-            DisposeCancel.Register(InternalStop);
+            return _clients;
         }
+    }
 
-        public Observable<TcpClient> OnTcpClientRemoved => _removeTcpClientSubject;
-        public Observable<TcpClient> OnTcpClientAdded => _addTcpClientSubject;
+    protected override Task InternalSend(ReadOnlyMemory<byte> data, CancellationToken cancel)
+    {
+        return Task.WhenAll(GetClients().Select(client => client.Writer.SendAsync(data, cancel)));
+    }
 
-        private void DeleteClients(object? o)
+    protected override Task InternalSend(byte[] data, int count, CancellationToken cancel)
+    {
+        return InternalSend(data.AsMemory(0, count), cancel);
+    }
+
+    protected override void InternalStop()
+    {
+        ImmutableArray<ClientConnection> clients;
+        CancellationTokenSource? stop;
+        TcpListener? listener;
+        Task acceptTask;
+        Task readTask;
+        using (_clientsSync.EnterScope())
         {
-            _rw.EnterUpgradeableReadLock();
-            try
+            clients = _clients;
+            _clients = [];
+            stop = _stop;
+            _stop = null;
+            listener = _tcp;
+            _tcp = null;
+            acceptTask = _acceptTask;
+            readTask = _readTask;
+        }
+        stop?.Cancel();
+        listener?.Stop();
+        foreach (var client in clients)
+        {
+            client.Dispose();
+        }
+        stop?.Dispose();
+        _shutdownTask = Task.WhenAll(
+            _shutdownTask,
+            acceptTask,
+            readTask,
+            Task.WhenAll(clients.Select(client => client.Writer.Completion))
+        );
+    }
+
+    protected override void InternalStart()
+    {
+        InternalStop();
+        var listener = new TcpListener(
+            IPAddress.Parse(_cfg.Host ?? throw new InvalidOperationException()),
+            _cfg.Port
+        );
+        try
+        {
+            listener.Start();
+            using (_clientsSync.EnterScope())
             {
-                var itemsToDelete = _clients.Where(x => x.Connected == false).ToImmutableArray();
-                if (itemsToDelete.Length == 0)
+                if (IsDisposed || !IsEnabled.CurrentValue)
                 {
+                    listener.Stop();
                     return;
                 }
+                _tcp = listener;
+                _stop = new CancellationTokenSource();
+                var cancel = _stop.Token;
+                _acceptTask = AcceptClientsAsync(listener, cancel);
+                _readTask = ReceiveDataAsync(cancel);
+            }
+        }
+        catch
+        {
+            listener.Stop();
+            throw;
+        }
+    }
 
-                _rw.EnterWriteLock();
-                try
+    private async Task AcceptClientsAsync(TcpListener listener, CancellationToken cancel)
+    {
+        try
+        {
+            while (!cancel.IsCancellationRequested)
+            {
+                var socket = await listener.AcceptTcpClientAsync(cancel).ConfigureAwait(false);
+                var client = new ClientConnection(socket, RemoveClient);
+                using (_clientsSync.EnterScope())
                 {
-                    foreach (var tcpClient in itemsToDelete)
+                    if (cancel.IsCancellationRequested)
                     {
-                        _clients.Remove(tcpClient);
-                        _removeTcpClientSubject.OnNext(tcpClient);
+                        client.Dispose();
+                        return;
                     }
+                    _clients = _clients.Add(client);
                 }
-                finally
-                {
-                    _rw.ExitWriteLock();
-                }
-            }
-            catch (Exception e)
-            {
-                InternalOnError(e);
-                Debug.Assert(false, "Unexpected protocol or transport failure.");
-            }
-            finally
-            {
-                _rw.ExitUpgradeableReadLock();
+                _addTcpClientSubject.OnNext(socket);
             }
         }
-
-        public override PortType PortType { get; } = PortType.Tcp;
-
-        public override string PortLogName => _cfg.ToString();
-
-        protected override Task InternalSend(ReadOnlyMemory<byte> data, CancellationToken cancel)
+        catch (OperationCanceledException) when (cancel.IsCancellationRequested) { }
+        catch (ObjectDisposedException) when (cancel.IsCancellationRequested) { }
+        catch (SocketException) when (cancel.IsCancellationRequested) { }
+        catch (Exception ex)
         {
-            _rw.EnterReadLock();
-            var clients = _clients.ToImmutableArray();
-            _rw.ExitReadLock();
-            return Task.WhenAll(clients.Select(x => SendAsync(x, data, cancel)));
+            InternalOnError(ex);
         }
+    }
 
-        protected override Task InternalSend(byte[] data, int count, CancellationToken cancel)
+    private async Task ReceiveDataAsync(CancellationToken cancel)
+    {
+        var buffer = ArrayPool<byte>.Shared.Rent(8192);
+        try
         {
-            _rw.EnterReadLock();
-            var clients = _clients.ToImmutableArray();
-            _rw.ExitReadLock();
-            return Task.WhenAll(clients.Select(x => SendAsync(x, data, count, cancel)));
-        }
-
-        private async Task SendAsync(
-            TcpClient client,
-            byte[] data,
-            int count,
-            CancellationToken cancel
-        )
-        {
-            if (_tcp == null || client.Connected == false)
+            while (!cancel.IsCancellationRequested)
             {
-                return;
-            }
-
-            try
-            {
-                await client.GetStream().WriteAsync(data, 0, count, cancel).ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine(ex);
-            }
-        }
-
-        private async Task SendAsync(
-            TcpClient client,
-            ReadOnlyMemory<byte> data,
-            CancellationToken cancel
-        )
-        {
-            if (_tcp == null || client.Connected == false)
-            {
-                return;
-            }
-
-            try
-            {
-                await client.GetStream().WriteAsync(data, cancel).ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine(ex);
-            }
-        }
-
-        protected override void InternalStop()
-        {
-            _stop?.Cancel(false);
-            _stop?.Dispose();
-            _stop = null;
-        }
-
-        protected override void InternalStart()
-        {
-            _tcp = new TcpListener(
-                IPAddress.Parse(_cfg.Host ?? throw new InvalidOperationException()),
-                _cfg.Port
-            );
-            _tcp.Start();
-            _stop = new CancellationTokenSource();
-            var recvConnectionThread = new Thread(RecvConnectionCallback) { IsBackground = true };
-            var recvDataThread = new Thread(RecvDataCallback) { IsBackground = true };
-
-            _stop.Token.Register(() =>
-            {
-                try
-                {
-                    _rw.EnterWriteLock();
-                    foreach (var client in _clients.ToArray())
-                    {
-                        client.Close();
-                    }
-
-                    _clients.Clear();
-                    _tcp.Stop();
-
-                    // recvDataThread.Interrupt();
-                    // recvConnectionThread.Interrupt();
-                }
-                catch (Exception)
-                {
-                    Debug.Assert(false, "Unexpected protocol or transport failure.");
-
-                    // ignore
-                }
-                finally
-                {
-                    _rw.ExitWriteLock();
-                }
-            });
-            recvDataThread.Start();
-            recvConnectionThread.Start();
-        }
-
-        private void RecvConnectionCallback(object? obj)
-        {
-            try
-            {
-                while (_stop is { IsCancellationRequested: false })
+                var received = false;
+                foreach (var client in GetClients())
                 {
                     try
                     {
-                        var newClient = _tcp?.AcceptTcpClient();
-                        if (newClient == null)
+                        var available = client.Socket.Available;
+                        if (available == 0)
                         {
+                            if (
+                                client.Socket.Poll(0, SelectMode.SelectRead)
+                                && client.Socket.Available == 0
+                            )
+                            {
+                                RemoveClient(client);
+                            }
                             continue;
                         }
-
-                        _rw.EnterWriteLock();
-                        _clients.Add(newClient);
-                        _rw.ExitWriteLock();
-                        _addTcpClientSubject.OnNext(newClient);
+                        var read = await client
+                            .Client.GetStream()
+                            .ReadAsync(
+                                buffer.AsMemory(0, Math.Min(available, buffer.Length)),
+                                cancel
+                            )
+                            .ConfigureAwait(false);
+                        if (read == 0)
+                        {
+                            RemoveClient(client);
+                            continue;
+                        }
+                        received = true;
+                        foreach (var other in GetClients())
+                        {
+                            if (other != client && !other.Writer.TrySend(buffer.AsSpan(0, read)))
+                            {
+                                RemoveClient(other);
+                            }
+                        }
+                        InternalOnData(buffer.AsSpan(0, read).ToArray());
                     }
-                    catch (ThreadAbortException)
+                    catch (OperationCanceledException) when (cancel.IsCancellationRequested)
                     {
-                        // ignore
+                        return;
+                    }
+                    catch (IOException)
+                    {
+                        RemoveClient(client);
                     }
                     catch (SocketException)
                     {
-                        // ignore
+                        RemoveClient(client);
                     }
-                    catch (Exception)
+                    catch (ObjectDisposedException)
                     {
-                        // ignore
-                        Debug.Assert(false, "Unexpected protocol or transport failure.");
+                        RemoveClient(client);
                     }
                 }
-            }
-            catch (ThreadAbortException)
-            {
-                // ignore
-            }
-        }
-
-        private async void RecvDataCallback(object? obj)
-        {
-            try
-            {
-                while (_stop is { IsCancellationRequested: false })
+                if (!received)
                 {
-                    var someDataReceived = false;
-                    _rw.EnterReadLock();
-                    var clients = _clients.ToImmutableArray();
-                    _rw.ExitReadLock();
-                    foreach (var tcpClient in clients)
-                    {
-                        if (tcpClient.Available == 0)
-                        {
-                            continue;
-                        }
-
-                        if (tcpClient.Connected == false)
-                        {
-                            continue;
-                        }
-
-                        if (tcpClient.Client.Connected == false)
-                        {
-                            continue;
-                        }
-
-                        someDataReceived = true;
-                        var buff = ArrayPool<byte>.Shared.Rent(tcpClient.Available);
-                        try
-                        {
-                            var read = tcpClient.GetStream().Read(buff, 0, buff.Length);
-                            foreach (var otherClients in clients)
-                            {
-                                // send to all except the client from whom we received the data
-                                if (otherClients == tcpClient)
-                                {
-                                    continue;
-                                }
-
-                                if (otherClients.Connected == false)
-                                {
-                                    continue;
-                                }
-
-                                if (otherClients.Client.Connected == false)
-                                {
-                                    continue;
-                                }
-
-                                otherClients.GetStream().Write(buff, 0, read);
-                            }
-                            var buffer = new byte[read];
-                            Buffer.BlockCopy(buff, 0, buffer, 0, read);
-                            InternalOnData(buffer);
-                        }
-                        finally
-                        {
-                            ArrayPool<byte>.Shared.Return(buff);
-                        }
-                    }
-
-                    if (someDataReceived == false)
-                    {
-                        await Task.Delay(TimeSpan.FromMilliseconds(30), TimeProvider);
-                    }
+                    await Task.Delay(TimeSpan.FromMilliseconds(30), TimeProvider, cancel)
+                        .ConfigureAwait(false);
                 }
             }
-            catch (SocketException ex)
+        }
+        catch (OperationCanceledException) when (cancel.IsCancellationRequested) { }
+        catch (Exception ex)
+        {
+            InternalOnError(ex);
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
+    }
+
+    private void RemoveClient(ClientConnection client)
+    {
+        using (_clientsSync.EnterScope())
+        {
+            if (!_clients.Contains(client))
             {
-                if (ex.SocketErrorCode == SocketError.Interrupted)
+                return;
+            }
+            _clients = _clients.Remove(client);
+        }
+        client.Dispose();
+        if (!IsDisposed)
+        {
+            _removeTcpClientSubject.OnNext(client.Client);
+        }
+    }
+
+    public override string ToString()
+    {
+        var clients = GetClients();
+        return $"TCP\\IP Server      {_cfg.Host}:{_cfg.Port} \n"
+            + $"Reconnect timeout: {_cfg.ReconnectTimeout:N0} ms\n"
+            + $"Clients [{clients.Length}]:\n"
+            + string.Join("\n", clients.Select(client => $"   - {client.RemoteEndPoint}"));
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            InternalStop();
+            _removeTcpClientSubject.Dispose();
+            _addTcpClientSubject.Dispose();
+        }
+        base.Dispose(disposing);
+    }
+
+    protected override async ValueTask DisposeAsyncCore()
+    {
+        InternalStop();
+        await _shutdownTask.ConfigureAwait(false);
+        _removeTcpClientSubject.Dispose();
+        _addTcpClientSubject.Dispose();
+        await base.DisposeAsyncCore().ConfigureAwait(false);
+    }
+
+    private sealed class ClientConnection : IDisposable
+    {
+        public ClientConnection(TcpClient client, Action<ClientConnection> remove)
+        {
+            Client = client;
+            Socket = client.Client;
+            RemoteEndPoint = Socket.RemoteEndPoint;
+            Writer = new TcpClientSendQueue(client.GetStream(), () => remove(this));
+        }
+
+        public TcpClient Client { get; }
+        public Socket Socket { get; }
+        public EndPoint? RemoteEndPoint { get; }
+        public TcpClientSendQueue Writer { get; }
+
+        public void Dispose()
+        {
+            Writer.Dispose();
+            Client.Dispose();
+        }
+    }
+}
+
+internal sealed class TcpClientSendQueue : IDisposable
+{
+    private readonly Stream _stream;
+    private readonly Action _failed;
+    private readonly Channel<PendingWrite> _queue;
+    private readonly CancellationTokenSource _stop = new();
+    private int _disposed;
+
+    internal TcpClientSendQueue(Stream stream, Action failed, int capacity = 100)
+    {
+        _stream = stream;
+        _failed = failed;
+        _queue = Channel.CreateBounded<PendingWrite>(
+            new BoundedChannelOptions(capacity)
+            {
+                SingleReader = true,
+                SingleWriter = false,
+                AllowSynchronousContinuations = false,
+                FullMode = BoundedChannelFullMode.Wait,
+            }
+        );
+        Completion = WriteAsync(_stop.Token);
+    }
+
+    internal Task Completion { get; }
+
+    internal bool TrySend(ReadOnlySpan<byte> data)
+    {
+        return _queue.Writer.TryWrite(
+            new PendingWrite(data.ToArray(), null, CancellationToken.None)
+        );
+    }
+
+    internal async Task SendAsync(ReadOnlyMemory<byte> data, CancellationToken cancel)
+    {
+        var completion = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
+        var write = new PendingWrite(data.ToArray(), completion, cancel);
+        await _queue.Writer.WriteAsync(write, cancel).ConfigureAwait(false);
+        await completion.Task.WaitAsync(cancel).ConfigureAwait(false);
+    }
+
+    private async Task WriteAsync(CancellationToken cancel)
+    {
+        try
+        {
+            await foreach (var write in _queue.Reader.ReadAllAsync(cancel).ConfigureAwait(false))
+            {
+                if (write.Cancel.IsCancellationRequested)
                 {
-                    return;
+                    write.Completion?.TrySetCanceled(write.Cancel);
+                    continue;
                 }
-
-                InternalOnError(ex);
-            }
-            catch (ThreadAbortException)
-            {
-                // ignore
-            }
-            catch (Exception e)
-            {
-                InternalOnError(e);
+                try
+                {
+                    if (write.Cancel.CanBeCanceled)
+                    {
+                        using var linked = CancellationTokenSource.CreateLinkedTokenSource(
+                            cancel,
+                            write.Cancel
+                        );
+                        await _stream.WriteAsync(write.Data, linked.Token).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        await _stream.WriteAsync(write.Data, cancel).ConfigureAwait(false);
+                    }
+                    write.Completion?.TrySetResult();
+                }
+                catch (Exception ex)
+                {
+                    write.Completion?.TrySetException(ex);
+                    throw;
+                }
             }
         }
-
-        public override string ToString()
+        catch (OperationCanceledException) when (cancel.IsCancellationRequested) { }
+        catch (Exception)
         {
-            var count = 0;
-            string message;
-            try
-            {
-                _rw.EnterReadLock();
-                count = _clients.Count;
-                message = string.Join(
-                    "\n",
-                    _clients.Select(_ => $"   - {_.Client.RemoteEndPoint}")
-                );
-            }
-            catch (Exception e)
-            {
-                message = e.ToString();
-                Debug.Assert(false, "Unexpected protocol or transport failure.");
-            }
-            finally
-            {
-                _rw.ExitReadLock();
-            }
-
-            return $"TCP\\IP Server      {_cfg.Host}:{_cfg.Port} \n"
-                + $"Reconnect timeout: {_cfg.ReconnectTimeout:N0} ms\n"
-                + $"Clients [{count}]:\n"
-                + $"{message}";
+            _failed();
         }
-
-        #region Dispose
-
-        protected override void Dispose(bool disposing)
+        finally
         {
-            if (disposing)
+            _queue.Writer.TryComplete();
+            while (_queue.Reader.TryRead(out var write))
             {
-                _tcp?.Dispose();
-                _stop?.Cancel(false);
-                _stop?.Dispose();
-                _stop = null;
-
-                _rw.Dispose();
-                _removeTcpClientSubject.Dispose();
-                _addTcpClientSubject.Dispose();
-                _timer.Dispose();
+                write.Completion?.TrySetCanceled();
             }
-
-            base.Dispose(disposing);
         }
+    }
 
-        protected override async ValueTask DisposeAsyncCore()
+    public void Dispose()
+    {
+        if (Interlocked.Exchange(ref _disposed, 1) != 0)
         {
-            if (_tcp != null)
-            {
-                await CastAndDispose(_tcp);
-            }
-
-            if (_stop != null)
-            {
-                _stop.Cancel(false);
-                await CastAndDispose(_stop);
-                _stop = null;
-            }
-            await CastAndDispose(_rw);
-            await CastAndDispose(_removeTcpClientSubject);
-            await CastAndDispose(_addTcpClientSubject);
-            await _timer.DisposeAsync();
-
-            await base.DisposeAsyncCore();
-
             return;
-
-            static async ValueTask CastAndDispose(IDisposable resource)
-            {
-                if (resource is IAsyncDisposable resourceAsyncDisposable)
-                {
-                    await resourceAsyncDisposable.DisposeAsync();
-                }
-                else
-                {
-                    resource.Dispose();
-                }
-            }
         }
+        _queue.Writer.TryComplete();
+        _stop.Cancel();
+        _ = DisposeCancellationAsync();
+    }
 
-        #endregion
+    private async Task DisposeCancellationAsync()
+    {
+        try
+        {
+            await Completion.ConfigureAwait(false);
+        }
+        finally
+        {
+            _stop.Dispose();
+        }
+    }
+
+    private sealed class PendingWrite(
+        byte[] data,
+        TaskCompletionSource? completion,
+        CancellationToken cancel
+    )
+    {
+        public byte[] Data { get; } = data;
+        public TaskCompletionSource? Completion { get; } = completion;
+        public CancellationToken Cancel { get; } = cancel;
     }
 }

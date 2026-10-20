@@ -8,8 +8,7 @@ namespace Asv.IO;
 
 public sealed class AlternativeSerialProtocolEndpoint : ProtocolEndpoint
 {
-    private readonly SerialPortStream _serial;
-    private readonly bool _initializationComplete;
+    private readonly SerialPortStream? _serial;
 
     public AlternativeSerialProtocolEndpoint(
         string id,
@@ -18,23 +17,29 @@ public sealed class AlternativeSerialProtocolEndpoint : ProtocolEndpoint
         IProtocolContext context,
         IStatisticHandler statisticHandler
     )
-        : base(id, config, parsers, context, statisticHandler)
+        : base(id, config, parsers, context, statisticHandler, startImmediately: false)
     {
-        _serial = new SerialPortStream(
-            config.PortName,
-            config.BoundRate,
-            config.DataBits,
-            ConvertParity(config.Parity),
-            ConvertStopBits(config.StopBits)
-        )
+        try
         {
-            WriteBufferSize = config.WriteBufferSize,
-            WriteTimeout = config.WriteTimeout,
-            ReadBufferSize = config.ReadBufferSize,
-            ReadTimeout = config.ReadTimeout,
-        };
-        _serial.Open();
-        _initializationComplete = true;
+            _serial = new SerialPortStream(
+                config.PortName,
+                config.BoundRate,
+                config.DataBits,
+                ConvertParity(config.Parity),
+                ConvertStopBits(config.StopBits)
+            );
+            _serial.WriteBufferSize = config.WriteBufferSize;
+            _serial.WriteTimeout = config.WriteTimeout;
+            _serial.ReadBufferSize = config.ReadBufferSize;
+            _serial.ReadTimeout = config.ReadTimeout;
+            _serial.Open();
+            Start();
+        }
+        catch
+        {
+            Dispose();
+            throw;
+        }
     }
 
     private static StopBits ConvertStopBits(System.IO.Ports.StopBits configStopBits)
@@ -66,16 +71,12 @@ public sealed class AlternativeSerialProtocolEndpoint : ProtocolEndpoint
         };
     }
 
-    public SerialPortStream SerialPort => _serial;
+    public SerialPortStream SerialPort =>
+        _serial ?? throw new InvalidOperationException("Serial port is not initialized.");
 
     protected override int GetAvailableBytesToRead()
     {
-        if (!_initializationComplete)
-        {
-            // this can happen when the read loop starts from ProtocolEndpoint ctor
-            return 0;
-        }
-        if (!_serial.IsOpen)
+        if (_serial is not { IsOpen: true })
         {
             throw new InvalidOperationException("Serial port is not open.");
         }
@@ -84,7 +85,7 @@ public sealed class AlternativeSerialProtocolEndpoint : ProtocolEndpoint
 
     protected override ValueTask<int> InternalRead(Memory<byte> memory, CancellationToken cancel)
     {
-        return _serial.ReadAsync(memory, cancel);
+        return SerialPort.ReadAsync(memory, cancel);
     }
 
     protected override async ValueTask<int> InternalWrite(
@@ -92,7 +93,7 @@ public sealed class AlternativeSerialProtocolEndpoint : ProtocolEndpoint
         CancellationToken cancel
     )
     {
-        await _serial.WriteAsync(memory, cancel);
+        await SerialPort.WriteAsync(memory, cancel);
         return memory.Length;
     }
 
@@ -102,12 +103,13 @@ public sealed class AlternativeSerialProtocolEndpoint : ProtocolEndpoint
     {
         if (disposing)
         {
-            if (_serial.IsOpen)
+            CancelPendingOperations();
+            if (_serial is { IsOpen: true })
             {
                 _serial.Close();
             }
 
-            _serial.Dispose();
+            _serial?.Dispose();
         }
 
         base.Dispose(disposing);
@@ -115,12 +117,16 @@ public sealed class AlternativeSerialProtocolEndpoint : ProtocolEndpoint
 
     protected override async ValueTask DisposeAsyncCore()
     {
-        if (_serial.IsOpen)
+        CancelPendingOperations();
+        if (_serial is { IsOpen: true })
         {
             _serial.Close();
         }
 
-        await _serial.DisposeAsync();
+        if (_serial != null)
+        {
+            await _serial.DisposeAsync();
+        }
         await base.DisposeAsyncCore();
     }
     #endregion

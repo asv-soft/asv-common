@@ -108,10 +108,7 @@ public static class SpanSerializableMixin
                 reader.Advance(size);
                 var span = new ReadOnlySpan<byte>(rentedArray, 0, size);
                 value.Deserialize(ref span);
-                Debug.Assert(
-                    rentedArray.Length == span.Length,
-                    "Read not all data from rented array"
-                );
+                Debug.Assert(span.IsEmpty, "Read not all data from rented array");
             }
             finally
             {
@@ -128,7 +125,12 @@ public static class SpanSerializableMixin
     )
     {
         var reader = new SequenceReader<byte>(rdr);
-        return Deserialize(value, ref reader);
+        if (!Deserialize(value, ref reader))
+        {
+            return false;
+        }
+        rdr = rdr.Slice(reader.Position);
+        return true;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -220,7 +222,10 @@ public static class SpanSerializableMixin
             src.Serialize(ref span);
             var readSpan = new ReadOnlySpan<byte>(array, 0, size);
             dest.Deserialize(ref readSpan);
-            Debug.Assert(span.Length == readSpan.Length, "Expected: span.Length == readSpan.Length");
+            Debug.Assert(
+                span.Length == readSpan.Length,
+                "Expected: span.Length == readSpan.Length"
+            );
         }
         finally
         {
@@ -246,7 +251,10 @@ public static class SpanSerializableMixin
             src.Serialize(ref span);
             var readSpan = new ReadOnlySpan<byte>(array, 0, size);
             dest.Deserialize(ref readSpan);
-            Debug.Assert(span.Length == readSpan.Length, "Expected: span.Length == readSpan.Length");
+            Debug.Assert(
+                span.Length == readSpan.Length,
+                "Expected: span.Length == readSpan.Length"
+            );
             return dest;
         }
         finally

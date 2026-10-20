@@ -18,6 +18,7 @@ namespace Asv.IO
         private readonly IDisposable _sub1;
         private readonly IDisposable _sub2;
         private readonly Subject<JObject> _onData = new();
+        private int _disposed;
 
         public JsonStreamBase(ITextStream textStream, bool disposeStream, TimeSpan requestTimeout)
         {
@@ -55,6 +56,10 @@ namespace Asv.IO
                 var str = JsonConvert.SerializeObject(data, Formatting.None);
                 await _textStream.Send(str, cancel).ConfigureAwait(false);
             }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
             catch (Exception ex)
             {
                 _onErrorSubject.OnNext(ex);
@@ -67,11 +72,21 @@ namespace Asv.IO
             CancellationToken cancel
         )
         {
-            using var linkedCancel = CancellationTokenSource.CreateLinkedTokenSource(cancel);
+            using var linkedCancel = CancellationTokenSource.CreateLinkedTokenSource(
+                cancel,
+                _disposeCancel.Token
+            );
             linkedCancel.CancelAfter(_requestTimeout);
-            var tcs = new TaskCompletionSource<JObject>();
-            using var c1 = linkedCancel.Token.Register(tcs.SetCanceled);
-            using var subscribe = _onData.Where(responseFilter).Take(1).Subscribe(tcs.SetResult);
+            var tcs = new TaskCompletionSource<JObject>(
+                TaskCreationOptions.RunContinuationsAsynchronously
+            );
+            using var c1 = linkedCancel.Token.Register(() =>
+                tcs.TrySetCanceled(linkedCancel.Token)
+            );
+            using var subscribe = _onData
+                .Where(responseFilter)
+                .Take(1)
+                .Subscribe(value => tcs.TrySetResult(value));
             await SendText(request, linkedCancel.Token).ConfigureAwait(false);
             return await tcs.Task.ConfigureAwait(false);
         }
@@ -81,6 +96,10 @@ namespace Asv.IO
             try
             {
                 await _textStream.Send(data, cancel).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
             }
             catch (Exception ex)
             {
@@ -95,11 +114,18 @@ namespace Asv.IO
         )
         {
             using CancellationTokenSource linkedCancel =
-                CancellationTokenSource.CreateLinkedTokenSource(cancel);
+                CancellationTokenSource.CreateLinkedTokenSource(cancel, _disposeCancel.Token);
             linkedCancel.CancelAfter(_requestTimeout);
-            var tcs = new TaskCompletionSource<JObject>();
-            using var c1 = linkedCancel.Token.Register(tcs.SetCanceled);
-            using var subscribe = _onData.Where(responseFilter).Take(1).Subscribe(tcs.SetResult);
+            var tcs = new TaskCompletionSource<JObject>(
+                TaskCreationOptions.RunContinuationsAsynchronously
+            );
+            using var c1 = linkedCancel.Token.Register(() =>
+                tcs.TrySetCanceled(linkedCancel.Token)
+            );
+            using var subscribe = _onData
+                .Where(responseFilter)
+                .Take(1)
+                .Subscribe(value => tcs.TrySetResult(value));
             await Send(request, linkedCancel.Token).ConfigureAwait(false);
             return await tcs.Task.ConfigureAwait(false);
         }
@@ -108,6 +134,10 @@ namespace Asv.IO
 
         public void Dispose()
         {
+            if (Interlocked.Exchange(ref _disposed, 1) != 0)
+            {
+                return;
+            }
             _disposeCancel.Cancel(false);
             _disposeCancel.Dispose();
             _onErrorSubject.Dispose();
@@ -123,7 +153,11 @@ namespace Asv.IO
 
         public async ValueTask DisposeAsync()
         {
-            _disposeCancel.Cancel(false);
+            if (Interlocked.Exchange(ref _disposed, 1) != 0)
+            {
+                return;
+            }
+            await _disposeCancel.CancelAsync();
             await CastAndDispose(_disposeCancel);
             await CastAndDispose(_onErrorSubject);
             await CastAndDispose(_onData);

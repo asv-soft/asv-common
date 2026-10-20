@@ -18,10 +18,11 @@ public class ProtocolMessageTransponder<TMessage>
     private readonly IProtocolConnection _connection;
     private readonly TimeProvider _timeProvider;
     private readonly Lock _sync = new();
-    private int _isSending;
     private ITimer? _timer;
     private readonly ReactiveProperty<TransponderState> _state = new();
-    private readonly ReaderWriterLockSlim _dataLock = new();
+    private readonly SemaphoreSlim _dataLock = new(1, 1);
+    private readonly CancellationToken _lifetime;
+    private Task _sendTask = Task.CompletedTask;
     private readonly ILogger<ProtocolMessageTransponder<TMessage>> _logger;
 
     public ProtocolMessageTransponder(
@@ -35,10 +36,13 @@ public class ProtocolMessageTransponder<TMessage>
         ArgumentNullException.ThrowIfNull(message);
         ArgumentNullException.ThrowIfNull(everySendCallback);
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(timeProvider);
+        ArgumentNullException.ThrowIfNull(loggerFactory);
         _message = message;
         _everySendCallback = everySendCallback;
         _connection = connection;
         _timeProvider = timeProvider;
+        _lifetime = DisposeCancel;
         _logger = loggerFactory.CreateLogger<ProtocolMessageTransponder<TMessage>>();
     }
 
@@ -46,58 +50,91 @@ public class ProtocolMessageTransponder<TMessage>
     {
         using (_sync.EnterScope())
         {
+            ThrowIfDisposed();
             _timer?.Dispose();
-            _timer = _timeProvider.CreateTimer(OnTick, null, dueTime, period);
             IsStarted = true;
+            _timer = _timeProvider.CreateTimer(OnTick, null, dueTime, period);
         }
     }
 
-    private async void OnTick(object? state)
+    private void OnTick(object? state)
     {
-        try
+        TaskCompletionSource completion;
+        using (_sync.EnterScope())
         {
-            if (Interlocked.CompareExchange(ref _isSending, 1, 0) == 1)
+            if (IsDisposed || !IsStarted)
+            {
+                return;
+            }
+
+            if (!_sendTask.IsCompleted)
             {
                 LogSkipped();
                 return;
             }
 
-            _dataLock.EnterReadLock();
+            completion = new TaskCompletionSource(
+                TaskCreationOptions.RunContinuationsAsynchronously
+            );
+            _sendTask = completion.Task;
+        }
+
+        _ = SendAsync(completion);
+    }
+
+    private async Task SendAsync(TaskCompletionSource completion)
+    {
+        var entered = false;
+        try
+        {
+            await _dataLock.WaitAsync(_lifetime).ConfigureAwait(false);
+            entered = true;
             _everySendCallback(_message);
-            await _connection.Send(_message, DisposeCancel);
+            _lifetime.ThrowIfCancellationRequested();
+            await _connection.Send(_message, _lifetime).ConfigureAwait(false);
             LogSuccess();
         }
+        catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
         catch (Exception e)
         {
             LogError(e);
         }
         finally
         {
-            _dataLock.ExitReadLock();
-            Interlocked.Exchange(ref _isSending, 0);
+            if (entered)
+            {
+                _dataLock.Release();
+            }
+            completion.TrySetResult();
         }
     }
 
     private void LogError(Exception e)
     {
-        if (_state.Value == TransponderState.ErrorToSend)
+        using (_sync.EnterScope())
         {
-            return;
-        }
+            if (IsDisposed || _state.Value == TransponderState.ErrorToSend)
+            {
+                return;
+            }
 
-        _state.Value = TransponderState.ErrorToSend;
-        _logger.ZLogError($"{_message.Name} sending error:{e.Message}");
+            _state.Value = TransponderState.ErrorToSend;
+            _logger.ZLogError($"{_message.Name} sending error:{e.Message}");
+        }
     }
 
     private void LogSuccess()
     {
-        if (_state.Value == TransponderState.Ok)
+        using (_sync.EnterScope())
         {
-            return;
-        }
+            if (IsDisposed || _state.Value == TransponderState.Ok)
+            {
+                return;
+            }
 
-        _state.Value = TransponderState.Ok;
-        _logger.ZLogDebug($"{_message.Name} start stream");
+            _state.Value = TransponderState.Ok;
+            _logger.ZLogDebug($"{_message.Name} start stream");
+        }
     }
 
     private void LogSkipped()
@@ -118,19 +155,24 @@ public class ProtocolMessageTransponder<TMessage>
 
     public void Stop()
     {
+        ITimer? timer;
         using (_sync.EnterScope())
         {
-            _timer?.Dispose();
+            timer = _timer;
             _timer = null;
             IsStarted = false;
         }
+        timer?.Dispose();
     }
 
     public void Set(Action<TMessage> changeCallback)
     {
+        ArgumentNullException.ThrowIfNull(changeCallback);
+        ThrowIfDisposed();
+        _dataLock.Wait(_lifetime);
         try
         {
-            _dataLock.EnterWriteLock();
+            ThrowIfDisposed();
             changeCallback(_message);
         }
         catch (Exception e)
@@ -139,22 +181,20 @@ public class ProtocolMessageTransponder<TMessage>
         }
         finally
         {
-            _dataLock.ExitWriteLock();
+            _dataLock.Release();
         }
     }
-
-    #region Dispose
 
     protected override void Dispose(bool disposing)
     {
         if (disposing)
         {
-            _dataLock.Dispose();
-            _state.Dispose();
-            using (_sync.EnterScope())
-            {
-                _timer?.Dispose();
-            }
+            Stop();
+            base.Dispose(disposing);
+
+            // Synchronous disposal may run inside a send callback. Cleanup waits without blocking it.
+            _ = DisposeResourcesAsync();
+            return;
         }
 
         base.Dispose(disposing);
@@ -162,31 +202,21 @@ public class ProtocolMessageTransponder<TMessage>
 
     protected override async ValueTask DisposeAsyncCore()
     {
-        await CastAndDispose(_dataLock).ConfigureAwait(false);
-        await CastAndDispose(_state).ConfigureAwait(false);
-
-        // ReSharper disable once InconsistentlySynchronizedField
-        if (_timer != null)
-        {
-            await _timer.DisposeAsync().ConfigureAwait(false);
-        }
-
+        Stop();
         await base.DisposeAsyncCore().ConfigureAwait(false);
-
-        return;
-
-        static async ValueTask CastAndDispose(IDisposable resource)
-        {
-            if (resource is IAsyncDisposable resourceAsyncDisposable)
-            {
-                await resourceAsyncDisposable.DisposeAsync().ConfigureAwait(false);
-            }
-            else
-            {
-                resource.Dispose();
-            }
-        }
+        await DisposeResourcesAsync().ConfigureAwait(false);
     }
 
-    #endregion
+    private async Task DisposeResourcesAsync()
+    {
+        Task pending;
+        using (_sync.EnterScope())
+        {
+            pending = _sendTask;
+        }
+        await pending.ConfigureAwait(false);
+        await _dataLock.WaitAsync().ConfigureAwait(false);
+        _state.Dispose();
+        _dataLock.Dispose();
+    }
 }

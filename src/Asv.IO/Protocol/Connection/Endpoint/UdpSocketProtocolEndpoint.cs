@@ -8,32 +8,46 @@ using System.Threading.Tasks;
 
 namespace Asv.IO;
 
-public class UdpSocketProtocolEndpoint(
-    Socket socket,
-    IPEndPoint recvAddr,
-    string id,
-    ProtocolPortConfig config,
-    ImmutableArray<IProtocolParser> parsers,
-    IProtocolContext context,
-    IStatisticHandler statisticHandler
-) : ProtocolEndpoint(id, config, parsers, context, statisticHandler)
+public class UdpSocketProtocolEndpoint : ProtocolEndpoint
 {
-    private readonly IProtocolContext _context =
-        context ?? throw new ArgumentNullException(nameof(context));
+    private readonly IProtocolContext _context;
+    private readonly Socket _socket;
+    private readonly object _receiveSync = new();
     private byte[] _buffer = [];
     private int _readSize;
-    private readonly AutoResetEvent _waitDataRead = new(false);
-    private long _lastDataReceivedOrSentSuccess = context.TimeProvider.GetTimestamp();
-    private readonly TimeSpan _reconnectTimeout =
-        config.ReconnectTimeoutMs <= 0
-            ? Timeout.InfiniteTimeSpan
-            : TimeSpan.FromMilliseconds(config.ReconnectTimeoutMs);
+    private bool _stopping;
+    private long _lastDataReceivedOrSentSuccess;
+    private readonly TimeSpan _reconnectTimeout;
+    private readonly CancellationTokenRegistration _receiveCancellation;
 
-    public IPEndPoint RemoteEndPoint { get; } = recvAddr;
+    public UdpSocketProtocolEndpoint(
+        Socket socket,
+        IPEndPoint recvAddr,
+        string id,
+        ProtocolPortConfig config,
+        ImmutableArray<IProtocolParser> parsers,
+        IProtocolContext context,
+        IStatisticHandler statisticHandler
+    )
+        : base(id, config, parsers, context, statisticHandler, startImmediately: false)
+    {
+        _socket = socket;
+        _context = context;
+        RemoteEndPoint = recvAddr;
+        _lastDataReceivedOrSentSuccess = context.TimeProvider.GetTimestamp();
+        _reconnectTimeout =
+            config.ReconnectTimeoutMs <= 0
+                ? Timeout.InfiniteTimeSpan
+                : TimeSpan.FromMilliseconds(config.ReconnectTimeoutMs);
+        _receiveCancellation = ConnectionCancel.Register(StopReceiving);
+        Start();
+    }
+
+    public IPEndPoint RemoteEndPoint { get; }
 
     protected override int GetAvailableBytesToRead()
     {
-        var available = _readSize;
+        var available = Volatile.Read(ref _readSize);
         if (available > 0)
         {
             _lastDataReceivedOrSentSuccess = _context.TimeProvider.GetTimestamp();
@@ -56,12 +70,18 @@ public class UdpSocketProtocolEndpoint(
 
     protected override ValueTask<int> InternalRead(Memory<byte> memory, CancellationToken cancel)
     {
-        var span = new Span<byte>(_buffer, 0, _readSize);
-        Debug.Assert(memory.Length >= _readSize, "Expected: memory.Length >= _readSize");
-        span.CopyTo(memory.Span);
-        _readSize = 0; // Reset read size to indicate that data has been consumed
-        _waitDataRead.Set();
-        return ValueTask.FromResult(span.Length);
+        lock (_receiveSync)
+        {
+            cancel.ThrowIfCancellationRequested();
+            var span = new Span<byte>(_buffer, 0, _readSize);
+            Debug.Assert(memory.Length >= _readSize, "Expected: memory.Length >= _readSize");
+            span.CopyTo(memory.Span);
+            var count = span.Length;
+            _buffer = [];
+            Volatile.Write(ref _readSize, 0);
+            Monitor.PulseAll(_receiveSync);
+            return ValueTask.FromResult(count);
+        }
     }
 
     protected override ValueTask<int> InternalWrite(
@@ -69,23 +89,54 @@ public class UdpSocketProtocolEndpoint(
         CancellationToken cancel
     )
     {
-        var count = socket.SendToAsync(memory, SocketFlags.None, RemoteEndPoint, cancel);
+        var count = _socket.SendToAsync(memory, SocketFlags.None, RemoteEndPoint, cancel);
         _lastDataReceivedOrSentSuccess = _context.TimeProvider.GetTimestamp();
         return count;
     }
 
     internal void ApplyData(byte[] buffer, int readSize)
     {
-        _buffer = buffer;
-        _readSize = readSize;
-        _waitDataRead.WaitOne();
+        if (readSize == 0)
+        {
+            return;
+        }
+        lock (_receiveSync)
+        {
+            while (_readSize != 0 && !_stopping)
+            {
+                Monitor.Wait(_receiveSync);
+            }
+            if (_stopping)
+            {
+                return;
+            }
+            _buffer = buffer;
+            Volatile.Write(ref _readSize, readSize);
+            while (_readSize != 0 && !_stopping)
+            {
+                Monitor.Wait(_receiveSync);
+            }
+        }
+    }
+
+    private void StopReceiving()
+    {
+        lock (_receiveSync)
+        {
+            _stopping = true;
+            _buffer = [];
+            Volatile.Write(ref _readSize, 0);
+            Monitor.PulseAll(_receiveSync);
+        }
     }
 
     protected override void Dispose(bool disposing)
     {
         if (disposing)
         {
-            _waitDataRead.Dispose();
+            CancelPendingOperations();
+            StopReceiving();
+            _receiveCancellation.Dispose();
         }
 
         base.Dispose(disposing);
@@ -93,7 +144,9 @@ public class UdpSocketProtocolEndpoint(
 
     protected override async ValueTask DisposeAsyncCore()
     {
-        _waitDataRead.Dispose();
+        CancelPendingOperations();
+        StopReceiving();
+        _receiveCancellation.Dispose();
         await base.DisposeAsyncCore();
     }
 }

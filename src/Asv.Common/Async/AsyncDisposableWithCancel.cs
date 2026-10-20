@@ -1,3 +1,4 @@
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -26,6 +27,18 @@ public abstract class AsyncDisposableWithCancel : AsyncDisposableOnce
                 _cancel = new CancellationTokenSource();
                 return _cancel.Token;
             }
+        }
+    }
+
+    protected void CancelDisposeToken()
+    {
+        try
+        {
+            _cancel?.Cancel(false);
+        }
+        catch (ObjectDisposedException)
+        {
+            // Another shutdown path has already cancelled and disposed this source.
         }
     }
 

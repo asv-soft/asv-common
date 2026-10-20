@@ -20,6 +20,10 @@ public class LinkIndicatorBase(int downgradeErrors = 3) : AsyncDisposableOnce, I
 
         using (_sync.EnterScope())
         {
+            if (IsDisposed)
+            {
+                return;
+            }
             _connErrors = 0;
             _state.Value = LinkState.Connected;
         }
@@ -34,6 +38,10 @@ public class LinkIndicatorBase(int downgradeErrors = 3) : AsyncDisposableOnce, I
 
         using (_sync.EnterScope())
         {
+            if (IsDisposed)
+            {
+                return;
+            }
             _connErrors++;
             if (_connErrors >= 1 && _connErrors <= downgradeErrors)
             {
@@ -54,7 +62,13 @@ public class LinkIndicatorBase(int downgradeErrors = 3) : AsyncDisposableOnce, I
             return;
         }
 
-        _state.Value = LinkState.Disconnected;
+        using (_sync.EnterScope())
+        {
+            if (!IsDisposed)
+            {
+                _state.Value = LinkState.Disconnected;
+            }
+        }
     }
 
     public ReadOnlyReactiveProperty<LinkState> State => _state;
@@ -65,7 +79,10 @@ public class LinkIndicatorBase(int downgradeErrors = 3) : AsyncDisposableOnce, I
     {
         if (disposing)
         {
-            _state.Dispose();
+            using (_sync.EnterScope())
+            {
+                _state.Dispose();
+            }
         }
 
         base.Dispose(disposing);
@@ -73,11 +90,7 @@ public class LinkIndicatorBase(int downgradeErrors = 3) : AsyncDisposableOnce, I
 
     protected override async ValueTask DisposeAsyncCore()
     {
-        if (_state is IAsyncDisposable stateAsyncDisposable)
-        {
-            await stateAsyncDisposable.DisposeAsync();
-        }
-        else
+        using (_sync.EnterScope())
         {
             _state.Dispose();
         }

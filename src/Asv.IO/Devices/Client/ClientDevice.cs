@@ -50,6 +50,7 @@ public abstract class ClientDevice<TDeviceId> : AsyncDisposableWithCancel, IClie
 
     public void Initialize()
     {
+        ThrowIfDisposed();
         if (Interlocked.CompareExchange(ref _isInitialized, 1, 0) == 1)
         {
             _logger.ZLogTrace($"Skip double initialization [{Id}]");
@@ -63,12 +64,9 @@ public abstract class ClientDevice<TDeviceId> : AsyncDisposableWithCancel, IClie
         }
         catch (Exception e)
         {
+            Interlocked.Exchange(ref _isInitialized, 0);
             _logger.ZLogError(e, $"Error on initialize device [{Id}]: {e.Message}");
             throw;
-        }
-        finally
-        {
-            Interlocked.Exchange(ref _isInitialized, 0);
         }
     }
 
@@ -201,6 +199,7 @@ public abstract class ClientDevice<TDeviceId> : AsyncDisposableWithCancel, IClie
             _name.Dispose();
             _state.Dispose();
             SafeDisposeMicroservices(_microservices);
+            _microservices = ImmutableArray<IMicroserviceClient>.Empty;
         }
 
         base.Dispose(disposing);

@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 
 namespace Asv.IO;
 
@@ -458,7 +459,15 @@ public class SimpleBinaryDeserialize(ReadOnlyMemory<byte> memory, bool skipUnkno
 
     public override void BeginList(Field field, ListType type, ref uint size)
     {
-        BinSerialize.ReadUInt(ref _memory, ref size);
+        var count = 0U;
+        BinSerialize.ReadUInt(ref _memory, ref count);
+        if (count > int.MaxValue || count < type.MinSize || count > type.MaxSize)
+        {
+            throw new InvalidDataException(
+                $"List '{field.Name}' has {count} elements; expected {type.MinSize}..{type.MaxSize}."
+            );
+        }
+        size = count;
     }
 
     public override void EndList()

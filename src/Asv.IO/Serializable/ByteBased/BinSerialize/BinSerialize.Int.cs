@@ -20,6 +20,7 @@ public partial class BinSerialize
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ref int ReserveInt(ref Span<byte> span)
     {
+        ArgumentOutOfRangeException.ThrowIfLessThan(span.Length, sizeof(int), nameof(span));
         ref var result = ref Unsafe.As<byte, int>(ref span[0]);
 
         // Init to default, as otherwise it would be whatever data was at that memory.

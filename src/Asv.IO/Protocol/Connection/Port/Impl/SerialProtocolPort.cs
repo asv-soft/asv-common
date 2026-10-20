@@ -107,6 +107,7 @@ public sealed class SerialProtocolPort : ProtocolPort<SerialProtocolPortConfig>
 
     protected override void InternalSafeEnable(CancellationToken token)
     {
+        token.ThrowIfCancellationRequested();
         if (_config.Version == 2)
         {
             _pipe = new AlternativeSerialProtocolEndpoint(
@@ -131,7 +132,8 @@ public sealed class SerialProtocolPort : ProtocolPort<SerialProtocolPortConfig>
                 StatisticHandler
             );
         }
-        InternalAddEndpoint(_pipe);
+        token.ThrowIfCancellationRequested();
+        InternalAddEndpoint(_pipe, token);
     }
 
     #region Dispose

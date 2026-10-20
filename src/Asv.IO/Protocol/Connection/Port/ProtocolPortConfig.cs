@@ -105,11 +105,14 @@ public class ProtocolPortConfig(Uri connectionString) : ICloneable
         set => Query.Set(DropMessageWhenFullRxQueueKey, value.ToString());
     }
 
-    private const string RxQueueSizeKey = "tx_queue";
+    private const string RxQueueSizeKey = "rx_queue";
     private const int RxQueueSizeDefault = 100;
     public int RxQueueSize
     {
-        get => int.TryParse(Query[RxQueueSizeKey], out var value) ? value : RxQueueSizeDefault;
+        get =>
+            int.TryParse(Query[RxQueueSizeKey], out var value) ? value
+            : int.TryParse(Query[TxQueueSizeKey], out value) ? value
+            : RxQueueSizeDefault;
         set => Query.Set(RxQueueSizeKey, value.ToString());
     }
     private const string SendBufferSizeKey = "tx_size";

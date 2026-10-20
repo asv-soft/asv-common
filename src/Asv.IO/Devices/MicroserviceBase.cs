@@ -126,12 +126,18 @@ public abstract class MicroserviceBase<TBaseMessage> : AsyncDisposableWithCancel
         _loggerBase.ZLogTrace(
             $"=> Send {packet.Name} and wait for answer {nameof(TResult)} with timeout {timeoutMs} ms"
         );
+        using var timeoutCancel = new CancellationTokenSource(
+            TimeSpan.FromMilliseconds(timeoutMs),
+            Context.TimeProvider
+        );
         using var linkedCancel = CancellationTokenSource.CreateLinkedTokenSource(
             cancel,
-            DisposeCancel
+            DisposeCancel,
+            timeoutCancel.Token
         );
-        linkedCancel.CancelAfter(TimeSpan.FromMilliseconds(timeoutMs), Context.TimeProvider);
-        var tcs = new TaskCompletionSource<TResult>();
+        var tcs = new TaskCompletionSource<TResult>(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
         await using var c1 = linkedCancel.Token.Register(() => tcs.TrySetCanceled(), false);
 
         using var subscribe = InternalFilteredDeviceMessages.Subscribe(x =>
@@ -161,12 +167,18 @@ public abstract class MicroserviceBase<TBaseMessage> : AsyncDisposableWithCancel
         cancel.ThrowIfCancellationRequested();
         var p = new TAnswerPacket();
         _loggerBase.ZLogTrace($"=> call {p.Name} and wait for answer with timeout {timeoutMs} ms");
+        using var timeoutCancel = new CancellationTokenSource(
+            TimeSpan.FromMilliseconds(timeoutMs),
+            Context.TimeProvider
+        );
         using var linkedCancel = CancellationTokenSource.CreateLinkedTokenSource(
             cancel,
-            DisposeCancel
+            DisposeCancel,
+            timeoutCancel.Token
         );
-        linkedCancel.CancelAfter(timeoutMs, Context.TimeProvider);
-        var tcs = new TaskCompletionSource<TAnswerPacket>();
+        var tcs = new TaskCompletionSource<TAnswerPacket>(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
         await using var c1 = linkedCancel.Token.Register(() => tcs.TrySetCanceled(), false);
 
         filter ??= _ => true;
@@ -214,7 +226,7 @@ public abstract class MicroserviceBase<TBaseMessage> : AsyncDisposableWithCancel
         where TReceive : TBaseMessage
     {
         cancel.ThrowIfCancellationRequested();
-        byte currentAttempt = 0;
+        var currentAttempt = 0;
         var name = packet.Name;
         while (IsRetryCondition())
         {
@@ -236,12 +248,15 @@ public abstract class MicroserviceBase<TBaseMessage> : AsyncDisposableWithCancel
             }
             catch (OperationCanceledException)
             {
+                cancel.ThrowIfCancellationRequested();
+                if (IsDisposed)
+                {
+                    throw;
+                }
                 if (IsRetryCondition())
                 {
                     continue;
                 }
-
-                cancel.ThrowIfCancellationRequested();
             }
         }
         _loggerBase.ZLogError($"Timeout to execute '{name}' with {attemptCount} x {timeoutMs} ms'");
@@ -291,7 +306,7 @@ public abstract class MicroserviceBase<TBaseMessage> : AsyncDisposableWithCancel
     {
         cancel.ThrowIfCancellationRequested();
 
-        byte currentAttempt = 0;
+        var currentAttempt = 0;
         TReceive? result = default;
         var name = packet.Name;
         while (IsRetryCondition())
@@ -310,12 +325,15 @@ public abstract class MicroserviceBase<TBaseMessage> : AsyncDisposableWithCancel
             }
             catch (OperationCanceledException)
             {
+                cancel.ThrowIfCancellationRequested();
+                if (IsDisposed)
+                {
+                    throw;
+                }
                 if (IsRetryCondition())
                 {
                     continue;
                 }
-
-                cancel.ThrowIfCancellationRequested();
             }
         }
 

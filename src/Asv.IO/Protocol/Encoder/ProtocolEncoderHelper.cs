@@ -56,8 +56,19 @@ internal sealed class ProtocolEncoderSet(IProtocolContext context)
             return encoder;
         }
 
-        encoder = context.CreateEncoder(protocolId);
+        if (
+            context is not IProtocolEncoderContext registered
+            || !registered.EncoderFactory.TryGetValue(protocolId, out var factory)
+        )
+        {
+            return DefaultProtocolEncoder.Instance;
+        }
+        encoder =
+            factory(context)
+            ?? throw new InvalidOperationException("An encoder factory returned null.");
         _encoders.Add(protocolId, encoder);
         return encoder;
     }
+
+    public void Clear() => _encoders.Clear();
 }

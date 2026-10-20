@@ -84,6 +84,38 @@ Console.WriteLine(decoded.Value5);
 
 This example knows the concrete type. For an unknown byte stream, use the protocol's parser to recognize framing and select the appropriate message type instead of guessing from the payload.
 
+## Lengths And Partial Input
+
+Treat lengths read from a stream as input to validate before allocating or resizing collections. The simple binary visitor checks a list's count against its existing `ListType.MinSize` and `MaxSize`, as well as the collection's `Int32` capacity, before changing the destination list. `ExampleMessage1` likewise enforces the bounds declared by its list fields. These checks preserve each schema's limits; there is no new global list limit.
+
+`BinSerialize` string prefixes describe the number of UTF-8 bytes, including when calculating the space needed for a multibyte string. Use an explicit byte limit when the surrounding protocol defines one:
+
+```csharp
+string text = BinSerialize.ReadString(stream, maxByteCount: 64 * 1024);
+
+string value = string.Empty;
+bool complete = BinSerialize.TryReadString(
+    ref reader,
+    ref value,
+    maxByteCount: 64 * 1024);
+```
+
+Here `reader` is a `SequenceReader<byte>`. An oversized declared length throws `InvalidDataException`. Incomplete sequence input returns `false`, leaves the reader and destination value unchanged, and does not rent a payload buffer. Complete contiguous input is decoded directly; segmented input is copied only after checking that the whole payload is available.
+
+The stream reader checks the remaining length of seekable streams before renting. For non-seekable streams, temporary input storage is bounded to 4 KiB and UTF-8 decoder state survives chunk boundaries. The resulting string still requires memory proportional to the text actually read. Existing stream and sequence overloads retain their `Int32.MaxValue` default limit; the string-returning span overload retains its existing requirement that encoded text be smaller than 128 KiB.
+
+The `Deserialize(ref ReadOnlySequence<byte>)` helper consumes one complete value from the caller's sequence and leaves subsequent data available. If there are too few bytes, it returns `false` without advancing the sequence. General mutable deserializers do not promise rollback after an exception. In particular, reusing a `SpanArrayType<T>` replaces its previous items after a valid count header; a truncated payload can leave the successfully decoded new items in the same collection.
+
+## Buffer And Object Ownership
+
+The integer and unmanaged-struct reservation helpers validate destination capacity before clearing the reserved bytes or returning a writable reference. An insufficient span is rejected without modifying its backing storage.
+
+`ExampleParser` owns its rented frame buffer, sized for the full 255-byte payload plus five framing bytes. Either disposal path returns it once, and subsequent `Push` or `Reset` calls fail with `ObjectDisposedException`. Dispose parsers only after their input producer has stopped using them; physical endpoints coordinate this ordering.
+
+`StreamBitWriter` disposes its owned stream even if flushing buffered bits fails. The `leaveOpen` option retains caller ownership through both synchronous and asynchronous disposal.
+
+`ProtocolTags.RemoveAt` and `Clear` release references to removed values, including values previously stored inline before the collection grew. Overflow capacity can remain available for reuse without retaining those removed payloads. The public enumerator contract is unchanged.
+
 ## Protocol-Specific Rules
 
 The common contracts do not define endianness, checksums, length encoding, optional fields, or packet headers. Those belong to each protocol's serializer, encoder, and parser. A buffer that is large enough does not make an otherwise invalid packet valid.
@@ -104,7 +136,12 @@ Array and nested-object properties can be mutable even when their containing mes
 
 - `src/Asv.IO/Serializable/ByteBased/ISpanSerializable.cs`.
 - `src/Asv.IO/Serializable/ByteBased/ISizedSpanSerializable.cs`.
+- `src/Asv.IO/Serializable/ByteBased/BinSerialize/BinSerialize.String.cs`.
+- `src/Asv.IO/Serializable/ByteBased/SpanSerializableMixin.cs` and `CommonSerializableTypes/SpanArrayType.cs`.
+- `src/Asv.IO/Serializable/BitBased/Writer/StreamBitWriter.cs`.
+- `src/Asv.IO/Visitable/Visitors/BinarySerializer/SimpleBinaryDeserialize.cs`.
 - `src/Asv.IO/Protocol/Message/IProtocolMessage.cs`.
+- `src/Asv.IO/Protocol/Tag/ProtocolTags.cs`.
 - `src/Asv.IO/Protocol/Encoder/IProtocolEncoder.cs` and `ProtocolEncodingMixin.cs`.
 - `src/Asv.IO/Streams/IDataStream.cs`.
 - `src/Asv.IO/Example/Protocol/ExampleMessageBase.cs` and `ExampleParser.cs`.

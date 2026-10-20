@@ -141,24 +141,27 @@ public partial class BinSerialize
     public static unsafe bool TryReadHalf(ref SequenceReader<byte> reader, ref Half value)
     {
         var size = sizeof(Half);
-        var buff = ArrayPool<byte>.Shared.Rent(size);
-        try
+        if (reader.Remaining < size)
         {
-            var span = new Span<byte>(buff, 0, size);
-            if (reader.TryCopyTo(span) == false)
-            {
-                return false;
-            }
+            return false;
+        }
 
+        if (reader.UnreadSpan.Length >= size)
+        {
+            var span = reader.UnreadSpan[..size];
+            ReadHalf(ref span, ref value);
             reader.Advance(size);
-            var roSpan = new ReadOnlySpan<byte>(buff, 0, size);
-            ReadHalf(ref roSpan, ref value);
-        }
-        finally
-        {
-            ArrayPool<byte>.Shared.Return(buff);
+            return true;
         }
 
+        Span<byte> buffer = stackalloc byte[size];
+        if (!reader.TryCopyTo(buffer))
+        {
+            return false;
+        }
+        ReadOnlySpan<byte> readOnly = buffer;
+        ReadHalf(ref readOnly, ref value);
+        reader.Advance(size);
         return true;
     }
 

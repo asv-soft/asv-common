@@ -8,8 +8,7 @@ namespace Asv.IO;
 
 public sealed class SerialProtocolEndpoint : ProtocolEndpoint
 {
-    private readonly SerialPort _serial;
-    private readonly bool _initializationComplete;
+    private readonly SerialPort? _serial;
 
     public SerialProtocolEndpoint(
         string id,
@@ -18,35 +17,37 @@ public sealed class SerialProtocolEndpoint : ProtocolEndpoint
         IProtocolContext context,
         IStatisticHandler statisticHandler
     )
-        : base(id, config, parsers, context, statisticHandler)
+        : base(id, config, parsers, context, statisticHandler, startImmediately: false)
     {
-        _serial = new SerialPort(
-            config.PortName,
-            config.BoundRate,
-            config.Parity,
-            config.DataBits,
-            config.StopBits
-        )
+        try
         {
-            WriteBufferSize = config.WriteBufferSize,
-            WriteTimeout = config.WriteTimeout,
-            ReadBufferSize = config.ReadBufferSize,
-            ReadTimeout = config.ReadTimeout,
-        };
-        _serial.Open();
-        _initializationComplete = true;
+            _serial = new SerialPort(
+                config.PortName,
+                config.BoundRate,
+                config.Parity,
+                config.DataBits,
+                config.StopBits
+            );
+            _serial.WriteBufferSize = config.WriteBufferSize;
+            _serial.WriteTimeout = config.WriteTimeout;
+            _serial.ReadBufferSize = config.ReadBufferSize;
+            _serial.ReadTimeout = config.ReadTimeout;
+            _serial.Open();
+            Start();
+        }
+        catch
+        {
+            Dispose();
+            throw;
+        }
     }
 
-    public SerialPort SerialPort => _serial;
+    public SerialPort SerialPort =>
+        _serial ?? throw new InvalidOperationException("Serial port is not initialized.");
 
     protected override int GetAvailableBytesToRead()
     {
-        if (!_initializationComplete)
-        {
-            // this can happen when the read loop starts from ProtocolEndpoint ctor
-            return 0;
-        }
-        if (!_serial.IsOpen)
+        if (_serial is not { IsOpen: true })
         {
             throw new InvalidOperationException("Serial port is not open.");
         }
@@ -55,7 +56,7 @@ public sealed class SerialProtocolEndpoint : ProtocolEndpoint
 
     protected override ValueTask<int> InternalRead(Memory<byte> memory, CancellationToken cancel)
     {
-        return _serial.BaseStream.ReadAsync(memory, cancel);
+        return SerialPort.BaseStream.ReadAsync(memory, cancel);
     }
 
     protected override async ValueTask<int> InternalWrite(
@@ -63,7 +64,7 @@ public sealed class SerialProtocolEndpoint : ProtocolEndpoint
         CancellationToken cancel
     )
     {
-        await _serial.BaseStream.WriteAsync(memory, cancel);
+        await SerialPort.BaseStream.WriteAsync(memory, cancel);
         return memory.Length;
     }
 
@@ -73,12 +74,13 @@ public sealed class SerialProtocolEndpoint : ProtocolEndpoint
     {
         if (disposing)
         {
-            if (_serial.IsOpen)
+            CancelPendingOperations();
+            if (_serial is { IsOpen: true })
             {
                 _serial.Close();
             }
 
-            _serial.Dispose();
+            _serial?.Dispose();
         }
 
         base.Dispose(disposing);
@@ -86,12 +88,13 @@ public sealed class SerialProtocolEndpoint : ProtocolEndpoint
 
     protected override async ValueTask DisposeAsyncCore()
     {
-        if (_serial.IsOpen)
+        CancelPendingOperations();
+        if (_serial is { IsOpen: true })
         {
             _serial.Close();
         }
 
-        _serial.Dispose();
+        _serial?.Dispose();
         await base.DisposeAsyncCore();
     }
     #endregion

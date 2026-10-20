@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Asv.Common;
 
@@ -35,5 +36,21 @@ public class TimeBasedLinkIndicatorBase : LinkIndicatorBase
     {
         base.InternalUpgrade();
         Interlocked.Exchange(ref _lastTime, _timeProvider.GetTimestamp());
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _timer.Dispose();
+        }
+
+        base.Dispose(disposing);
+    }
+
+    protected override async ValueTask DisposeAsyncCore()
+    {
+        await _timer.DisposeAsync().ConfigureAwait(false);
+        await base.DisposeAsyncCore().ConfigureAwait(false);
     }
 }

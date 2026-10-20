@@ -23,9 +23,19 @@ namespace Asv.IO
         {
             using var linkedCancel = CancellationTokenSource.CreateLinkedTokenSource(cancel);
             linkedCancel.CancelAfter(timeoutMs);
-            var tcs = new TaskCompletionSource<string>();
-            using var c1 = linkedCancel.Token.Register(tcs.SetCanceled);
-            using var subscribe = strm.OnReceive.Take(1).Subscribe(tcs.SetResult);
+            var tcs = new TaskCompletionSource<string>(
+                TaskCreationOptions.RunContinuationsAsynchronously
+            );
+            using var c1 = linkedCancel.Token.Register(() =>
+                tcs.TrySetCanceled(linkedCancel.Token)
+            );
+            using var subscribe = strm
+                .OnReceive.Take(1)
+                .Subscribe(
+                    value => tcs.TrySetResult(value),
+                    error => tcs.TrySetException(error),
+                    _ => tcs.TrySetCanceled()
+                );
             await strm.Send(request, linkedCancel.Token);
             return await tcs.Task.ConfigureAwait(false);
         }

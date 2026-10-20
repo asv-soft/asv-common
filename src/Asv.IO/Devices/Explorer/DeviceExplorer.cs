@@ -222,6 +222,7 @@ public class DeviceExplorer : AsyncDisposableOnce, IDeviceExplorer
                 device.Value.Dispose();
             }
             _devices.Clear();
+            _deviceList.Clear();
 
             _lock.Dispose();
         }
@@ -244,6 +245,7 @@ public class DeviceExplorer : AsyncDisposableOnce, IDeviceExplorer
             _lastSeen.Clear();
             devices = _devices.Select(kvp => kvp.Value).ToArray();
             _devices.Clear();
+            _deviceList.Clear();
         }
         finally
         {

@@ -19,6 +19,9 @@ public class VirtualPort : ProtocolConnection, IProtocolEndpoint
     private readonly ReactiveProperty<ProtocolConnectionException?> _lastError = new();
     private readonly ProtocolEncoderSet _encoders;
     private readonly SemaphoreSlim _sendGate = new(1, 1);
+    private readonly Lock _parserSync = new();
+    private int _reading;
+    private bool _parsersDisposed;
 
     public VirtualPort(
         string id,
@@ -48,14 +51,61 @@ public class VirtualPort : ProtocolConnection, IProtocolEndpoint
 
     private void ReadLoop(byte[] bytes)
     {
-        foreach (var b in bytes)
+        lock (_parserSync)
         {
+            if (IsDisposed)
+            {
+                return;
+            }
+            _reading++;
+            try
+            {
+                foreach (var b in bytes)
+                {
+                    if (IsDisposed)
+                    {
+                        break;
+                    }
+                    foreach (var parser in _parsers)
+                    {
+                        if (IsDisposed)
+                        {
+                            break;
+                        }
+                        if (parser.Push(b))
+                        {
+                            if (!IsDisposed)
+                            {
+                                _parsers.ForEach(x => x.Reset());
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                _reading--;
+                if (IsDisposed)
+                {
+                    DisposeParsers();
+                }
+            }
+        }
+    }
+
+    private void DisposeParsers()
+    {
+        lock (_parserSync)
+        {
+            if (_reading != 0 || _parsersDisposed)
+            {
+                return;
+            }
+            _parsersDisposed = true;
             foreach (var parser in _parsers)
             {
-                if (parser.Push(b))
-                {
-                    _parsers.ForEach(x => x.Reset());
-                }
+                parser.Dispose();
             }
         }
     }
@@ -82,7 +132,7 @@ public class VirtualPort : ProtocolConnection, IProtocolEndpoint
         }
 
         // Retain the token: DisposeCancel returns None after the port is disposed.
-        var disposeCancel = DisposeCancel;
+        var disposeCancel = ConnectionCancel;
         if (!await _sendGate.WaitAsync(0, cancel).ConfigureAwait(false))
         {
             if (IsDisposed)
@@ -97,6 +147,9 @@ public class VirtualPort : ProtocolConnection, IProtocolEndpoint
         }
         try
         {
+            // A semaphore grant can win the race with cancellation of its waiter.
+            cancel.ThrowIfCancellationRequested();
+            disposeCancel.ThrowIfCancellationRequested();
             if (IsDisposed || _lastError.CurrentValue != null || _sendFilter(message) == false)
             {
                 return;
@@ -136,7 +189,26 @@ public class VirtualPort : ProtocolConnection, IProtocolEndpoint
         }
         finally
         {
+            if (IsDisposed)
+            {
+                _encoders.Clear();
+            }
             _sendGate.Release();
+        }
+    }
+
+    private void ClearIdleEncoders()
+    {
+        if (_sendGate.Wait(0))
+        {
+            try
+            {
+                _encoders.Clear();
+            }
+            finally
+            {
+                _sendGate.Release();
+            }
         }
     }
 
@@ -146,20 +218,26 @@ public class VirtualPort : ProtocolConnection, IProtocolEndpoint
     {
         if (disposing)
         {
+            CancelPendingOperations();
             _tx.Dispose();
             _rx.Dispose();
             _lastError.Dispose();
             _dispose.Dispose();
+            DisposeParsers();
+            ClearIdleEncoders();
         }
         base.Dispose(disposing);
     }
 
     protected override async ValueTask DisposeAsyncCore()
     {
+        CancelPendingOperations();
         await CastAndDispose(_tx);
         await CastAndDispose(_rx);
         await CastAndDispose(_lastError);
         await CastAndDispose(_dispose);
+        DisposeParsers();
+        ClearIdleEncoders();
         await base.DisposeAsyncCore();
 
         return;

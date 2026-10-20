@@ -25,13 +25,14 @@ public partial class BinSerialize
     public static ref T ReserveStruct<T>(ref Span<byte> span)
         where T : unmanaged
     {
+        var size = Unsafe.SizeOf<T>();
+        ArgumentOutOfRangeException.ThrowIfLessThan(span.Length, size, nameof(span));
         ref var result = ref Unsafe.As<byte, T>(ref span[0]);
 
         // Init to default, as otherwise it would be whatever data was at that memory.
         result = default;
 
         // 'Advance' the span.
-        var size = Unsafe.SizeOf<T>();
         span = span[size..];
         return ref result;
     }

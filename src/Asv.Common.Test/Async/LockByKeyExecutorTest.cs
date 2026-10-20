@@ -1,12 +1,13 @@
 using System;
-using System.Diagnostics;
 using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Asv.Common.Test.Async;
 
 public class LockByKeyExecutorTest
 {
+    private static readonly TimeSpan FailureTimeout = TimeSpan.FromSeconds(5);
     private readonly ITestOutputHelper _testOutputHelper;
 
     public LockByKeyExecutorTest(ITestOutputHelper testOutputHelper)
@@ -52,107 +53,117 @@ public class LockByKeyExecutorTest
     }
 
     [Fact]
-    public void Check_For_Same_Key_Execution()
+    public async Task Check_For_Same_Key_Execution()
     {
         var locker = new LockByKeyExecutor<string>();
-        var threads = new Thread[2];
-        using var ready = new CountdownEvent(2);
-        using var start = new ManualResetEventSlim(false);
-        var activeCount = 0;
-        var maxActiveCount = 0;
+        var cancel = TestContext.Current.CancellationToken;
+        var firstEntered = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
+        var secondStarted = new TaskCompletionSource<Thread>(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
+        using var releaseFirst = new ManualResetEventSlim(false);
+        using var watchdog = new CancellationTokenSource(FailureTimeout, TimeProvider.System);
+        using var waitCancel = CancellationTokenSource.CreateLinkedTokenSource(
+            cancel,
+            watchdog.Token
+        );
         var executionCount = 0;
+        var firstExited = 0;
+        var secondEntered = 0;
 
-        threads[0] = new Thread(() =>
-        {
-            ready.Signal();
-            start.Wait();
+        var first = StartWorker(() =>
             locker.Execute(
                 "one",
                 () =>
                 {
-                    var active = Interlocked.Increment(ref activeCount);
                     Interlocked.Increment(ref executionCount);
-                    UpdateMax(ref maxActiveCount, active);
-                    Thread.Sleep(100);
-                    Interlocked.Decrement(ref activeCount);
+                    firstEntered.TrySetResult();
+                    Assert.True(releaseFirst.Wait(FailureTimeout, cancel));
+                    Volatile.Write(ref firstExited, 1);
                 }
-            );
-        });
-        threads[1] = new Thread(() =>
+            )
+        );
+        Task? second = null;
+        try
         {
-            ready.Signal();
-            start.Wait();
-            locker.Execute(
-                "one",
-                () =>
-                {
-                    var active = Interlocked.Increment(ref activeCount);
-                    Interlocked.Increment(ref executionCount);
-                    UpdateMax(ref maxActiveCount, active);
-                    Thread.Sleep(100);
-                    Interlocked.Decrement(ref activeCount);
-                }
-            );
-        });
+            await firstEntered.Task.WaitAsync(waitCancel.Token);
+            second = StartWorker(() =>
+            {
+                secondStarted.TrySetResult(Thread.CurrentThread);
+                locker.Execute(
+                    "one",
+                    () =>
+                    {
+                        Volatile.Write(ref secondEntered, 1);
+                        Assert.Equal(1, Volatile.Read(ref firstExited));
+                        Interlocked.Increment(ref executionCount);
+                    }
+                );
+            });
+            var secondThread = await secondStarted.Task.WaitAsync(waitCancel.Token);
 
-        threads[0].Start();
-        threads[1].Start();
-        ready.Wait(TestContext.Current.CancellationToken);
-        start.Set();
+            // Wait for actual lock contention, not for a guessed scheduling delay.
+            while (
+                (secondThread.ThreadState & ThreadState.WaitSleepJoin) == 0 && !second.IsCompleted
+            )
+            {
+                waitCancel.Token.ThrowIfCancellationRequested();
+                await Task.Yield();
+            }
 
-        foreach (var thread in threads)
+            Assert.Equal(0, Volatile.Read(ref secondEntered));
+            Assert.False(second.IsCompleted);
+        }
+        finally
         {
-            thread.Join();
+            releaseFirst.Set();
+            await (second is null ? first : Task.WhenAll(first, second)).WaitAsync(FailureTimeout);
         }
 
         Assert.Equal(2, executionCount);
-        Assert.Equal(1, maxActiveCount);
     }
 
     [Fact]
-    public void Check_For_Different_Key_Execution()
+    public async Task Check_For_Different_Key_Execution()
     {
         var locker = new LockByKeyExecutor<string>();
-        var threads = new Thread[2];
-        var firstStopWatch = new Stopwatch();
-        var secondStopWatch = new Stopwatch();
+        var cancel = TestContext.Current.CancellationToken;
+        using var bothEntered = new CountdownEvent(2);
+        using var release = new ManualResetEventSlim(false);
 
-        threads[0] = new Thread(() =>
+        void Execute(string key)
         {
-            locker.Execute("one", () => Thread.Sleep(1000));
-            firstStopWatch.Stop();
-        });
-        threads[1] = new Thread(() =>
-        {
-            locker.Execute("two", () => Thread.Sleep(1000));
-            secondStopWatch.Stop();
-        });
-
-        firstStopWatch.Start();
-        secondStopWatch.Start();
-        threads[0].Start();
-        threads[1].Start();
-
-        foreach (var thread in threads)
-        {
-            thread.Join();
+            locker.Execute(
+                key,
+                () =>
+                {
+                    bothEntered.Signal();
+                    Assert.True(release.Wait(FailureTimeout, cancel));
+                }
+            );
         }
 
-        Assert.True(
-            secondStopWatch.ElapsedMilliseconds - firstStopWatch.ElapsedMilliseconds < 1000
-        );
+        var first = StartWorker(() => Execute("one"));
+        var second = StartWorker(() => Execute("two"));
+        try
+        {
+            // Both callbacks must enter before either is allowed to finish.
+            Assert.True(bothEntered.Wait(FailureTimeout, cancel));
+        }
+        finally
+        {
+            release.Set();
+            await Task.WhenAll(first, second).WaitAsync(FailureTimeout);
+        }
     }
 
-    private static void UpdateMax(ref int target, int value)
-    {
-        int current;
-        do
-        {
-            current = Volatile.Read(ref target);
-            if (value <= current)
-            {
-                return;
-            }
-        } while (Interlocked.CompareExchange(ref target, value, current) != current);
-    }
+    private static Task StartWorker(Action action) =>
+        Task.Factory.StartNew(
+            action,
+            TestContext.Current.CancellationToken,
+            TaskCreationOptions.LongRunning,
+            TaskScheduler.Default
+        );
 }

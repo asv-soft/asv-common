@@ -15,6 +15,7 @@ namespace Asv.IO
         public void Deserialize(ref ReadOnlySpan<byte> buffer)
         {
             var count = BinSerialize.ReadPackedUnsignedInteger(ref buffer);
+            Items.Clear();
             for (var i = 0; i < count; i++)
             {
                 Items.Add(InternalReadItem(ref buffer));

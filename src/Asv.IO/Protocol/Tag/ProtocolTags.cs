@@ -169,7 +169,10 @@ public struct ProtocolTags
     /// <param name="tag">Key and value pair of the tag to add to the list.</param>
     private void AddToOverflow(KeyValuePair<string, object?> tag)
     {
-        Debug.Assert(_overflowTags is not null || _tagsCount == InlineTags.Length, "Expected: _overflowTags is not null || _tagsCount == InlineTags.Length");
+        Debug.Assert(
+            _overflowTags is not null || _tagsCount == InlineTags.Length,
+            "Expected: _overflowTags is not null || _tagsCount == InlineTags.Length"
+        );
 
         if (_overflowTags is null)
         {
@@ -177,6 +180,7 @@ public struct ProtocolTags
                 InlineTags.Length + OverflowAdditionalCapacity
             ];
             ((ReadOnlySpan<KeyValuePair<string, object?>>)_tags).CopyTo(_overflowTags);
+            _tags = default;
         }
         else if (_tagsCount == _overflowTags.Length)
         {
@@ -248,6 +252,7 @@ public struct ProtocolTags
                 InlineTags.Length + OverflowAdditionalCapacity
             ];
             ((ReadOnlySpan<KeyValuePair<string, object?>>)_tags).CopyTo(_overflowTags);
+            _tags = default;
         }
 
         if (_overflowTags is not null)
@@ -288,12 +293,21 @@ public struct ProtocolTags
             : _tags;
         tags.Slice(index + 1, _tagsCount - index - 1).CopyTo(tags.Slice(index));
         _tagsCount--;
+        tags[_tagsCount] = default;
     }
 
     /// <summary>
     /// Removes all elements from the <see cref="T:ProtocolTags" />.
     /// </summary>
-    public void Clear() => _tagsCount = 0;
+    public void Clear()
+    {
+        if (_overflowTags is not null)
+        {
+            _overflowTags.AsSpan(0, _tagsCount).Clear();
+        }
+        _tags = default;
+        _tagsCount = 0;
+    }
 
     /// <summary>
     /// Determines whether an tag is in the <see cref="T:ProtocolTags" />.
@@ -412,9 +426,10 @@ public struct ProtocolTags
 
     public void AddRange(IReadOnlyList<KeyValuePair<string, object?>> messageTags)
     {
-        foreach (var tag in messageTags)
+        var count = messageTags.Count;
+        for (var i = 0; i < count; i++)
         {
-            Add(tag);
+            Add(messageTags[i]);
         }
     }
 }

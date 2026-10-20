@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Threading;
 using System.Threading.Tasks;
 using Asv.Common;
@@ -16,6 +18,11 @@ public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolC
     private readonly Subject<Exception> _onRxError = new();
     private readonly Subject<Exception> _onTxError = new();
     private ProtocolTags _tags = [];
+    private ImmutableArray<Func<IProtocolMessage, CancellationToken, ValueTask>> _rxHandlers = [];
+    private readonly Lock _legacyRxSync = new();
+    private Queue<IProtocolMessage>? _legacyRxQueue;
+    private bool _legacyRxRunning;
+    private const int LegacyRxQueueCapacity = 100;
 
     protected ProtocolConnection(
         string id,
@@ -40,6 +47,7 @@ public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolC
         }
         Id = id;
         Context = context;
+        ConnectionCancel = DisposeCancel;
         foreach (var feature in Context.Features)
         {
             feature.Register(this);
@@ -55,6 +63,18 @@ public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolC
 
     protected IStatisticHandler StatisticHandler { get; }
     protected IProtocolContext Context { get; }
+    protected CancellationToken ConnectionCancel { get; }
+
+    protected void CancelPendingOperations() => CancelDisposeToken();
+
+    internal IDisposable SubscribeRx(Func<IProtocolMessage, CancellationToken, ValueTask> handler)
+    {
+        ImmutableInterlocked.Update(ref _rxHandlers, handlers => handlers.Add(handler));
+        return Disposable.Create(() =>
+            ImmutableInterlocked.Update(ref _rxHandlers, handlers => handlers.Remove(handler))
+        );
+    }
+
     public abstract ValueTask Send(IProtocolMessage message, CancellationToken cancel = default);
 
     public string? PrintMessage(
@@ -66,7 +86,12 @@ public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolC
     {
         foreach (var item in Context.Features)
         {
-            var newMsg = await item.ProcessTx(message, this, DisposeCancel);
+            ConnectionCancel.ThrowIfCancellationRequested();
+            var newMsg = await AwaitFeature(
+                    item.ProcessTx(message, this, ConnectionCancel),
+                    ConnectionCancel
+                )
+                .ConfigureAwait(false);
             if (newMsg == null)
             {
                 return null;
@@ -77,13 +102,95 @@ public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolC
         return message;
     }
 
-    protected async void InternalPublishRxMessage(IProtocolMessage message)
+    // Compatibility entry point for synchronous publishers. Built-in async producers
+    // await InternalPublishRxMessageAsync so congestion propagates back to their reader.
+    protected void InternalPublishRxMessage(IProtocolMessage message)
+    {
+        lock (_legacyRxSync)
+        {
+            if (IsDisposed)
+            {
+                return;
+            }
+            if (_legacyRxRunning)
+            {
+                _legacyRxQueue ??= new Queue<IProtocolMessage>();
+                if (_legacyRxQueue.Count < LegacyRxQueueCapacity)
+                {
+                    _legacyRxQueue.Enqueue(message);
+                    return;
+                }
+                StatisticHandler.IncrementDropRxMessage();
+                return;
+            }
+            _legacyRxRunning = true;
+        }
+        DrainLegacyRx(message);
+    }
+
+    private void DrainLegacyRx(IProtocolMessage message)
+    {
+        while (true)
+        {
+            var pending = InternalPublishRxMessageAsync(message, ConnectionCancel);
+            if (!pending.IsCompletedSuccessfully)
+            {
+                _ = ContinueLegacyRxAsync(pending);
+                return;
+            }
+            pending.GetAwaiter().GetResult();
+            lock (_legacyRxSync)
+            {
+                if (
+                    IsDisposed
+                    || _legacyRxQueue == null
+                    || !_legacyRxQueue.TryDequeue(out message!)
+                )
+                {
+                    _legacyRxQueue?.Clear();
+                    _legacyRxRunning = false;
+                    return;
+                }
+            }
+        }
+    }
+
+    private async Task ContinueLegacyRxAsync(ValueTask pending)
+    {
+        await pending.ConfigureAwait(false);
+        IProtocolMessage message;
+        lock (_legacyRxSync)
+        {
+            if (IsDisposed || _legacyRxQueue == null || !_legacyRxQueue.TryDequeue(out message!))
+            {
+                _legacyRxQueue?.Clear();
+                _legacyRxRunning = false;
+                return;
+            }
+        }
+        DrainLegacyRx(message);
+    }
+
+    protected internal async ValueTask InternalPublishRxMessageAsync(
+        IProtocolMessage message,
+        CancellationToken cancel = default
+    )
     {
         try
         {
+            if (IsDisposed)
+            {
+                return;
+            }
+            if (!cancel.CanBeCanceled)
+            {
+                cancel = ConnectionCancel;
+            }
             foreach (var item in Context.Features)
             {
-                var newMsg = await item.ProcessRx(message, this, DisposeCancel);
+                cancel.ThrowIfCancellationRequested();
+                var newMsg = await AwaitFeature(item.ProcessRx(message, this, cancel), cancel)
+                    .ConfigureAwait(false);
                 if (newMsg == null)
                 {
                     return;
@@ -91,8 +198,16 @@ public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolC
 
                 message = newMsg;
             }
+            cancel.ThrowIfCancellationRequested();
+            ConnectionCancel.ThrowIfCancellationRequested();
             _onRxMessage.OnNext(message);
+            foreach (var handler in _rxHandlers)
+            {
+                await AwaitHandler(handler(message, cancel), cancel).ConfigureAwait(false);
+            }
         }
+        catch (OperationCanceledException)
+            when (cancel.IsCancellationRequested || ConnectionCancel.IsCancellationRequested) { }
         catch (ProtocolConnectionException ex)
         {
             InternalPublishRxError(ex);
@@ -107,6 +222,37 @@ public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolC
                 )
             );
         }
+    }
+
+    private ValueTask<IProtocolMessage?> AwaitFeature(
+        ValueTask<IProtocolMessage?> pending,
+        CancellationToken cancel
+    )
+    {
+        if (pending.IsCompletedSuccessfully)
+        {
+            return pending;
+        }
+        var task = pending.AsTask().WaitAsync(ConnectionCancel);
+        if (cancel != ConnectionCancel)
+        {
+            task = task.WaitAsync(cancel);
+        }
+        return new ValueTask<IProtocolMessage?>(task);
+    }
+
+    private ValueTask AwaitHandler(ValueTask pending, CancellationToken cancel)
+    {
+        if (pending.IsCompletedSuccessfully)
+        {
+            return pending;
+        }
+        var task = pending.AsTask().WaitAsync(ConnectionCancel);
+        if (cancel != ConnectionCancel)
+        {
+            task = task.WaitAsync(cancel);
+        }
+        return new ValueTask(task);
     }
 
     protected void InternalPublishRxError(Exception ex)
@@ -147,6 +293,8 @@ public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolC
     {
         if (disposing)
         {
+            CancelPendingOperations();
+            ClearReceiveHandlers();
             _logger.ZLogTrace($"{nameof(Dispose)} connection {Id}");
             foreach (var feature in Context.Features)
             {
@@ -162,6 +310,8 @@ public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolC
 
     protected override async ValueTask DisposeAsyncCore()
     {
+        CancelPendingOperations();
+        ClearReceiveHandlers();
         _logger.ZLogTrace($"{nameof(DisposeAsyncCore)} port {this}");
         foreach (var feature in Context.Features)
         {
@@ -186,6 +336,15 @@ public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolC
                 resource.Dispose();
             }
         }
+    }
+
+    private void ClearReceiveHandlers()
+    {
+        lock (_legacyRxSync)
+        {
+            _legacyRxQueue?.Clear();
+        }
+        _rxHandlers = [];
     }
 
     #endregion

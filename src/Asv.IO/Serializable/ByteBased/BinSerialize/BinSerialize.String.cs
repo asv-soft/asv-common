@@ -2,6 +2,7 @@ using System;
 using System.Buffers;
 using System.Diagnostics;
 using System.IO;
+using System.Text;
 
 namespace Asv.IO;
 
@@ -11,8 +12,7 @@ public static partial class BinSerialize
     /// Check how many bytes it will take to write the given string value.
     /// </summary>
     /// <remarks>
-    /// Size will be the length of the string as a 'packed unsigned integer' + the amount of
-    /// bytes when the characters are utf-8 encoded.
+    /// Size is the UTF-8 byte count as a 'packed unsigned integer' plus the encoded bytes.
     /// </remarks>
     /// <param name="val">Value to get the size for.</param>
     /// <returns>Number of bytes it will take.</returns>
@@ -36,8 +36,7 @@ public static partial class BinSerialize
     /// Check how many bytes it will take to write the given string.
     /// </summary>
     /// <remarks>
-    /// Size will be the length of the span as a 'packed unsigned integer' + the amount of
-    /// bytes when the characters are utf-8 encoded.
+    /// Size is the UTF-8 byte count as a 'packed unsigned integer' plus the encoded bytes.
     /// </remarks>
     /// <param name="val">Value to get the size for.</param>
     /// <returns>Number of bytes it will take.</returns>
@@ -57,16 +56,15 @@ public static partial class BinSerialize
     /// Make sure the data behind the pointer is pinned before calling this.
     /// </summary>
     /// <remarks>
-    /// Size will be the charCount as a 'packed unsigned integer' + the amount of
-    /// bytes when the characters are utf-8 encoded.
+    /// Size is the UTF-8 byte count as a 'packed unsigned integer' plus the encoded bytes.
     /// </remarks>
     /// <param name="charPointer">Pointer to the first character.</param>
     /// <param name="charCount">How many characters are in the string.</param>
     /// <returns>Number of bytes it will take.</returns>
     public static unsafe int GetSizeForString(char* charPointer, int charCount)
     {
-        var headerSize = GetSizeForPackedUnsignedInteger((uint)charCount);
         var charsSize = Uft8.GetByteCount(charPointer, charCount);
+        var headerSize = GetSizeForPackedUnsignedInteger((uint)charsSize);
         return headerSize + charsSize;
     }
 
@@ -248,27 +246,75 @@ public static partial class BinSerialize
         span.Advance(size);
     }
 
-    public static string ReadString(Stream stream)
+    public static string ReadString(Stream stream) => ReadString(stream, int.MaxValue);
+
+    /// <summary>Reads a UTF-8 string whose encoded length does not exceed the given limit.</summary>
+    public static string ReadString(Stream stream, int maxByteCount)
     {
-        int byteCount = (int)ReadPackedUnsignedInteger(stream);
+        ArgumentNullException.ThrowIfNull(stream);
+        ArgumentOutOfRangeException.ThrowIfNegative(maxByteCount);
+        var byteCount = ValidateStringByteCount(ReadPackedUnsignedInteger(stream), maxByteCount);
         if (byteCount == 0)
         {
             return string.Empty;
         }
+        if (stream.CanSeek && stream.Length - stream.Position < byteCount)
+        {
+            throw new EndOfStreamException("The stream does not contain the complete string.");
+        }
 
-        var bytes = ArrayPool<byte>.Shared.Rent(byteCount);
-        var chars = ArrayPool<char>.Shared.Rent(Uft8.GetMaxCharCount(byteCount));
+        // Bound temporary storage even when a non-seekable stream advertises a large string.
+        const int chunkSize = 4096;
+        var bytes = ArrayPool<byte>.Shared.Rent(Math.Min(byteCount, chunkSize));
         try
         {
-            stream.ReadExactly(bytes, 0, byteCount);
-            int charsWritten = Uft8.GetChars(bytes, 0, byteCount, chars, 0);
-            return new string(chars, 0, charsWritten);
+            if (byteCount <= chunkSize)
+            {
+                stream.ReadExactly(bytes, 0, byteCount);
+                return Uft8.GetString(bytes, 0, byteCount);
+            }
+
+            var chars = ArrayPool<char>.Shared.Rent(Uft8.GetMaxCharCount(chunkSize));
+            try
+            {
+                var decoder = Uft8.GetDecoder();
+                var result = new StringBuilder(chunkSize);
+                var remaining = byteCount;
+                while (remaining > 0)
+                {
+                    var read = stream.Read(bytes, 0, Math.Min(remaining, chunkSize));
+                    if (read == 0)
+                    {
+                        throw new EndOfStreamException(
+                            "The stream does not contain the complete string."
+                        );
+                    }
+                    remaining -= read;
+                    var written = decoder.GetChars(bytes, 0, read, chars, 0, remaining == 0);
+                    result.Append(chars, 0, written);
+                }
+                return result.ToString();
+            }
+            finally
+            {
+                ArrayPool<char>.Shared.Return(chars);
+            }
         }
         finally
         {
             ArrayPool<byte>.Shared.Return(bytes);
-            ArrayPool<char>.Shared.Return(chars);
         }
+    }
+
+    private static int ValidateStringByteCount(uint size, int maxByteCount)
+    {
+        if (size > maxByteCount)
+        {
+            throw new InvalidDataException(
+                $"String length {size} exceeds the allowed {maxByteCount} bytes."
+            );
+        }
+        return (int)size;
     }
 
     /// <summary>
@@ -283,7 +329,7 @@ public static partial class BinSerialize
     public static string ReadString(ref ReadOnlySpan<byte> span)
     {
         // Read how many bytes will follow.
-        var byteCount = (int)ReadPackedUnsignedInteger(ref span);
+        var byteCount = ValidateStringByteCount(ReadPackedUnsignedInteger(ref span), int.MaxValue);
 
         if (byteCount == 0)
         {
@@ -296,49 +342,18 @@ public static partial class BinSerialize
             throw new ArgumentOutOfRangeException(nameof(span), "Given span is incomplete");
         }
 
-        // Sanity check the size before allocating space on the stack.
+        // Preserve the size limit of the existing span overload.
         if (byteCount >= MaxStackStringBytes)
         {
             throw new ArgumentException(
-                "Input contains a string with too many bytes to fit on the stack",
+                "Input contains a string exceeding the supported byte length",
                 nameof(span)
             );
         }
 
-        // Decode on the stack to avoid having to allocate a temporary buffer on the heap.
-        var maxCharCount = Uft8.GetMaxCharCount(byteCount);
-
-        // var charBuffer = stackalloc char[maxCharCount];
-        var charBuffer = ArrayPool<char>.Shared.Rent(maxCharCount); // faster then  stackalloc char[maxCharCount]; (https://stackoverflow.com/questions/55229518/why-allocation-on-arraypool-is-faster-then-allocation-on-stack)
-
-        try
-        {
-            unsafe
-            {
-                // Read chars as utf8.
-                int actualCharCount;
-                fixed (byte* bytePointer = span)
-                fixed (char* charPointer = charBuffer)
-                {
-                    actualCharCount = Uft8.GetChars(
-                        bytePointer,
-                        byteCount,
-                        charPointer,
-                        maxCharCount
-                    );
-                }
-
-                // 'Advance' the span.
-                span = span[byteCount..];
-
-                // Allocate the string.
-                return new string(charBuffer, startIndex: 0, length: actualCharCount);
-            }
-        }
-        finally
-        {
-            ArrayPool<char>.Shared.Return(charBuffer);
-        }
+        var value = Uft8.GetString(span[..byteCount]);
+        span = span[byteCount..];
+        return value;
     }
 
     public static string ReadString(ref ReadOnlyMemory<byte> span)
@@ -361,7 +376,10 @@ public static partial class BinSerialize
         unsafe
         {
             // Read amount of bytes will follow.
-            var byteCount = (int)ReadPackedUnsignedInteger(ref span);
+            var byteCount = ValidateStringByteCount(
+                ReadPackedUnsignedInteger(ref span),
+                int.MaxValue
+            );
 
             // Check if input span contains the entire string.
             if (span.Length < byteCount)
@@ -387,30 +405,52 @@ public static partial class BinSerialize
         }
     }
 
-    public static bool TryReadString(ref SequenceReader<byte> reader, ref string value)
+    public static bool TryReadString(ref SequenceReader<byte> reader, ref string value) =>
+        TryReadString(ref reader, ref value, int.MaxValue);
+
+    /// <summary>Reads a complete UTF-8 string without consuming partial input.</summary>
+    public static bool TryReadString(
+        ref SequenceReader<byte> reader,
+        ref string value,
+        int maxByteCount
+    )
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(maxByteCount);
+        var candidate = reader;
         uint size = 0;
-        if (TryReadPackedUnsignedInteger(ref reader, ref size, out var consumed) == false)
+        if (!TryReadPackedUnsignedInteger(ref candidate, ref size))
         {
             return false;
         }
-        var buff = ArrayPool<byte>.Shared.Rent((int)size);
-        try
+        var byteCount = ValidateStringByteCount(size, maxByteCount);
+        if (candidate.Remaining < byteCount)
         {
-            var span = new Span<byte>(buff, 0, (int)size);
-            if (reader.TryCopyTo(span) == false)
-            {
-                reader.Rewind(consumed);
-                return false;
-            }
-            reader.Advance(size);
-            value = Uft8.GetString(span);
-        }
-        finally
-        {
-            ArrayPool<byte>.Shared.Return(buff);
+            return false;
         }
 
+        if (candidate.UnreadSpan.Length >= byteCount)
+        {
+            value = Uft8.GetString(candidate.UnreadSpan[..byteCount]);
+        }
+        else
+        {
+            var buffer = ArrayPool<byte>.Shared.Rent(byteCount);
+            try
+            {
+                var span = buffer.AsSpan(0, byteCount);
+                if (!candidate.TryCopyTo(span))
+                {
+                    return false;
+                }
+                value = Uft8.GetString(span);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buffer);
+            }
+        }
+        candidate.Advance(byteCount);
+        reader = candidate;
         return true;
     }
 }

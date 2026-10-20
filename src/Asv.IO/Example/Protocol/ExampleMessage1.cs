@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Asv.Common;
 
@@ -181,16 +182,29 @@ public class ExampleMessage1 : ExampleMessageBase
             t.Deserialize(ref buffer);
         }
         _value7.Deserialize(ref buffer);
-        _value8.Resize((int)BinSerialize.ReadUInt(ref buffer));
+        _value8.Resize(ReadListSize(ref buffer, Value8Field));
         foreach (var t in _value8)
         {
             t.Deserialize(ref buffer);
         }
-        _value9.Resize((int)BinSerialize.ReadUInt(ref buffer));
+        _value9.Resize(ReadListSize(ref buffer, Value9Field));
         for (var i = 0; i < _value9.Count; i++)
         {
             _value9[i] = (char)BinSerialize.ReadByte(ref buffer);
         }
+    }
+
+    private static int ReadListSize(ref ReadOnlySpan<byte> buffer, Field field)
+    {
+        var size = BinSerialize.ReadUInt(ref buffer);
+        var type = (ListType)field.DataType;
+        if (size > int.MaxValue || size < type.MinSize || size > type.MaxSize)
+        {
+            throw new InvalidDataException(
+                $"List '{field.Name}' has {size} elements; expected {type.MinSize}..{type.MaxSize}."
+            );
+        }
+        return (int)size;
     }
 
     protected override void InternalSerialize(ref Span<byte> buffer)

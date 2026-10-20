@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using System.Threading.Tasks;
 using Asv.Common;
 using R3;
 
@@ -20,6 +21,7 @@ public class ExampleDevice : ClientDevice<ExampleDeviceId>
     private readonly ExampleDeviceId _id;
     private readonly byte _selfId;
     private readonly TimeBasedLinkIndicator _link;
+    private readonly IDisposable _linkSubscription;
     public const string DeviceClass = "ExampleDevice";
 
     public ExampleDevice(
@@ -37,10 +39,28 @@ public class ExampleDevice : ClientDevice<ExampleDeviceId>
             config.DowngradeErrorCount,
             context.TimeProvider
         );
-        context.Connection.OnRxMessage.Subscribe(x => _link.Upgrade());
+        _linkSubscription = context.Connection.OnRxMessage.Subscribe(_ => _link.Upgrade());
     }
 
     public override ILinkIndicator Link => _link;
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _linkSubscription.Dispose();
+            _link.Dispose();
+        }
+
+        base.Dispose(disposing);
+    }
+
+    protected override async ValueTask DisposeAsyncCore()
+    {
+        _linkSubscription.Dispose();
+        await _link.DisposeAsync().ConfigureAwait(false);
+        await base.DisposeAsyncCore().ConfigureAwait(false);
+    }
 
     protected override async IAsyncEnumerable<IMicroserviceClient> InternalCreateMicroservices(
         [EnumeratorCancellation] CancellationToken cancel

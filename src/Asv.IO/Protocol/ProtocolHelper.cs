@@ -117,7 +117,9 @@ public static partial class ProtocolHelper
         where TMessage : IProtocolMessage<TMessageId>, new()
     {
         cancel.ThrowIfCancellationRequested();
-        var tcs = new TaskCompletionSource<TResult>();
+        var tcs = new TaskCompletionSource<TResult>(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
         await using var c1 = cancel.Register(() => tcs.TrySetCanceled());
         using var c2 = connection
             .RxFilterByMsgId<TMessage, TMessageId>()
@@ -125,7 +127,7 @@ public static partial class ProtocolHelper
                 filterAndGetResult,
                 (res, f) =>
                 {
-                    if (filterAndGetResult(res, out var result))
+                    if (f(res, out var result))
                     {
                         tcs.TrySetResult(result);
                     }
@@ -146,9 +148,14 @@ public static partial class ProtocolHelper
         where TMessage : IProtocolMessage<TMessageId>, new()
     {
         timeProvider ??= TimeProvider.System;
-        using var linkedCancel = CancellationTokenSource.CreateLinkedTokenSource(cancel);
-        linkedCancel.CancelAfter(timeout, timeProvider);
-        return await connection.SendAndWaitAnswer(request, filterAndGetResult, cancel);
+        using var timeoutCancel = new CancellationTokenSource(timeout, timeProvider);
+        using var linkedCancel = CancellationTokenSource.CreateLinkedTokenSource(
+            cancel,
+            timeoutCancel.Token
+        );
+        return await connection
+            .SendAndWaitAnswer(request, filterAndGetResult, linkedCancel.Token)
+            .ConfigureAwait(false);
     }
 
     public static async Task<TResult> SendAndWaitAnswer<
@@ -171,8 +178,7 @@ public static partial class ProtocolHelper
         where TRequestMessage : IProtocolMessage<TMessageId>
     {
         cancel.ThrowIfCancellationRequested();
-        TResult? result = default;
-        byte currentAttempt = 0;
+        var currentAttempt = 0;
         progress ??= new Progress<int>();
         while (IsRetryCondition())
         {
@@ -185,26 +191,19 @@ public static partial class ProtocolHelper
             ++currentAttempt;
             try
             {
-                result = await connection
+                return await connection
                     .SendAndWaitAnswer(request, filterAndGetResult, timeout, cancel, timeProvider)
                     .ConfigureAwait(false);
-                break;
             }
             catch (OperationCanceledException)
             {
+                cancel.ThrowIfCancellationRequested();
                 if (IsRetryCondition())
                 {
                     continue;
                 }
-
-                cancel.ThrowIfCancellationRequested();
             }
         }
-        if (result != null)
-        {
-            return result;
-        }
-
         throw new TimeoutException(
             $"Timeout to execute '{request}' with {attemptCount} x {timeout}'"
         );

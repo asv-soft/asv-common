@@ -2,12 +2,10 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
-using Asv.Common;
 using Microsoft.Extensions.Logging;
 using R3;
 using ZLogger;
@@ -25,6 +23,16 @@ public abstract class ProtocolEndpoint : ProtocolConnection, IProtocolEndpoint
     private readonly ReactiveProperty<ProtocolConnectionException?> _lastError = new(null);
     private readonly ImmutableHashSet<string> _parserAvailable;
     private readonly ProtocolEncoderSet _encoders;
+    private readonly Lock _lifecycleSync = new();
+    private readonly Lock _pendingRxSync = new();
+    private readonly TaskCompletionSource _stopped = new(
+        TaskCreationOptions.RunContinuationsAsynchronously
+    );
+    private IProtocolMessage? _pendingRxMessage;
+    private Task _loops = Task.CompletedTask;
+    private bool _started;
+    private bool _stopping;
+    private int _failed;
 
     protected ProtocolEndpoint(
         string id,
@@ -32,6 +40,17 @@ public abstract class ProtocolEndpoint : ProtocolConnection, IProtocolEndpoint
         ImmutableArray<IProtocolParser> parsers,
         IProtocolContext context,
         IStatisticHandler? statistic = null
+    )
+        : this(id, config, parsers, context, statistic, true) { }
+
+    /// <summary>Allows transports to finish initialization before starting their readers.</summary>
+    protected ProtocolEndpoint(
+        string id,
+        ProtocolPortConfig config,
+        ImmutableArray<IProtocolParser> parsers,
+        IProtocolContext context,
+        IStatisticHandler? statistic,
+        bool startImmediately
     )
         : base(id, context, statistic)
     {
@@ -44,11 +63,12 @@ public abstract class ProtocolEndpoint : ProtocolConnection, IProtocolEndpoint
         _parserAvailable = _parsers.Select(x => x.Info.Id).ToImmutableHashSet();
         _txChannel =
             config.TxQueueSize <= 0
-                ? Channel.CreateUnbounded<IProtocolMessage>()
+                ? Channel.CreateUnbounded<IProtocolMessage>(
+                    new UnboundedChannelOptions { SingleReader = true }
+                )
                 : Channel.CreateBounded<IProtocolMessage>(
                     new BoundedChannelOptions(config.TxQueueSize)
                     {
-                        AllowSynchronousContinuations = false,
                         SingleReader = true,
                         SingleWriter = false,
                         FullMode = config.DropMessageWhenFullTxQueue
@@ -57,304 +77,410 @@ public abstract class ProtocolEndpoint : ProtocolConnection, IProtocolEndpoint
                     },
                     TxMessageDropped
                 );
-
         _rxChannel =
             config.RxQueueSize <= 0
-                ? Channel.CreateUnbounded<IProtocolMessage>()
+                ? Channel.CreateUnbounded<IProtocolMessage>(
+                    new UnboundedChannelOptions { SingleReader = true }
+                )
                 : Channel.CreateBounded<IProtocolMessage>(
                     new BoundedChannelOptions(config.RxQueueSize)
                     {
-                        AllowSynchronousContinuations = false,
                         SingleReader = true,
-                        SingleWriter = true,
+                        SingleWriter = false,
                         FullMode = config.DropMessageWhenFullRxQueue
                             ? BoundedChannelFullMode.DropOldest
                             : BoundedChannelFullMode.Wait,
                     },
                     RxMessageDropped
                 );
-        var disposableBuilder = Disposable.CreateBuilder();
+        var subscriptions = Disposable.CreateBuilder();
         foreach (var parser in _parsers)
         {
-            parser
-                .OnMessage.SubscribeAwait((x, cancel) => _rxChannel.Writer.WriteAsync(x, cancel))
-                .AddTo(ref disposableBuilder);
+            parser.OnMessage.Subscribe(OnParsedMessage).AddTo(ref subscriptions);
         }
-        _parserSub = disposableBuilder.Build();
-        Task.Factory.StartNew(
-            ReadLoop,
-            TaskCreationOptions.LongRunning | TaskCreationOptions.DenyChildAttach,
-            DisposeCancel
-        );
-        Task.Factory.StartNew(
-            WriteLoop,
-            TaskCreationOptions.LongRunning | TaskCreationOptions.DenyChildAttach,
-            DisposeCancel
-        );
-        Task.Factory.StartNew(
-            PublishRxLoop,
-            TaskCreationOptions.LongRunning | TaskCreationOptions.DenyChildAttach,
-            DisposeCancel
+        _parserSub = subscriptions.Build();
+        if (startImmediately)
+        {
+            Start();
+        }
+    }
+
+    protected void Start()
+    {
+        lock (_lifecycleSync)
+        {
+            if (_started || IsDisposed || _stopping)
+            {
+                return;
+            }
+            _started = true;
+            _loops = Task.WhenAll(
+                Task.Run(ReadLoopAsync),
+                Task.Run(WriteLoopAsync),
+                Task.Run(PublishRxLoopAsync)
+            );
+        }
+    }
+
+    public IEnumerable<IProtocolParser> Parsers => _parsers;
+    public ReadOnlyReactiveProperty<ProtocolConnectionException?> LastError => _lastError;
+    internal Task Shutdown => _stopped.Task;
+
+    private void OnParsedMessage(IProtocolMessage message)
+    {
+        if (
+            IsDisposed
+            || ConnectionCancel.IsCancellationRequested
+            || _rxChannel.Writer.TryWrite(message)
+        )
+        {
+            return;
+        }
+        lock (_pendingRxSync)
+        {
+            if (_pendingRxMessage == null)
+            {
+                // Push is synchronous. The read loop awaits this one pending message
+                // before supplying another byte, so no reactive backlog is created.
+                _pendingRxMessage = message;
+                return;
+            }
+        }
+        Fail(
+            new InvalidOperationException(
+                "The parser emitted messages faster than its owning read loop can accept them."
+            ),
+            "receive"
         );
     }
 
-    private void RxMessageDropped(IProtocolMessage droppedMessage)
+    private ValueTask FlushParsedMessageAsync()
+    {
+        IProtocolMessage? message;
+        lock (_pendingRxSync)
+        {
+            message = _pendingRxMessage;
+            _pendingRxMessage = null;
+        }
+        return message == null
+            ? ValueTask.CompletedTask
+            : _rxChannel.Writer.WriteAsync(message, ConnectionCancel);
+    }
+
+    private void RxMessageDropped(IProtocolMessage message)
     {
         StatisticHandler.IncrementDropRxMessage();
         _logger.ZLogWarning(
-            $"Dropped message (rx queue is full) {droppedMessage.Protocol.Id} {droppedMessage.Name} "
+            $"Dropped message (rx queue is full) {message.Protocol.Id} {message.Name}"
         );
     }
 
-    private void TxMessageDropped(IProtocolMessage droppedMessage)
+    private void TxMessageDropped(IProtocolMessage message)
     {
         StatisticHandler.IncrementDropTxMessage();
         _logger.ZLogWarning(
-            $"Dropped message (tx queue is full) {droppedMessage.Protocol.Id} {droppedMessage.Name} "
+            $"Dropped message (tx queue is full) {message.Protocol.Id} {message.Name}"
         );
     }
 
-    private async void PublishRxLoop(object? obj)
+    private async Task PublishRxLoopAsync()
     {
         try
         {
-            while (IsDisposed == false)
+            while (await _rxChannel.Reader.WaitToReadAsync(ConnectionCancel).ConfigureAwait(false))
             {
-                try
+                while (_rxChannel.Reader.TryRead(out var message))
                 {
-                    var message = await _rxChannel.Reader.ReadAsync(DisposeCancel);
+                    ConnectionCancel.ThrowIfCancellationRequested();
                     StatisticHandler.IncrementRxMessage();
-                    InternalPublishRxMessage(message);
-                }
-                catch (ProtocolConnectionException e)
-                {
-                    _logger.ZLogError(e, $"Error in '{nameof(PublishRxLoop)}':{e.Message}");
-                    StatisticHandler.IncrementRxError();
-                    InternalPublishRxError(e);
-                }
-                catch (Exception e)
-                {
-                    _logger.ZLogError(e, $"Error in '{nameof(PublishRxLoop)}':{e.Message}");
-                    StatisticHandler.IncrementRxError();
-                    InternalPublishRxError(
-                        new ProtocolConnectionException(
-                            this,
-                            $"Error in '{nameof(PublishRxLoop)}': {e.Message}",
-                            e
-                        )
-                    );
+                    await InternalPublishRxMessageAsync(message, ConnectionCancel)
+                        .ConfigureAwait(false);
                 }
             }
         }
-        catch (Exception e)
+        catch (OperationCanceledException) when (ConnectionCancel.IsCancellationRequested) { }
+        catch (ChannelClosedException) when (ConnectionCancel.IsCancellationRequested) { }
+        catch (Exception ex)
         {
-            _logger.ZLogError(e, $"Error in publish loop: {e.Message}");
-            StatisticHandler.IncrementRxError();
-            InternalPublishRxError(
-                new ProtocolConnectionException(
-                    this,
-                    $"Error in '{nameof(PublishRxLoop)}': {e.Message}",
-                    e
-                )
-            );
-            Debug.Assert(false, "Unexpected protocol or transport failure.");
-            Debugger.Break();
+            Fail(ex, "receive publication");
         }
     }
 
-    private async void ReadLoop(object? o)
+    private async Task ReadLoopAsync()
     {
         try
         {
-            while (IsDisposed == false)
+            while (!ConnectionCancel.IsCancellationRequested)
             {
                 var bufferSize = GetAvailableBytesToRead();
                 if (bufferSize == 0)
                 {
-                    // if no bytes received - wait some time
-                    await Task.Delay(_readEmptyLoopDelay, Context.TimeProvider, DisposeCancel);
+                    await Task.Delay(_readEmptyLoopDelay, Context.TimeProvider, ConnectionCancel)
+                        .ConfigureAwait(false);
                     continue;
                 }
-
-                using var mem = MemoryPool<byte>.Shared.Rent(bufferSize);
-                var readBytes = await InternalRead(mem.Memory, DisposeCancel);
-                StatisticHandler.AddRxBytes(readBytes);
-
-                for (var i = 0; i < readBytes; i++)
+                var buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
+                try
                 {
-                    var b = mem.Memory.Span[i];
-                    for (var j = 0; j < _parsers.Length; j++)
+                    var readBytes = await InternalRead(
+                            buffer.AsMemory(0, bufferSize),
+                            ConnectionCancel
+                        )
+                        .ConfigureAwait(false);
+                    if ((uint)readBytes > (uint)bufferSize)
                     {
-                        var parser = _parsers[j];
-                        if (!parser.Push(b))
-                        {
-                            continue;
-                        }
-
-                        _parsers.ForEach(x => x.Reset());
-                        break;
+                        throw new InvalidOperationException(
+                            "The transport returned an invalid read count."
+                        );
                     }
+                    StatisticHandler.AddRxBytes(readBytes);
+                    for (var i = 0; i < readBytes; i++)
+                    {
+                        ConnectionCancel.ThrowIfCancellationRequested();
+                        for (var j = 0; j < _parsers.Length; j++)
+                        {
+                            var parsed = _parsers[j].Push(buffer[i]);
+                            if (Volatile.Read(ref _pendingRxMessage) != null)
+                            {
+                                await FlushParsedMessageAsync().ConfigureAwait(false);
+                            }
+                            if (parsed)
+                            {
+                                foreach (var parser in _parsers)
+                                {
+                                    parser.Reset();
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(buffer);
                 }
             }
         }
-        catch (Exception e)
+        catch (OperationCanceledException) when (ConnectionCancel.IsCancellationRequested) { }
+        catch (ChannelClosedException) when (ConnectionCancel.IsCancellationRequested) { }
+        catch (Exception ex)
         {
-            _logger.ZLogError(e, $"Error while reading loop {Id}: {e.Message}");
-            InternalPublishRxError(
-                new ProtocolConnectionException(this, $"Error at read loop: {e.Message}", e)
-            );
-            if (IsDisposed == false)
-            {
-                _lastError.OnNext(
-                    new ProtocolConnectionException(this, $"Error at read loop: {e.Message}", e)
-                );
-            }
+            Fail(ex, "read");
         }
     }
 
     protected abstract int GetAvailableBytesToRead();
-
     protected abstract ValueTask<int> InternalRead(Memory<byte> memory, CancellationToken cancel);
     protected abstract ValueTask<int> InternalWrite(
         ReadOnlyMemory<byte> memory,
         CancellationToken cancel
     );
 
-    private async void WriteLoop(object? o)
+    private async Task WriteLoopAsync()
     {
         try
         {
-            while (IsDisposed == false && _lastError.CurrentValue == null)
+            while (await _txChannel.Reader.WaitToReadAsync(ConnectionCancel).ConfigureAwait(false))
             {
-                var msg = await _txChannel.Reader.ReadAsync(DisposeCancel);
-                if (_lastError.CurrentValue != null)
+                while (_txChannel.Reader.TryRead(out var message))
                 {
-                    break;
+                    ConnectionCancel.ThrowIfCancellationRequested();
+                    if (!_parserAvailable.Contains(message.Protocol.Id))
+                    {
+                        continue;
+                    }
+                    var filtered = await InternalFilterTxMessage(message).ConfigureAwait(false);
+                    if (filtered == null)
+                    {
+                        continue;
+                    }
+                    ConnectionCancel.ThrowIfCancellationRequested();
+                    var encoder = _encoders.Get(filtered.Protocol.Id);
+                    var size = ProtocolEncodingMixin.GetMaxByteSize(encoder, filtered);
+                    var buffer = ArrayPool<byte>.Shared.Rent(size);
+                    try
+                    {
+                        var written = ProtocolEncodingMixin.EncodeChecked(
+                            encoder,
+                            filtered,
+                            buffer.AsSpan(0, size)
+                        );
+                        var sent = await InternalWrite(
+                                buffer.AsMemory(0, written),
+                                ConnectionCancel
+                            )
+                            .ConfigureAwait(false);
+                        if (sent != written)
+                        {
+                            throw new InvalidOperationException(
+                                $"Incomplete frame write: expected {written} bytes, sent {sent}."
+                            );
+                        }
+                        StatisticHandler.AddTxBytes(sent);
+                        StatisticHandler.IncrementTxMessage();
+                        InternalPublishTxMessage(filtered);
+                    }
+                    finally
+                    {
+                        ArrayPool<byte>.Shared.Return(buffer);
+                    }
                 }
-
-                // skip not supported messages
-                if (_parserAvailable.Contains(msg.Protocol.Id) == false)
-                {
-                    continue;
-                }
-
-                var newMessage = await InternalFilterTxMessage(msg);
-                if (newMessage == null || _lastError.CurrentValue != null)
-                {
-                    continue;
-                }
-
-                DisposeCancel.ThrowIfCancellationRequested();
-                var encoder = _encoders.Get(newMessage.Protocol.Id);
-                var size = ProtocolEncodingMixin.GetMaxByteSize(encoder, newMessage);
-                using var mem = MemoryPool<byte>.Shared.Rent(size);
-                var writeBytes = ProtocolEncodingMixin.EncodeChecked(
-                    encoder,
-                    newMessage,
-                    mem.Memory.Span[..size]
-                );
-
-                var sendBytes = await InternalWrite(mem.Memory[..writeBytes], DisposeCancel);
-                if (writeBytes != sendBytes)
-                {
-                    throw new InvalidOperationException(
-                        $"Incomplete frame write: expected {writeBytes} bytes, sent {sendBytes}."
-                    );
-                }
-                StatisticHandler.AddTxBytes(sendBytes);
-                StatisticHandler.IncrementTxMessage();
-                InternalPublishTxMessage(newMessage);
             }
         }
-        catch (OperationCanceledException) when (DisposeCancel.IsCancellationRequested)
+        catch (OperationCanceledException) when (ConnectionCancel.IsCancellationRequested) { }
+        catch (ChannelClosedException) when (ConnectionCancel.IsCancellationRequested) { }
+        catch (Exception) when (ConnectionCancel.IsCancellationRequested) { }
+        catch (Exception ex)
         {
-            _txChannel.Writer.TryComplete();
-        }
-        catch (Exception e)
-        {
-            _logger.ZLogError(e, $"Error while writing loop {Id}");
-            _txChannel.Writer.TryComplete(e);
             StatisticHandler.IncrementTxError();
-            InternalPublishTxError(
-                new ProtocolConnectionException(this, $"Error at write loop: {e.Message}", e)
-            );
-            if (IsDisposed == false)
-            {
-                _lastError.OnNext(
-                    new ProtocolConnectionException(this, $"Error at write loop: {e.Message}", e)
-                );
-            }
+            Fail(ex, "write");
+        }
+    }
+
+    private void Fail(Exception exception, string operation)
+    {
+        if (IsDisposed || Interlocked.Exchange(ref _failed, 1) != 0)
+        {
+            return;
+        }
+        var error = new ProtocolConnectionException(
+            this,
+            $"Error during {operation}: {exception.Message}",
+            exception
+        );
+        _logger.ZLogError(exception, $"Error during {operation} on {Id}");
+        _txChannel.Writer.TryComplete(error);
+        _rxChannel.Writer.TryComplete(error);
+        if (operation == "write")
+        {
+            InternalPublishTxError(error);
+        }
+        else
+        {
+            StatisticHandler.IncrementRxError();
+            InternalPublishRxError(error);
+        }
+        if (!IsDisposed)
+        {
+            _lastError.OnNext(error);
+        }
+        if (!IsDisposed)
+        {
+            CancelPendingOperations();
         }
     }
 
     public override ValueTask Send(IProtocolMessage message, CancellationToken cancel = default)
     {
         ArgumentNullException.ThrowIfNull(message);
-        if (cancel.IsCancellationRequested)
-        {
-            return ValueTask.FromException(new OperationCanceledException());
-        }
-
-        if (IsDisposed)
+        cancel.ThrowIfCancellationRequested();
+        if (IsDisposed || Volatile.Read(ref _failed) != 0)
         {
             return ValueTask.CompletedTask;
         }
-
-        if (_lastError.CurrentValue != null)
-        {
-            return ValueTask.CompletedTask;
-        }
-
         return _txChannel.Writer.WriteAsync(message, cancel);
     }
 
-    public IEnumerable<IProtocolParser> Parsers => _parsers;
-    public ReadOnlyReactiveProperty<ProtocolConnectionException?> LastError => _lastError;
+    private Task StopAsync()
+    {
+        Task loops;
+        lock (_lifecycleSync)
+        {
+            if (_stopping)
+            {
+                return _stopped.Task;
+            }
+            _stopping = true;
+            loops = _loops;
+        }
+        _txChannel.Writer.TryComplete();
+        _rxChannel.Writer.TryComplete();
+        CancelPendingOperations();
+        _ = FinishStopAsync(loops);
+        return _stopped.Task;
+    }
 
-    #region Dispose
+    private async Task FinishStopAsync(Task loops)
+    {
+        try
+        {
+            await loops.ConfigureAwait(false);
+            List<Exception>? errors = null;
+            try
+            {
+                _parserSub.Dispose();
+            }
+            catch (Exception ex)
+            {
+                (errors ??= []).Add(ex);
+            }
+            foreach (var parser in _parsers)
+            {
+                try
+                {
+                    await parser.DisposeAsync().ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    (errors ??= []).Add(ex);
+                }
+            }
+            while (_rxChannel.Reader.TryRead(out _)) { }
+            while (_txChannel.Reader.TryRead(out _)) { }
+            lock (_pendingRxSync)
+            {
+                _pendingRxMessage = null;
+            }
+            _encoders.Clear();
+            _lastError.Dispose();
+            if (errors != null)
+            {
+                throw new AggregateException(errors);
+            }
+            _stopped.TrySetResult();
+        }
+        catch (Exception ex)
+        {
+            _stopped.TrySetException(ex);
+        }
+    }
 
     protected override void Dispose(bool disposing)
     {
         if (disposing)
         {
-            _logger.ZLogTrace($"{nameof(Dispose)} {Id}");
-            foreach (var parser in _parsers)
+            var stopped = StopAsync();
+            if (!stopped.IsCompletedSuccessfully)
             {
-                parser.Dispose();
+                _ = ObserveStopAsync(stopped);
             }
-            _lastError.Dispose();
-            _parserSub.Dispose();
+        }
+        base.Dispose(disposing);
+    }
+
+    private async Task ObserveStopAsync(Task stopped)
+    {
+        try
+        {
+            await stopped.ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _logger.ZLogError(ex, $"Error stopping endpoint {Id}");
         }
     }
 
     protected override async ValueTask DisposeAsyncCore()
     {
-        _logger.ZLogTrace($"{nameof(DisposeAsync)} {Id}");
-        await CastAndDispose(_lastError);
-        await CastAndDispose(_parserSub);
-        foreach (var parser in _parsers)
+        try
         {
-            await CastAndDispose(parser);
+            await StopAsync().ConfigureAwait(false);
         }
-        return;
-
-        static async ValueTask CastAndDispose(IDisposable resource)
+        finally
         {
-            if (resource is IAsyncDisposable resourceAsyncDisposable)
-            {
-                await resourceAsyncDisposable.DisposeAsync();
-            }
-            else
-            {
-                resource.Dispose();
-            }
+            await base.DisposeAsyncCore().ConfigureAwait(false);
         }
     }
 
-    public override string ToString()
-    {
-        return $"[ENDPOINT]({Id})";
-    }
-
-    #endregion
+    public override string ToString() => $"[ENDPOINT]({Id})";
 }

@@ -16,6 +16,7 @@ namespace Asv.IO
         private readonly IDataStream _input;
         private readonly IDisposable _sub1;
         private readonly CancellationTokenSource _disposeCancel = new();
+        private int _disposed;
 
         public TextStreamBase(IDataStream strm, TextReaderBaseConfig? config = null)
         {
@@ -33,7 +34,7 @@ namespace Asv.IO
                 {
                     if (data != _config.StartByte)
                     {
-                        return;
+                        continue;
                     }
 
                     _sync = true;
@@ -84,6 +85,10 @@ namespace Asv.IO
                 );
                 await _input.Send(data, data.Length, linkedCancel.Token).ConfigureAwait(false);
             }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
             catch (Exception ex)
             {
                 _onErrorSubject.OnNext(
@@ -101,24 +106,30 @@ namespace Asv.IO
         {
             if (disposing)
             {
+                _disposeCancel.Cancel();
+                _sub1.Dispose();
                 _output.Dispose();
                 _onErrorSubject.Dispose();
-                _sub1.Dispose();
                 _disposeCancel.Dispose();
             }
         }
 
         public void Dispose()
         {
+            if (Interlocked.Exchange(ref _disposed, 1) != 0)
+            {
+                return;
+            }
             Dispose(true);
             GC.SuppressFinalize(this);
         }
 
         protected virtual async ValueTask DisposeAsyncCore()
         {
+            await _disposeCancel.CancelAsync();
+            await CastAndDispose(_sub1);
             await CastAndDispose(_output);
             await CastAndDispose(_onErrorSubject);
-            await CastAndDispose(_sub1);
             await CastAndDispose(_disposeCancel);
 
             return;
@@ -138,6 +149,10 @@ namespace Asv.IO
 
         public async ValueTask DisposeAsync()
         {
+            if (Interlocked.Exchange(ref _disposed, 1) != 0)
+            {
+                return;
+            }
             await DisposeAsyncCore();
             GC.SuppressFinalize(this);
         }

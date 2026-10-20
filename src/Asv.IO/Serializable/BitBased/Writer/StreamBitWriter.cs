@@ -87,10 +87,16 @@ public class StreamBitWriter(Stream s, bool leaveOpen = false) : AsyncDisposable
     {
         if (disposing)
         {
-            Flush(true);
-            if (!leaveOpen)
+            try
             {
-                _s.Dispose();
+                Flush(true);
+            }
+            finally
+            {
+                if (!leaveOpen)
+                {
+                    _s.Dispose();
+                }
             }
         }
 
@@ -99,10 +105,16 @@ public class StreamBitWriter(Stream s, bool leaveOpen = false) : AsyncDisposable
 
     protected override async ValueTask DisposeAsyncCore()
     {
-        Flush(true);
-        if (!leaveOpen)
+        try
         {
-            await _s.DisposeAsync();
+            Flush(true);
+        }
+        finally
+        {
+            if (!leaveOpen)
+            {
+                await _s.DisposeAsync().ConfigureAwait(false);
+            }
         }
         await base.DisposeAsyncCore();
     }

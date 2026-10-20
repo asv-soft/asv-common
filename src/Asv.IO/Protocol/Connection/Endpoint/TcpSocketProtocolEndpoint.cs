@@ -6,31 +6,41 @@ using System.Threading.Tasks;
 
 namespace Asv.IO;
 
-public abstract class TcpSocketProtocolEndpoint(
-    Socket socket,
-    string id,
-    ProtocolPortConfig config,
-    ImmutableArray<IProtocolParser> parsers,
-    IProtocolContext context,
-    IStatisticHandler statisticHandler
-) : ProtocolEndpoint(id, config, parsers, context, statisticHandler)
+public abstract class TcpSocketProtocolEndpoint : ProtocolEndpoint
 {
-    private long _lastDataReceivedOrSentSuccess = context.TimeProvider.GetTimestamp();
-    private readonly TimeSpan _reconnectTimeout =
-        config.ReconnectTimeoutMs <= 0
-            ? Timeout.InfiniteTimeSpan
-            : TimeSpan.FromMilliseconds(config.ReconnectTimeoutMs);
+    private readonly Socket _socket;
+    private long _lastDataReceivedOrSentSuccess;
+    private readonly TimeSpan _reconnectTimeout;
+    private readonly IProtocolContext _context;
 
-    private readonly IProtocolContext _context = context;
+    protected TcpSocketProtocolEndpoint(
+        Socket socket,
+        string id,
+        ProtocolPortConfig config,
+        ImmutableArray<IProtocolParser> parsers,
+        IProtocolContext context,
+        IStatisticHandler statisticHandler
+    )
+        : base(id, config, parsers, context, statisticHandler, startImmediately: false)
+    {
+        _socket = socket;
+        _context = context;
+        _lastDataReceivedOrSentSuccess = context.TimeProvider.GetTimestamp();
+        _reconnectTimeout =
+            config.ReconnectTimeoutMs <= 0
+                ? Timeout.InfiniteTimeSpan
+                : TimeSpan.FromMilliseconds(config.ReconnectTimeoutMs);
+        Start();
+    }
 
     protected override int GetAvailableBytesToRead()
     {
-        if (socket.Connected == false)
+        if (_socket.Connected == false)
         {
             throw new InvalidOperationException("Socket is disconnected");
         }
 
-        var available = socket.Available;
+        var available = _socket.Available;
         if (available > 0)
         {
             _lastDataReceivedOrSentSuccess = _context.TimeProvider.GetTimestamp();
@@ -52,14 +62,14 @@ public abstract class TcpSocketProtocolEndpoint(
         return 0;
     }
 
-    public Socket Socket => socket;
+    public Socket Socket => _socket;
 
     protected override async ValueTask<int> InternalRead(
         Memory<byte> memory,
         CancellationToken cancel
     )
     {
-        return await socket.ReceiveAsync(memory, cancel);
+        return await _socket.ReceiveAsync(memory, cancel);
     }
 
     protected override async ValueTask<int> InternalWrite(
@@ -67,7 +77,7 @@ public abstract class TcpSocketProtocolEndpoint(
         CancellationToken cancel
     )
     {
-        var count = await socket.SendAsync(memory, cancel);
+        var count = await _socket.SendAsync(memory, cancel);
         _lastDataReceivedOrSentSuccess = _context.TimeProvider.GetTimestamp();
         return count;
     }
@@ -78,12 +88,13 @@ public abstract class TcpSocketProtocolEndpoint(
     {
         if (disposing)
         {
-            if (socket.Connected)
+            CancelPendingOperations();
+            if (_socket.Connected)
             {
-                socket.Close();
+                _socket.Close();
             }
 
-            socket.Dispose();
+            _socket.Dispose();
         }
 
         base.Dispose(disposing);
@@ -91,12 +102,13 @@ public abstract class TcpSocketProtocolEndpoint(
 
     protected override async ValueTask DisposeAsyncCore()
     {
-        if (socket.Connected)
+        CancelPendingOperations();
+        if (_socket.Connected)
         {
-            socket.Close();
+            _socket.Close();
         }
 
-        socket.Dispose();
+        _socket.Dispose();
         await base.DisposeAsyncCore();
     }
 

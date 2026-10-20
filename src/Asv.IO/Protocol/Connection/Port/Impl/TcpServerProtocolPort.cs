@@ -79,64 +79,87 @@ public class TcpServerProtocolPort : ProtocolPort<TcpServerProtocolPortConfig>
     }
 
     public override PortTypeInfo TypeInfo => Info;
+    internal EndPoint? LocalEndPoint => _socket?.LocalEndPoint;
 
     protected override void InternalSafeEnable(CancellationToken token)
     {
+        token.ThrowIfCancellationRequested();
         _socket?.Close();
         _socket?.Dispose();
 
-        _socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
-        _socket.Bind(_bindEndpoint);
+        var listener = new Socket(SocketType.Stream, ProtocolType.Tcp);
+        _socket = listener;
+        token.ThrowIfCancellationRequested();
+        listener.Bind(_bindEndpoint);
         if (_config.MaxConnection == null)
         {
-            _socket.Listen();
+            listener.Listen();
         }
         else
         {
-            _socket.Listen(_config.MaxConnection.Value);
+            listener.Listen(_config.MaxConnection.Value);
         }
+        token.ThrowIfCancellationRequested();
         Task.Factory.StartNew(
-            AcceptNewEndpoint,
-            token,
+            () => AcceptNewEndpoint(listener, token),
             token,
             TaskCreationOptions.LongRunning | TaskCreationOptions.DenyChildAttach,
             TaskScheduler.Default
         );
     }
 
-    private void AcceptNewEndpoint(object? state)
+    private void AcceptNewEndpoint(Socket listener, CancellationToken cancel)
     {
-        // ReSharper disable once NullableWarningSuppressionIsUsed
-        var cancel = (CancellationToken)state!;
         try
         {
-            while (_socket != null && cancel is { IsCancellationRequested: false })
+            while (!cancel.IsCancellationRequested)
             {
                 try
                 {
-                    var socket = _socket.Accept();
-                    InternalAddEndpoint(
-                        new TcpServerSocketProtocolEndpoint(
-                            socket,
-                            ProtocolHelper.NormalizeId($"{Id}_{_socket.RemoteEndPoint}"),
-                            _config,
-                            InternalCreateParsers(),
-                            _context,
-                            StatisticHandler
-                        )
-                    );
+                    var socket = listener.Accept();
+                    try
+                    {
+                        cancel.ThrowIfCancellationRequested();
+                        InternalAddEndpoint(
+                            new TcpServerSocketProtocolEndpoint(
+                                socket,
+                                ProtocolHelper.NormalizeId($"{Id}_{socket.RemoteEndPoint}"),
+                                _config,
+                                InternalCreateParsers(),
+                                _context,
+                                StatisticHandler
+                            ),
+                            cancel
+                        );
+                    }
+                    catch
+                    {
+                        socket.Dispose();
+                        throw;
+                    }
                 }
                 catch (SocketException ex) when (ex.SocketErrorCode == SocketError.Interrupted)
                 {
                     // graceful shutdown: exit the loop without treating it as an error
+                    return;
                 }
                 catch (SocketException ex) when (ex.SocketErrorCode == SocketError.OperationAborted)
                 {
                     // Windows: overlapped I/O cancelled (CancelIoEx); also expected during shutdown
+                    return;
                 }
                 catch (ObjectDisposedException)
                 {
                     // socket already closed — expected during shutdown
+                    return;
+                }
+                catch (OperationCanceledException) when (cancel.IsCancellationRequested)
+                {
+                    return;
+                }
+                catch (Exception) when (cancel.IsCancellationRequested)
+                {
+                    return;
                 }
                 catch (Exception ex)
                 {

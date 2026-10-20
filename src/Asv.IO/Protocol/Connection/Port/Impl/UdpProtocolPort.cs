@@ -107,44 +107,50 @@ public class UdpProtocolPort : ProtocolPort<UdpProtocolPortConfig>
 
     protected override void InternalSafeEnable(CancellationToken token)
     {
-        _socket = new Socket(_localEndPoint.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
-        _socket.Bind(_localEndPoint);
+        token.ThrowIfCancellationRequested();
+        var socket = new Socket(_localEndPoint.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
+        _socket = socket;
+        token.ThrowIfCancellationRequested();
+        socket.Bind(_localEndPoint);
 
         // if we have list of remote endpoints, we should create it for sending data
         foreach (var recvAddr in _remoteEndPoints)
         {
+            token.ThrowIfCancellationRequested();
             InternalAddEndpoint(
                 new UdpSocketProtocolEndpoint(
-                    _socket,
+                    socket,
                     recvAddr,
                     ProtocolHelper.NormalizeId($"{Id}_{recvAddr}"),
                     _config,
                     InternalCreateParsers(),
                     _context,
                     StatisticHandler
-                )
+                ),
+                token
             );
         }
+        token.ThrowIfCancellationRequested();
         Task.Factory.StartNew(
-                BeginAcceptNewData,
+                () => BeginAcceptNewData(socket, token),
                 token,
-                TaskCreationOptions.LongRunning | TaskCreationOptions.DenyChildAttach
+                TaskCreationOptions.LongRunning | TaskCreationOptions.DenyChildAttach,
+                TaskScheduler.Default
             )
             .SafeFireAndForget();
     }
 
-    private void BeginAcceptNewData(object? state)
+    private void BeginAcceptNewData(Socket socket, CancellationToken cancel)
     {
-        // ReSharper disable once NullableWarningSuppressionIsUsed
-        var cancel = (CancellationToken)state!;
         var buffer = ArrayPool<byte>.Shared.Rent(65536); // max UDP packet size
         try
         {
-            while (_socket != null && cancel is { IsCancellationRequested: false })
+            while (!cancel.IsCancellationRequested)
             {
                 // receive data from any remote endpoint
                 EndPoint recvAddr = new IPEndPoint(IPAddress.Any, 0);
-                var readSize = _socket.ReceiveFrom(buffer, ref recvAddr);
+                var readSize = socket.ReceiveFrom(buffer, ref recvAddr);
+                cancel.ThrowIfCancellationRequested();
                 if (recvAddr is not IPEndPoint recvAddrIPEndPoint)
                 {
                     _logger.ZLogWarning(
@@ -158,7 +164,8 @@ public class UdpProtocolPort : ProtocolPort<UdpProtocolPortConfig>
                 {
                     continue;
                 }
-                var exist = (UdpSocketProtocolEndpoint?)Endpoints.FirstOrDefault(x =>
+                var exist = (UdpSocketProtocolEndpoint?)
+                    Endpoints.FirstOrDefault(x =>
                         recvAddrIPEndPoint.Equals(((UdpSocketProtocolEndpoint)x).RemoteEndPoint)
                     );
 
@@ -167,18 +174,20 @@ public class UdpProtocolPort : ProtocolPort<UdpProtocolPortConfig>
                 {
                     InternalAddEndpoint(
                         exist = new UdpSocketProtocolEndpoint(
-                            _socket,
+                            socket,
                             recvAddrIPEndPoint,
                             ProtocolHelper.NormalizeId($"{Id}_{recvAddr}"),
                             _config,
                             InternalCreateParsers(),
                             _context,
                             StatisticHandler
-                        )
+                        ),
+                        cancel
                     );
                 }
 
                 // this method blocks this thread until data is processed by endpoint its own read thread
+                cancel.ThrowIfCancellationRequested();
                 exist.ApplyData(buffer, readSize);
             }
         }
@@ -194,6 +203,8 @@ public class UdpProtocolPort : ProtocolPort<UdpProtocolPortConfig>
         {
             // socket already closed — expected during shutdown
         }
+        catch (OperationCanceledException) when (cancel.IsCancellationRequested) { }
+        catch (Exception) when (cancel.IsCancellationRequested) { }
         catch (Exception ex)
         {
             _logger.ZLogDebug(

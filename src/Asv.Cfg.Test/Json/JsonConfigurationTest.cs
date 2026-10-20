@@ -3,7 +3,6 @@ using System.IO;
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using System.Linq;
-using System.Threading;
 using JetBrains.Annotations;
 using R3;
 using Xunit;
@@ -131,13 +130,9 @@ namespace Asv.Cfg.Test
         {
             using var cleanup = CreateForTest(out var cfg);
             cfg.Set(new TestClass() { Name = "Test" });
-            Thread.Sleep(50);
             cfg.Set(new TestClass() { Name = "Test1" });
-            Thread.Sleep(50);
             cfg.Set(new TestClass() { Name = "Test2" });
-            Thread.Sleep(50);
             cfg.Set(new TestClass() { Name = "Test3" });
-            Thread.Sleep(50);
 
             var dirInfo = _fileSystem.DirectoryInfo.Wrap(new DirectoryInfo(cfg.WorkingFolder));
             var files = dirInfo.GetFiles();

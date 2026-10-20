@@ -57,5 +57,7 @@ src/
 ## Links
 
 - Documentation: [asv.me/asv-common](https://asv.me/asv-common/)
+- NuGet: [Asv.Common](https://www.nuget.org/packages/Asv.Common)
+- GitHub Packages: [Asv.Common](https://github.com/asv-soft/asv-common/pkgs/nuget/Asv.Common)
 - Repository: [asv-soft/asv-common](https://github.com/asv-soft/asv-common)
 - Issues: [GitHub Issues](https://github.com/asv-soft/asv-common/issues)
