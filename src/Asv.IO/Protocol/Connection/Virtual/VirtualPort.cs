@@ -17,6 +17,8 @@ public class VirtualPort : ProtocolConnection, IProtocolEndpoint
     private readonly ImmutableArray<IProtocolParser> _parsers;
     private readonly IDisposable _dispose;
     private readonly ReactiveProperty<ProtocolConnectionException?> _lastError = new();
+    private readonly ProtocolEncoderSet _encoders;
+    private readonly SemaphoreSlim _sendGate = new(1, 1);
 
     public VirtualPort(
         string id,
@@ -27,6 +29,7 @@ public class VirtualPort : ProtocolConnection, IProtocolEndpoint
         : base(id, context, parent)
     {
         _sendFilter = sendFilter;
+        _encoders = new ProtocolEncoderSet(context);
         _parsers = [.. context.ParserFactory.Values.Select(x => x(context, StatisticHandler))];
         var builder = Disposable.CreateBuilder();
         foreach (var parser in _parsers)
@@ -73,33 +76,67 @@ public class VirtualPort : ProtocolConnection, IProtocolEndpoint
         ArgumentNullException.ThrowIfNull(message);
         cancel.ThrowIfCancellationRequested();
 
-        if (IsDisposed)
+        if (IsDisposed || _lastError.CurrentValue != null)
         {
             return;
         }
 
-        if (_sendFilter(message) == false)
+        // Retain the token: DisposeCancel returns None after the port is disposed.
+        var disposeCancel = DisposeCancel;
+        if (!await _sendGate.WaitAsync(0, cancel).ConfigureAwait(false))
         {
-            return;
-        }
+            if (IsDisposed)
+            {
+                return;
+            }
 
-        var newMessage = await InternalFilterTxMessage(message);
-        if (newMessage == null)
-        {
-            return;
+            using var linkedCancel = cancel.CanBeCanceled
+                ? CancellationTokenSource.CreateLinkedTokenSource(cancel, disposeCancel)
+                : null;
+            await _sendGate.WaitAsync(linkedCancel?.Token ?? disposeCancel).ConfigureAwait(false);
         }
         try
         {
-            var size = newMessage.GetByteSize();
-            var buffer = new byte[size];
-            newMessage.Serialize(buffer);
-            _tx.OnNext(buffer);
-            StatisticHandler.IncrementTxMessage();
-            InternalPublishTxMessage(newMessage);
+            if (IsDisposed || _lastError.CurrentValue != null || _sendFilter(message) == false)
+            {
+                return;
+            }
+
+            var newMessage = await InternalFilterTxMessage(message).ConfigureAwait(false);
+            if (newMessage == null)
+            {
+                return;
+            }
+
+            cancel.ThrowIfCancellationRequested();
+            disposeCancel.ThrowIfCancellationRequested();
+            try
+            {
+                var encoder = _encoders.Get(newMessage.Protocol.Id);
+                var buffer = newMessage.EncodeToArray(encoder);
+                _tx.OnNext(buffer);
+                StatisticHandler.AddTxBytes(buffer.Length);
+                StatisticHandler.IncrementTxMessage();
+                InternalPublishTxMessage(newMessage);
+            }
+            catch (Exception e)
+            {
+                StatisticHandler.IncrementTxError();
+                var error = new ProtocolConnectionException(
+                    this,
+                    $"Error sending message: {e.Message}",
+                    e
+                );
+                InternalPublishTxError(error);
+                if (!IsDisposed)
+                {
+                    _lastError.OnNext(error);
+                }
+            }
         }
-        catch (Exception)
+        finally
         {
-            StatisticHandler.IncrementTxError();
+            _sendGate.Release();
         }
     }
 

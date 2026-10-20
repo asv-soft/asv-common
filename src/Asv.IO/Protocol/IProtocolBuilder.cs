@@ -29,6 +29,7 @@ internal class ProtocolBuilder
         IProtocolFeatureBuilder,
         IProtocolMessageFormatterBuilder,
         IProtocolParserBuilder,
+        IProtocolEncoderBuilder,
         IProtocolPortBuilder
 {
     private ILoggerFactory _loggerFactory;
@@ -38,6 +39,8 @@ internal class ProtocolBuilder
         ImmutableArray.CreateBuilder<IProtocolFeature>();
     private readonly ImmutableDictionary<string, ParserFactoryDelegate>.Builder _parserBuilder =
         ImmutableDictionary.CreateBuilder<string, ParserFactoryDelegate>();
+    private readonly ImmutableDictionary<string, EncoderFactoryDelegate>.Builder _encoderBuilder =
+        ImmutableDictionary.CreateBuilder<string, EncoderFactoryDelegate>();
     private readonly ImmutableArray<ProtocolInfo>.Builder _protocolInfoBuilder =
         ImmutableArray.CreateBuilder<ProtocolInfo>();
     private readonly ImmutableDictionary<string, PortFactoryDelegate>.Builder _portBuilder =
@@ -119,7 +122,8 @@ internal class ProtocolBuilder
             [.. _formatters.OrderBy(x => x.Order)],
             _loggerFactory,
             _timeProvider,
-            _meterFactory
+            _meterFactory,
+            _encoderBuilder.ToImmutable()
         );
     }
 
@@ -150,6 +154,18 @@ internal class ProtocolBuilder
         _formatters.Add(formatter);
     }
 
+    void IProtocolEncoderBuilder.Register(ProtocolInfo info, EncoderFactoryDelegate factory)
+    {
+        ArgumentNullException.ThrowIfNull(info);
+        ArgumentNullException.ThrowIfNull(factory);
+        _encoderBuilder.Add(info.Id, factory);
+    }
+
+    void IProtocolEncoderBuilder.Clear()
+    {
+        _encoderBuilder.Clear();
+    }
+
     public void Register(IProtocolFeature feature)
     {
         ArgumentNullException.ThrowIfNull(feature);
@@ -164,6 +180,7 @@ internal class ProtocolBuilder
     void IProtocolParserBuilder.Clear()
     {
         _parserBuilder.Clear();
+        _encoderBuilder.Clear();
         _protocolInfoBuilder.Clear();
     }
 

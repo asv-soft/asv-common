@@ -24,6 +24,7 @@ public abstract class ProtocolEndpoint : ProtocolConnection, IProtocolEndpoint
     private readonly IDisposable _parserSub;
     private readonly ReactiveProperty<ProtocolConnectionException?> _lastError = new(null);
     private readonly ImmutableHashSet<string> _parserAvailable;
+    private readonly ProtocolEncoderSet _encoders;
 
     protected ProtocolEndpoint(
         string id,
@@ -39,6 +40,7 @@ public abstract class ProtocolEndpoint : ProtocolConnection, IProtocolEndpoint
         _readEmptyLoopDelay = TimeSpan.FromMilliseconds(config.ReadEmptyLoopDelayMs);
         _logger = context.LoggerFactory.CreateLogger<ProtocolEndpoint>();
         _parsers = parsers;
+        _encoders = new ProtocolEncoderSet(context);
         _parserAvailable = _parsers.Select(x => x.Info.Id).ToImmutableHashSet();
         _txChannel =
             config.TxQueueSize <= 0
@@ -225,6 +227,10 @@ public abstract class ProtocolEndpoint : ProtocolConnection, IProtocolEndpoint
             while (IsDisposed == false && _lastError.CurrentValue == null)
             {
                 var msg = await _txChannel.Reader.ReadAsync(DisposeCancel);
+                if (_lastError.CurrentValue != null)
+                {
+                    break;
+                }
 
                 // skip not supported messages
                 if (_parserAvailable.Contains(msg.Protocol.Id) == false)
@@ -233,29 +239,42 @@ public abstract class ProtocolEndpoint : ProtocolConnection, IProtocolEndpoint
                 }
 
                 var newMessage = await InternalFilterTxMessage(msg);
-                if (newMessage == null)
+                if (newMessage == null || _lastError.CurrentValue != null)
                 {
                     continue;
                 }
 
-                var size = newMessage.GetByteSize();
+                DisposeCancel.ThrowIfCancellationRequested();
+                var encoder = _encoders.Get(newMessage.Protocol.Id);
+                var size = ProtocolEncodingMixin.GetMaxByteSize(encoder, newMessage);
                 using var mem = MemoryPool<byte>.Shared.Rent(size);
-                var writeBytes = await newMessage.Serialize(mem.Memory);
-
-                // _logger.ZLogTrace($"TX:{BitConverter.ToString(mem.Memory[..writeBytes].ToArray())} S{size} WS{writeBytes} ");
-                var sendBytes = await InternalWrite(mem.Memory[..writeBytes], DisposeCancel);
-                Debug.Assert(
-                    writeBytes == sendBytes,
-                    $"Write less bytes than expected {writeBytes} != {sendBytes}"
+                var writeBytes = ProtocolEncodingMixin.EncodeChecked(
+                    encoder,
+                    newMessage,
+                    mem.Memory.Span[..size]
                 );
+
+                var sendBytes = await InternalWrite(mem.Memory[..writeBytes], DisposeCancel);
+                if (writeBytes != sendBytes)
+                {
+                    throw new InvalidOperationException(
+                        $"Incomplete frame write: expected {writeBytes} bytes, sent {sendBytes}."
+                    );
+                }
                 StatisticHandler.AddTxBytes(sendBytes);
                 StatisticHandler.IncrementTxMessage();
                 InternalPublishTxMessage(newMessage);
             }
         }
+        catch (OperationCanceledException) when (DisposeCancel.IsCancellationRequested)
+        {
+            _txChannel.Writer.TryComplete();
+        }
         catch (Exception e)
         {
             _logger.ZLogError(e, $"Error while writing loop {Id}");
+            _txChannel.Writer.TryComplete(e);
+            StatisticHandler.IncrementTxError();
             InternalPublishTxError(
                 new ProtocolConnectionException(this, $"Error at write loop: {e.Message}", e)
             );

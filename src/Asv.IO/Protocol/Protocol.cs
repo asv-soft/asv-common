@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Asv.IO;
 
-public sealed class Protocol : IProtocolFactory, IProtocolContext
+public sealed class Protocol : IProtocolFactory, IProtocolContext, IProtocolEncoderContext
 {
     #region Static
 
@@ -28,11 +28,14 @@ public sealed class Protocol : IProtocolFactory, IProtocolContext
         ImmutableArray<IProtocolMessageFormatter> formatters,
         ILoggerFactory loggerFactory,
         TimeProvider timeProvider,
-        IMeterFactory meterFactory
+        IMeterFactory meterFactory,
+        ImmutableDictionary<string, EncoderFactoryDelegate>? encoderFactory = null
     )
     {
         Features = features;
         ParserFactory = parserFactory;
+        EncoderFactory =
+            encoderFactory ?? ImmutableDictionary<string, EncoderFactoryDelegate>.Empty;
         AvailableProtocols = availableProtocols;
         PortFactory = portFactory;
         AvailablePortTypes = availablePortTypes;
@@ -47,6 +50,7 @@ public sealed class Protocol : IProtocolFactory, IProtocolContext
     public TimeProvider TimeProvider { get; }
     public IMeterFactory MeterFactory { get; }
     public ImmutableDictionary<string, ParserFactoryDelegate> ParserFactory { get; }
+    public ImmutableDictionary<string, EncoderFactoryDelegate> EncoderFactory { get; }
     public ImmutableArray<IProtocolFeature> Features { get; }
 
     public IProtocolParser CreateParser(string protocolId) => ParserFactory[protocolId](this, null);

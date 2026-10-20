@@ -22,6 +22,42 @@ flowchart BT
 
 The span is passed by reference so implementations can advance it as they consume bytes. When implementing a complete message, keep `GetByteSize`, the number of bytes written, and the bytes consumed on reading consistent.
 
+## Encoding An Outbound Stream
+
+`IProtocolEncoder` is the boundary between a message's serialized representation and the bytes sent on one outbound stream. It supports protocols whose framing depends on previous words or whose final frame can be shorter than the reserved capacity:
+
+```csharp
+public interface IProtocolEncoder
+{
+    int GetMaxByteSize(IProtocolMessage message);
+    int Encode(IProtocolMessage message, Span<byte> destination);
+}
+```
+
+`GetMaxByteSize` returns a nonnegative upper bound without advancing state or serializing the message. `Encode` writes to the start of the destination and returns the actual byte count. A destination at least as large as that bound must be sufficient. The owner sends only `destination[..written]` and calls `Encode` once for each frame.
+
+A stateful implementation validates capacity and message data before committing its new state. If encoding fails, the previous state must remain intact; the destination contents are unspecified. Successful encoding advances state exactly once. Keep this state in the encoder, independently of message objects and receive parsers. Encoder instances are not required to be thread-safe.
+
+`DefaultProtocolEncoder` adapts existing messages: it reserves `GetByteSize()` bytes, calls `Serialize` once, and counts the bytes consumed from the span. No encoder registration is required for existing protocols. The existing `ISizedSpanSerializable` contract has not been redefined as a general maximum-size contract.
+
+The canonical message serialization remains available for operations such as hashing, `CopyTo`, and `BinaryClone`. Those operations do not use a stream encoder or advance its state. Existing strict `Serialize()` helpers retain their size checks and behavior. For output that may vary in size or depend on stream state, use the explicit encoder helpers:
+
+```csharp
+IProtocolEncoder encoder = DefaultProtocolEncoder.Instance;
+
+byte[] frame = message.EncodeToArray(encoder);
+int streamBytes = message.EncodeToStream(stream, encoder);
+int asyncBytes = await message.EncodeToStreamAsync(stream, encoder, cancel);
+int writerBytes = message.EncodeTo(bufferWriter, encoder);
+bool sent = await dataStream.Send(message, encoder, cancel);
+```
+
+These are alternative output operations; each invocation encodes a new frame. `EncodeToArray` returns an array containing only the encoded bytes. Stream helpers write the actual byte count, and the `IBufferWriter<byte>` helper advances the writer by that count. Asynchronous stream and `IDataStream` helpers retain rented memory until the write or send task completes, following the [.NET memory ownership guidelines](https://learn.microsoft.com/en-us/dotnet/standard/memory-and-spans/memory-t-usage-guidelines).
+
+The `IDataStream.Send(message, encoder, cancel)` overload requires the cancellation token argument; use `CancellationToken.None` when cancellation is unnecessary. This preserves the meaning of existing calls such as `dataStream.Send(message, default)`, where `default` remains a cancellation token. A `false` result from `IDataStream.Send` is a failed send and needs the same recovery decision as an exception.
+
+The caller owns the encoder passed to these helpers and must order the entire encode-and-send operation for a stateful stream. The helpers do not add synchronization, reset state, or retry failed sends. A failed write may have delivered part of a frame; continuing or retrying requires protocol-specific recovery. Create a new encoder for a new stream.
+
 ## Round Trip
 
 ```csharp
@@ -50,7 +86,11 @@ This example knows the concrete type. For an unknown byte stream, use the protoc
 
 ## Protocol-Specific Rules
 
-The common contracts do not define endianness, checksums, length encoding, optional fields, or packet headers. Those belong to each protocol's serializer and parser. A buffer that is large enough does not make an otherwise invalid packet valid.
+The common contracts do not define endianness, checksums, length encoding, optional fields, or packet headers. Those belong to each protocol's serializer, encoder, and parser. A buffer that is large enough does not make an otherwise invalid packet valid.
+
+For example, MAVLink 2 removes trailing zero bytes from its payload while retaining at least its first byte. Its packet length, CRC, and optional signature belong to MAVLink framing; a generic encoder must not trim zeros from the completed frame. Existing MAVLink serializers that already perform this step work with `DefaultProtocolEncoder` because it respects the consumed span length. See the [MAVLink payload truncation rules](https://mavlink.io/en/guide/serialization.html#payload_truncation).
+
+RTCM2 can use a custom encoder for previous-word parity state and transport packing while retaining a canonical message representation. The abstraction added in `Asv.IO` does not implement RTCM2 parity or packing; that protocol-specific implementation belongs in `asv-gnss`.
 
 Use binary helpers such as `BinSerialize` where they match the wire format. The visitor-based simple binary helpers are a separate facility; do not substitute them for a protocol serializer merely because both operate on the same field values.
 
@@ -65,6 +105,8 @@ Array and nested-object properties can be mutable even when their containing mes
 - `src/Asv.IO/Serializable/ByteBased/ISpanSerializable.cs`.
 - `src/Asv.IO/Serializable/ByteBased/ISizedSpanSerializable.cs`.
 - `src/Asv.IO/Protocol/Message/IProtocolMessage.cs`.
+- `src/Asv.IO/Protocol/Encoder/IProtocolEncoder.cs` and `ProtocolEncodingMixin.cs`.
+- `src/Asv.IO/Streams/IDataStream.cs`.
 - `src/Asv.IO/Example/Protocol/ExampleMessageBase.cs` and `ExampleParser.cs`.
 
 See [Fields and visitors](IO-Visitors.md) for inspecting values and [Protocols](IO-Protocols.md) for stream decoding.

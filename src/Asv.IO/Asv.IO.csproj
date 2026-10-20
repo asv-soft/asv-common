@@ -25,6 +25,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Asv.Common\Asv.Common.csproj" />
+    <InternalsVisibleTo Include="Asv.IO.Test" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\img\asv-io-128.png">
