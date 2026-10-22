@@ -178,8 +178,8 @@ public sealed class ChimpEncoder(IBitWriter writer, bool leaveOpen = false)
     {
         if (!leaveOpen)
         {
-            await writer.DisposeAsync();
+            await writer.DisposeAsync().ConfigureAwait(false);
         }
-        await base.DisposeAsyncCore();
+        await base.DisposeAsyncCore().ConfigureAwait(false);
     }
 }

@@ -78,6 +78,8 @@ public class TcpServerProtocolPort : ProtocolPort<TcpServerProtocolPortConfig>
         _bindEndpoint = config.CheckAndGetLocalHost();
     }
 
+    protected override string DefaultDisplayName => ProtocolConnectionDisplay.Network("TCP", _config);
+
     public override PortTypeInfo TypeInfo => Info;
     internal EndPoint? LocalEndPoint => _socket?.LocalEndPoint;
 
@@ -215,7 +217,7 @@ public class TcpServerProtocolPort : ProtocolPort<TcpServerProtocolPortConfig>
             _socket = null;
         }
 
-        await base.DisposeAsyncCore();
+        await base.DisposeAsyncCore().ConfigureAwait(false);
     }
 
     #endregion

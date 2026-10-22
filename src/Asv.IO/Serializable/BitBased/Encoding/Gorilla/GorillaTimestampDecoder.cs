@@ -224,9 +224,9 @@ public sealed class GorillaTimestampDecoder : AsyncDisposableOnce, IBitDecoder<l
     {
         if (!_leaveOpen)
         {
-            await _br.DisposeAsync();
+            await _br.DisposeAsync().ConfigureAwait(false);
         }
 
-        await base.DisposeAsyncCore();
+        await base.DisposeAsyncCore().ConfigureAwait(false);
     }
 }

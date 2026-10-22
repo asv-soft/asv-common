@@ -92,6 +92,12 @@ public class UdpProtocolPort : ProtocolPort<UdpProtocolPortConfig>
         _remoteEndPoints = config.GetRemoteEndpoints().ToImmutableHashSet();
     }
 
+    protected override string DefaultDisplayName => ProtocolConnectionDisplay.Network("UDP", _config);
+
+    public override string Description => _config is null
+        ? Id
+        : ProtocolConnectionDisplay.PortDescription(_config, EnabledProtocols, _remoteEndPoints);
+
     public override PortTypeInfo TypeInfo => Info;
 
     protected override void InternalSafeDisable()
@@ -242,7 +248,7 @@ public class UdpProtocolPort : ProtocolPort<UdpProtocolPortConfig>
             _socket = null;
         }
 
-        await base.DisposeAsyncCore();
+        await base.DisposeAsyncCore().ConfigureAwait(false);
     }
 }
 

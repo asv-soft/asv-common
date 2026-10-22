@@ -39,7 +39,7 @@ namespace Asv.IO
                 return;
             }
 
-            await _tcp.GetStream().WriteAsync(data, cancel);
+            await _tcp.GetStream().WriteAsync(data, cancel).ConfigureAwait(false);
         }
 
         protected override Task InternalSend(byte[] data, int count, CancellationToken cancel)
@@ -114,7 +114,7 @@ namespace Asv.IO
                         if ((DateTime.Now - _lastData).TotalMilliseconds > _cfg.ReconnectTimeout)
                         {
                             await tcp.GetStream()
-                                .WriteAsync([], 0, 0, cancellationTokenSource.Token);
+                                .WriteAsync([], 0, 0, cancellationTokenSource.Token).ConfigureAwait(false);
                         }
                     }
                     if (tcp.Available != 0)
@@ -122,7 +122,7 @@ namespace Asv.IO
                         _lastData = DateTime.Now;
                         var buff = new byte[tcp.Available];
                         var readed = await tcp.GetStream()
-                            .ReadAsync(buff, 0, buff.Length, cancellationTokenSource.Token);
+                            .ReadAsync(buff, 0, buff.Length, cancellationTokenSource.Token).ConfigureAwait(false);
                         Debug.Assert(readed == buff.Length, "Expected: readed == buff.Length");
                         if (readed != 0)
                         {
@@ -194,18 +194,18 @@ namespace Asv.IO
             if (_tcp != null)
             {
                 _tcp.Close();
-                await CastAndDispose(_tcp);
+                await CastAndDispose(_tcp).ConfigureAwait(false);
                 _tcp = null;
             }
 
             if (_stop != null)
             {
                 _stop.Cancel(false);
-                await CastAndDispose(_stop);
+                await CastAndDispose(_stop).ConfigureAwait(false);
                 _stop = null;
             }
 
-            await base.DisposeAsyncCore();
+            await base.DisposeAsyncCore().ConfigureAwait(false);
 
             return;
 
@@ -213,7 +213,7 @@ namespace Asv.IO
             {
                 if (resource is IAsyncDisposable resourceAsyncDisposable)
                 {
-                    await resourceAsyncDisposable.DisposeAsync();
+                    await resourceAsyncDisposable.DisposeAsync().ConfigureAwait(false);
                 }
                 else
                 {

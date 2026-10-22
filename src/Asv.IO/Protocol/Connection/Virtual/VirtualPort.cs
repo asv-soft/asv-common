@@ -46,6 +46,8 @@ public class VirtualPort : ProtocolConnection, IProtocolEndpoint
         _dispose = builder.Build();
     }
 
+    public override string Description => ProtocolConnectionDisplay.VirtualDescription(Id);
+
     public ReadOnlyReactiveProperty<ProtocolConnectionException?> LastError => _lastError;
     public IEnumerable<IProtocolParser> Parsers => _parsers;
 
@@ -232,13 +234,13 @@ public class VirtualPort : ProtocolConnection, IProtocolEndpoint
     protected override async ValueTask DisposeAsyncCore()
     {
         CancelPendingOperations();
-        await CastAndDispose(_tx);
-        await CastAndDispose(_rx);
-        await CastAndDispose(_lastError);
-        await CastAndDispose(_dispose);
+        await CastAndDispose(_tx).ConfigureAwait(false);
+        await CastAndDispose(_rx).ConfigureAwait(false);
+        await CastAndDispose(_lastError).ConfigureAwait(false);
+        await CastAndDispose(_dispose).ConfigureAwait(false);
         DisposeParsers();
         ClearIdleEncoders();
-        await base.DisposeAsyncCore();
+        await base.DisposeAsyncCore().ConfigureAwait(false);
 
         return;
 
@@ -246,7 +248,7 @@ public class VirtualPort : ProtocolConnection, IProtocolEndpoint
         {
             if (resource is IAsyncDisposable resourceAsyncDisposable)
             {
-                await resourceAsyncDisposable.DisposeAsync();
+                await resourceAsyncDisposable.DisposeAsync().ConfigureAwait(false);
             }
             else
             {

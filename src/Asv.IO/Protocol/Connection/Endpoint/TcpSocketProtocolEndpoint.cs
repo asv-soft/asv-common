@@ -9,6 +9,8 @@ namespace Asv.IO;
 public abstract class TcpSocketProtocolEndpoint : ProtocolEndpoint
 {
     private readonly Socket _socket;
+    private readonly string _displayName;
+    private readonly string _description;
     private long _lastDataReceivedOrSentSuccess;
     private readonly TimeSpan _reconnectTimeout;
     private readonly IProtocolContext _context;
@@ -24,6 +26,8 @@ public abstract class TcpSocketProtocolEndpoint : ProtocolEndpoint
         : base(id, config, parsers, context, statisticHandler, startImmediately: false)
     {
         _socket = socket;
+        _displayName = socket.RemoteEndPoint?.ToString() ?? id;
+        _description = $"TCP · {socket.LocalEndPoint} → {_displayName}\n{id}";
         _context = context;
         _lastDataReceivedOrSentSuccess = context.TimeProvider.GetTimestamp();
         _reconnectTimeout =
@@ -32,6 +36,9 @@ public abstract class TcpSocketProtocolEndpoint : ProtocolEndpoint
                 : TimeSpan.FromMilliseconds(config.ReconnectTimeoutMs);
         Start();
     }
+
+    public override string DisplayName => _displayName ?? Id;
+    public override string Description => _description ?? Id;
 
     protected override int GetAvailableBytesToRead()
     {
@@ -69,7 +76,7 @@ public abstract class TcpSocketProtocolEndpoint : ProtocolEndpoint
         CancellationToken cancel
     )
     {
-        return await _socket.ReceiveAsync(memory, cancel);
+        return await _socket.ReceiveAsync(memory, cancel).ConfigureAwait(false);
     }
 
     protected override async ValueTask<int> InternalWrite(
@@ -77,7 +84,7 @@ public abstract class TcpSocketProtocolEndpoint : ProtocolEndpoint
         CancellationToken cancel
     )
     {
-        var count = await _socket.SendAsync(memory, cancel);
+        var count = await _socket.SendAsync(memory, cancel).ConfigureAwait(false);
         _lastDataReceivedOrSentSuccess = _context.TimeProvider.GetTimestamp();
         return count;
     }
@@ -109,7 +116,7 @@ public abstract class TcpSocketProtocolEndpoint : ProtocolEndpoint
         }
 
         _socket.Dispose();
-        await base.DisposeAsyncCore();
+        await base.DisposeAsyncCore().ConfigureAwait(false);
     }
 
     #endregion

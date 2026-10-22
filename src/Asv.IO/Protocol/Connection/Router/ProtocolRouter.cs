@@ -39,7 +39,7 @@ public sealed class ProtocolRouter : ProtocolConnection, IProtocolRouter
         }
 
         cancel.ThrowIfCancellationRequested();
-        var newMessage = await InternalFilterTxMessage(message);
+        var newMessage = await InternalFilterTxMessage(message).ConfigureAwait(false);
         if (newMessage == null)
         {
             return;

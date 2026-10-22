@@ -116,6 +116,6 @@ public class StreamBitWriter(Stream s, bool leaveOpen = false) : AsyncDisposable
                 await _s.DisposeAsync().ConfigureAwait(false);
             }
         }
-        await base.DisposeAsyncCore();
+        await base.DisposeAsyncCore().ConfigureAwait(false);
     }
 }

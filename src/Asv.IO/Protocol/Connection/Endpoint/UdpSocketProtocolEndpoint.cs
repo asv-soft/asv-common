@@ -12,6 +12,7 @@ public class UdpSocketProtocolEndpoint : ProtocolEndpoint
 {
     private readonly IProtocolContext _context;
     private readonly Socket _socket;
+    private readonly string _description;
     private readonly object _receiveSync = new();
     private byte[] _buffer = [];
     private int _readSize;
@@ -34,6 +35,7 @@ public class UdpSocketProtocolEndpoint : ProtocolEndpoint
         _socket = socket;
         _context = context;
         RemoteEndPoint = recvAddr;
+        _description = $"UDP · {socket.LocalEndPoint} → {recvAddr}\n{id}";
         _lastDataReceivedOrSentSuccess = context.TimeProvider.GetTimestamp();
         _reconnectTimeout =
             config.ReconnectTimeoutMs <= 0
@@ -44,6 +46,8 @@ public class UdpSocketProtocolEndpoint : ProtocolEndpoint
     }
 
     public IPEndPoint RemoteEndPoint { get; }
+    public override string DisplayName => RemoteEndPoint?.ToString() ?? Id;
+    public override string Description => _description ?? Id;
 
     protected override int GetAvailableBytesToRead()
     {
@@ -147,6 +151,6 @@ public class UdpSocketProtocolEndpoint : ProtocolEndpoint
         CancelPendingOperations();
         StopReceiving();
         _receiveCancellation.Dispose();
-        await base.DisposeAsyncCore();
+        await base.DisposeAsyncCore().ConfigureAwait(false);
     }
 }

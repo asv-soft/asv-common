@@ -70,9 +70,9 @@ public class VirtualDataStream : IDataStream, IDisposable, IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
-        await CastAndDispose(_txPipe);
-        await CastAndDispose(_rxPipe);
-        await CastAndDispose(_sub1);
+        await CastAndDispose(_txPipe).ConfigureAwait(false);
+        await CastAndDispose(_rxPipe).ConfigureAwait(false);
+        await CastAndDispose(_sub1).ConfigureAwait(false);
 
         return;
 
@@ -80,7 +80,7 @@ public class VirtualDataStream : IDataStream, IDisposable, IAsyncDisposable
         {
             if (resource is IAsyncDisposable resourceAsyncDisposable)
             {
-                await resourceAsyncDisposable.DisposeAsync();
+                await resourceAsyncDisposable.DisposeAsync().ConfigureAwait(false);
             }
             else
             {

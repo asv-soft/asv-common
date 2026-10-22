@@ -45,6 +45,8 @@ public class TcpClientProtocolPort : ProtocolPort<TcpClientProtocolPortConfig>
         ArgumentNullException.ThrowIfNull(config);
     }
 
+    protected override string DefaultDisplayName => ProtocolConnectionDisplay.Network("TCP", _config);
+
     public override PortTypeInfo TypeInfo => Info;
 
     protected override void InternalSafeDisable()
@@ -96,7 +98,7 @@ public class TcpClientProtocolPort : ProtocolPort<TcpClientProtocolPortConfig>
     protected override async ValueTask DisposeAsyncCore()
     {
         InternalSafeDisable();
-        await base.DisposeAsyncCore();
+        await base.DisposeAsyncCore().ConfigureAwait(false);
     }
 
     #endregion

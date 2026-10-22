@@ -8,6 +8,7 @@ namespace Asv.IO;
 
 public sealed class AlternativeSerialProtocolEndpoint : ProtocolEndpoint
 {
+    private readonly SerialProtocolPortConfig _displayConfig;
     private readonly SerialPortStream? _serial;
 
     public AlternativeSerialProtocolEndpoint(
@@ -19,6 +20,7 @@ public sealed class AlternativeSerialProtocolEndpoint : ProtocolEndpoint
     )
         : base(id, config, parsers, context, statisticHandler, startImmediately: false)
     {
+        _displayConfig = config;
         try
         {
             _serial = new SerialPortStream(
@@ -71,6 +73,13 @@ public sealed class AlternativeSerialProtocolEndpoint : ProtocolEndpoint
         };
     }
 
+    public override string DisplayName => _displayConfig is null
+        ? Id
+        : ProtocolConnectionDisplay.SerialName(_displayConfig);
+    public override string Description => _displayConfig is null
+        ? Id
+        : ProtocolConnectionDisplay.SerialDescription(_displayConfig);
+
     public SerialPortStream SerialPort =>
         _serial ?? throw new InvalidOperationException("Serial port is not initialized.");
 
@@ -93,7 +102,7 @@ public sealed class AlternativeSerialProtocolEndpoint : ProtocolEndpoint
         CancellationToken cancel
     )
     {
-        await SerialPort.WriteAsync(memory, cancel);
+        await SerialPort.WriteAsync(memory, cancel).ConfigureAwait(false);
         return memory.Length;
     }
 
@@ -125,9 +134,9 @@ public sealed class AlternativeSerialProtocolEndpoint : ProtocolEndpoint
 
         if (_serial != null)
         {
-            await _serial.DisposeAsync();
+            await _serial.DisposeAsync().ConfigureAwait(false);
         }
-        await base.DisposeAsyncCore();
+        await base.DisposeAsyncCore().ConfigureAwait(false);
     }
     #endregion
 }

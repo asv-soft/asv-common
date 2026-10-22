@@ -232,10 +232,10 @@ public class DeviceExplorer : AsyncDisposableOnce, IDeviceExplorer
 
     protected override async ValueTask DisposeAsyncCore()
     {
-        await CastAndDispose(_sub1);
-        await CastAndDispose(_sub2);
-        await CastAndDispose(_sub3);
-        await _timer.DisposeAsync();
+        await CastAndDispose(_sub1).ConfigureAwait(false);
+        await CastAndDispose(_sub2).ConfigureAwait(false);
+        await CastAndDispose(_sub3).ConfigureAwait(false);
+        await _timer.DisposeAsync().ConfigureAwait(false);
 
         _lastSeen.Clear();
         IClientDevice[] devices;
@@ -254,11 +254,11 @@ public class DeviceExplorer : AsyncDisposableOnce, IDeviceExplorer
 
         foreach (var device in devices)
         {
-            await device.DisposeAsync();
+            await device.DisposeAsync().ConfigureAwait(false);
         }
 
         _lock.Dispose();
-        await base.DisposeAsyncCore();
+        await base.DisposeAsyncCore().ConfigureAwait(false);
 
         return;
 
@@ -266,7 +266,7 @@ public class DeviceExplorer : AsyncDisposableOnce, IDeviceExplorer
         {
             if (resource is IAsyncDisposable resourceAsyncDisposable)
             {
-                await resourceAsyncDisposable.DisposeAsync();
+                await resourceAsyncDisposable.DisposeAsync().ConfigureAwait(false);
             }
             else
             {

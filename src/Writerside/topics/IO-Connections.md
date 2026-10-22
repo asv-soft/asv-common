@@ -21,6 +21,22 @@ flowchart TD
 | Port | Configures a transport, manages endpoints, and exposes enabled/status/error state. | `EndpointAdded`, `EndpointRemoved` |
 | Endpoint | Performs transport I/O, parsing, and outbound encoding for one connection. | Owned by the port; exposes parsers, `LastError`, and disposal state. |
 
+`IProtocolConnection.DisplayName` is a compact display label; `Description` provides
+transport details for tooltips. Neither property replaces `Id`, and display names
+need not be unique. Existing custom implementations fall back to `Id` by default.
+
+Built-in ports prefer a nonblank `Config.Name`. Otherwise TCP/UDP ports show the
+transport and address (including IPv6 brackets), and serial ports show the device
+basename, for example `Serial · ttyUSB0`. Port descriptions expand the connection
+settings into labeled lines and retain the connection URI as the final line.
+
+TCP/UDP endpoints show the remote address; their descriptions include local and
+remote addresses and the original endpoint ID. Socket addresses are captured at
+construction so metadata remains readable after disconnection or disposal. Serial
+endpoints show the device basename and full serial settings; virtual endpoints
+retain their ID as a label. Serial endpoint descriptions keep compact framing
+notation such as `115200 · 8N1`; their format is separate from port descriptions.
+
 A server port can have several endpoints. One endpoint can carry messages from several logical devices. Keep the pair of port ID and endpoint ID when recording an observation; do not infer device identity from endpoint identity alone.
 
 ## Transport Selection
@@ -35,6 +51,68 @@ A server port can have several endpoints. One endpoint can carry messages from s
 | `serial` | Serial port |
 
 `ProtocolPortConfig` exposes common options such as `Name`, `IsEnabled`, and enabled protocols. Concrete transport configurations add their own options. Read the relevant configuration class before constructing a URI with additional options.
+
+## Port Descriptions
+
+Built-in port `Description` values use multiline English labels and invariant
+numeric formatting. The transport and its primary address or serial settings are
+always included. Reconnect interval, TX/RX queue capacities, and enabled protocol
+names describe the effective settings, including defaults. The protocol list
+reflects the factories selected for the port.
+
+For example, a TCP client configured with
+`tcp://192.168.1.10:5760?reconnect=3000&tx_queue=200` shows a reconnect interval of
+3 seconds and an RX capacity inherited from TX. With no protocol factories
+selected, its description is:
+
+```text
+Transport: TCP client
+Remote address: 192.168.1.10:5760
+Protocols: None
+Reconnect interval: 3 s
+TX queue: 200 messages
+RX queue: 200 messages (inherited from TX)
+Connection string: tcp://192.168.1.10:5760/?reconnect=3000&tx_queue=200
+```
+
+| Transport | Transport-specific lines |
+| --- | --- |
+| TCP client | `Remote address` with host and port. |
+| TCP server | `Listen address`; `Pending connection queue` when `maxConnection` is explicitly configured. This value is the `Socket.Listen` backlog, not a limit on active clients. |
+| UDP | `Local address` and sorted, distinct `Allowed remote endpoints`. Without configured peers: `Remote endpoints: discovered from incoming packets`. Resolved allowed endpoints are cached; reading `Description` does not perform DNS lookups. |
+| Serial | Full `Device` path, `Baud rate` in bit/s, `Data bits`, full `Parity` name, and numeric `Stop bits`, for example `1.5`. |
+
+Without queue or reconnect options, physical ports show the default 5-second
+reconnect interval and 100-message TX/RX capacities. Capacities at or below zero
+are displayed as `Unbounded`. An inherited RX capacity is labeled explicitly;
+an explicit `rx_queue` is displayed independently. A reconnect interval of `-1`
+is displayed as `Disabled`, meaning no timed retry.
+
+For serial ports with `version=2`, the alternative serial implementation maps
+`stop=None` to one stop bit. The description makes that effective setting explicit:
+`Stop bits: 1 (configured as None)`.
+
+Optional lines appear only when the corresponding option is configured: name,
+configured enabled state, version, queue overflow policies, and empty-read delay.
+Serial ports also show explicitly configured read/write buffer sizes and timeouts.
+`Enabled in configuration` describes the configuration value rather than a live
+connection status. An enabled queue drop policy is displayed as
+`Drop oldest messages`; a policy on an unbounded queue is labeled
+`Not applicable (unbounded queue)`. See [Queueing](#queueing) for the meaning of the
+queue settings.
+
+The last line is always `Connection string: ...`, using the current
+`Config.ToString()` URI. It retains all configured options but may normalize the
+input URI spelling or escaping. Descriptions remain readable after disposal.
+
+`VirtualPort` implements an endpoint rather than a configurable physical port.
+It uses the same labeled style without physical transport options:
+
+```text
+Transport: Virtual
+Endpoint: simulation
+Connection string: virtual://simulation
+```
 
 ## RX And TX Are Level-Specific
 

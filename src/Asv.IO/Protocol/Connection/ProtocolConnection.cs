@@ -55,6 +55,8 @@ public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolC
     }
 
     public string Id { get; }
+    public virtual string DisplayName => Id;
+    public virtual string Description => Id;
     public IStatistic Statistic { get; }
     public Observable<IProtocolMessage> OnTxMessage => _onTxMessage;
     public Observable<Exception> OnTxError => _onTxError;
@@ -317,11 +319,11 @@ public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolC
         {
             feature.Unregister(this);
         }
-        await CastAndDispose(_onTxError);
-        await CastAndDispose(_onRxError);
-        await CastAndDispose(_onTxMessage);
-        await CastAndDispose(_onRxMessage);
-        await base.DisposeAsyncCore();
+        await CastAndDispose(_onTxError).ConfigureAwait(false);
+        await CastAndDispose(_onRxError).ConfigureAwait(false);
+        await CastAndDispose(_onTxMessage).ConfigureAwait(false);
+        await CastAndDispose(_onRxMessage).ConfigureAwait(false);
+        await base.DisposeAsyncCore().ConfigureAwait(false);
 
         return;
 
@@ -329,7 +331,7 @@ public abstract class ProtocolConnection : AsyncDisposableWithCancel, IProtocolC
         {
             if (resource is IAsyncDisposable resourceAsyncDisposable)
             {
-                await resourceAsyncDisposable.DisposeAsync();
+                await resourceAsyncDisposable.DisposeAsync().ConfigureAwait(false);
             }
             else
             {

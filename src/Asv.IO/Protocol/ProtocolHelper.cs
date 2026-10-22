@@ -120,7 +120,7 @@ public static partial class ProtocolHelper
         var tcs = new TaskCompletionSource<TResult>(
             TaskCreationOptions.RunContinuationsAsynchronously
         );
-        await using var c1 = cancel.Register(() => tcs.TrySetCanceled());
+        await using var c1 = cancel.Register(() => tcs.TrySetCanceled()).ConfigureAwait(false);
         using var c2 = connection
             .RxFilterByMsgId<TMessage, TMessageId>()
             .Subscribe(

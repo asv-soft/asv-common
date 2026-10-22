@@ -59,7 +59,7 @@ namespace Asv.IO
                 return;
             }
 
-            await _udp.SendAsync(data, cancel);
+            await _udp.SendAsync(data, cancel).ConfigureAwait(false);
         }
 
         protected override Task InternalSend(byte[] data, int count, CancellationToken cancel)
@@ -154,19 +154,19 @@ namespace Asv.IO
         {
             if (_udp != null)
             {
-                await CastAndDispose(_udp);
+                await CastAndDispose(_udp).ConfigureAwait(false);
                 _udp = null;
             }
 
             if (_stop != null)
             {
                 _stop.Cancel(false);
-                await CastAndDispose(_stop);
+                await CastAndDispose(_stop).ConfigureAwait(false);
                 _stop = null;
             }
-            await CastAndDispose(_onReceiveNewClientSubject);
+            await CastAndDispose(_onReceiveNewClientSubject).ConfigureAwait(false);
 
-            await base.DisposeAsyncCore();
+            await base.DisposeAsyncCore().ConfigureAwait(false);
 
             return;
 
@@ -174,7 +174,7 @@ namespace Asv.IO
             {
                 if (resource is IAsyncDisposable resourceAsyncDisposable)
                 {
-                    await resourceAsyncDisposable.DisposeAsync();
+                    await resourceAsyncDisposable.DisposeAsync().ConfigureAwait(false);
                 }
                 else
                 {

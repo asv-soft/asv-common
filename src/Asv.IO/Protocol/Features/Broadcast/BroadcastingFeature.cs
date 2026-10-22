@@ -75,7 +75,7 @@ public class BroadcastingFeature<TMessage> : IProtocolFeature
             // all received messages broadcast to all other connections
             if (ShouldBroadcast(message, router))
             {
-                await router.Send(message, cancel);
+                await router.Send(message, cancel).ConfigureAwait(false);
             }
         }
         return message;

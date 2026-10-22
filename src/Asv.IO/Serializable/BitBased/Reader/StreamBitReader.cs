@@ -77,8 +77,8 @@ public sealed class StreamBitReader(Stream s, bool leaveOpen = false)
     {
         if (!leaveOpen)
         {
-            await _s.DisposeAsync();
+            await _s.DisposeAsync().ConfigureAwait(false);
         }
-        await base.DisposeAsyncCore();
+        await base.DisposeAsyncCore().ConfigureAwait(false);
     }
 }

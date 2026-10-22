@@ -98,15 +98,15 @@ public abstract class ClientDevice<TDeviceId> : AsyncDisposableWithCancel, IClie
             _state.Value = ClientDeviceState.InProgress;
             await InitBeforeMicroservices(DisposeCancel).ConfigureAwait(false);
 
-            await foreach (var item in InternalCreateMicroservices(DisposeCancel))
+            await foreach (var item in InternalCreateMicroservices(DisposeCancel).ConfigureAwait(false))
             {
                 builder.Add(item);
-                await item.Init(DisposeCancel);
+                await item.Init(DisposeCancel).ConfigureAwait(false);
             }
 
             foreach (var extender in _extenders)
             {
-                await extender.Extend(Id, builder, DisposeCancel);
+                await extender.Extend(Id, builder, DisposeCancel).ConfigureAwait(false);
             }
             _microservices = builder.ToImmutable();
             await InitAfterMicroservices(DisposeCancel).ConfigureAwait(false);
@@ -209,14 +209,14 @@ public abstract class ClientDevice<TDeviceId> : AsyncDisposableWithCancel, IClie
     {
         if (_reconnectionTimer != null)
         {
-            await _reconnectionTimer.DisposeAsync();
+            await _reconnectionTimer.DisposeAsync().ConfigureAwait(false);
         }
 
-        await CastAndDispose(_name);
-        await CastAndDispose(_state);
+        await CastAndDispose(_name).ConfigureAwait(false);
+        await CastAndDispose(_state).ConfigureAwait(false);
         SafeDisposeMicroservices(_microservices);
         _microservices = ImmutableArray<IMicroserviceClient>.Empty;
-        await base.DisposeAsyncCore();
+        await base.DisposeAsyncCore().ConfigureAwait(false);
 
         return;
 
@@ -224,7 +224,7 @@ public abstract class ClientDevice<TDeviceId> : AsyncDisposableWithCancel, IClie
         {
             if (resource is IAsyncDisposable resourceAsyncDisposable)
             {
-                await resourceAsyncDisposable.DisposeAsync();
+                await resourceAsyncDisposable.DisposeAsync().ConfigureAwait(false);
             }
             else
             {

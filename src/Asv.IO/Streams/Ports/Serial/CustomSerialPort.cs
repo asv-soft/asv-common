@@ -179,15 +179,15 @@ namespace Asv.IO
         {
             if (_serial != null)
             {
-                await CastAndDispose(_serial);
+                await CastAndDispose(_serial).ConfigureAwait(false);
             }
 
             if (_readingTimer != null)
             {
-                await CastAndDispose(_readingTimer);
+                await CastAndDispose(_readingTimer).ConfigureAwait(false);
             }
 
-            await base.DisposeAsyncCore();
+            await base.DisposeAsyncCore().ConfigureAwait(false);
 
             return;
 
@@ -195,7 +195,7 @@ namespace Asv.IO
             {
                 if (resource is IAsyncDisposable resourceAsyncDisposable)
                 {
-                    await resourceAsyncDisposable.DisposeAsync();
+                    await resourceAsyncDisposable.DisposeAsync().ConfigureAwait(false);
                 }
                 else
                 {

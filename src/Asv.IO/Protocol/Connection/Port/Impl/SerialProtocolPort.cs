@@ -94,6 +94,8 @@ public sealed class SerialProtocolPort : ProtocolPort<SerialProtocolPortConfig>
         _context = context;
     }
 
+    protected override string DefaultDisplayName => "Serial · " + ProtocolConnectionDisplay.SerialName(_config);
+
     public override PortTypeInfo TypeInfo => Info;
 
     protected override void InternalSafeDisable()
@@ -156,10 +158,10 @@ public sealed class SerialProtocolPort : ProtocolPort<SerialProtocolPortConfig>
     {
         if (_pipe != null)
         {
-            await _pipe.DisposeAsync();
+            await _pipe.DisposeAsync().ConfigureAwait(false);
             _pipe = null;
         }
-        await base.DisposeAsyncCore();
+        await base.DisposeAsyncCore().ConfigureAwait(false);
     }
 
     #endregion

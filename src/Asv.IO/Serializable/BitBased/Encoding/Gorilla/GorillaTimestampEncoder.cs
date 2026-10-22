@@ -202,8 +202,8 @@ public sealed class GorillaTimestampEncoder : AsyncDisposableOnce, IBitEncoder<l
     {
         if (!_leaveOpen)
         {
-            await _bw.DisposeAsync();
+            await _bw.DisposeAsync().ConfigureAwait(false);
         }
-        await base.DisposeAsyncCore();
+        await base.DisposeAsyncCore().ConfigureAwait(false);
     }
 }

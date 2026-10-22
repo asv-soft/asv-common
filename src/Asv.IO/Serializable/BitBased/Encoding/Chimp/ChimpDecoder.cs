@@ -137,9 +137,9 @@ public sealed class ChimpDecoder(IBitReader input, bool leaveOpen = false)
     {
         if (!leaveOpen)
         {
-            await input.DisposeAsync();
+            await input.DisposeAsync().ConfigureAwait(false);
         }
 
-        await base.DisposeAsyncCore();
+        await base.DisposeAsyncCore().ConfigureAwait(false);
     }
 }

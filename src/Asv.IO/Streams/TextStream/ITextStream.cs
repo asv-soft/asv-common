@@ -36,7 +36,7 @@ namespace Asv.IO
                     error => tcs.TrySetException(error),
                     _ => tcs.TrySetCanceled()
                 );
-            await strm.Send(request, linkedCancel.Token);
+            await strm.Send(request, linkedCancel.Token).ConfigureAwait(false);
             return await tcs.Task.ConfigureAwait(false);
         }
     }

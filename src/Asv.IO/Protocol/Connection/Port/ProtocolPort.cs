@@ -210,6 +210,14 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
         }
     }
 
+    public override string DisplayName => _config is null
+        ? Id
+        : !string.IsNullOrWhiteSpace(_config.Name) ? _config.Name : DefaultDisplayName;
+    public override string Description => _config is null
+        ? Id
+        : ProtocolConnectionDisplay.PortDescription(_config, _protocols);
+    protected virtual string DefaultDisplayName => Id;
+
     public ProtocolPortConfig Config => (ProtocolPortConfig)_config.Clone();
     public abstract PortTypeInfo TypeInfo { get; }
     public IEnumerable<ProtocolInfo> EnabledProtocols => _protocols;
@@ -479,7 +487,7 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
         }
 
         cancel.ThrowIfCancellationRequested();
-        var newMessage = await InternalFilterTxMessage(message);
+        var newMessage = await InternalFilterTxMessage(message).ConfigureAwait(false);
         if (newMessage == null)
         {
             return;
@@ -488,7 +496,7 @@ public abstract class ProtocolPort<TConfig> : ProtocolConnection, IProtocolPort
         var endpoints = _endpoints;
         foreach (var endpoint in endpoints)
         {
-            await endpoint.Send(newMessage, cancel);
+            await endpoint.Send(newMessage, cancel).ConfigureAwait(false);
         }
         InternalPublishTxMessage(newMessage);
     }

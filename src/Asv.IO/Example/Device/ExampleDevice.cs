@@ -72,7 +72,7 @@ public class ExampleDevice : ClientDevice<ExampleDeviceId>
             _selfId,
             Context
         );
-        await example.Init(cancel);
+        await example.Init(cancel).ConfigureAwait(false);
         yield return example;
     }
 }

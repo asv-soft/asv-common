@@ -120,7 +120,7 @@ public abstract class ProtocolParser<TMessage, TMessageId> : AsyncDisposableOnce
         _onMessage.Dispose();
         _onError.Dispose();
 
-        await base.DisposeAsyncCore();
+        await base.DisposeAsyncCore().ConfigureAwait(false);
     }
 
     #endregion

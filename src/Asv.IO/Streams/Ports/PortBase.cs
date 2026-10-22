@@ -272,12 +272,12 @@ namespace Asv.IO
         protected virtual async ValueTask DisposeAsyncCore()
         {
             CancelReconnect();
-            await CastAndDispose(_portErrorStream);
-            await CastAndDispose(_portStateStream);
-            await CastAndDispose(_enableStream);
-            await CastAndDispose(_outputData);
-            await CastAndDispose(_sub1);
-            await CastAndDispose(_disposeCancel);
+            await CastAndDispose(_portErrorStream).ConfigureAwait(false);
+            await CastAndDispose(_portStateStream).ConfigureAwait(false);
+            await CastAndDispose(_enableStream).ConfigureAwait(false);
+            await CastAndDispose(_outputData).ConfigureAwait(false);
+            await CastAndDispose(_sub1).ConfigureAwait(false);
+            await CastAndDispose(_disposeCancel).ConfigureAwait(false);
 
             return;
 
@@ -285,7 +285,7 @@ namespace Asv.IO
             {
                 if (resource is IAsyncDisposable resourceAsyncDisposable)
                 {
-                    await resourceAsyncDisposable.DisposeAsync();
+                    await resourceAsyncDisposable.DisposeAsync().ConfigureAwait(false);
                 }
                 else
                 {
@@ -301,7 +301,7 @@ namespace Asv.IO
                 return;
             }
 
-            await DisposeAsyncCore();
+            await DisposeAsyncCore().ConfigureAwait(false);
             GC.SuppressFinalize(this);
         }
 

@@ -50,7 +50,7 @@ public abstract class MicroserviceBase<TBaseMessage> : AsyncDisposableWithCancel
             }
 
             _loggerBase.ZLogTrace($"Init microservice {TypeName}[{Id}]");
-            await InternalInit(cancel);
+            await InternalInit(cancel).ConfigureAwait(false);
             IsInit = true;
         }
         catch (Exception ex)
@@ -138,7 +138,7 @@ public abstract class MicroserviceBase<TBaseMessage> : AsyncDisposableWithCancel
         var tcs = new TaskCompletionSource<TResult>(
             TaskCreationOptions.RunContinuationsAsynchronously
         );
-        await using var c1 = linkedCancel.Token.Register(() => tcs.TrySetCanceled(), false);
+        await using var c1 = linkedCancel.Token.Register(() => tcs.TrySetCanceled(), false).ConfigureAwait(false);
 
         using var subscribe = InternalFilteredDeviceMessages.Subscribe(x =>
         {
@@ -150,7 +150,7 @@ public abstract class MicroserviceBase<TBaseMessage> : AsyncDisposableWithCancel
                 }
             }
         });
-        await InternalSend(packet, linkedCancel.Token);
+        await InternalSend(packet, linkedCancel.Token).ConfigureAwait(false);
         var result = await tcs.Task.ConfigureAwait(false);
         _loggerBase.ZLogTrace($"<= ok {packet.Name}<=={result}");
         return result;
@@ -179,12 +179,12 @@ public abstract class MicroserviceBase<TBaseMessage> : AsyncDisposableWithCancel
         var tcs = new TaskCompletionSource<TAnswerPacket>(
             TaskCreationOptions.RunContinuationsAsynchronously
         );
-        await using var c1 = linkedCancel.Token.Register(() => tcs.TrySetCanceled(), false);
+        await using var c1 = linkedCancel.Token.Register(() => tcs.TrySetCanceled(), false).ConfigureAwait(false);
 
         filter ??= _ => true;
         using var subscribe = InternalFilterFirstAsync(filter).Subscribe(v => tcs.TrySetResult(v));
         linkedCancel.Token.ThrowIfCancellationRequested();
-        await InternalSend(packet, linkedCancel.Token);
+        await InternalSend(packet, linkedCancel.Token).ConfigureAwait(false);
         var result = await tcs.Task.ConfigureAwait(false);
         _loggerBase.ZLogTrace($"<= ok {packet.Name}<=={p.Name}");
         return result;
@@ -365,10 +365,10 @@ public abstract class MicroserviceBase<TBaseMessage> : AsyncDisposableWithCancel
 
     protected override async ValueTask DisposeAsyncCore()
     {
-        await CastAndDispose(_internalFilteredDeviceMessages);
-        await CastAndDispose(_sub1);
+        await CastAndDispose(_internalFilteredDeviceMessages).ConfigureAwait(false);
+        await CastAndDispose(_sub1).ConfigureAwait(false);
 
-        await base.DisposeAsyncCore();
+        await base.DisposeAsyncCore().ConfigureAwait(false);
 
         return;
 
@@ -376,7 +376,7 @@ public abstract class MicroserviceBase<TBaseMessage> : AsyncDisposableWithCancel
         {
             if (resource is IAsyncDisposable resourceAsyncDisposable)
             {
-                await resourceAsyncDisposable.DisposeAsync();
+                await resourceAsyncDisposable.DisposeAsync().ConfigureAwait(false);
             }
             else
             {

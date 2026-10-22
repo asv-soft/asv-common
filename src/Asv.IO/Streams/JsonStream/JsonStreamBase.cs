@@ -157,17 +157,17 @@ namespace Asv.IO
             {
                 return;
             }
-            await _disposeCancel.CancelAsync();
-            await CastAndDispose(_disposeCancel);
-            await CastAndDispose(_onErrorSubject);
-            await CastAndDispose(_onData);
+            await _disposeCancel.CancelAsync().ConfigureAwait(false);
+            await CastAndDispose(_disposeCancel).ConfigureAwait(false);
+            await CastAndDispose(_onErrorSubject).ConfigureAwait(false);
+            await CastAndDispose(_onData).ConfigureAwait(false);
             if (_disposeStream)
             {
-                await _textStream.DisposeAsync();
+                await _textStream.DisposeAsync().ConfigureAwait(false);
             }
 
-            await CastAndDispose(_sub1);
-            await CastAndDispose(_sub2);
+            await CastAndDispose(_sub1).ConfigureAwait(false);
+            await CastAndDispose(_sub2).ConfigureAwait(false);
 
             return;
 
@@ -175,7 +175,7 @@ namespace Asv.IO
             {
                 if (resource is IAsyncDisposable resourceAsyncDisposable)
                 {
-                    await resourceAsyncDisposable.DisposeAsync();
+                    await resourceAsyncDisposable.DisposeAsync().ConfigureAwait(false);
                 }
                 else
                 {
