@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Immutable;
+using System.Linq;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -23,18 +24,44 @@ public abstract class TcpSocketProtocolEndpoint : ProtocolEndpoint
         IProtocolContext context,
         IStatisticHandler statisticHandler
     )
+        : this(socket, id, config, parsers, context, statisticHandler, "TCP") { }
+
+    private protected TcpSocketProtocolEndpoint(
+        Socket socket,
+        string id,
+        ProtocolPortConfig config,
+        ImmutableArray<IProtocolParser> parsers,
+        IProtocolContext context,
+        IStatisticHandler statisticHandler,
+        string transport
+    )
         : base(id, config, parsers, context, statisticHandler, startImmediately: false)
     {
         _socket = socket;
-        _displayName = socket.RemoteEndPoint?.ToString() ?? id;
-        _description = $"TCP · {socket.LocalEndPoint} → {_displayName}\n{id}";
-        _context = context;
-        _lastDataReceivedOrSentSuccess = context.TimeProvider.GetTimestamp();
-        _reconnectTimeout =
-            config.ReconnectTimeoutMs <= 0
-                ? Timeout.InfiniteTimeSpan
-                : TimeSpan.FromMilliseconds(config.ReconnectTimeoutMs);
-        Start();
+        try
+        {
+            _displayName = socket.RemoteEndPoint?.ToString() ?? id;
+            _description = ProtocolConnectionDisplay.NetworkEndpointDescription(
+                transport,
+                id,
+                config,
+                parsers.Select(x => x.Info),
+                socket.LocalEndPoint,
+                socket.RemoteEndPoint
+            );
+            _context = context;
+            _lastDataReceivedOrSentSuccess = context.TimeProvider.GetTimestamp();
+            _reconnectTimeout =
+                config.ReconnectTimeoutMs <= 0
+                    ? Timeout.InfiniteTimeSpan
+                    : TimeSpan.FromMilliseconds(config.ReconnectTimeoutMs);
+            Start();
+        }
+        catch
+        {
+            Dispose();
+            throw;
+        }
     }
 
     public override string DisplayName => _displayName ?? Id;

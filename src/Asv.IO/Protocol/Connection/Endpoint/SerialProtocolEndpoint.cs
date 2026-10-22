@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Immutable;
 using System.IO.Ports;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -8,7 +9,8 @@ namespace Asv.IO;
 
 public sealed class SerialProtocolEndpoint : ProtocolEndpoint
 {
-    private readonly SerialProtocolPortConfig _displayConfig;
+    private readonly string _displayName;
+    private readonly string _description;
     private readonly SerialPort? _serial;
 
     public SerialProtocolEndpoint(
@@ -20,9 +22,15 @@ public sealed class SerialProtocolEndpoint : ProtocolEndpoint
     )
         : base(id, config, parsers, context, statisticHandler, startImmediately: false)
     {
-        _displayConfig = config;
         try
         {
+            _displayName = ProtocolConnectionDisplay.SerialName(config);
+            _description = ProtocolConnectionDisplay.SerialEndpointDescription(
+                id,
+                config,
+                parsers.Select(x => x.Info),
+                alternative: false
+            );
             _serial = new SerialPort(
                 config.PortName,
                 config.BoundRate,
@@ -44,12 +52,8 @@ public sealed class SerialProtocolEndpoint : ProtocolEndpoint
         }
     }
 
-    public override string DisplayName => _displayConfig is null
-        ? Id
-        : ProtocolConnectionDisplay.SerialName(_displayConfig);
-    public override string Description => _displayConfig is null
-        ? Id
-        : ProtocolConnectionDisplay.SerialDescription(_displayConfig);
+    public override string DisplayName => _displayName ?? Id;
+    public override string Description => _description ?? Id;
 
     public SerialPort SerialPort =>
         _serial ?? throw new InvalidOperationException("Serial port is not initialized.");

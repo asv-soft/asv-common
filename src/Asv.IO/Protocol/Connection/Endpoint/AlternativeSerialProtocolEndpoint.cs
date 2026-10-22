@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Immutable;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using RJCP.IO.Ports;
@@ -8,7 +9,8 @@ namespace Asv.IO;
 
 public sealed class AlternativeSerialProtocolEndpoint : ProtocolEndpoint
 {
-    private readonly SerialProtocolPortConfig _displayConfig;
+    private readonly string _displayName;
+    private readonly string _description;
     private readonly SerialPortStream? _serial;
 
     public AlternativeSerialProtocolEndpoint(
@@ -20,9 +22,15 @@ public sealed class AlternativeSerialProtocolEndpoint : ProtocolEndpoint
     )
         : base(id, config, parsers, context, statisticHandler, startImmediately: false)
     {
-        _displayConfig = config;
         try
         {
+            _displayName = ProtocolConnectionDisplay.SerialName(config);
+            _description = ProtocolConnectionDisplay.SerialEndpointDescription(
+                id,
+                config,
+                parsers.Select(x => x.Info),
+                alternative: true
+            );
             _serial = new SerialPortStream(
                 config.PortName,
                 config.BoundRate,
@@ -73,12 +81,8 @@ public sealed class AlternativeSerialProtocolEndpoint : ProtocolEndpoint
         };
     }
 
-    public override string DisplayName => _displayConfig is null
-        ? Id
-        : ProtocolConnectionDisplay.SerialName(_displayConfig);
-    public override string Description => _displayConfig is null
-        ? Id
-        : ProtocolConnectionDisplay.SerialDescription(_displayConfig);
+    public override string DisplayName => _displayName ?? Id;
+    public override string Description => _description ?? Id;
 
     public SerialPortStream SerialPort =>
         _serial ?? throw new InvalidOperationException("Serial port is not initialized.");
