@@ -10,4 +10,13 @@ public class TcpClientSocketProtocolEndpoint(
     ImmutableArray<IProtocolParser> parsers,
     IProtocolContext context,
     IStatisticHandler statisticHandler
-) : TcpSocketProtocolEndpoint(socket, id, config, parsers, context, statisticHandler) { }
+)
+    : TcpSocketProtocolEndpoint(
+        socket,
+        id,
+        config,
+        parsers,
+        context,
+        statisticHandler,
+        "TCP client"
+    ) { }

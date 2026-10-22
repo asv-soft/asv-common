@@ -54,19 +54,8 @@ internal static class ProtocolConnectionDisplay
                 AppendRemoteEndpoints(text, udpRemoteEndpoints ?? udp.GetRemoteEndpoints());
                 break;
             case SerialProtocolPortConfig serial:
-                text.Append("Transport: Serial\nDevice: ").Append(serial.PortName).Append('\n');
-                text.Append(
-                    CultureInfo.InvariantCulture,
-                    $"Baud rate: {serial.BoundRate} bit/s\nData bits: {serial.DataBits}\n"
-                );
-                text.Append("Parity: ").Append(serial.Parity).Append('\n');
-                text.Append("Stop bits: ")
-                    .Append(
-                        serial.Version == 2 && serial.StopBits == StopBits.None
-                            ? "1 (configured as None)"
-                            : StopBitsValue(serial.StopBits)
-                    )
-                    .Append('\n');
+                text.Append("Transport: Serial\n");
+                AppendSerialSettings(text, serial, serial.Version == 2);
                 break;
             default:
                 text.Append("Transport: ").Append(config.Scheme).Append('\n');
@@ -96,13 +85,76 @@ internal static class ProtocolConnectionDisplay
             text.Append(CultureInfo.InvariantCulture, $"Version: {config.Version}\n");
         }
 
-        var names = string.Join(", ", protocols.Select(x => x.Name).Order(StringComparer.Ordinal));
-        text.Append("Protocols: ").Append(names.Length == 0 ? "None" : names).Append('\n');
+        AppendProtocols(text, protocols);
         text.Append("Reconnect interval: ")
             .Append(
                 config.ReconnectTimeoutMs == -1 ? "Disabled" : Seconds(config.ReconnectTimeoutMs)
             )
             .Append('\n');
+        AppendQueues(text, config);
+        if (config is SerialProtocolPortConfig)
+        {
+            AppendSerialOptions(text, config);
+        }
+
+        return text.Append("Connection string: ").Append(config).ToString();
+    }
+
+    public static string NetworkEndpointDescription(
+        string transport,
+        string id,
+        ProtocolPortConfig config,
+        IEnumerable<ProtocolInfo> protocols,
+        EndPoint? localEndPoint,
+        EndPoint? remoteEndPoint
+    )
+    {
+        var text = new StringBuilder();
+        text.Append("Transport: ").Append(transport).Append('\n');
+        text.Append("Endpoint: ").Append(id).Append('\n');
+        text.Append("Local address: ")
+            .Append(localEndPoint?.ToString() ?? "Not bound")
+            .Append('\n');
+        text.Append("Remote address: ")
+            .Append(remoteEndPoint?.ToString() ?? "Not connected")
+            .Append('\n');
+        AppendProtocols(text, protocols);
+        text.Append("Idle timeout: ")
+            .Append(
+                config.ReconnectTimeoutMs <= 0 ? "Disabled" : Seconds(config.ReconnectTimeoutMs)
+            )
+            .Append('\n');
+        AppendQueues(text, config);
+        return text.Append("Connection string: ").Append(config).ToString();
+    }
+
+    public static string SerialEndpointDescription(
+        string id,
+        SerialProtocolPortConfig config,
+        IEnumerable<ProtocolInfo> protocols,
+        bool alternative
+    )
+    {
+        var text = new StringBuilder("Transport: Serial\n");
+        text.Append("Endpoint: ").Append(id).Append('\n');
+        text.Append("Implementation: ")
+            .Append(alternative ? "RJCP.IO.Ports" : "System.IO.Ports")
+            .Append('\n');
+        AppendSerialSettings(text, config, alternative);
+        AppendProtocols(text, protocols);
+        AppendQueues(text, config);
+        AppendSerialOptions(text, config);
+        return text.Append("Connection string: ").Append(config).ToString();
+    }
+
+    private static void AppendProtocols(StringBuilder text, IEnumerable<ProtocolInfo> protocols)
+    {
+        var names = string.Join(", ", protocols.Select(x => x.Name).Order(StringComparer.Ordinal));
+        text.Append("Protocols: ").Append(names.Length == 0 ? "None" : names).Append('\n');
+    }
+
+    private static void AppendQueues(StringBuilder text, ProtocolPortConfig config)
+    {
         text.Append("TX queue: ").Append(QueueSize(config.TxQueueSize)).Append('\n');
         text.Append("RX queue: ").Append(QueueSize(config.RxQueueSize));
         if (
@@ -133,12 +185,6 @@ internal static class ProtocolConnectionDisplay
                 $"Empty read delay: {config.ReadEmptyLoopDelayMs} ms\n"
             );
         }
-        if (config is SerialProtocolPortConfig)
-        {
-            AppendSerialOptions(text, config);
-        }
-
-        return text.Append("Connection string: ").Append(config).ToString();
     }
 
     public static string VirtualDescription(string id) =>
@@ -216,21 +262,24 @@ internal static class ProtocolConnectionDisplay
     public static string SerialName(SerialProtocolPortConfig config) =>
         Path.GetFileName((config.PortName ?? string.Empty).Replace('\\', '/'));
 
-    public static string SerialDescription(SerialProtocolPortConfig config)
+    private static void AppendSerialSettings(
+        StringBuilder text,
+        SerialProtocolPortConfig config,
+        bool alternative
+    )
     {
-        var parity = config.Parity switch
-        {
-            Parity.None => "N",
-            Parity.Odd => "O",
-            Parity.Even => "E",
-            Parity.Mark => "M",
-            Parity.Space => "S",
-            _ => config.Parity.ToString(),
-        };
-        var stopBits = StopBitsValue(config.StopBits);
-        return string.Create(
+        text.Append("Device: ").Append(config.PortName).Append('\n');
+        text.Append(
             CultureInfo.InvariantCulture,
-            $"{config.PortName} · {config.BoundRate} · {config.DataBits}{parity}{stopBits}\n{config}"
+            $"Baud rate: {config.BoundRate} bit/s\nData bits: {config.DataBits}\n"
         );
+        text.Append("Parity: ").Append(config.Parity).Append('\n');
+        text.Append("Stop bits: ")
+            .Append(
+                alternative && config.StopBits == StopBits.None
+                    ? "1 (configured as None)"
+                    : StopBitsValue(config.StopBits)
+            )
+            .Append('\n');
     }
 }

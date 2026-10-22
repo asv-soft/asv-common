@@ -31,11 +31,11 @@ basename, for example `Serial · ttyUSB0`. Port descriptions expand the connecti
 settings into labeled lines and retain the connection URI as the final line.
 
 TCP/UDP endpoints show the remote address; their descriptions include local and
-remote addresses and the original endpoint ID. Socket addresses are captured at
-construction so metadata remains readable after disconnection or disposal. Serial
-endpoints show the device basename and full serial settings; virtual endpoints
-retain their ID as a label. Serial endpoint descriptions keep compact framing
-notation such as `115200 · 8N1`; their format is separate from port descriptions.
+remote addresses and the endpoint ID. Serial endpoints show the device basename
+as their display name and expand serial settings into labeled description lines.
+Virtual endpoints retain their ID as a label. Built-in physical endpoint
+descriptions capture their settings at construction and remain readable after
+disconnection or disposal.
 
 A server port can have several endpoints. One endpoint can carry messages from several logical devices. Keep the pair of port ID and endpoint ID when recording an observation; do not infer device identity from endpoint identity alone.
 
@@ -104,6 +104,63 @@ queue settings.
 The last line is always `Connection string: ...`, using the current
 `Config.ToString()` URI. It retains all configured options but may normalize the
 input URI spelling or escaping. Descriptions remain readable after disposal.
+
+## Endpoint Descriptions
+
+Built-in physical endpoints use the same multiline English labels and invariant
+numeric formatting as ports. Each description includes its transport, `Endpoint`
+ID, actual parser protocol names, and effective TX/RX queue capacities. Protocol
+names are sorted; an endpoint without parsers shows `Protocols: None`. Optional
+queue overflow policies and empty-read delay use the same labels as port
+descriptions. See [Queueing](#queueing) for these settings.
+
+For example, a TCP client endpoint named `tcp-client-1`, created with
+`tcp://192.168.1.10:5760?reconnect=3000&tx_queue=200` and connected from local
+address `192.168.1.20:50123`, has the following description when it has no parsers:
+
+```text
+Transport: TCP client
+Endpoint: tcp-client-1
+Local address: 192.168.1.20:50123
+Remote address: 192.168.1.10:5760
+Protocols: None
+Idle timeout: 3 s
+TX queue: 200 messages
+RX queue: 200 messages (inherited from TX)
+Connection string: tcp://192.168.1.10:5760/?reconnect=3000&tx_queue=200
+```
+
+| Endpoint | Transport-specific lines |
+| --- | --- |
+| TCP client | `Transport: TCP client`, actual `Local address`, and actual `Remote address`. |
+| Accepted TCP server connection | `Transport: TCP server`, actual `Local address`, and the connected peer's `Remote address`. |
+| UDP | `Transport: UDP`, the shared socket's actual `Local address`, and this endpoint's `Remote address`. |
+| Serial | `Transport: Serial`, `Implementation` (`System.IO.Ports` or `RJCP.IO.Ports`), full `Device` path, `Baud rate` in bit/s, `Data bits`, full `Parity` name, and numeric `Stop bits`. Explicitly configured read/write buffer sizes and timeouts are also shown. |
+
+Network addresses describe the concrete endpoint. A server endpoint reports the
+accepted connection's addresses, including the actual local port chosen when the
+listener was configured with port `0`. A UDP endpoint reports its peer rather than
+the port's allowed-peer list. An unavailable local socket address is shown as
+`Not bound`; an unavailable TCP peer address is shown as `Not connected`.
+The TCP transport label follows the endpoint implementation, even when its
+constructor receives a configuration with a different transport scheme.
+
+TCP and UDP endpoints show `Idle timeout`, derived from `ReconnectTimeoutMs`.
+The default is `5 s`; values at or below zero show `Disabled`. This timeout is the
+endpoint's inactivity guard. The port's separate `Reconnect interval` controls
+timed attempts to establish a replacement endpoint. Serial endpoints do not show
+an idle timeout or reconnect interval. For the `RJCP.IO.Ports` implementation,
+`StopBits.None` is mapped to one stop bit and shown as
+`Stop bits: 1 (configured as None)`, regardless of the configuration's version.
+
+Physical endpoint descriptions are snapshots: socket addresses, configuration
+values, protocol names, and the final `Connection string: ...` line are captured
+at construction. The connection string uses the normalized `Config.ToString()`
+URI and can differ from the actual socket addresses. Later configuration changes
+do not change an existing endpoint's description or serial display name. Reading
+these properties after disconnection or disposal does not access the transport.
+Custom implementations based directly on `ProtocolEndpoint` keep the default
+`Id` fallback unless they override the display properties.
 
 `VirtualPort` implements an endpoint rather than a configurable physical port.
 It uses the same labeled style without physical transport options:

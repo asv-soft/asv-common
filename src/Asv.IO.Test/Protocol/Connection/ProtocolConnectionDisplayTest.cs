@@ -408,7 +408,7 @@ public class ProtocolConnectionDisplayTest
         );
         Assert.Equal("technical-tcp-id", endpoint.DisplayName);
         var description = endpoint.Description;
-        Assert.StartsWith("TCP · ", description);
+        Assert.StartsWith("Transport: TCP client\n", description);
         await endpoint.DisposeAsync();
         socket.Dispose();
         Assert.Equal("technical-tcp-id", endpoint.DisplayName);

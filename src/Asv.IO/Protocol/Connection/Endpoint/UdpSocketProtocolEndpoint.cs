@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -35,14 +36,29 @@ public class UdpSocketProtocolEndpoint : ProtocolEndpoint
         _socket = socket;
         _context = context;
         RemoteEndPoint = recvAddr;
-        _description = $"UDP · {socket.LocalEndPoint} → {recvAddr}\n{id}";
-        _lastDataReceivedOrSentSuccess = context.TimeProvider.GetTimestamp();
-        _reconnectTimeout =
-            config.ReconnectTimeoutMs <= 0
-                ? Timeout.InfiniteTimeSpan
-                : TimeSpan.FromMilliseconds(config.ReconnectTimeoutMs);
-        _receiveCancellation = ConnectionCancel.Register(StopReceiving);
-        Start();
+        try
+        {
+            _description = ProtocolConnectionDisplay.NetworkEndpointDescription(
+                "UDP",
+                id,
+                config,
+                parsers.Select(x => x.Info),
+                socket.LocalEndPoint,
+                recvAddr
+            );
+            _lastDataReceivedOrSentSuccess = context.TimeProvider.GetTimestamp();
+            _reconnectTimeout =
+                config.ReconnectTimeoutMs <= 0
+                    ? Timeout.InfiniteTimeSpan
+                    : TimeSpan.FromMilliseconds(config.ReconnectTimeoutMs);
+            _receiveCancellation = ConnectionCancel.Register(StopReceiving);
+            Start();
+        }
+        catch
+        {
+            Dispose();
+            throw;
+        }
     }
 
     public IPEndPoint RemoteEndPoint { get; }
