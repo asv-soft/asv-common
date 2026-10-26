@@ -25,8 +25,19 @@ public class ProtocolPortConfig(Uri connectionString) : ICloneable
     public const string NameQueryKey = "name";
     public string? Name
     {
-        get => Query[NameQueryKey];
-        set => Query.Set(NameQueryKey, value);
+        get => Query[NameQueryKey] ?? Fragment[NameQueryKey];
+        set
+        {
+            if (value is null)
+            {
+                Query.Remove(NameQueryKey);
+            }
+            else
+            {
+                Query.Set(NameQueryKey, value);
+            }
+            Fragment.Remove(NameQueryKey);
+        }
     }
 
     public string Scheme { get; set; } = connectionString.Scheme;
@@ -159,10 +170,19 @@ public class ProtocolPortConfig(Uri connectionString) : ICloneable
 
     public Uri AsUri()
     {
+        // Serialize legacy names in the query without changing the source collections.
+        var query = HttpUtility.ParseQueryString(Query.ToString() ?? string.Empty);
+        var fragment = HttpUtility.ParseQueryString(Fragment.ToString() ?? string.Empty);
+        if (Name is { } name)
+        {
+            query.Set(NameQueryKey, name);
+        }
+        fragment.Remove(NameQueryKey);
+
         var builder = new UriBuilder
         {
-            Fragment = Fragment.ToString(),
-            Query = Query.ToString(),
+            Fragment = fragment.ToString(),
+            Query = query.ToString(),
             Path = Path,
             Host = Host,
             Scheme = Scheme,
