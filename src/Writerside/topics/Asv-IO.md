@@ -26,7 +26,7 @@ The receive path above describes aggregation. Sending goes from a chosen connect
 | Processing and formatting | `IProtocolFeature`, `IProtocolMessageFormatter` | [Features and formatters](IO-Features.md) |
 | Binary representation and outbound encoding | `ISpanSerializable`, `ISizedSpanSerializable`, `IProtocolMessage`, `IProtocolEncoder` | [Serialization](IO-Serialization.md) |
 | Structured field access | `IVisitable`, `IVisitor`, `Field`, `IFieldType` | [Fields and visitors](IO-Visitors.md) |
-| Device identity and lifecycle | `IDeviceExplorer`, `IClientDeviceFactory`, `IClientDevice` | [Devices](IO-Devices.md) |
+| Device identity and lifecycle | `IDeviceExplorer`, `IClientDeviceFactory`, `DeviceAddress`, `IClientDevice` | [Devices](IO-Devices.md) |
 
 ## A Hardware-Free Exchange
 
@@ -64,7 +64,8 @@ A virtual connection has client and server sides. It serializes and parses messa
 - A message name or message ID identifies a message kind, not its sender.
 - `IProtocolMessage` guarantees serialization and basic identity; it does not require `IVisitable` or a device identifier.
 - A connection's TX event is local to that connection level. Router TX and endpoint TX do not describe the same stage.
-- `IDeviceExplorer.TryIdentify` determines identity without creating, updating, or keeping a device alive.
+- `IDeviceExplorer` discovers and manages devices through registered factories. Its `TryIdentify` method attributes a message source to a currently discovered device using optional factory addresses; lookup returns false before discovery and does not create devices or refresh liveness.
+- `IDeviceExplorer.TryGetSourceAddress` and `TryGetDeviceAddress` extract canonical addresses without requiring discovery. They use factory order, remain available after disposal, and do not change device state or liveness.
 
 ## Source Map
 

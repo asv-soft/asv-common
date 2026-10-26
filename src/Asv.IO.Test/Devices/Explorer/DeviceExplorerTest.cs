@@ -82,28 +82,7 @@ public class DeviceExplorerTest : IDisposable
     }
 
     [Fact]
-    public void TryIdentify_KnownMessage_DoesNotCreateDevice()
-    {
-        var identified = _explorer.TryIdentify(new ExampleMessage1 { SenderId = 7 }, out var deviceId);
-
-        Assert.True(identified);
-        Assert.Equal(7, Assert.IsType<ExampleDeviceId>(deviceId).TargetId);
-        Assert.Empty(_explorer.Devices);
-        Assert.Empty(_explorer.InitializedDevices);
-    }
-
-    [Fact]
-    public void TryIdentify_NoMatchingFactory_ReturnsFalseAndNull()
-    {
-        using var explorer = DeviceExplorer.Create(_link.Client, _ => { });
-
-        Assert.False(explorer.TryIdentify(new ExampleMessage1(), out var deviceId));
-        Assert.Null(deviceId);
-        Assert.Empty(explorer.Devices);
-    }
-
-    [Fact]
-    public void TryIdentify_FactoriesRegisteredOutOfOrder_UsesFirstMatchingPriority()
+    public async Task DeviceList_FactoriesRegisteredOutOfOrder_UsesFirstMatchingPriority()
     {
         var fallback = new OrderedFactory(10, 3);
         var preferred = new OrderedFactory(0, 2);
@@ -115,25 +94,13 @@ public class DeviceExplorerTest : IDisposable
             builder.Factories.Register(rejected);
         });
 
-        Assert.True(explorer.TryIdentify(new ExampleMessage1(), out var deviceId));
-        Assert.Equal(2, Assert.IsType<ExampleDeviceId>(deviceId).TargetId);
+        await _link.Server.Send(new ExampleMessage1(), TestContext.Current.CancellationToken);
+
+        var device = Assert.Single(explorer.Devices);
+        Assert.Equal(2, Assert.IsType<ExampleDeviceId>(device.Key).TargetId);
         Assert.Equal(1, rejected.Calls);
         Assert.Equal(1, preferred.Calls);
         Assert.Equal(0, fallback.Calls);
-        Assert.Empty(explorer.Devices);
-    }
-
-    [Fact]
-    public async Task TryIdentify_ExistingDevice_DoesNotRefreshLastSeen()
-    {
-        await _link.Server.Send(new ExampleMessage1 { SenderId = 7 }, TestContext.Current.CancellationToken);
-        Assert.Single(_explorer.Devices);
-        _routerTime.Advance(TimeSpan.FromMilliseconds(60));
-
-        Assert.True(_explorer.TryIdentify(new ExampleMessage1 { SenderId = 7 }, out _));
-        _routerTime.Advance(TimeSpan.FromMilliseconds(50));
-
-        Assert.Empty(_explorer.Devices);
     }
 
     private sealed class OrderedFactory(int order, byte? targetId)

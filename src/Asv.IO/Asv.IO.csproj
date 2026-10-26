@@ -3,6 +3,7 @@
     <PackageTags>asv;io;serialization;protocols;ports</PackageTags>
     <Description>Provides IO, serialization, protocol, and device communication utilities for ASV-based libraries</Description>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <GenerateDocumentationFile Condition="'$(Configuration)' == 'Release'">true</GenerateDocumentationFile>
     <PackageIcon>asv-io-128.png</PackageIcon>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
